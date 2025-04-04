@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>res/sd.json</file>
+    </qresource>
+</RCC>
