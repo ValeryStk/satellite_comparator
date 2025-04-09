@@ -16,8 +16,12 @@ public:
     MainWindowSatelliteComparator(QWidget *parent = nullptr);
     ~MainWindowSatelliteComparator();
 
+private slots:
+    void on_pushButton_open_sat_header_clicked();
+
 private:
     Ui::MainWindowSatelliteComparator *ui;
     SatteliteComparator* m_sat_comparator;
+    void openHeaderData();
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

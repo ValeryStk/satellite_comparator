@@ -1,4 +1,4 @@
-QT       += core gui printsupport
+QT       += core gui xml printsupport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -35,11 +35,11 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-DISTFILES +=
 
 RESOURCES += \
     res.qrc
 
-LIBS += libs/gdal/x64 -lgdal_i
-INCLUDEPATH += libs/gdal/x64/include
-DEPENDPATH += libs/gdal/x64/include
+LIBS += -L$$PWD/libs/gdal/x64/lib -lgdal_i
+
+INCLUDEPATH += $$PWD/libs/gdal/x64/include
+DEPENDPATH += $$PWD/libs/gdal/x64/include
