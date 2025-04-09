@@ -23,5 +23,6 @@ private:
     Ui::MainWindowSatelliteComparator *ui;
     SatteliteComparator* m_sat_comparator;
     void openHeaderData();
+    void readTiff();
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

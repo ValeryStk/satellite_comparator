@@ -17,14 +17,24 @@
    <widget class="QPushButton" name="pushButton_open_sat_header">
     <property name="geometry">
      <rect>
-      <x>100</x>
-      <y>250</y>
-      <width>80</width>
-      <height>21</height>
+      <x>20</x>
+      <y>20</y>
+      <width>761</width>
+      <height>91</height>
      </rect>
     </property>
     <property name="text">
      <string>open directory</string>
+    </property>
+   </widget>
+   <widget class="QTextBrowser" name="textBrowser_header_info">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>130</y>
+      <width>761</width>
+      <height>421</height>
+     </rect>
     </property>
    </widget>
   </widget>
