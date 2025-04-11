@@ -10,6 +10,12 @@
     <height>600</height>
    </rect>
   </property>
+  <property name="font">
+   <font>
+    <family>Segoe UI</family>
+    <pointsize>12</pointsize>
+   </font>
+  </property>
   <property name="windowTitle">
    <string>MainWindowSatelliteComparator</string>
   </property>
@@ -24,17 +30,43 @@
      </rect>
     </property>
     <property name="text">
-     <string>open directory</string>
+     <string>open Satellite TIFF or JP</string>
     </property>
    </widget>
    <widget class="QTextBrowser" name="textBrowser_header_info">
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>130</y>
+      <y>120</y>
       <width>761</width>
-      <height>421</height>
+      <height>151</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_satellite_image">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>280</y>
+      <width>761</width>
+      <height>271</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>16</pointsize>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(85, 170, 255);
+color: rgb(0, 0, 0);</string>
+    </property>
+    <property name="text">
+     <string>TIFF изображенииме</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
     </property>
    </widget>
   </widget>
@@ -44,7 +76,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>20</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>

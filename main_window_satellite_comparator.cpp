@@ -17,6 +17,9 @@
 #include "libs/gdal/x64/include/tiffio.h"
 #include "json_utils.h"
 #include "QDebug"
+#include "QImageReader"
+
+uchar *raster_char;
 
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     : QMainWindow(parent)
@@ -62,13 +65,20 @@ void MainWindowSatelliteComparator::readTiff()
         int   nXSize = poBand->GetXSize();
         int   nYSize = poBand->GetYSize();
         float *raster = new float[nXSize*nYSize];
+        raster_char = new uchar[nXSize*nYSize];
         poBand->RasterIO(GF_Read, 0, 0, nXSize, nYSize, raster, nXSize, nYSize, GDT_UInt16, 0, 0);
-
+        float max_value = *std::max_element(raster, raster + nXSize*nYSize);
+        qDebug()<<"MAX_VALUE: --->"<<max_value;
+        qDebug()<<raster_char[(nYSize*nXSize)/2];
         for (int i = 0; i < nYSize*nXSize; ++i)
         {
-            raster[i] = raster[i]*0.0001 + 0;
+            raster_char[i] = (raster[i]/max_value)*255;
+
+
         }
         qDebug()<<poBand->GetXSize()<<poBand->GetYSize();
+        QImage img(raster_char,nXSize,nYSize,QImage::Format_MonoLSB);
+        ui->label_satellite_image->setPixmap(QPixmap::fromImage(img));
 
 }
 
