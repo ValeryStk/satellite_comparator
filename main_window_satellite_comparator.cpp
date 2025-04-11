@@ -27,6 +27,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     , m_sat_comparator(new SatteliteComparator)
 {
     ui->setupUi(this);
+    ui->label_satellite_image->setScaledContents(true);
     qDebug()<<m_sat_comparator->get_satellites_data().keys();
 }
 
@@ -64,21 +65,25 @@ void MainWindowSatelliteComparator::readTiff()
         poBand->GetBlockSize( &nBlockXSize, &nBlockYSize );
         int   nXSize = poBand->GetXSize();
         int   nYSize = poBand->GetYSize();
-        float *raster = new float[nXSize*nYSize];
-        raster_char = new uchar[nXSize*nYSize];
+        uint16 *raster = new uint16[nXSize*nYSize];
+
         poBand->RasterIO(GF_Read, 0, 0, nXSize, nYSize, raster, nXSize, nYSize, GDT_UInt16, 0, 0);
-        float max_value = *std::max_element(raster, raster + nXSize*nYSize);
-        qDebug()<<"MAX_VALUE: --->"<<max_value;
-        qDebug()<<raster_char[(nYSize*nXSize)/2];
-        for (int i = 0; i < nYSize*nXSize; ++i)
-        {
-            raster_char[i] = (raster[i]/max_value)*255;
+        QImage image(nXSize, nYSize, QImage::QImage::Format_Indexed8);
 
+        for (int y = 0; y < nYSize; ++y) {
+            uchar *scanline = image.scanLine(y);
+            for (int x = 0; x < nXSize; ++x) {
+                //scanline[x] = raster[y * nXSize + x];
+                scanline[x] = static_cast<uchar>(raster[y * nXSize + x] / 256);
 
+            }
         }
+
+
+        //qDebug()<<"NORMALIZED VALUE: "<<((float)raster_char[(nYSize*nXSize)/2]/max_value)*255;
         qDebug()<<poBand->GetXSize()<<poBand->GetYSize();
-        QImage img(raster_char,nXSize,nYSize,QImage::Format_MonoLSB);
-        ui->label_satellite_image->setPixmap(QPixmap::fromImage(img));
+
+        ui->label_satellite_image->setPixmap(QPixmap::fromImage(image));
 
 }
 
