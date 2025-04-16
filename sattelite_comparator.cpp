@@ -112,8 +112,6 @@ double SatteliteComparator::linearInterpolation(const QVector<double>& x,
                                                 const double target_x)
 {
 
-
-
     if (target_x < x.front() || target_x > x.back()) {
         //throw std::exception("Целевая точка вне диапазона.");
         return -1;

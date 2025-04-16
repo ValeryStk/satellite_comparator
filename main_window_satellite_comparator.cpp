@@ -41,8 +41,20 @@ void MainWindowSatelliteComparator::openHeaderData()
     QString headerName =  QFileDialog::getOpenFileName(this, "Открыть файл _MTL.json","",
                                                        "JSON и XML файлы(*.xml *.json *.TIF)");
     if(QFile::exists(headerName)==false)return;
-    readTiff(headerName);
-
+    QJsonObject jo;
+    jsn::getJsonObjectFromFile(headerName,jo);
+    QJsonDocument jsonDoc(jo);
+    ui->textBrowser_header_info->setText(jsonDoc.toJson(QJsonDocument::Indented));
+    if(jo.contains("LANDSAT_METADATA_FILE")){
+      QJsonObject check_bands = jo["LANDSAT_METADATA_FILE"].toObject()["PRODUCT_CONTENTS"].toObject();
+      qDebug()<<"bands: "<<jsn::toString(check_bands);
+      const char temp_str[] = "FILE_NAME_BAND_%1";
+      for(int i=1;i<12;++i){
+          qDebug()<<QString(temp_str).arg(i);
+          qDebug()<<check_bands[QString(temp_str).arg(i)].toString();
+      }
+    };
+    //readTiff(headerName);
 }
 
 void MainWindowSatelliteComparator::readTiff(const QString& path)

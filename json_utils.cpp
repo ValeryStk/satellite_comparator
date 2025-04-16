@@ -239,6 +239,15 @@ bool isObjectMatrixToMatrixType(const QStringList& keys,
   return true;
 }
 
+QString toString(const QJsonValue& value)
+{
+    QJsonDocument jsonDoc;
+    if(value.isObject())
+    jsonDoc =  QJsonDocument(value.toObject());
+    else jsonDoc =  QJsonDocument(value.toArray());
+    return jsonDoc.toJson(QJsonDocument::Indented);
+}
+
 
 
 } // end jsn namespace

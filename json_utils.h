@@ -52,7 +52,7 @@ void extractAllObjects(const QJsonValue& value, QJsonArray& result);
 
 bool isObjectMatrixToMatrixType(const QStringList& keys, QJsonObject& object);
 
-
+QString toString(const QJsonValue& value);
 } // end namespace jsn
 
 #endif // JSON_UTILS_H
