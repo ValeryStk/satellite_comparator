@@ -38,52 +38,52 @@ MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
 
 void MainWindowSatelliteComparator::openHeaderData()
 {
-    /*QString headerName =  QFileDialog::getOpenFileName(this, "Открыть файл _MTL.json","",
-                                                       "JSON и XML файлы(*.xml *.json)");
-    if(QFile::exists(headerName)==false)return;*/
-    readTiff();
+    QString headerName =  QFileDialog::getOpenFileName(this, "Открыть файл _MTL.json","",
+                                                       "JSON и XML файлы(*.xml *.json *.TIF)");
+    if(QFile::exists(headerName)==false)return;
+    readTiff(headerName);
 
 }
 
-void MainWindowSatelliteComparator::readTiff()
+void MainWindowSatelliteComparator::readTiff(const QString& path)
 {
-    QString imgPath ="V:/Наследство Ольги Красовской (Силюк)/Спутниковые данные/Landsat8 Gobabeb/LC08_L1TP_179076_20230719_20230802_02_T1/LC08_L1TP_179076_20230719_20230802_02_T1_B2.TIF";
+    QString imgPath = path;
     QByteArray ba = imgPath.toUtf8();
     QFile file(imgPath);
     QTextStream ts(&file);
-       ts.setCodec("UTF-8");
+    ts.setCodec("UTF-8");
     bool isFileExists = file.exists();
     qDebug()<<"File exists: -->"<<isFileExists;
     if(false==isFileExists)return;
-       const char *fileName = ba.constData();
-        GDALAllRegister();//register all known drivers
-        GDALDataset* poDataset = (GDALDataset*) GDALOpen( fileName, GA_ReadOnly );
+    const char *fileName = ba.constData();
+    GDALAllRegister();//register all known drivers
+    GDALDataset* poDataset = (GDALDataset*) GDALOpen( fileName, GA_ReadOnly );
 
-        GDALRasterBand  *poBand;
-        int             nBlockXSize, nBlockYSize;
-        poBand = poDataset->GetRasterBand(1);//каналы начинаются с 1
-        poBand->GetBlockSize( &nBlockXSize, &nBlockYSize );
-        int   nXSize = poBand->GetXSize();
-        int   nYSize = poBand->GetYSize();
-        uint16 *raster = new uint16[nXSize*nYSize];
+    GDALRasterBand  *poBand;
+    int             nBlockXSize, nBlockYSize;
+    poBand = poDataset->GetRasterBand(1);
+    poBand->GetBlockSize( &nBlockXSize, &nBlockYSize );
+    int   nXSize = poBand->GetXSize();
+    int   nYSize = poBand->GetYSize();
+    uint16 *raster = new uint16[nXSize*nYSize];
 
-        poBand->RasterIO(GF_Read, 0, 0, nXSize, nYSize, raster, nXSize, nYSize, GDT_UInt16, 0, 0);
-        QImage image(nXSize, nYSize, QImage::QImage::Format_Indexed8);
+    poBand->RasterIO(GF_Read, 0, 0, nXSize, nYSize, raster, nXSize, nYSize, GDT_UInt16, 0, 0);
+    QImage image(nXSize, nYSize, QImage::QImage::Format_Indexed8);
 
-        for (int y = 0; y < nYSize; ++y) {
-            uchar *scanline = image.scanLine(y);
-            for (int x = 0; x < nXSize; ++x) {
-                //scanline[x] = raster[y * nXSize + x];
-                scanline[x] = static_cast<uchar>(raster[y * nXSize + x] / 256);
+    for (int y = 0; y < nYSize; ++y) {
+        uchar *scanline = image.scanLine(y);
+        for (int x = 0; x < nXSize; ++x) {
+            //scanline[x] = raster[y * nXSize + x];
+            scanline[x] = static_cast<uchar>(raster[y * nXSize + x] / 256);
 
-            }
         }
+    }
 
 
-        //qDebug()<<"NORMALIZED VALUE: "<<((float)raster_char[(nYSize*nXSize)/2]/max_value)*255;
-        qDebug()<<poBand->GetXSize()<<poBand->GetYSize();
+    //qDebug()<<"NORMALIZED VALUE: "<<((float)raster_char[(nYSize*nXSize)/2]/max_value)*255;
+    qDebug()<<poBand->GetXSize()<<poBand->GetYSize();
 
-        ui->label_satellite_image->setPixmap(QPixmap::fromImage(image));
+    ui->label_satellite_image->setPixmap(QPixmap::fromImage(image));
 
 }
 

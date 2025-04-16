@@ -43,3 +43,5 @@ LIBS += -L$$PWD/libs/gdal/x64/lib -lgdal_i
 
 INCLUDEPATH += $$PWD/libs/gdal/x64/include
 DEPENDPATH += $$PWD/libs/gdal/x64/include
+
+

@@ -10,6 +10,12 @@
     <height>600</height>
    </rect>
   </property>
+  <property name="maximumSize">
+   <size>
+    <width>1200</width>
+    <height>768</height>
+   </size>
+  </property>
   <property name="font">
    <font>
     <family>Segoe UI</family>
@@ -20,6 +26,12 @@
    <string>MainWindowSatelliteComparator</string>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="maximumSize">
+    <size>
+     <width>1200</width>
+     <height>768</height>
+    </size>
+   </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QPushButton" name="pushButton_open_sat_header">
@@ -46,12 +58,6 @@
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
-      <property name="maximumSize">
-       <size>
-        <width>900</width>
-        <height>450</height>
-       </size>
-      </property>
       <property name="font">
        <font>
         <family>Segoe UI</family>
@@ -64,6 +70,9 @@ color: rgb(0, 0, 0);</string>
       </property>
       <property name="text">
        <string>TIFF изображенииме</string>
+      </property>
+      <property name="scaledContents">
+       <bool>true</bool>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
