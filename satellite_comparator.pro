@@ -9,6 +9,7 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    dynamic_checkbox_widget.cpp \
     json_utils.cpp \
     main.cpp \
     main_window_satellite_comparator.cpp \
@@ -17,6 +18,7 @@ SOURCES += \
     sattelite_comparator.cpp
 
 HEADERS += \
+    dynamic_checkbox_widget.h \
     json_utils.h \
     main_window_satellite_comparator.h \
     message_reporter.h \

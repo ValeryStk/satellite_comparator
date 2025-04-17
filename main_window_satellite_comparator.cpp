@@ -7,7 +7,7 @@
 #include <QTextStream>
 #include <QTextCodec>
 #include "libs/gdal/x64/include/gdal_priv.h"
-#include "libs/gdal/x64/include/cpl_conv.h" // for CPLMalloc()
+#include "libs/gdal/x64/include/cpl_conv.h"
 #include "libs/gdal/x64/include/cpl_string.h"
 #include "libs/gdal/x64/include/ogr_spatialref.h"
 #include "libs/gdal/x64/include/xtiffio.h"
@@ -18,6 +18,9 @@
 #include "json_utils.h"
 #include "QDebug"
 #include "QImageReader"
+#include "QCheckBox"
+#include "dynamic_checkbox_widget.h"
+
 
 uchar *raster_char;
 
@@ -45,15 +48,19 @@ void MainWindowSatelliteComparator::openHeaderData()
     jsn::getJsonObjectFromFile(headerName,jo);
     QJsonDocument jsonDoc(jo);
     ui->textBrowser_header_info->setText(jsonDoc.toJson(QJsonDocument::Indented));
+    QList<QString> bands_name;
     if(jo.contains("LANDSAT_METADATA_FILE")){
-      QJsonObject check_bands = jo["LANDSAT_METADATA_FILE"].toObject()["PRODUCT_CONTENTS"].toObject();
+      QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
+      QJsonObject check_bands = value.toObject();
       qDebug()<<"bands: "<<jsn::toString(check_bands);
       const char temp_str[] = "FILE_NAME_BAND_%1";
       for(int i=1;i<12;++i){
-          qDebug()<<QString(temp_str).arg(i);
-          qDebug()<<check_bands[QString(temp_str).arg(i)].toString();
+          bands_name.append(QString(temp_str).arg(i));
+          //qDebug()<<check_bands[QString(temp_str).arg(i)].toString();
       }
     };
+    DynamicCheckboxWidget *widget = new DynamicCheckboxWidget(bands_name); // Укажите нужное количество чекбоксов
+    widget->show();
     //readTiff(headerName);
 }
 
