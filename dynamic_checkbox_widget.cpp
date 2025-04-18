@@ -7,8 +7,9 @@ DynamicCheckboxWidget::DynamicCheckboxWidget(const QList<QString>& labels, QWidg
 
     for (const QString& label : labels) {
         QCheckBox *checkbox = new QCheckBox(label, this);
-        connect(checkbox, &QCheckBox::toggled, this, [this,checkbox](int state){
-             onCheckboxStateChanged(checkbox, state);
+        checkbox->setIcon(QIcon(":/res/white.svg"));
+        connect(checkbox, &QCheckBox::toggled, this, [this,checkbox](){
+             onCheckboxStateChanged(checkbox);
         });
         layout->addWidget(checkbox);
         checkboxes.append(checkbox);
@@ -17,15 +18,14 @@ DynamicCheckboxWidget::DynamicCheckboxWidget(const QList<QString>& labels, QWidg
     setLayout(layout);
 }
 
-void DynamicCheckboxWidget::onCheckboxStateChanged(QCheckBox* checkBox,
-                                                   int state) {
+void DynamicCheckboxWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
 
     if (!checkBox) return; // Защита от nullptr
         qDebug() << checkBox->text();
 
 
         int checkedCount = 0;
-            for (QCheckBox *checkbox : checkboxes) {
+            for (QCheckBox *checkbox : qAsConst(checkboxes)) {
                 if (checkbox->isChecked()) {
                     checkedCount++;
                 }
@@ -38,8 +38,31 @@ void DynamicCheckboxWidget::onCheckboxStateChanged(QCheckBox* checkBox,
         }
         qDebug()<<"Checked order size: "<<checkedOrder.size();
         if (checkBox->isChecked()) {
-            checkedOrder.append(checkBox);
+            int color=0;
+            if(used_colors[0]==false){
+              checkBox->setIcon(QIcon(":/res/red.svg"));
+              used_colors[0]=true;
+              color=0;
+            }else if(used_colors[1]==false){
+              checkBox->setIcon(QIcon(":/res/green.svg"));
+              used_colors[1]=true;
+              color=1;
+            }else if(used_colors[2]==false){
+              checkBox->setIcon(QIcon(":/res/blue.svg"));
+              used_colors[2]=true;
+              color=2;
+            }
+            checkedOrder.append({checkBox,color});
         } else {
-            checkedOrder.removeOne(checkBox);
+            int color = 0;
+            for(int i=0;i<checkedOrder.size();++i){
+                if(checkedOrder[i].first==checkBox){
+                    color=checkedOrder[i].second;
+                    used_colors[color]=false;
+                    break;
+                }
+            }
+            checkedOrder.removeOne({checkBox,color});
+            checkBox->setIcon(QIcon(":/res/white.svg"));
         }
 }

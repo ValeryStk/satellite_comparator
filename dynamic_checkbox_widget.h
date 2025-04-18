@@ -13,13 +13,13 @@ public:
     explicit DynamicCheckboxWidget(const QList<QString>& labels, QWidget *parent = nullptr);
 
 private slots:
-    void onCheckboxStateChanged(QCheckBox *checkBox,
-                                int state);
+    void onCheckboxStateChanged(QCheckBox *checkBox);
 
 private:
     QList<QCheckBox*> checkboxes;
-    QList<QCheckBox*> checkedOrder; // Список для отслеживания порядка выбора чекбоксов
+    QList<QPair<QCheckBox*,int>> checkedOrder; // Список для отслеживания порядка выбора чекбоксов
     const int maxChecked = 3;
+    bool used_colors[3] = {false,false,false};//RGB
 };
 
 #endif // DYNAMIC_CHECKBOX_WIDGET_H

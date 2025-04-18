@@ -4,5 +4,9 @@
         <file>res/satellite_images/kanopus-b.svg</file>
         <file>res/satellite_images/landsat8.svg</file>
         <file>res/satellite_images/sentinel2a.svg</file>
+        <file>res/blue.svg</file>
+        <file>res/green.svg</file>
+        <file>res/red.svg</file>
+        <file>res/white.svg</file>
     </qresource>
 </RCC>

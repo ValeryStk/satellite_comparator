@@ -42,7 +42,7 @@ MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
 void MainWindowSatelliteComparator::openHeaderData()
 {
     QString headerName =  QFileDialog::getOpenFileName(this, "Открыть файл _MTL.json","",
-                                                       "JSON и XML файлы(*.xml *.json *.TIF)");
+                                                       "JSON и XML файлы(*_MTL.xml *_MTL.json *.TIF)");
     if(QFile::exists(headerName)==false)return;
     QJsonObject jo;
     jsn::getJsonObjectFromFile(headerName,jo);
