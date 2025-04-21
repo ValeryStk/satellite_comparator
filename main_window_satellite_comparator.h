@@ -28,5 +28,6 @@ private:
 
     QList<QString> m_band_names;
     QString m_root_path;
+    QImage m_satellite_image;
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

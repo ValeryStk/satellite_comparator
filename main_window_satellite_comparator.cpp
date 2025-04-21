@@ -93,12 +93,15 @@ void MainWindowSatelliteComparator::readTiff(const QString& path)
 
     poBand->RasterIO(GF_Read, 0, 0, nXSize, nYSize, raster, nXSize, nYSize, GDT_UInt16, 0, 0);
     QImage image(nXSize, nYSize, QImage::QImage::Format_Indexed8);
-
+    m_satellite_image = QImage(nXSize, nYSize, QImage::QImage::Format_RGB888);
     for (int y = 0; y < nYSize; ++y) {
         uchar *scanline = image.scanLine(y);
         for (int x = 0; x < nXSize; ++x) {
             //scanline[x] = raster[y * nXSize + x];
             scanline[x] = static_cast<uchar>(raster[y * nXSize + x] / 256);
+
+            QRgb rgb(qRgb((int)scanline[x],(int)scanline[x],(int)scanline[x]));
+            m_satellite_image.setPixel(x,y,rgb);
 
         }
     }
@@ -107,7 +110,7 @@ void MainWindowSatelliteComparator::readTiff(const QString& path)
     //qDebug()<<"NORMALIZED VALUE: "<<((float)raster_char[(nYSize*nXSize)/2]/max_value)*255;
     qDebug()<<poBand->GetXSize()<<poBand->GetYSize();
 
-    ui->label_satellite_image->setPixmap(QPixmap::fromImage(image));
+    ui->label_satellite_image->setPixmap(QPixmap::fromImage(m_satellite_image));
 
 }
 
