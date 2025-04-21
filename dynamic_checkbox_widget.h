@@ -10,10 +10,17 @@
 class DynamicCheckboxWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit DynamicCheckboxWidget(const QList<QString>& labels, QWidget *parent = nullptr);
+    explicit DynamicCheckboxWidget(const QList<QString>& labels,
+                                   QWidget *parent = nullptr,
+                                   QVBoxLayout *layout = nullptr);
+
+QVector<QPair<QString,int>> get_choosed_bands();
 
 private slots:
     void onCheckboxStateChanged(QCheckBox *checkBox);
+
+signals:
+    void choosed_bands_changed();
 
 private:
     QList<QCheckBox*> checkboxes;

@@ -18,11 +18,15 @@ public:
 
 private slots:
     void on_pushButton_open_sat_header_clicked();
+    void change_bands_and_show_image();
 
 private:
     Ui::MainWindowSatelliteComparator *ui;
     SatteliteComparator* m_sat_comparator;
     void openHeaderData();
     void readTiff(const QString& path);
+
+    QList<QString> m_band_names;
+    QString m_root_path;
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

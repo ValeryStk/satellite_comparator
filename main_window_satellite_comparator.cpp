@@ -43,25 +43,30 @@ void MainWindowSatelliteComparator::openHeaderData()
 {
     QString headerName =  QFileDialog::getOpenFileName(this, "Открыть файл _MTL.json","",
                                                        "JSON и XML файлы(*_MTL.xml *_MTL.json *.TIF)");
-    if(QFile::exists(headerName)==false)return;
+    QFile file(headerName);
+    if(file.exists()==false)return;
     QJsonObject jo;
     jsn::getJsonObjectFromFile(headerName,jo);
     QJsonDocument jsonDoc(jo);
-    ui->textBrowser_header_info->setText(jsonDoc.toJson(QJsonDocument::Indented));
-    QList<QString> bands_name;
+    //ui->textBrowser_header_info->setText(jsonDoc.toJson(QJsonDocument::Indented));
+
     if(jo.contains("LANDSAT_METADATA_FILE")){
       QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
       QJsonObject check_bands = value.toObject();
-      qDebug()<<"bands: "<<jsn::toString(check_bands);
+      //qDebug()<<"bands: "<<jsn::toString(check_bands);
       const char temp_str[] = "FILE_NAME_BAND_%1";
       for(int i=1;i<12;++i){
-          bands_name.append(QString(temp_str).arg(i));
-          //qDebug()<<check_bands[QString(temp_str).arg(i)].toString();
+          m_band_names.append(check_bands[QString(temp_str).arg(i)].toString());
       }
     };
-    DynamicCheckboxWidget *widget = new DynamicCheckboxWidget(bands_name); // Укажите нужное количество чекбоксов
-    widget->show();
-    //readTiff(headerName);
+    DynamicCheckboxWidget *widget = new DynamicCheckboxWidget(m_band_names,
+                                                              this,
+                                                              ui->verticalLayout_bands);
+    connect(widget,SIGNAL(choosed_bands_changed()),this,SLOT(change_bands_and_show_image()));
+    QFileInfo fi(headerName);
+    qDebug()<<"JUST FILE PATH: "<<fi.path();
+    m_root_path = fi.path();
+    readTiff(fi.path()+"/"+m_band_names[0]);
 }
 
 void MainWindowSatelliteComparator::readTiff(const QString& path)
@@ -110,4 +115,9 @@ void MainWindowSatelliteComparator::readTiff(const QString& path)
 void MainWindowSatelliteComparator::on_pushButton_open_sat_header_clicked()
 {
     openHeaderData();
+}
+
+void MainWindowSatelliteComparator::change_bands_and_show_image()
+{
+    qDebug()<<"change bands slot";
 }

@@ -7,6 +7,6 @@
         <file>res/blue.svg</file>
         <file>res/green.svg</file>
         <file>res/red.svg</file>
-        <file>res/white.svg</file>
+        <file>res/black.svg</file>
     </qresource>
 </RCC>

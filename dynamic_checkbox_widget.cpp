@@ -1,13 +1,14 @@
 #include "dynamic_checkbox_widget.h"
 #include "QDebug"
 
-DynamicCheckboxWidget::DynamicCheckboxWidget(const QList<QString>& labels, QWidget *parent)
+DynamicCheckboxWidget::DynamicCheckboxWidget(const QList<QString>& labels,
+                                             QWidget *parent,
+                                             QVBoxLayout *layout)
     : QWidget(parent) {
-    QVBoxLayout *layout = new QVBoxLayout(this);
 
     for (const QString& label : labels) {
         QCheckBox *checkbox = new QCheckBox(label, this);
-        checkbox->setIcon(QIcon(":/res/white.svg"));
+        checkbox->setIcon(QIcon(":/res/black.svg"));
         connect(checkbox, &QCheckBox::toggled, this, [this,checkbox](){
              onCheckboxStateChanged(checkbox);
         });
@@ -16,6 +17,16 @@ DynamicCheckboxWidget::DynamicCheckboxWidget(const QList<QString>& labels, QWidg
     }
 
     setLayout(layout);
+}
+
+QVector<QPair<QString,int>> DynamicCheckboxWidget::get_choosed_bands()
+{
+    if(checkedOrder.empty())return{};
+    QVector<QPair<QString,int>> choosed_bands;
+    for(auto &info:checkedOrder){
+        choosed_bands.append({info.first->text(),info.second});
+    }
+    return choosed_bands;
 }
 
 void DynamicCheckboxWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
@@ -36,7 +47,7 @@ void DynamicCheckboxWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
             checkBox->blockSignals(false);
             return;
         }
-        qDebug()<<"Checked order size: "<<checkedOrder.size();
+        //qDebug()<<"Checked order size: "<<checkedOrder.size();
         if (checkBox->isChecked()) {
             int color=0;
             if(used_colors[0]==false){
@@ -63,6 +74,7 @@ void DynamicCheckboxWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
                 }
             }
             checkedOrder.removeOne({checkBox,color});
-            checkBox->setIcon(QIcon(":/res/white.svg"));
+            checkBox->setIcon(QIcon(":/res/black.svg"));
         }
+        emit choosed_bands_changed();
 }
