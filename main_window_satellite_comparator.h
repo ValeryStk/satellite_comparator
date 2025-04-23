@@ -4,10 +4,12 @@
 #include <QMainWindow>
 #include <cstdint>
 #include <sattelite_comparator.h>
+#include "dynamic_checkbox_widget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowSatelliteComparator; }
 QT_END_NAMESPACE
+
 
 class MainWindowSatelliteComparator : public QMainWindow
 {
@@ -23,6 +25,7 @@ private slots:
 
 private:
     Ui::MainWindowSatelliteComparator *ui;
+    DynamicCheckboxWidget *m_dynamic_checkboxes_widget;
     SatteliteComparator* m_sat_comparator;
     void openHeaderData();
     uint16_t* readTiff(const QString& path);

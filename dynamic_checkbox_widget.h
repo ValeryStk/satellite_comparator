@@ -14,7 +14,9 @@ public:
                                    QWidget *parent = nullptr,
                                    QVBoxLayout *layout = nullptr);
 
-QVector<QPair<QString,int>> get_choosed_bands();
+QVector<QPair<int,int>> get_choosed_bands();
+
+void setInitialCheckBoxesToggled(const QVector<int>& toToggle);
 
 private slots:
     void onCheckboxStateChanged(QCheckBox *checkBox);
