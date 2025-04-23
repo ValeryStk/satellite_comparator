@@ -2,6 +2,7 @@
 #define MAIN_WINDOW_SATELLITE_COMPARATOR_H
 
 #include <QMainWindow>
+#include <cstdint>
 #include <sattelite_comparator.h>
 
 QT_BEGIN_NAMESPACE
@@ -24,10 +25,11 @@ private:
     Ui::MainWindowSatelliteComparator *ui;
     SatteliteComparator* m_sat_comparator;
     void openHeaderData();
-    void readTiff(const QString& path);
+    uint16_t* readTiff(const QString& path);
 
     QList<QString> m_band_names;
     QString m_root_path;
     QImage m_satellite_image;
+    uint16_t* m_landsat8_bands[11];
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

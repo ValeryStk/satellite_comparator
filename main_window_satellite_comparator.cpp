@@ -66,10 +66,28 @@ void MainWindowSatelliteComparator::openHeaderData()
     QFileInfo fi(headerName);
     qDebug()<<"JUST FILE PATH: "<<fi.path();
     m_root_path = fi.path();
-    readTiff(fi.path()+"/"+m_band_names[0]);
+    for(int i=1;i<4;++i){
+    m_landsat8_bands[i] = readTiff(fi.path()+"/"+m_band_names[i]);
+    }
+
+    const int nXSize = 7681;
+    const int nYSize = 7781;
+    m_satellite_image = QImage(nXSize, nYSize, QImage::QImage::Format_RGB888);
+    for (int y = 0; y < nYSize; ++y) {
+        for (int x = 0; x < nXSize; ++x) {
+
+            int B = static_cast<int>(m_landsat8_bands[1][y * nXSize + x] / 255.0)*3;
+            int G = static_cast<int>(m_landsat8_bands[2][y * nXSize + x] / 255.0)*3;
+            int R = static_cast<int>(m_landsat8_bands[3][y * nXSize + x] / 255.0)*3;
+            QRgb rgb(qRgb(R,G,B));
+            m_satellite_image.setPixel(x,y,rgb);
+
+        }
+    }
+    ui->label_satellite_image->setPixmap(QPixmap::fromImage(m_satellite_image));
 }
 
-void MainWindowSatelliteComparator::readTiff(const QString& path)
+uint16_t *MainWindowSatelliteComparator::readTiff(const QString& path)
 {
     QString imgPath = path;
     QByteArray ba = imgPath.toUtf8();
@@ -78,9 +96,9 @@ void MainWindowSatelliteComparator::readTiff(const QString& path)
     ts.setCodec("UTF-8");
     bool isFileExists = file.exists();
     qDebug()<<"File exists: -->"<<isFileExists;
-    if(false==isFileExists)return;
+    if(false==isFileExists)return nullptr;
     const char *fileName = ba.constData();
-    GDALAllRegister();//register all known drivers
+    GDALAllRegister();
     GDALDataset* poDataset = (GDALDataset*) GDALOpen( fileName, GA_ReadOnly );
 
     GDALRasterBand  *poBand;
@@ -89,28 +107,16 @@ void MainWindowSatelliteComparator::readTiff(const QString& path)
     poBand->GetBlockSize( &nBlockXSize, &nBlockYSize );
     int   nXSize = poBand->GetXSize();
     int   nYSize = poBand->GetYSize();
-    uint16 *raster = new uint16[nXSize*nYSize];
+    uint16_t* raster = new uint16[nXSize*nYSize];
 
     poBand->RasterIO(GF_Read, 0, 0, nXSize, nYSize, raster, nXSize, nYSize, GDT_UInt16, 0, 0);
-    QImage image(nXSize, nYSize, QImage::QImage::Format_Indexed8);
-    m_satellite_image = QImage(nXSize, nYSize, QImage::QImage::Format_RGB888);
-    for (int y = 0; y < nYSize; ++y) {
-        uchar *scanline = image.scanLine(y);
-        for (int x = 0; x < nXSize; ++x) {
-            //scanline[x] = raster[y * nXSize + x];
-            scanline[x] = static_cast<uchar>(raster[y * nXSize + x] / 256);
-
-            QRgb rgb(qRgb((int)scanline[x],(int)scanline[x],(int)scanline[x]));
-            m_satellite_image.setPixel(x,y,rgb);
-
-        }
-    }
-
 
     //qDebug()<<"NORMALIZED VALUE: "<<((float)raster_char[(nYSize*nXSize)/2]/max_value)*255;
     qDebug()<<poBand->GetXSize()<<poBand->GetYSize();
-
-    ui->label_satellite_image->setPixmap(QPixmap::fromImage(m_satellite_image));
+    GDALClose(poDataset);
+    GDALDestroyDriverManager();
+    //ui->label_satellite_image->setPixmap(QPixmap::fromImage(m_satellite_image));
+    return raster;
 
 }
 
