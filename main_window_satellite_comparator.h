@@ -38,5 +38,6 @@ private:
     QImage m_satellite_image;
     uint16_t* m_landsat8_bands[LANDSAT_BANDS_NUMBER];
     QPair<int,int> m_landsat8_bands_image_sizes[LANDSAT_BANDS_NUMBER];
+    bool m_is_image_created;
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

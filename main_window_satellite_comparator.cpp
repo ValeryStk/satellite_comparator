@@ -31,7 +31,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 {
     ui->setupUi(this);
     ui->label_satellite_image->setScaledContents(true);
-    qDebug()<<m_sat_comparator->get_satellites_data().keys();
+    //qDebug()<<m_sat_comparator->get_satellites_data().keys();
+    m_is_image_created = false;
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
@@ -48,7 +49,6 @@ void MainWindowSatelliteComparator::openHeaderData()
     QJsonObject jo;
     jsn::getJsonObjectFromFile(headerName,jo);
     QJsonDocument jsonDoc(jo);
-    //ui->textBrowser_header_info->setText(jsonDoc.toJson(QJsonDocument::Indented));
     QList<QString> landsat_bands_ranges;
     if(jo.contains("LANDSAT_METADATA_FILE")){
         QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
@@ -88,6 +88,7 @@ void MainWindowSatelliteComparator::openHeaderData()
     }
     m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
     change_bands_and_show_image();
+    m_is_image_created = true;
 }
 
 uint16_t* MainWindowSatelliteComparator::readTiff(const QString& path,
@@ -132,7 +133,9 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
     const int nXSize = m_landsat8_bands_image_sizes->first;
     const int nYSize = m_landsat8_bands_image_sizes->second;
+    if(m_is_image_created==false){
     m_satellite_image = QImage(nXSize, nYSize, QImage::QImage::Format_RGB888);
+    }
     for (int y = 0; y < nYSize; ++y) {
         for (int x = 0; x < nXSize; ++x) {
             int B = 0;
