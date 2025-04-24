@@ -11,9 +11,7 @@ bool isRangeValid(const QVector<int>& vec, const int low, const int max) {
 }
 
 DynamicCheckboxWidget::DynamicCheckboxWidget(const QList<QString>& labels,
-                                             QWidget *parent,
-                                             QVBoxLayout *layout)
-    : QWidget(parent) {
+                                             QVBoxLayout *layout) {
 
     for (const QString& label : labels) {
         QCheckBox *checkbox = new QCheckBox(label, this);
@@ -24,8 +22,6 @@ DynamicCheckboxWidget::DynamicCheckboxWidget(const QList<QString>& labels,
         layout->addWidget(checkbox);
         checkboxes.append(checkbox);
     }
-
-    setLayout(layout);
 }
 
 QVector<QPair<int,int>> DynamicCheckboxWidget::get_choosed_bands()

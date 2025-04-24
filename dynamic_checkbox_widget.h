@@ -22,7 +22,6 @@ class DynamicCheckboxWidget : public QWidget {
     Q_OBJECT
 public:
     explicit DynamicCheckboxWidget(const QList<QString>& labels,
-                                   QWidget *parent = nullptr,
                                    QVBoxLayout *layout = nullptr);
 
 QVector<QPair<int,int>> get_choosed_bands();

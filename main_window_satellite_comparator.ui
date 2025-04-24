@@ -23,7 +23,7 @@
    </font>
   </property>
   <property name="windowTitle">
-   <string>MainWindowSatelliteComparator</string>
+   <string>СПО &quot;ЛЕСОПАТОЛОГИЯ&quot;</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="maximumSize">
@@ -36,7 +36,7 @@
     <item>
      <widget class="QPushButton" name="pushButton_open_sat_header">
       <property name="text">
-       <string>open Satellite TIFF or JP</string>
+       <string>открыть спутниковые данные</string>
       </property>
      </widget>
     </item>
