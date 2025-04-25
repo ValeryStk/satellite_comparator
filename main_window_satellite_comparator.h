@@ -36,7 +36,7 @@ private:
 
     QString m_root_path;
     QImage m_satellite_image;
-    uint16_t* m_landsat8_bands[LANDSAT_BANDS_NUMBER];
+    uint16_t* m_landsat8_data_bands[LANDSAT_BANDS_NUMBER];
     QPair<int,int> m_landsat8_bands_image_sizes[LANDSAT_BANDS_NUMBER];
     const QString m_landsat8_bands_keys[LANDSAT_BANDS_NUMBER] = {
      "FILE_NAME_BAND_1",
@@ -51,7 +51,6 @@ private:
      "FILE_NAME_BAND_10",
      "FILE_NAME_BAND_11"
     };
-    QString m_landsat8_bands_file_names[LANDSAT_BANDS_NUMBER];
     bool m_is_image_created;
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H
