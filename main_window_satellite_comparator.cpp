@@ -43,18 +43,16 @@ MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
 void MainWindowSatelliteComparator::openHeaderData()
 {
     QString headerName =  QFileDialog::getOpenFileName(this, "Открыть файл _MTL.json","",
-                                                       "JSON и XML файлы(*_MTL.xml *_MTL.json *.TIF)");
+                                                       "JSON и XML файлы(*_MTL.txt *_MTL.xml *_MTL.json *.TIF)");
     QFile file(headerName);
     if(file.exists()==false)return;
     QJsonObject jo;
     jsn::getJsonObjectFromFile(headerName,jo);
-    QJsonDocument jsonDoc(jo);
+
     QList<QString> landsat_bands_ranges;
     if(jo.contains("LANDSAT_METADATA_FILE")){
         QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
         QJsonObject check_bands = value.toObject();
-        //qDebug()<<"bands: "<<jsn::toString(check_bands);
-        const char temp_str[] = "FILE_NAME_BAND_%1";
         landsat_bands_ranges =             {"433 - 453 nm (Aerosol) 30 m",
                                             "450 - 515 nm (Blue) 30 m",
                                             "525 - 600 nm (Green) 30 m",
@@ -67,8 +65,8 @@ void MainWindowSatelliteComparator::openHeaderData()
                                             "10300 - 11300 nm (LWIR) 100 m",
                                             "11500 - 12500 nm (LWIR) 100 m"
                                            };
-        for(int i=1;i<12;++i){
-            m_band_names.append(check_bands[QString(temp_str).arg(i)].toString());
+        for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+            m_landsat8_bands_file_names[i] = check_bands[m_landsat8_bands_keys[i]].toString();
         }
     }else{
         return;// Пока работает только LANDSAT
@@ -77,13 +75,12 @@ void MainWindowSatelliteComparator::openHeaderData()
                                                             ui->verticalLayout_bands);
     connect(m_dynamic_checkboxes_widget,SIGNAL(choosed_bands_changed()),this,SLOT(change_bands_and_show_image()));
     QFileInfo fi(headerName);
-    //qDebug()<<"JUST FILE PATH: "<<fi.path();
     m_root_path = fi.path();
 
     for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
         int xS;
         int yS;
-        m_landsat8_bands[i] = readTiff(fi.path()+"/"+m_band_names[i],xS,yS);
+        m_landsat8_bands[i] = readTiff(fi.path()+"/"+m_landsat8_bands_file_names[i],xS,yS);
         m_landsat8_bands_image_sizes[i] = {xS,yS};
     }
     m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
