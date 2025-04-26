@@ -29,10 +29,12 @@ private:
     DynamicCheckboxWidget *m_dynamic_checkboxes_widget;
     SatteliteComparator* m_sat_comparator;
     void openHeaderData();
-    QStringList getLandSat8BandsFromTxtFormat();
+    QStringList getLandSat8BandsFromTxtFormat(const QString& path);
     uint16_t* readTiff(const QString& path,
                        int& xSize,
                        int& ySize);
+
+    void read_landsat_bands_data(const QStringList& file_names);
 
     QString m_root_path;
     QImage m_satellite_image;
