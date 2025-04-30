@@ -19,10 +19,13 @@
 #include "QDebug"
 #include "QImageReader"
 #include "QCheckBox"
+#include "QGraphicsPixmapItem"
+#include "QGraphicsProxyWidget"
 
 
 
 uchar *raster_char;
+QGraphicsScene *scene;
 
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     : QMainWindow(parent)
@@ -30,8 +33,45 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     , m_sat_comparator(new SatteliteComparator)
 {
     ui->setupUi(this);
-    ui->label_satellite_image->setScaledContents(true);
+    scene = new QGraphicsScene;
+    ui->graphicsView_satellite_image->setScene(scene);
     m_is_image_created = false;
+
+
+
+    QWidget* widget_tools = new QWidget(ui->graphicsView_satellite_image);
+    QHBoxLayout* toolLayOut = new QHBoxLayout;
+    const QSize tool_element_size(30,30);
+    QPushButton *pushbutton_centerOn = new QPushButton;
+    pushbutton_centerOn->setText("●");
+    pushbutton_centerOn->setFixedSize(tool_element_size);
+
+    QPushButton *zoomInButton = new QPushButton;
+    zoomInButton->setText("+");
+    zoomInButton->setFixedSize(tool_element_size);
+    QPushButton *zoomOutButton = new QPushButton;
+    zoomOutButton->setText("-");
+    zoomOutButton->setFixedSize(tool_element_size);
+    toolLayOut->addWidget(pushbutton_centerOn);
+    toolLayOut->addWidget(zoomInButton);
+    toolLayOut->addWidget(zoomOutButton);
+    widget_tools->setLayout(toolLayOut);
+    widget_tools->show();
+    QGraphicsProxyWidget* proxy = scene->addWidget(widget_tools);
+    proxy->setPos(0, 50);
+    proxy->setGeometry(QRect(0,0,200,50));
+    QObject::connect(zoomInButton, &QPushButton::clicked, [this]() {
+        ui->graphicsView_satellite_image->scale(1.2, 1.2); // Увеличение масштаба
+    });
+    QObject::connect(zoomOutButton, &QPushButton::clicked, [this]() {
+        ui->graphicsView_satellite_image->scale(0.8, 0.8); // Уменьшение масштаба
+    });
+
+    connect(pushbutton_centerOn,&QPushButton::clicked,[this](){ // Центрирование
+        ui->graphicsView_satellite_image->centerOn(scene->sceneRect().center());
+
+    });
+
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
@@ -52,29 +92,29 @@ void MainWindowSatelliteComparator::openHeaderData()
 
 
     if(extension == "json"){
-    QJsonObject jo;
-    jsn::getJsonObjectFromFile(headerName,jo);
-    if(jo.contains("LANDSAT_METADATA_FILE")){
-        QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
-        QJsonObject check_bands = value.toObject();
+        QJsonObject jo;
+        jsn::getJsonObjectFromFile(headerName,jo);
+        if(jo.contains("LANDSAT_METADATA_FILE")){
+            QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
+            QJsonObject check_bands = value.toObject();
 
 
 
-        for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
-            auto band_file_name = check_bands[m_landsat8_bands_keys[i]].toString();
-            int xS;
-            int yS;
-            m_landsat8_data_bands[i] = readTiff(fi.path()+"/"+band_file_name,xS,yS);
-            m_landsat8_bands_image_sizes[i] = {xS,yS};
-        }
-        isHeaderValid = true;
-    }else{
-        return;// Пока работает только LANDSAT
-    };
+            for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+                auto band_file_name = check_bands[m_landsat8_bands_keys[i]].toString();
+                int xS;
+                int yS;
+                m_landsat8_data_bands[i] = readTiff(fi.path()+"/"+band_file_name,xS,yS);
+                m_landsat8_bands_image_sizes[i] = {xS,yS};
+            }
+            isHeaderValid = true;
+        }else{
+            return;// Пока работает только LANDSAT
+        };
     }else if(extension == "txt"){
-    auto file_names = getLandSat8BandsFromTxtFormat(headerName);
-    read_landsat_bands_data(file_names);
-    isHeaderValid = true;
+        auto file_names = getLandSat8BandsFromTxtFormat(headerName);
+        read_landsat_bands_data(file_names);
+        isHeaderValid = true;
     }else{
         return;
     }
@@ -176,7 +216,6 @@ void MainWindowSatelliteComparator::on_pushButton_open_sat_header_clicked()
 
 void MainWindowSatelliteComparator::change_bands_and_show_image()
 {
-    //qDebug()<<"change bands slot";
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
     const int nXSize = m_landsat8_bands_image_sizes->first;
     const int nYSize = m_landsat8_bands_image_sizes->second;
@@ -202,5 +241,10 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
 
         }
     }
-    ui->label_satellite_image->setPixmap(QPixmap::fromImage(m_satellite_image));
+    scene->clear();
+    auto pixmap = QPixmap::fromImage(m_satellite_image);
+    auto item = new QGraphicsPixmapItem(pixmap);
+    scene->addItem(item);
+    scene->setSceneRect(pixmap.rect());
+    ui->graphicsView_satellite_image->centerOn(item);
 }

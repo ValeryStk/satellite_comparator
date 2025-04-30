@@ -20,8 +20,11 @@ DynamicCheckboxWidget::DynamicCheckboxWidget(const QList<QString>& labels,
              onCheckboxStateChanged(checkbox);
         });
         layout->addWidget(checkbox);
+        checkbox->setFixedWidth(280);
         checkboxes.append(checkbox);
+
     }
+
 }
 
 QVector<QPair<int,int>> DynamicCheckboxWidget::get_choosed_bands()

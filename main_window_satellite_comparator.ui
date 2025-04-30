@@ -10,12 +10,6 @@
     <height>600</height>
    </rect>
   </property>
-  <property name="maximumSize">
-   <size>
-    <width>1200</width>
-    <height>768</height>
-   </size>
-  </property>
   <property name="font">
    <font>
     <family>Segoe UI</family>
@@ -26,12 +20,6 @@
    <string>СПО &quot;ЛЕСОПАТОЛОГИЯ&quot;</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <property name="maximumSize">
-    <size>
-     <width>1200</width>
-     <height>768</height>
-    </size>
-   </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QPushButton" name="pushButton_open_sat_header">
@@ -46,31 +34,15 @@
        <layout class="QVBoxLayout" name="verticalLayout_bands"/>
       </item>
       <item>
-       <widget class="QLabel" name="label_satellite_image">
+       <widget class="QGraphicsView" name="graphicsView_satellite_image">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
-        <property name="font">
-         <font>
-          <family>Segoe UI</family>
-          <pointsize>16</pointsize>
-         </font>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">background-color: rgb(85, 170, 255);
-color: rgb(0, 0, 0);</string>
-        </property>
-        <property name="text">
-         <string>TIFF изображенииме</string>
-        </property>
-        <property name="scaledContents">
-         <bool>true</bool>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
+        <property name="dragMode">
+         <enum>QGraphicsView::ScrollHandDrag</enum>
         </property>
        </widget>
       </item>
