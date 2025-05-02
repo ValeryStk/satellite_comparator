@@ -15,6 +15,7 @@ SOURCES += \
     main_window_satellite_comparator.cpp \
     message_reporter.cpp \
     qcustomplot.cpp \
+    satellite_graphics_view.cpp \
     sattelite_comparator.cpp
 
 HEADERS += \
@@ -23,6 +24,7 @@ HEADERS += \
     main_window_satellite_comparator.h \
     message_reporter.h \
     qcustomplot.h \
+    satellite_graphics_view.h \
     sattelite_comparator.h
 
 FORMS += \

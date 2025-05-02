@@ -24,6 +24,7 @@
 
 
 
+
 uchar *raster_char;
 QGraphicsScene *scene;
 
@@ -34,6 +35,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 {
     ui->setupUi(this);
     scene = new QGraphicsScene;
+    //ui->graphicsView_satellite_image = new SatelliteGraphicsView;
+    ui->graphicsView_satellite_image->setMouseTracking(true);
     ui->graphicsView_satellite_image->setScene(scene);
     m_is_image_created = false;
 

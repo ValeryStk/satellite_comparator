@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <sattelite_comparator.h>
 #include "dynamic_checkbox_widget.h"
+#include "satellite_graphics_view.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowSatelliteComparator; }
