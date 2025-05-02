@@ -11,6 +11,7 @@ SatelliteGraphicsView::SatelliteGraphicsView(QWidget *parent)
 void SatelliteGraphicsView::mouseMoveEvent(QMouseEvent *event)
 {
     QPointF pos = mapToScene(event->pos()); // Получаем координаты в системе QGraphicsScene
-    qDebug() << "Cursor Position: x=" << pos.x() << ", y=" << pos.y(); // Отображаем координаты
+    //qDebug() << "Cursor Position: x=" << pos.x() << ", y=" << pos.y(); // Отображаем координаты
     QGraphicsView::mouseMoveEvent(event);
+    emit pointChanged(pos);
 }

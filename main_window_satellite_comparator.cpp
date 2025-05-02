@@ -35,7 +35,13 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 {
     ui->setupUi(this);
     scene = new QGraphicsScene;
-    //ui->graphicsView_satellite_image = new SatelliteGraphicsView;
+    connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::pointChanged,[this](QPointF pos){
+        QString message = "x: ";
+        message.append(QString::number(pos.x()));
+        message.append(" y :");
+        message.append(QString::number(pos.y()));
+        ui->statusbar->showMessage(message);
+    });
     ui->graphicsView_satellite_image->setMouseTracking(true);
     ui->graphicsView_satellite_image->setScene(scene);
     m_is_image_created = false;
