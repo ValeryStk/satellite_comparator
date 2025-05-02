@@ -96,8 +96,10 @@ void MainWindowSatelliteComparator::openHeaderData()
         jsn::getJsonObjectFromFile(headerName,jo);
         if(jo.contains("LANDSAT_METADATA_FILE")){
             QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
+            QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL1_RADIOMETRIC_RESCALING"});
             QJsonObject check_bands = value.toObject();
-
+            QJsonObject radiance = radiance_value.toObject();
+            //qDebug()<<"Radiance: "<<radiance;
 
 
             for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
@@ -106,7 +108,15 @@ void MainWindowSatelliteComparator::openHeaderData()
                 int yS;
                 m_landsat8_data_bands[i] = readTiff(fi.path()+"/"+band_file_name,xS,yS);
                 m_landsat8_bands_image_sizes[i] = {xS,yS};
+                double mult_rad = radiance[m_landsat8_mult_radiance_keys[i]].toString().toDouble();
+                double add_rad = radiance[m_landsat8_add_radiance_keys[i]].toString().toDouble();
+                m_radiance_mult_add_arrays[i][0] = mult_rad;
+                m_radiance_mult_add_arrays[i][1] = add_rad;
             }
+            /*for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+              qDebug()<<"mult"<<i<<"mult"<<m_radiance_mult_add_arrays[i][0];
+              qDebug()<<"add"<<i<<"add"<<m_radiance_mult_add_arrays[i][1];
+            }*/
             isHeaderValid = true;
         }else{
             return;// Пока работает только LANDSAT

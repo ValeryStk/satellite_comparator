@@ -41,18 +41,45 @@ private:
     uint16_t* m_landsat8_data_bands[LANDSAT_BANDS_NUMBER];
     QPair<int,int> m_landsat8_bands_image_sizes[LANDSAT_BANDS_NUMBER];
     const QString m_landsat8_bands_keys[LANDSAT_BANDS_NUMBER] = {
-     "FILE_NAME_BAND_1",
-     "FILE_NAME_BAND_2",
-     "FILE_NAME_BAND_3",
-     "FILE_NAME_BAND_4",
-     "FILE_NAME_BAND_5",
-     "FILE_NAME_BAND_6",
-     "FILE_NAME_BAND_7",
-     "FILE_NAME_BAND_8",
-     "FILE_NAME_BAND_9",
-     "FILE_NAME_BAND_10",
-     "FILE_NAME_BAND_11"
+        "FILE_NAME_BAND_1",
+        "FILE_NAME_BAND_2",
+        "FILE_NAME_BAND_3",
+        "FILE_NAME_BAND_4",
+        "FILE_NAME_BAND_5",
+        "FILE_NAME_BAND_6",
+        "FILE_NAME_BAND_7",
+        "FILE_NAME_BAND_8",
+        "FILE_NAME_BAND_9",
+        "FILE_NAME_BAND_10",
+        "FILE_NAME_BAND_11"
     };
+    const QString m_landsat8_mult_radiance_keys[LANDSAT_BANDS_NUMBER] = {
+        "RADIANCE_MULT_BAND_1",
+        "RADIANCE_MULT_BAND_2",
+        "RADIANCE_MULT_BAND_3",
+        "RADIANCE_MULT_BAND_4",
+        "RADIANCE_MULT_BAND_5",
+        "RADIANCE_MULT_BAND_6",
+        "RADIANCE_MULT_BAND_7",
+        "RADIANCE_MULT_BAND_8",
+        "RADIANCE_MULT_BAND_9",
+        "RADIANCE_MULT_BAND_10",
+        "RADIANCE_MULT_BAND_11"
+    };
+    const QString m_landsat8_add_radiance_keys[LANDSAT_BANDS_NUMBER] = {
+        "RADIANCE_ADD_BAND_1",
+        "RADIANCE_ADD_BAND_2",
+        "RADIANCE_ADD_BAND_3",
+        "RADIANCE_ADD_BAND_4",
+        "RADIANCE_ADD_BAND_5",
+        "RADIANCE_ADD_BAND_6",
+        "RADIANCE_ADD_BAND_7",
+        "RADIANCE_ADD_BAND_8",
+        "RADIANCE_ADD_BAND_9",
+        "RADIANCE_ADD_BAND_10",
+        "RADIANCE_ADD_BAND_11"
+    };
+    double m_radiance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];
     bool m_is_image_created;
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H
