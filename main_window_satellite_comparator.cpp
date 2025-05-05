@@ -79,6 +79,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     connect(pushbutton_centerOn,&QPushButton::clicked,[this](){ // Центрирование
         ui->graphicsView_satellite_image->centerOn(scene->sceneRect().center());
+        ui->graphicsView_satellite_image->setTransform(QTransform()); // Уменьшение масштаба
 
     });
 
@@ -239,7 +240,7 @@ QString MainWindowSatelliteComparator::getLandsat8Speya(const int x,
     QString speya = " --> speya: ";
     for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
 
-    uint16_t value = m_landsat8_data_bands[0][(y*xSize) + x];
+    uint16_t value = m_landsat8_data_bands[i][(y*xSize) + x];
     double speya_d = m_radiance_mult_add_arrays[i][0]*value+m_radiance_mult_add_arrays[i][1];
     speya.append(QString::number(speya_d));
     speya.append("____");
