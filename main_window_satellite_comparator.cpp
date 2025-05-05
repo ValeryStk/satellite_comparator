@@ -40,6 +40,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         message.append(QString::number(pos.x()));
         message.append(" y :");
         message.append(QString::number(pos.y()));
+        message.append(getLandsat8Speya(pos.x(),pos.y()));
         ui->statusbar->showMessage(message);
     });
     ui->graphicsView_satellite_image->setMouseTracking(true);
@@ -225,6 +226,25 @@ void MainWindowSatelliteComparator::read_landsat_bands_data(const QStringList& f
         m_landsat8_data_bands[i] = readTiff(m_root_path+"/"+band_file_name,xS,yS);
         m_landsat8_bands_image_sizes[i] = {xS,yS};
     }
+}
+
+QString MainWindowSatelliteComparator::getLandsat8Speya(const int x,
+                                                        const int y)
+{
+    if(m_is_image_created==false)return "";
+    int xSize= m_landsat8_bands_image_sizes->first;
+    int ySize= m_landsat8_bands_image_sizes->second;
+    if(x>xSize||y>ySize) return "";
+    if(x<0||y<0) return "";
+    QString speya = " --> speya: ";
+    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+
+    uint16_t value = m_landsat8_data_bands[0][(y*xSize) + x];
+    double speya_d = m_radiance_mult_add_arrays[i][0]*value+m_radiance_mult_add_arrays[i][1];
+    speya.append(QString::number(speya_d));
+    speya.append("____");
+    }
+    return speya;
 }
 
 

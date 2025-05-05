@@ -36,6 +36,7 @@ private:
                        int& ySize);
 
     void read_landsat_bands_data(const QStringList& file_names);
+    QString getLandsat8Speya(const int x, const int y);
 
     QString m_root_path;
     QImage m_satellite_image;
