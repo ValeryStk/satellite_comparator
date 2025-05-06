@@ -21,12 +21,14 @@
 #include "QCheckBox"
 #include "QGraphicsPixmapItem"
 #include "QGraphicsProxyWidget"
+#include "qcustomplot.h"
 
 
 
 
 uchar *raster_char;
 QGraphicsScene *scene;
+
 
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     : QMainWindow(parent)
@@ -35,13 +37,18 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 {
     ui->setupUi(this);
     scene = new QGraphicsScene;
+    preview = new QCustomPlot;
+    preview->addGraph();
     connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::pointChanged,[this](QPointF pos){
-        QString message = "x: ";
-        message.append(QString::number(pos.x()));
-        message.append(" y :");
-        message.append(QString::number(pos.y()));
-        message.append(getLandsat8Speya(pos.x(),pos.y()));
-        ui->statusbar->showMessage(message);
+        auto data = getLandsat8Speya(pos.x(),pos.y());
+        if(data.size()!=(int)LANDSAT_BANDS_NUMBER-3){
+            //qDebug()<<"ERROR SIZE:"<<data.size();
+            return;
+        }
+        preview->graph(0)->data().clear();
+        preview->graph(0)->setData({1,2,3,4,5,6,7,8},data);
+        preview->graph(0)->rescaleAxes(true);
+        preview->replot();
     });
     ui->graphicsView_satellite_image->setMouseTracking(true);
     ui->graphicsView_satellite_image->setScene(scene);
@@ -52,6 +59,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     QWidget* widget_tools = new QWidget(ui->graphicsView_satellite_image);
     QHBoxLayout* toolLayOut = new QHBoxLayout;
     const QSize tool_element_size(30,30);
+
+    preview->setFixedSize(200,100);
     QPushButton *pushbutton_centerOn = new QPushButton;
     pushbutton_centerOn->setText("●");
     pushbutton_centerOn->setFixedSize(tool_element_size);
@@ -65,11 +74,12 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     toolLayOut->addWidget(pushbutton_centerOn);
     toolLayOut->addWidget(zoomInButton);
     toolLayOut->addWidget(zoomOutButton);
+    toolLayOut->addWidget(preview);
     widget_tools->setLayout(toolLayOut);
     widget_tools->show();
     QGraphicsProxyWidget* proxy = scene->addWidget(widget_tools);
     proxy->setPos(0, 50);
-    proxy->setGeometry(QRect(0,0,200,50));
+    proxy->setGeometry(QRect(0,0,500,250));
     QObject::connect(zoomInButton, &QPushButton::clicked, [this]() {
         ui->graphicsView_satellite_image->scale(1.2, 1.2); // Увеличение масштаба
     });
@@ -135,6 +145,7 @@ void MainWindowSatelliteComparator::openHeaderData()
     }else if(extension == "txt"){
         auto file_names = getLandSat8BandsFromTxtFormat(headerName);
         read_landsat_bands_data(file_names);
+        fillLandSat8radianceMultAdd(headerName);
         isHeaderValid = true;
     }else{
         return;
@@ -187,6 +198,30 @@ QStringList MainWindowSatelliteComparator::getLandSat8BandsFromTxtFormat(const Q
     return bands;
 }
 
+void MainWindowSatelliteComparator::fillLandSat8radianceMultAdd(const QString& path)
+{
+    QStringList bands;
+    QFile file(path);
+    if(file.exists()==false) return;
+    QTextStream ts(&file);
+    ts.setCodec("UTF-8");
+    if(file.open(QIODevice::ReadOnly)==false) return;
+    QString temp;
+    QVector<double> mult;
+    while(ts.readLineInto(&temp)){
+        if(temp.contains("RADIANCE_MULT_BAND_")){
+            temp = temp.mid(temp.indexOf("= "),temp.size()-1);
+            temp.replace("= ","");
+            bands.append(temp);
+            mult.append(temp.toDouble());
+        }
+        if(bands.size()==LANDSAT_BANDS_NUMBER){
+            qDebug()<<"RADIANCE: "<<mult;
+            break;
+        }
+    }
+}
+
 uint16_t* MainWindowSatelliteComparator::readTiff(const QString& path,
                                                   int& xSize,
                                                   int& ySize)
@@ -229,22 +264,22 @@ void MainWindowSatelliteComparator::read_landsat_bands_data(const QStringList& f
     }
 }
 
-QString MainWindowSatelliteComparator::getLandsat8Speya(const int x,
+QVector<double> MainWindowSatelliteComparator::getLandsat8Speya(const int x,
                                                         const int y)
 {
-    if(m_is_image_created==false)return "";
+    if(m_is_image_created==false)return {};
     int xSize= m_landsat8_bands_image_sizes->first;
     int ySize= m_landsat8_bands_image_sizes->second;
-    if(x>xSize||y>ySize) return "";
-    if(x<0||y<0) return "";
-    QString speya = " --> speya: ";
+    if(x>xSize||y>ySize) return {};
+    if(x<0||y<0) return {};
+    QVector<double> speya;
     for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
-
+    if(i==7||i==9||i==10)continue;// пропускаем каналы panchrom, и последние два LWR-100m
     uint16_t value = m_landsat8_data_bands[i][(y*xSize) + x];
     double speya_d = m_radiance_mult_add_arrays[i][0]*value+m_radiance_mult_add_arrays[i][1];
-    speya.append(QString::number(speya_d));
-    speya.append("____");
+    speya.append(speya_d);
     }
+    //qDebug()<<"speya: --> "<<speya;
     return speya;
 }
 
@@ -268,14 +303,36 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
             int G = 0;
             int R = 0;
             for(int j=0;j<bands.size();++j){
+                int choosedColor = -1;
                 if(bands[j].second==BLUE){
                     B = static_cast<int>(m_landsat8_data_bands[bands[j].first][y * nXSize + x] / 255.0)*3;
+                    choosedColor = BLUE;
                 }else if(bands[j].second==GREEN){
                     G = static_cast<int>(m_landsat8_data_bands[bands[j].first][y * nXSize + x] / 255.0)*3;
+                    choosedColor = GREEN;
                 }else if(bands[j].second==RED){
                     R = static_cast<int>(m_landsat8_data_bands[bands[j].first][y * nXSize + x] / 255.0)*3;
+                    choosedColor = RED;
                 }
-                QRgb rgb(qRgb(R,G,B));
+                QRgb rgb;
+                if(bands.size() == 1){
+                    switch (choosedColor) {
+                    case RED:
+                        rgb = qRgb(R,R,R);
+                        break;
+                    case GREEN:
+                        rgb = qRgb(G,G,G);
+                        break;
+                    case BLUE:
+                        rgb = qRgb(B,B,B);
+                        break;
+                    default:
+                        break;
+                    }
+                }else{
+                   rgb = qRgb(R,G,B);
+                }
+
                 m_satellite_image.setPixel(x,y,rgb);
             }
 

@@ -31,12 +31,13 @@ private:
     SatteliteComparator* m_sat_comparator;
     void openHeaderData();
     QStringList getLandSat8BandsFromTxtFormat(const QString& path);
+    void fillLandSat8radianceMultAdd(const QString& path);
     uint16_t* readTiff(const QString& path,
                        int& xSize,
                        int& ySize);
 
     void read_landsat_bands_data(const QStringList& file_names);
-    QString getLandsat8Speya(const int x, const int y);
+    QVector<double> getLandsat8Speya(const int x, const int y);
 
     QString m_root_path;
     QImage m_satellite_image;
@@ -83,5 +84,6 @@ private:
     };
     double m_radiance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];
     bool m_is_image_created;
+    QCustomPlot* preview;
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H
