@@ -38,11 +38,13 @@ private:
 
     void read_landsat_bands_data(const QStringList& file_names);
     QVector<double> getLandsat8Speya(const int x, const int y);
+    QVector<double> getLandsat8Ksy(const int x, const int y);
 
     QString m_root_path;
     QImage m_satellite_image;
     uint16_t* m_landsat8_data_bands[LANDSAT_BANDS_NUMBER];
     QPair<int,int> m_landsat8_bands_image_sizes[LANDSAT_BANDS_NUMBER];
+
     const QString m_landsat8_bands_keys[LANDSAT_BANDS_NUMBER] = {
         "FILE_NAME_BAND_1",
         "FILE_NAME_BAND_2",
@@ -82,8 +84,44 @@ private:
         "RADIANCE_ADD_BAND_10",
         "RADIANCE_ADD_BAND_11"
     };
+
+    const QString m_landsat8_mult_reflectence_keys[LANDSAT_BANDS_NUMBER] = {
+        "REFLECTANCE_MULT_BAND_1",
+        "REFLECTANCE_MULT_BAND_2",
+        "REFLECTANCE_MULT_BAND_3",
+        "REFLECTANCE_MULT_BAND_4",
+        "REFLECTANCE_MULT_BAND_5",
+        "REFLECTANCE_MULT_BAND_6",
+        "REFLECTANCE_MULT_BAND_7",
+        "REFLECTANCE_MULT_BAND_8",
+        "REFLECTANCE_MULT_BAND_9",
+        "REFLECTANCE_MULT_BAND_10",
+        "REFLECTANCE_MULT_BAND_11"
+    };
+
+    const QString m_landsat8_add_reflectence_keys[LANDSAT_BANDS_NUMBER] = {
+        "REFLECTANCE_ADD_BAND_1",
+        "REFLECTANCE_ADD_BAND_2",
+        "REFLECTANCE_ADD_BAND_3",
+        "REFLECTANCE_ADD_BAND_4",
+        "REFLECTANCE_ADD_BAND_5",
+        "REFLECTANCE_ADD_BAND_6",
+        "REFLECTANCE_ADD_BAND_7",
+        "REFLECTANCE_ADD_BAND_8",
+        "REFLECTANCE_ADD_BAND_9",
+        "REFLECTANCE_ADD_BAND_10",
+        "REFLECTANCE_ADD_BAND_11"
+    };
+
     double m_radiance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];
+    double m_reflectance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];
     bool m_is_image_created;
     QCustomPlot* preview;
+
+
+
+double euclideanDistance(const QVector<double>& v1,
+                         const QVector<double>& v2);
+
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

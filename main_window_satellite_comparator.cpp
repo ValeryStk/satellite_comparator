@@ -38,16 +38,48 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     ui->setupUi(this);
     scene = new QGraphicsScene;
     preview = new QCustomPlot;
-    preview->addGraph();
+    preview->legend->setVisible(true);
+    QCPGraph *graph_satellite = preview->addGraph();
+    preview->xAxis->setRange(400,2400);
+    preview->yAxis->setRange(-0.2,1.2);
+    preview->xAxis->setLabel("Длина волны, nm");
+    preview->yAxis->setLabel("КСЯ");
+    // Создаем заголовок
+    QCPTextElement *title = new QCPTextElement(preview, "LANDSAT 8", QFont("Arial", 10, QFont::Bold));
+
+    // Добавляем заголовок в layout
+    preview->plotLayout()->insertRow(0);
+    preview->plotLayout()->addElement(0, 0, title);
+    graph_satellite->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
+    QCPGraph *graph_device = preview->addGraph();
+    graph_device->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCrossSquare, 5));
+
+
+    preview->graph(0)->setName("Курсорный");
+    preview->graph(1)->setName("Пустыня-песок");
+
+    preview->graph(0)->setPen(QPen(Qt::red));
+    preview->graph(1)->setPen(QPen(Qt::blue));
+
+
+
+
     connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::pointChanged,[this](QPointF pos){
-        auto data = getLandsat8Speya(pos.x(),pos.y());
-        if(data.size()!=(int)LANDSAT_BANDS_NUMBER-3){
-            //qDebug()<<"ERROR SIZE:"<<data.size();
+        auto data = getLandsat8Ksy(pos.x(),pos.y());
+        if(data.empty())return;
+        if(data.size()!=(int)LANDSAT_BANDS_NUMBER-4){
+            qDebug()<<"ERROR SIZE:"<<data.size();
             return;
         }
+        const QVector<double> waves = {440,480,560,655,860,1580,2200};
+        QVector<double> sand_test_sample = {0.10708, 0.10554, 0.12774, 0.17938, 0.22264, 0.25576, 0.22646};
         preview->graph(0)->data().clear();
-        preview->graph(0)->setData({1,2,3,4,5,6,7,8},data);
-        preview->graph(0)->rescaleAxes(true);
+        preview->graph(1)->data().clear();
+        preview->graph(0)->setData(waves, data);
+        preview->graph(1)->setData(waves, sand_test_sample);
+        qDebug()<<"euclid dist:"<<euclideanDistance(sand_test_sample,data);
+        //preview->graph(0)->rescaleAxes(true);
+        //qDebug()<<data;
         preview->replot();
     });
     ui->graphicsView_satellite_image->setMouseTracking(true);
@@ -60,7 +92,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     QHBoxLayout* toolLayOut = new QHBoxLayout;
     const QSize tool_element_size(30,30);
 
-    preview->setFixedSize(200,100);
+    preview->setFixedSize(400,200);
     QPushButton *pushbutton_centerOn = new QPushButton;
     pushbutton_centerOn->setText("●");
     pushbutton_centerOn->setFixedSize(tool_element_size);
@@ -79,7 +111,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     widget_tools->show();
     QGraphicsProxyWidget* proxy = scene->addWidget(widget_tools);
     proxy->setPos(0, 50);
-    proxy->setGeometry(QRect(0,0,500,250));
+    proxy->setGeometry(QRect(0,0,600,250));
     QObject::connect(zoomInButton, &QPushButton::clicked, [this]() {
         ui->graphicsView_satellite_image->scale(1.2, 1.2); // Увеличение масштаба
     });
@@ -131,6 +163,12 @@ void MainWindowSatelliteComparator::openHeaderData()
                 m_landsat8_bands_image_sizes[i] = {xS,yS};
                 double mult_rad = radiance[m_landsat8_mult_radiance_keys[i]].toString().toDouble();
                 double add_rad = radiance[m_landsat8_add_radiance_keys[i]].toString().toDouble();
+                if(i<LANDSAT_BANDS_NUMBER-2){
+                double mult_refl = radiance[m_landsat8_mult_reflectence_keys[i]].toString().toDouble();
+                double add_refl = radiance[m_landsat8_add_reflectence_keys[i]].toString().toDouble();
+                m_reflectance_mult_add_arrays[i][0] = mult_refl;
+                m_reflectance_mult_add_arrays[i][1] = add_refl;
+                }
                 m_radiance_mult_add_arrays[i][0] = mult_rad;
                 m_radiance_mult_add_arrays[i][1] = add_rad;
             }
@@ -281,6 +319,39 @@ QVector<double> MainWindowSatelliteComparator::getLandsat8Speya(const int x,
     }
     //qDebug()<<"speya: --> "<<speya;
     return speya;
+}
+
+QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x,
+                                                              const int y)
+{
+    if(m_is_image_created==false)return {};
+    int xSize= m_landsat8_bands_image_sizes->first;
+    int ySize= m_landsat8_bands_image_sizes->second;
+    if(x>xSize||y>ySize) return {};
+    if(x<0||y<0) return {};
+    QVector<double> ksy;
+    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+    if(i==7||i==8||i==9||i==10)continue;// пропускаем каналы panchrom, и последние два LWR-100m
+    uint16_t value = m_landsat8_data_bands[i][(y*xSize) + x];
+    double ksy_d = m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
+    ksy.append(ksy_d);
+    }
+    return ksy;
+}
+
+double MainWindowSatelliteComparator::euclideanDistance(const QVector<double> &v1,
+                                                        const QVector<double> &v2)
+{
+    if (v1.size() != v2.size()) {
+            throw std::invalid_argument("Векторы должны быть одинаковой длины");
+        }
+
+        double sum = 0.0;
+        for (int i = 0; i < v1.size(); ++i) {
+            sum += qPow(v1[i] - v2[i], 2);
+        }
+
+        return qSqrt(sum);
 }
 
 
