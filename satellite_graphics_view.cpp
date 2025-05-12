@@ -15,3 +15,9 @@ void SatelliteGraphicsView::mouseMoveEvent(QMouseEvent *event)
     QGraphicsView::mouseMoveEvent(event);
     emit pointChanged(pos);
 }
+
+void SatelliteGraphicsView::mouseDoubleClickEvent(QMouseEvent *event)
+{
+
+}
+

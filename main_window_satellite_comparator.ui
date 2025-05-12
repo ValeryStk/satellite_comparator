@@ -41,6 +41,12 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="cursor" stdset="0">
+         <cursorShape>CrossCursor</cursorShape>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::ActionsContextMenu</enum>
+        </property>
         <property name="dragMode">
          <enum>QGraphicsView::ScrollHandDrag</enum>
         </property>
@@ -66,7 +72,7 @@
   <customwidget>
    <class>SatelliteGraphicsView</class>
    <extends>QGraphicsView</extends>
-   <header location="global">satellitegraphicsview.h</header>
+   <header location="global">satellite_graphics_view.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

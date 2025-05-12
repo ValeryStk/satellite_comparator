@@ -37,6 +37,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 {
     ui->setupUi(this);
     scene = new QGraphicsScene;
+
     preview = new QCustomPlot;
     preview->legend->setVisible(true);
     QCPGraph *graph_satellite = preview->addGraph();
@@ -56,7 +57,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 
     preview->graph(0)->setName("Курсорный");
-    preview->graph(1)->setName("Пустыня-песок");
+    preview->graph(1)->setName("Образец для поиска");
 
     preview->graph(0)->setPen(QPen(Qt::red));
     preview->graph(1)->setPen(QPen(Qt::blue));
@@ -77,7 +78,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         preview->graph(1)->data().clear();
         preview->graph(0)->setData(waves, data);
         preview->graph(1)->setData(waves, sand_test_sample);
-        qDebug()<<"euclid dist:"<<euclideanDistance(sand_test_sample,data);
+        //qDebug()<<"euclid dist:"<<euclideanDistance(sand_test_sample,data);
         //preview->graph(0)->rescaleAxes(true);
         //qDebug()<<data;
         preview->replot();
@@ -155,7 +156,7 @@ void MainWindowSatelliteComparator::openHeaderData()
             //qDebug()<<"Radiance: "<<radiance;
 
 
-            for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+            for(int i=0;i<LANDSAT_BANDS_NUMBER-4;++i){
                 auto band_file_name = check_bands[m_landsat8_bands_keys[i]].toString();
                 int xS;
                 int yS;
@@ -163,7 +164,7 @@ void MainWindowSatelliteComparator::openHeaderData()
                 m_landsat8_bands_image_sizes[i] = {xS,yS};
                 double mult_rad = radiance[m_landsat8_mult_radiance_keys[i]].toString().toDouble();
                 double add_rad = radiance[m_landsat8_add_radiance_keys[i]].toString().toDouble();
-                if(i<LANDSAT_BANDS_NUMBER-2){
+                if(i<LANDSAT_BANDS_NUMBER-4){
                 double mult_refl = radiance[m_landsat8_mult_reflectence_keys[i]].toString().toDouble();
                 double add_refl = radiance[m_landsat8_add_reflectence_keys[i]].toString().toDouble();
                 m_reflectance_mult_add_arrays[i][0] = mult_refl;
@@ -198,11 +199,11 @@ void MainWindowSatelliteComparator::openHeaderData()
                                         "630 - 680 nm (Red) 30 m",
                                         "845 - 885 nm (Near infrared) 30 m",
                                         "1560 - 1660 nm (SWIR 1) 30 m",
-                                        "2100 - 2300 nm (SWIR 2) 30 m",
-                                        "500 - 680 nm (Panchromatic) 15 m",
-                                        "1360 - 1390 nm (Cirrus) 30 m",
-                                        "10300 - 11300 nm (LWIR) 100 m",
-                                        "11500 - 12500 nm (LWIR) 100 m"
+                                        "2100 - 2300 nm (SWIR 2) 30 m"//,
+                                        //"500 - 680 nm (Panchromatic) 15 m",
+                                        //"1360 - 1390 nm (Cirrus) 30 m",
+                                        //"10300 - 11300 nm (LWIR) 100 m",
+                                        //"11500 - 12500 nm (LWIR) 100 m"
                                        };
 
 
@@ -376,13 +377,13 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
             for(int j=0;j<bands.size();++j){
                 int choosedColor = -1;
                 if(bands[j].second==BLUE){
-                    B = static_cast<int>(m_landsat8_data_bands[bands[j].first][y * nXSize + x] / 255.0)*3;
+                    B = static_cast<int>(m_landsat8_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
                     choosedColor = BLUE;
                 }else if(bands[j].second==GREEN){
-                    G = static_cast<int>(m_landsat8_data_bands[bands[j].first][y * nXSize + x] / 255.0)*3;
+                    G = static_cast<int>(m_landsat8_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
                     choosedColor = GREEN;
                 }else if(bands[j].second==RED){
-                    R = static_cast<int>(m_landsat8_data_bands[bands[j].first][y * nXSize + x] / 255.0)*3;
+                    R = static_cast<int>(m_landsat8_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
                     choosedColor = RED;
                 }
                 QRgb rgb;
@@ -412,6 +413,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     scene->clear();
     auto pixmap = QPixmap::fromImage(m_satellite_image);
     auto item = new QGraphicsPixmapItem(pixmap);
+    item->setCursor(Qt::CrossCursor);
     scene->addItem(item);
     scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(item);

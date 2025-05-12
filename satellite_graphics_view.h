@@ -15,6 +15,7 @@ protected:
 
 signals:
     void pointChanged(QPointF point);
+
 };
 
 #endif // SATELLITE_GRAPHICS_VIEW_H
