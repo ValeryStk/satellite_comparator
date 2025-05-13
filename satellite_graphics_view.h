@@ -16,6 +16,14 @@ protected:
 signals:
     void pointChanged(QPointF point);
 
+
+    // QPaintDevice interface
+public:
+    QPaintEngine *paintEngine() const override;
+
+    // QWidget interface
+protected:
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 };
 
 #endif // SATELLITE_GRAPHICS_VIEW_H
