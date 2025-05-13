@@ -15,11 +15,9 @@ protected:
 
 signals:
     void pointChanged(QPointF point);
+    void sampleChanged(QPointF point);
 
 
-    // QPaintDevice interface
-public:
-    QPaintEngine *paintEngine() const override;
 
     // QWidget interface
 protected:

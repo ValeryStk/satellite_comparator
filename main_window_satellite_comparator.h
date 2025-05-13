@@ -6,6 +6,7 @@
 #include <sattelite_comparator.h>
 #include "dynamic_checkbox_widget.h"
 #include "satellite_graphics_view.h"
+#include "cross_square.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowSatelliteComparator; }
@@ -117,6 +118,10 @@ private:
     double m_reflectance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];
     bool m_is_image_created;
     QCustomPlot* preview;
+    QVector<double> m_landsat8_sample;
+    CrossSquare *cross_square;
+
+    void paintSamplePoints();
 
 
 

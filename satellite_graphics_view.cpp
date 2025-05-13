@@ -18,6 +18,7 @@ void SatelliteGraphicsView::mouseMoveEvent(QMouseEvent *event)
 
 void SatelliteGraphicsView::mouseDoubleClickEvent(QMouseEvent *event)
 {
-
+   QPointF pos = mapToScene(event->pos());
+   sampleChanged(pos);
 }
 
