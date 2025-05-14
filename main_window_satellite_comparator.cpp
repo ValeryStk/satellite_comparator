@@ -396,17 +396,23 @@ void MainWindowSatelliteComparator::paintSamplePoints()
         for(int j=0;j<ySize;++j){
          auto ksy = getLandsat8Ksy(i,j);
          auto result = euclideanDistance(ksy,m_landsat8_sample);
-         if(result<0.5){
+         if(result<0.3){
              m_satellite_image.setPixel(i,j,qRgb(255,242,0));
          };
         }
     };
     scene->clear();
+    cross_square = new CrossSquare(100);
+    cross_square->setPos(1000,1000);
+    cross_square->setVisible(false);
+    cross_square->setZValue(1000);
+    scene->addItem(cross_square);
     auto pixmap = QPixmap::fromImage(m_satellite_image);
     auto item = new QGraphicsPixmapItem(pixmap);
     item->setCursor(Qt::CrossCursor);
     scene->addItem(item);
     scene->setSceneRect(pixmap.rect());
+    cross_square->update();
     ui->graphicsView_satellite_image->centerOn(item);
 }
 
