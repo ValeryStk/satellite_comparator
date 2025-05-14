@@ -139,15 +139,22 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     zoomOutButton->setFixedSize(tool_element_size);
 
 
+    QVBoxLayout *euclid_layout = new QVBoxLayout;
     QPushButton *pushbutton_paint_samples = new QPushButton;
     pushbutton_paint_samples->setText("*");
     pushbutton_paint_samples->setFixedSize(tool_element_size);
+    euclid_layout->addWidget(pushbutton_paint_samples);
+    euclid_param_spinbox = new QDoubleSpinBox;
+    euclid_layout->addWidget(euclid_param_spinbox);
+    euclid_param_spinbox->setMinimum(0.001);
+    euclid_param_spinbox->setMaximum(1);
+    euclid_param_spinbox->setSingleStep(0.001);
 
 
     toolLayOut->addWidget(pushbutton_centerOn);
     toolLayOut->addWidget(zoomInButton);
     toolLayOut->addWidget(zoomOutButton);
-    toolLayOut->addWidget(pushbutton_paint_samples);
+    toolLayOut->addLayout(euclid_layout);
 
     tool_root_layout->addWidget(preview);
     widget_tools->setLayout(tool_root_layout);
@@ -396,24 +403,20 @@ void MainWindowSatelliteComparator::paintSamplePoints()
         for(int j=0;j<ySize;++j){
          auto ksy = getLandsat8Ksy(i,j);
          auto result = euclideanDistance(ksy,m_landsat8_sample);
-         if(result<0.3){
-             m_satellite_image.setPixel(i,j,qRgb(255,242,0));
+         if(result<euclid_param_spinbox->value()){
+             m_satellite_image.setPixelColor(QPoint(i,j),QColor(255,242,0,125));
          };
         }
     };
-    scene->clear();
-    cross_square = new CrossSquare(100);
-    cross_square->setPos(1000,1000);
-    cross_square->setVisible(false);
-    cross_square->setZValue(1000);
-    scene->addItem(cross_square);
+    scene->removeItem(m_image_item);
     auto pixmap = QPixmap::fromImage(m_satellite_image);
-    auto item = new QGraphicsPixmapItem(pixmap);
-    item->setCursor(Qt::CrossCursor);
-    scene->addItem(item);
+    m_image_item = new QGraphicsPixmapItem(pixmap);
+    m_image_item->setCursor(Qt::CrossCursor);
+    scene->addItem(m_image_item);
     scene->setSceneRect(pixmap.rect());
+    cross_square->setZValue(1000);
     cross_square->update();
-    ui->graphicsView_satellite_image->centerOn(item);
+    ui->graphicsView_satellite_image->centerOn(cross_square);
 }
 
 double MainWindowSatelliteComparator::euclideanDistance(const QVector<double> &v1,
@@ -488,9 +491,10 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     }
     //scene->clear();
     auto pixmap = QPixmap::fromImage(m_satellite_image);
-    auto item = new QGraphicsPixmapItem(pixmap);
-    item->setCursor(Qt::CrossCursor);
-    scene->addItem(item);
+    m_image_item = new QGraphicsPixmapItem(pixmap);
+    m_image_item->setCursor(Qt::CrossCursor);
+    m_image_item->setZValue(0);
+    scene->addItem(m_image_item);
     scene->setSceneRect(pixmap.rect());
-    ui->graphicsView_satellite_image->centerOn(item);
+    ui->graphicsView_satellite_image->centerOn(m_image_item);
 }

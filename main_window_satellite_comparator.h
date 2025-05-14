@@ -7,6 +7,7 @@
 #include "dynamic_checkbox_widget.h"
 #include "satellite_graphics_view.h"
 #include "cross_square.h"
+#include "QDoubleSpinBox"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowSatelliteComparator; }
@@ -119,7 +120,9 @@ private:
     bool m_is_image_created;
     QCustomPlot* preview;
     QVector<double> m_landsat8_sample;
+    QGraphicsPixmapItem* m_image_item = nullptr;
     CrossSquare *cross_square;
+    QDoubleSpinBox* euclid_param_spinbox;
 
     void paintSamplePoints();
 
