@@ -22,7 +22,7 @@
 #include "QGraphicsPixmapItem"
 #include "QGraphicsProxyWidget"
 #include "qcustomplot.h"
-
+#include "progress_informator.h"
 
 
 
@@ -175,8 +175,13 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     });
 
-    connect(pushbutton_paint_samples,&QPushButton::clicked,[this](){ // Центрирование
+    connect(pushbutton_paint_samples,&QPushButton::clicked,[this](){
+        ProgressInformator progress_info(ui->graphicsView_satellite_image,
+                                         "Пожалуйста подождите,\nпроисходит поиск областей\n(Евклидова метрика)...");
+        progress_info.show();
+        QApplication::processEvents();
         paintSamplePoints();
+        progress_info.close();
 
     });
 
@@ -197,8 +202,7 @@ void MainWindowSatelliteComparator::openHeaderData()
     QFileInfo fi(headerName);
     m_root_path = fi.path();
     const QString extension =fi.completeSuffix();
-
-
+    ui->statusbar->showMessage("Загрузка данных...");
     if(extension == "json"){
         QJsonObject jo;
         jsn::getJsonObjectFromFile(headerName,jo);
@@ -267,7 +271,9 @@ void MainWindowSatelliteComparator::openHeaderData()
     connect(m_dynamic_checkboxes_widget,SIGNAL(choosed_bands_changed()),this,SLOT(change_bands_and_show_image()));
 
 
+
     change_bands_and_show_image();
+    ui->statusbar->showMessage("");
     m_is_image_created = true;
     cross_square->setVisible(true);
 }

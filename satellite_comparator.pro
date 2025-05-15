@@ -15,6 +15,7 @@ SOURCES += \
     main.cpp \
     main_window_satellite_comparator.cpp \
     message_reporter.cpp \
+    progress_informator.cpp \
     qcustomplot.cpp \
     satellite_graphics_view.cpp \
     sattelite_comparator.cpp
@@ -25,6 +26,7 @@ HEADERS += \
     json_utils.h \
     main_window_satellite_comparator.h \
     message_reporter.h \
+    progress_informator.h \
     qcustomplot.h \
     satellite_graphics_view.h \
     sattelite_comparator.h
