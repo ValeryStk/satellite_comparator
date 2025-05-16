@@ -467,12 +467,13 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
            return "";
         }
 
-       qDebug()<< "Географические координаты (WGS84):";
-       qDebug()<< "Долгота: " << lon;
-       qDebug()<< "Широта: " << lat;
-
+       //qDebug()<< "Географические координаты (WGS84):";
+       //qDebug()<< "Долгота: " << lon;
+       //qDebug()<< "Широта: " << lat;
+       QString lat_lon = QString("Широта: %1 Долгота: %2").arg(lat).arg(lon);
        OCTDestroyCoordinateTransformation(transformer);
-       return QString::number(lat)+" "+QString::number(lon);
+       ui->statusbar->showMessage(lat_lon);
+       return lat_lon;
 
 }
 
