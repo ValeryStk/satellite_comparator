@@ -124,7 +124,7 @@ private:
     CrossSquare *cross_square;
     QDoubleSpinBox* euclid_param_spinbox;
 
-    void paintSamplePoints();
+    void paintSamplePoints(const QColor &color);
 
 
 

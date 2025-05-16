@@ -149,6 +149,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     euclid_param_spinbox->setMinimum(0.001);
     euclid_param_spinbox->setMaximum(1);
     euclid_param_spinbox->setSingleStep(0.001);
+    euclid_param_spinbox->setValue(0.2);
 
 
     toolLayOut->addWidget(pushbutton_centerOn);
@@ -176,11 +177,12 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     });
 
     connect(pushbutton_paint_samples,&QPushButton::clicked,[this](){
+        QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
         ProgressInformator progress_info(ui->graphicsView_satellite_image,
                                          "Пожалуйста подождите,\nпроисходит поиск областей\n(Евклидова метрика)...");
         progress_info.show();
         QApplication::processEvents();
-        paintSamplePoints();
+        paintSamplePoints(color);
         progress_info.close();
 
     });
@@ -401,7 +403,7 @@ QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x,
     return ksy;
 }
 
-void MainWindowSatelliteComparator::paintSamplePoints()
+void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 {
     int xSize= m_landsat8_bands_image_sizes->first;
     int ySize= m_landsat8_bands_image_sizes->second;
@@ -410,7 +412,7 @@ void MainWindowSatelliteComparator::paintSamplePoints()
          auto ksy = getLandsat8Ksy(i,j);
          auto result = euclideanDistance(ksy,m_landsat8_sample);
          if(result<euclid_param_spinbox->value()){
-             m_satellite_image.setPixelColor(QPoint(i,j),QColor(255,242,0,125));
+             m_satellite_image.setPixelColor(QPoint(i,j),color);
          };
         }
     };
