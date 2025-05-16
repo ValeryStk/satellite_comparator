@@ -172,7 +172,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     });
 
     connect(pushbutton_centerOn,&QPushButton::clicked,[this](){ // Центрирование
-        ui->graphicsView_satellite_image->centerOn(scene->sceneRect().center());
+        ui->graphicsView_satellite_image->centerOn(cross_square);
         ui->graphicsView_satellite_image->setTransform(QTransform()); // Уменьшение масштаба
 
     });
