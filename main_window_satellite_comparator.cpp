@@ -85,7 +85,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         preview->graph(1)->data().clear();
         preview->graph(0)->setData(waves, data);
         preview->graph(1)->setData(waves, sand_test_sample);
-        qDebug()<<"euclid dist:"<<euclideanDistance(sand_test_sample,data);
+        //qDebug()<<"euclid dist:"<<euclideanDistance(sand_test_sample,data);
         //preview->graph(0)->rescaleAxes(true);
         //qDebug()<<data;
         preview->replot();
@@ -108,6 +108,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         preview->graph(0)->setData(waves, data);
         preview->graph(1)->setData(waves, m_landsat8_sample);
         preview->replot();
+        getGeoCoordinates(pos.x(),pos.y());
     });
 
 
@@ -425,6 +426,54 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     cross_square->setZValue(1000);
     cross_square->update();
     ui->graphicsView_satellite_image->centerOn(cross_square);
+}
+
+QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
+                                                         const int y)
+{
+
+    // Строим геотрансформацию (предполагается, что изображение не имеет поворота)
+    double geoTransform[6] = {
+        402000.0,            // Верхний левый X (восточное направление)
+        30,                  // Разрешение по X
+        0,                   // Поворот (обычно 0 для Landsat)
+        6003300.0,           // Верхний левый Y (северное направление)
+        0,                   // Поворот
+        -30                  // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
+    };
+
+    // Создаем проекцию UTM
+        OGRSpatialReference utmSrs;
+        utmSrs.SetProjCS("UTM");
+        utmSrs.SetWellKnownGeogCS("WGS84"); // DATUM из MTL.json
+        utmSrs.SetUTM(35, true);   // Северное или южное полушарие
+
+        // Создаем целевую проекцию (WGS84)
+        OGRSpatialReference wgs84Srs;
+        wgs84Srs.SetWellKnownGeogCS("WGS84");
+
+        // Создаем преобразователь координат
+        OGRCoordinateTransformation* transformer =
+            OGRCreateCoordinateTransformation(&utmSrs, &wgs84Srs);
+
+        // Вычисляем координаты в проекции UTM
+        double utmX = geoTransform[0] + x * geoTransform[1] + y * geoTransform[2];
+        double utmY = geoTransform[3] + x * geoTransform[4] + y * geoTransform[5];
+
+        // Преобразуем UTM -> WGS84 (широта/долгота)
+        double lon = utmX;
+        double lat = utmY;
+        if (!transformer->Transform(1, &lon, &lat)) {
+           return "";
+        }
+
+       qDebug()<< "Географические координаты (WGS84):";
+       qDebug()<< "Долгота: " << lon;
+       qDebug()<< "Широта: " << lat;
+
+       OCTDestroyCoordinateTransformation(transformer);
+       return QString::number(lat)+" "+QString::number(lon);
+
 }
 
 double MainWindowSatelliteComparator::euclideanDistance(const QVector<double> &v1,

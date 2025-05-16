@@ -125,6 +125,7 @@ private:
     QDoubleSpinBox* euclid_param_spinbox;
 
     void paintSamplePoints(const QColor &color);
+    QString getGeoCoordinates(const int x, const int y);
 
 
 
