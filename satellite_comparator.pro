@@ -11,6 +11,7 @@ CONFIG += c++11
 SOURCES += \
     cross_square.cpp \
     dynamic_checkbox_widget.cpp \
+    google_maps_url_maker.cpp \
     json_utils.cpp \
     main.cpp \
     main_window_satellite_comparator.cpp \
@@ -18,18 +19,21 @@ SOURCES += \
     progress_informator.cpp \
     qcustomplot.cpp \
     satellite_graphics_view.cpp \
-    sattelite_comparator.cpp
+    sattelite_comparator.cpp \
+    text_constants.cpp
 
 HEADERS += \
     cross_square.h \
     dynamic_checkbox_widget.h \
+    google_maps_url_maker.h \
     json_utils.h \
     main_window_satellite_comparator.h \
     message_reporter.h \
     progress_informator.h \
     qcustomplot.h \
     satellite_graphics_view.h \
-    sattelite_comparator.h
+    sattelite_comparator.h \
+    text_constants.h
 
 FORMS += \
     main_window_satellite_comparator.ui \

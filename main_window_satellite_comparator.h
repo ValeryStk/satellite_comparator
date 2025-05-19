@@ -8,6 +8,7 @@
 #include "satellite_graphics_view.h"
 #include "cross_square.h"
 #include "QDoubleSpinBox"
+#include "QComboBox"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowSatelliteComparator; }
@@ -117,8 +118,12 @@ private:
 
     double m_radiance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];
     double m_reflectance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];
+    double m_lattitude;
+    double m_longitude;
+
     bool m_is_image_created;
     QCustomPlot* preview;
+    QComboBox* calculation_method;
     QVector<double> m_landsat8_sample;
     QGraphicsPixmapItem* m_image_item = nullptr;
     CrossSquare *cross_square;
@@ -131,6 +136,11 @@ private:
 
 double euclideanDistance(const QVector<double>& v1,
                          const QVector<double>& v2);
+
+double calculateSpectralAngle(const QVector<double>& S1,
+                              const QVector<double>& S2);
+
+void showGoogleMap();
 
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

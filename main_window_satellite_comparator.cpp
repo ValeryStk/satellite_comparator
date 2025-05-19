@@ -23,7 +23,8 @@
 #include "QGraphicsProxyWidget"
 #include "qcustomplot.h"
 #include "progress_informator.h"
-
+#include "text_constants.h"
+#include "google_maps_url_maker.h"
 
 
 
@@ -40,6 +41,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     ui->setupUi(this);
     scene = new QGraphicsScene;
     cross_square = new CrossSquare(100);
+    calculation_method = new QComboBox;
+    calculation_method->addItems({satc::euclid_metrika,satc::spectral_angle});
     cross_square->setPos(0,0);
     cross_square->setVisible(false);
     cross_square->setZValue(1000);
@@ -80,15 +83,16 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             return;
         }
         const QVector<double> waves = {440,480,560,655,860,1580,2200};
-        QVector<double> sand_test_sample = m_landsat8_sample;
         preview->graph(0)->data().clear();
         preview->graph(1)->data().clear();
         preview->graph(0)->setData(waves, data);
-        preview->graph(1)->setData(waves, sand_test_sample);
+        preview->graph(1)->setData(waves, m_landsat8_sample);
         //qDebug()<<"euclid dist:"<<euclideanDistance(sand_test_sample,data);
         //preview->graph(0)->rescaleAxes(true);
         //qDebug()<<data;
         preview->replot();
+        //auto result = calculateSpectralAngle(data,m_landsat8_sample);
+        //qDebug()<<"Spectral angle: "<<result;
     });
 
 
@@ -138,17 +142,21 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     QPushButton *zoomOutButton = new QPushButton;
     zoomOutButton->setText("-");
     zoomOutButton->setFixedSize(tool_element_size);
+    QPushButton *googleMap = new QPushButton;
+    googleMap->setText("GM");
+    googleMap->setFixedSize(tool_element_size);
 
 
     QVBoxLayout *euclid_layout = new QVBoxLayout;
     QPushButton *pushbutton_paint_samples = new QPushButton;
-    pushbutton_paint_samples->setText("*");
-    pushbutton_paint_samples->setFixedSize(tool_element_size);
+    pushbutton_paint_samples->setText("Запуск поиска");
+    //pushbutton_paint_samples->setFixedSize(tool_element_size);
     euclid_layout->addWidget(pushbutton_paint_samples);
     euclid_param_spinbox = new QDoubleSpinBox;
     euclid_layout->addWidget(euclid_param_spinbox);
+    euclid_layout->addWidget(calculation_method);
     euclid_param_spinbox->setMinimum(0.001);
-    euclid_param_spinbox->setMaximum(1);
+    euclid_param_spinbox->setMaximum(5);
     euclid_param_spinbox->setSingleStep(0.001);
     euclid_param_spinbox->setValue(0.2);
 
@@ -156,10 +164,11 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     toolLayOut->addWidget(pushbutton_centerOn);
     toolLayOut->addWidget(zoomInButton);
     toolLayOut->addWidget(zoomOutButton);
-    toolLayOut->addLayout(euclid_layout);
+    toolLayOut->addWidget(googleMap);
 
     tool_root_layout->addWidget(preview);
     widget_tools->setLayout(tool_root_layout);
+    tool_root_layout->addLayout(euclid_layout);
     widget_tools->show();
     QGraphicsProxyWidget* proxy = scene->addWidget(widget_tools);
     proxy->setPos(0, 50);
@@ -179,13 +188,19 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     connect(pushbutton_paint_samples,&QPushButton::clicked,[this](){
         QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
+        QString message = QString("Пожалуйста подождите,\nпроисходит поиск областей\n(%1)...").arg(calculation_method->currentText());
         ProgressInformator progress_info(ui->graphicsView_satellite_image,
-                                         "Пожалуйста подождите,\nпроисходит поиск областей\n(Евклидова метрика)...");
+                                         message);
         progress_info.show();
         QApplication::processEvents();
+        Sleep(1000);
         paintSamplePoints(color);
         progress_info.close();
 
+    });
+
+    connect(googleMap,&QPushButton::clicked,[this](){
+        showGoogleMap();
     });
 
 }
@@ -410,11 +425,16 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     int ySize= m_landsat8_bands_image_sizes->second;
     for(int i=0;i<xSize;++i){
         for(int j=0;j<ySize;++j){
-         auto ksy = getLandsat8Ksy(i,j);
-         auto result = euclideanDistance(ksy,m_landsat8_sample);
-         if(result<euclid_param_spinbox->value()){
-             m_satellite_image.setPixelColor(QPoint(i,j),color);
-         };
+            auto ksy = getLandsat8Ksy(i,j);
+            double result = 999;
+            if(calculation_method->currentText()==satc::spectral_angle){
+            result = calculateSpectralAngle(ksy,m_landsat8_sample);
+            }else if(calculation_method->currentText()==satc::euclid_metrika){
+            result = euclideanDistance(ksy,m_landsat8_sample);
+            }
+            if(result<euclid_param_spinbox->value()){
+                m_satellite_image.setPixelColor(QPoint(i,j),color);
+            };
         }
     };
     scene->removeItem(m_image_item);
@@ -443,37 +463,39 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
     };
 
     // Создаем проекцию UTM
-        OGRSpatialReference utmSrs;
-        utmSrs.SetProjCS("UTM");
-        utmSrs.SetWellKnownGeogCS("WGS84"); // DATUM из MTL.json
-        utmSrs.SetUTM(35, true);   // Северное или южное полушарие
+    OGRSpatialReference utmSrs;
+    utmSrs.SetProjCS("UTM");
+    utmSrs.SetWellKnownGeogCS("WGS84"); // DATUM из MTL.json
+    utmSrs.SetUTM(35, true);   // Северное - true или южное - false полушарие
 
-        // Создаем целевую проекцию (WGS84)
-        OGRSpatialReference wgs84Srs;
-        wgs84Srs.SetWellKnownGeogCS("WGS84");
+    // Создаем целевую проекцию (WGS84)
+    OGRSpatialReference wgs84Srs;
+    wgs84Srs.SetWellKnownGeogCS("WGS84");
 
-        // Создаем преобразователь координат
-        OGRCoordinateTransformation* transformer =
+    // Создаем преобразователь координат
+    OGRCoordinateTransformation* transformer =
             OGRCreateCoordinateTransformation(&utmSrs, &wgs84Srs);
 
-        // Вычисляем координаты в проекции UTM
-        double utmX = geoTransform[0] + x * geoTransform[1] + y * geoTransform[2];
-        double utmY = geoTransform[3] + x * geoTransform[4] + y * geoTransform[5];
+    // Вычисляем координаты в проекции UTM
+    double utmX = geoTransform[0] + x * geoTransform[1] + y * geoTransform[2];
+    double utmY = geoTransform[3] + x * geoTransform[4] + y * geoTransform[5];
 
-        // Преобразуем UTM -> WGS84 (широта/долгота)
-        double lon = utmX;
-        double lat = utmY;
-        if (!transformer->Transform(1, &lon, &lat)) {
-           return "";
-        }
+    // Преобразуем UTM -> WGS84 (широта/долгота)
+    double lon = utmX;
+    double lat = utmY;
+    if (!transformer->Transform(1, &lon, &lat)) {
+        return "";
+    }
 
-       //qDebug()<< "Географические координаты (WGS84):";
-       //qDebug()<< "Долгота: " << lon;
-       //qDebug()<< "Широта: " << lat;
-       QString lat_lon = QString("Широта: %1 Долгота: %2").arg(lat).arg(lon);
-       OCTDestroyCoordinateTransformation(transformer);
-       ui->statusbar->showMessage(lat_lon);
-       return lat_lon;
+    //qDebug()<< "Географические координаты (WGS84):";
+    //qDebug()<< "Долгота: " << lon;
+    //qDebug()<< "Широта: " << lat;
+    m_lattitude = lat;
+    m_longitude = lon;
+    QString lat_lon = QString("Широта: %1 Долгота: %2").arg(lat).arg(lon);
+    OCTDestroyCoordinateTransformation(transformer);
+    ui->statusbar->showMessage(lat_lon);
+    return lat_lon;
 
 }
 
@@ -490,6 +512,39 @@ double MainWindowSatelliteComparator::euclideanDistance(const QVector<double> &v
     }
 
     return qSqrt(sum);
+}
+
+double MainWindowSatelliteComparator::calculateSpectralAngle(const QVector<double> &S1,
+                                                             const QVector<double> &S2)
+{
+    if (S1.size() != S2.size()) {
+        return -1;
+    }
+
+    double dotProduct = 0.0;
+    double normS1 = 0.0;
+    double normS2 = 0.0;
+
+    for (int i = 0; i < S1.size(); ++i) {
+        dotProduct += S1[i] * S2[i];
+        normS1 += S1[i] * S1[i];
+        normS2 += S2[i] * S2[i];
+    }
+
+    normS1 = qSqrt(normS1);
+    normS2 = qSqrt(normS2);
+
+    double cosineTheta = dotProduct / (normS1 * normS2);
+
+    return qAcos(cosineTheta) * 180.0 / M_PI; // Возвращаем угол в градусах
+}
+
+void MainWindowSatelliteComparator::showGoogleMap()
+{
+    std::string command = "start ";
+    command.append(maps_utility::makeGoogleUrl(m_lattitude,
+                                               m_longitude));
+    system(command.c_str());
 }
 
 
