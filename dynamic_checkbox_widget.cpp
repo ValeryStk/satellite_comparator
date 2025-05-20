@@ -55,6 +55,17 @@ void DynamicCheckboxWidget::setInitialCheckBoxesToggled(const QVector<int> &toTo
     }
 }
 
+void DynamicCheckboxWidget::setRGBchannels()
+{
+    for(int i=0;i<checkboxes.size();++i){
+        checkboxes[i]->blockSignals(true);
+        checkboxes[i]->setChecked(false);
+        checkboxes[i]->setIcon(QIcon(RES_COLOR_BLACK));
+        checkboxes[i]->blockSignals(false);
+    }
+    setInitialCheckBoxesToggled({1,2,3});
+}
+
 void DynamicCheckboxWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
 
     if (!checkBox) return; // Защита от nullptr

@@ -40,6 +40,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 {
     ui->setupUi(this);
     scene = new QGraphicsScene;
+    m_dynamic_checkboxes_widget = nullptr;
     cross_square = new CrossSquare(100);
     calculation_method = new QComboBox;
     calculation_method->addItems({satc::euclid_metrika,satc::spectral_angle});
@@ -146,6 +147,10 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     googleMap->setText("GM");
     googleMap->setFixedSize(tool_element_size);
 
+    QPushButton *resetToRGB = new QPushButton;
+    resetToRGB->setText("RC");
+    resetToRGB->setFixedSize(tool_element_size);
+
 
     QVBoxLayout *euclid_layout = new QVBoxLayout;
     QPushButton *pushbutton_paint_samples = new QPushButton;
@@ -165,6 +170,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     toolLayOut->addWidget(zoomInButton);
     toolLayOut->addWidget(zoomOutButton);
     toolLayOut->addWidget(googleMap);
+    toolLayOut->addWidget(resetToRGB);
 
     tool_root_layout->addWidget(preview);
     widget_tools->setLayout(tool_root_layout);
@@ -201,6 +207,13 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     connect(googleMap,&QPushButton::clicked,[this](){
         showGoogleMap();
+    });
+
+    connect(resetToRGB,&QPushButton::clicked,[this](){
+        if(m_dynamic_checkboxes_widget){
+        m_dynamic_checkboxes_widget->setRGBchannels();
+        change_bands_and_show_image();
+        }
     });
 
 }

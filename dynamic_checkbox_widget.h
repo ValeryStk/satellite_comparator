@@ -28,6 +28,8 @@ QVector<QPair<int,int>> get_choosed_bands();
 
 void setInitialCheckBoxesToggled(const QVector<int>& toToggle);
 
+void setRGBchannels();
+
 private slots:
     void onCheckboxStateChanged(QCheckBox *checkBox);
 
