@@ -39,6 +39,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     , m_sat_comparator(new SatteliteComparator)
 {
     ui->setupUi(this);
+    connect(ui->actionLandsat_8,&QAction::triggered,[this](){openHeaderData();});
     scene = new QGraphicsScene;
     m_dynamic_checkboxes_widget = nullptr;
     cross_square = new CrossSquare(100);
@@ -199,7 +200,6 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
                                          message);
         progress_info.show();
         QApplication::processEvents();
-        Sleep(1000);
         paintSamplePoints(color);
         progress_info.close();
 
@@ -561,11 +561,6 @@ void MainWindowSatelliteComparator::showGoogleMap()
 }
 
 
-void MainWindowSatelliteComparator::on_pushButton_open_sat_header_clicked()
-{
-    openHeaderData();
-}
-
 void MainWindowSatelliteComparator::change_bands_and_show_image()
 {
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
@@ -573,6 +568,11 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     const int nYSize = m_landsat8_bands_image_sizes->second;
     if(m_is_image_created==false){
         m_satellite_image = QImage(nXSize, nYSize, QImage::QImage::Format_RGB888);
+    }else{
+        ProgressInformator progress_info(ui->graphicsView_satellite_image,
+                                         satc::message_changing_bands);
+        progress_info.show();
+        QApplication::processEvents();
     }
     for (int y = 0; y < nYSize; ++y) {
         for (int x = 0; x < nXSize; ++x) {

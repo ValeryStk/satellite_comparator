@@ -5,4 +5,6 @@ namespace satc{
 const char euclid_metrika[] = "Евклидова метрика";
 const char spectral_angle[] = "Спектральный угол";
 
+const char message_changing_bands[] = "Изменение отображения каналов...";
+
 }

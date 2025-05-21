@@ -25,14 +25,14 @@ public:
     ~MainWindowSatelliteComparator();
 
 private slots:
-    void on_pushButton_open_sat_header_clicked();
     void change_bands_and_show_image();
+    void openHeaderData();
 
 private:
     Ui::MainWindowSatelliteComparator *ui;
     DynamicCheckboxWidget *m_dynamic_checkboxes_widget;
     SatteliteComparator* m_sat_comparator;
-    void openHeaderData();
+
     QStringList getLandSat8BandsFromTxtFormat(const QString& path);
     void fillLandSat8radianceMultAdd(const QString& path);
     uint16_t* readTiff(const QString& path,
