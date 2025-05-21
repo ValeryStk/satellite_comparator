@@ -30,6 +30,8 @@ void setInitialCheckBoxesToggled(const QVector<int>& toToggle);
 
 void setRGBchannels();
 
+void clear();
+
 private slots:
     void onCheckboxStateChanged(QCheckBox *checkBox);
 
@@ -37,8 +39,9 @@ signals:
     void choosed_bands_changed();
 
 private:
-    QList<QCheckBox*> checkboxes;
-    QList<QPair<QCheckBox*,int>> checkedOrder; // Список для отслеживания порядка выбора чекбоксов
+    QVBoxLayout* m_layout;
+    QList<QCheckBox*> m_checkboxes;
+    QList<QPair<QCheckBox*,int>> m_checkedOrder; // Список для отслеживания порядка выбора чекбоксов
     const int MAX_POSSIBLE_CHECKED = RGB_NUMBER;
     bool used_colors[RGB_NUMBER] = {false,false,false};//RGB
     QString colors_svg[RGB_NUMBER] = {RES_COLOR_BLUE,RES_COLOR_GREEN,RES_COLOR_RED};

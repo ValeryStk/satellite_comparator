@@ -8,6 +8,14 @@ bool isRangeValid(const QVector<int>& vec, const int low, const int max) {
         return value >= low && value <= max;
     });
 }
+void clearLayout(QLayout* layout) {
+    while (QLayoutItem* item = layout->takeAt(0)) {
+        if (QWidget* widget = item->widget()) {
+            widget->deleteLater(); // Удаляем виджет
+        }
+        delete item; // Удаляем сам элемент
+    }
+}
 }
 
 DynamicCheckboxWidget::DynamicCheckboxWidget(const QList<QString>& labels,
@@ -19,9 +27,10 @@ DynamicCheckboxWidget::DynamicCheckboxWidget(const QList<QString>& labels,
         connect(checkbox, &QCheckBox::toggled, this, [this,checkbox](){
              onCheckboxStateChanged(checkbox);
         });
+        m_layout = layout;
         layout->addWidget(checkbox);
         checkbox->setFixedWidth(280);
-        checkboxes.append(checkbox);
+        m_checkboxes.append(checkbox);
 
     }
 
@@ -29,10 +38,10 @@ DynamicCheckboxWidget::DynamicCheckboxWidget(const QList<QString>& labels,
 
 QVector<QPair<int,int>> DynamicCheckboxWidget::get_choosed_bands()
 {
-    if(checkedOrder.empty())return{};
+    if(m_checkedOrder.empty())return{};
     QVector<QPair<int,int>> choosed_bands;
-    for(auto &info:checkedOrder){
-        choosed_bands.append({checkboxes.indexOf(info.first),info.second});
+    for(auto &info:m_checkedOrder){
+        choosed_bands.append({m_checkboxes.indexOf(info.first),info.second});
     }
     return choosed_bands;
 }
@@ -40,30 +49,40 @@ QVector<QPair<int,int>> DynamicCheckboxWidget::get_choosed_bands()
 void DynamicCheckboxWidget::setInitialCheckBoxesToggled(const QVector<int> &toToggle)
 {
     if(toToggle.size()!=RGB_NUMBER)return;
-    if(isRangeValid(toToggle,0,checkboxes.size()-1)==false){
+    if(isRangeValid(toToggle,0,m_checkboxes.size()-1)==false){
         qDebug()<<"индексы для начальной установки чекбоксов находятся вне допустимого диапазона";
         return;
     };
-    checkedOrder = {{},{},{}};
+    m_checkedOrder = {{},{},{}};
     for(int i=0;i<RGB_NUMBER;++i){
         used_colors[i] = true;
-        checkboxes[toToggle[i]]->blockSignals(true);
-        checkboxes[toToggle[i]]->setChecked(true);
-        checkboxes[toToggle[i]]->setIcon(QIcon(colors_svg[i]));
-        checkedOrder[i] = {checkboxes[toToggle[i]],color_sequence[i]};
-        checkboxes[toToggle[i]]->blockSignals(false);
+        m_checkboxes[toToggle[i]]->blockSignals(true);
+        m_checkboxes[toToggle[i]]->setChecked(true);
+        m_checkboxes[toToggle[i]]->setIcon(QIcon(colors_svg[i]));
+        m_checkedOrder[i] = {m_checkboxes[toToggle[i]],color_sequence[i]};
+        m_checkboxes[toToggle[i]]->blockSignals(false);
     }
 }
 
 void DynamicCheckboxWidget::setRGBchannels()
 {
-    for(int i=0;i<checkboxes.size();++i){
-        checkboxes[i]->blockSignals(true);
-        checkboxes[i]->setChecked(false);
-        checkboxes[i]->setIcon(QIcon(RES_COLOR_BLACK));
-        checkboxes[i]->blockSignals(false);
+    for(int i=0;i<m_checkboxes.size();++i){
+        m_checkboxes[i]->blockSignals(true);
+        m_checkboxes[i]->setChecked(false);
+        m_checkboxes[i]->setIcon(QIcon(RES_COLOR_BLACK));
+        m_checkboxes[i]->blockSignals(false);
     }
     setInitialCheckBoxesToggled({1,2,3});
+}
+
+void DynamicCheckboxWidget::clear()
+{
+    m_checkboxes.clear();
+    m_checkedOrder.clear();
+    used_colors[0] = false;
+    used_colors[1] = false;
+    used_colors[2] = false;
+    clearLayout(m_layout);
 }
 
 void DynamicCheckboxWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
@@ -72,7 +91,7 @@ void DynamicCheckboxWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
         qDebug() << checkBox->text();
 
         int checkedCount = 0;
-            for (QCheckBox *checkbox : qAsConst(checkboxes)) {
+            for (QCheckBox *checkbox : qAsConst(m_checkboxes)) {
                 if (checkbox->isChecked()) {
                     checkedCount++;
                 }
@@ -99,17 +118,17 @@ void DynamicCheckboxWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
               used_colors[BLUE]=true;
               color=BLUE;
             }
-            checkedOrder.append({checkBox,color});
+            m_checkedOrder.append({checkBox,color});
         } else {
             int color = 0;
-            for(int i=0;i<checkedOrder.size();++i){
-                if(checkedOrder[i].first==checkBox){
-                    color=checkedOrder[i].second;
+            for(int i=0;i<m_checkedOrder.size();++i){
+                if(m_checkedOrder[i].first==checkBox){
+                    color=m_checkedOrder[i].second;
                     used_colors[color]=false;
                     break;
                 }
             }
-            checkedOrder.removeOne({checkBox,color});
+            m_checkedOrder.removeOne({checkBox,color});
             checkBox->setIcon(QIcon(RES_COLOR_BLACK));
         }
         emit choosed_bands_changed();

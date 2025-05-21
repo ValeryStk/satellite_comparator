@@ -230,6 +230,7 @@ void MainWindowSatelliteComparator::openHeaderData()
     QFile file(headerName);
     static bool isHeaderValid = false;
     if(file.exists()==false)return;
+    if(m_dynamic_checkboxes_widget)m_dynamic_checkboxes_widget->clear();
     QFileInfo fi(headerName);
     m_root_path = fi.path();
     const QString extension =fi.completeSuffix();
@@ -299,7 +300,9 @@ void MainWindowSatelliteComparator::openHeaderData()
     m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(landsat_bands_ranges,
                                                             ui->verticalLayout_bands);
     m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
-    connect(m_dynamic_checkboxes_widget,SIGNAL(choosed_bands_changed()),this,SLOT(change_bands_and_show_image()));
+    connect(m_dynamic_checkboxes_widget,
+            SIGNAL(choosed_bands_changed()),
+            this,SLOT(change_bands_and_show_image()));
 
 
 
