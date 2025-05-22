@@ -269,7 +269,7 @@ void MainWindowSatelliteComparator::openHeaderData()
             }*/
             isHeaderValid = true;
         }else{
-            return;// Пока работает только LANDSAT
+            return;// Пока работает только LANDSAT 8
         };
     }else if(extension == "txt"){
         auto file_names = getLandSat8BandsFromTxtFormat(headerName);
