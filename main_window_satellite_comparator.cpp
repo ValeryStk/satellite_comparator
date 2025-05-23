@@ -98,8 +98,20 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
         //preview->graph(0)->rescaleAxes(true);
         //qDebug()<<data;
+
+
+
+        auto ksy = getLandsat8Ksy(pos.x(),pos.y());
+        double result = 999;
+        if(calculation_method->currentText()==satc::spectral_angle){
+        result = calculateSpectralAngle(ksy,m_landsat8_sample);
+        }else if(calculation_method->currentText()==satc::euclid_metrika){
+        result = euclideanDistance(ksy,m_landsat8_sample);
+        }
         qgti->setPos(pos.x(),pos.y()+5);
-        qgti->setPlainText(QString::number(euclideanDistance(m_landsat8_sample,data)));
+        qgti->setPlainText(QString::number(result));
+
+
         preview->replot();
         //auto result = calculateSpectralAngle(data,m_landsat8_sample);
         //qDebug()<<"Spectral angle: "<<result;
