@@ -25,6 +25,7 @@
 #include "progress_informator.h"
 #include "text_constants.h"
 #include "google_maps_url_maker.h"
+#include <QSpacerItem>
 
 
 
@@ -154,13 +155,18 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 
     QVBoxLayout *euclid_layout = new QVBoxLayout;
+    QSpacerItem *spacer1 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Fixed);
+    QSpacerItem *spacer2 = new QSpacerItem(20, 40, QSizePolicy::Expanding, QSizePolicy::Expanding);
     QPushButton *pushbutton_paint_samples = new QPushButton;
     pushbutton_paint_samples->setText("Запуск поиска");
     //pushbutton_paint_samples->setFixedSize(tool_element_size);
-    euclid_layout->addWidget(pushbutton_paint_samples);
+
     euclid_param_spinbox = new QDoubleSpinBox;
-    euclid_layout->addWidget(euclid_param_spinbox);
     euclid_layout->addWidget(calculation_method);
+    euclid_layout->addWidget(euclid_param_spinbox);
+    euclid_layout->addItem(spacer1);
+    euclid_layout->addWidget(pushbutton_paint_samples);
+    euclid_layout->addItem(spacer2);
     euclid_param_spinbox->setMinimum(0.001);
     euclid_param_spinbox->setMaximum(5);
     euclid_param_spinbox->setSingleStep(0.001);
