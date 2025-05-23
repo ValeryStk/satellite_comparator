@@ -128,6 +128,7 @@ private:
     QGraphicsPixmapItem* m_image_item = nullptr;
     CrossSquare *cross_square;
     QDoubleSpinBox* euclid_param_spinbox;
+    QGraphicsTextItem* qgti;
 
     void paintSamplePoints(const QColor &color);
     QString getGeoCoordinates(const int x, const int y);

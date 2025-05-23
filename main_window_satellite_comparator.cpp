@@ -42,6 +42,11 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     ui->setupUi(this);
     connect(ui->actionLandsat_8,&QAction::triggered,[this](){openHeaderData();});
     scene = new QGraphicsScene;
+    qgti = new QGraphicsTextItem;
+    qgti->setDefaultTextColor(Qt::black);
+    qgti->setFont(QFont("Arial", 12));
+    qgti->setZValue(1001);
+    scene->addItem(qgti);
     m_dynamic_checkboxes_widget = nullptr;
     cross_square = new CrossSquare(100);
     calculation_method = new QComboBox;
@@ -90,9 +95,11 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         preview->graph(1)->data().clear();
         preview->graph(0)->setData(waves, data);
         preview->graph(1)->setData(waves, m_landsat8_sample);
-        //qDebug()<<"euclid dist:"<<euclideanDistance(sand_test_sample,data);
+
         //preview->graph(0)->rescaleAxes(true);
         //qDebug()<<data;
+        qgti->setPos(pos.x(),pos.y()+5);
+        qgti->setPlainText(QString::number(euclideanDistance(m_landsat8_sample,data)));
         preview->replot();
         //auto result = calculateSpectralAngle(data,m_landsat8_sample);
         //qDebug()<<"Spectral angle: "<<result;
