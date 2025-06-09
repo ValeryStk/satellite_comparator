@@ -2,6 +2,8 @@
 
 namespace satc{
 
+extern const char app_name[] = "СПО \"ЛЕСОПАТОЛОГИЯ\"";
+
 const char euclid_metrika[] = "Евклидова метрика";
 const char spectral_angle[] = "Спектральный угол";
 

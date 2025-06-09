@@ -1,12 +1,9 @@
-QT       += core gui xml printsupport
+QT       += core gui xml multimedia multimediawidgets
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 RC_FILE = resource.rc
 CONFIG += c++11
 
-# You can make your code fail to compile if it uses deprecated APIs.
-# In order to do so, uncomment the following line.
-#DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
     cross_square.cpp \
@@ -20,7 +17,17 @@ SOURCES += \
     qcustomplot.cpp \
     satellite_graphics_view.cpp \
     sattelite_comparator.cpp \
-    text_constants.cpp
+    text_constants.cpp\
+    bekas/BaseTools/DBJson.cpp \
+    bekas/BaseTools/IniFileLoader.cpp \
+    bekas/BaseTools/QrcFilesRestorer.cpp \
+    bekas/GuiModules/ImageWidgets/PhotospectralGraphicsView.cpp \
+    bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.cpp \
+    bekas/ProcessingModules/ClassificationFile.cpp \
+    bekas/ProcessingModules/FilesParser.cpp \
+    bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.cpp \
+    bekas/ProcessingModules/SpectrDataSaver.cpp\
+    bekas/GuiModules/UasvViewWindow.cpp
 
 HEADERS += \
     cross_square.h \
@@ -33,11 +40,23 @@ HEADERS += \
     qcustomplot.h \
     satellite_graphics_view.h \
     sattelite_comparator.h \
-    text_constants.h
+    text_constants.h\
+    bekas/BaseTools/DBJson.h \
+    bekas/BaseTools/IniFileLoader.h \
+    bekas/BaseTools/QrcFilesRestorer.h \
+    bekas/GuiModules/ImageWidgets/PhotospectralGraphicsView.h \
+    bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.h \
+    bekas/ProcessingModules/ClassificationFile.h \
+    bekas/ProcessingModules/FilesParser.h \
+    bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.h \
+    bekas/ProcessingModules/SpectrDataSaver.h \
+    bekas/GuiModules/UasvViewWindow.h
 
 FORMS += \
     main_window_satellite_comparator.ui \
-    sattelite_comparator.ui
+    sattelite_comparator.ui\
+    bekas\GuiModules/SpectrumWidgets/WavesRangeDialog.ui \
+    bekas\GuiModules/UasvViewWindow.ui
 
 TRANSLATIONS += \
     satellite_comparator_en_US.ts
@@ -49,7 +68,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 
 RESOURCES += \
-    res.qrc
+    res.qrc\
+    bekas\res.qrc
 
 LIBS += -L$$PWD/libs/gdal/x64/lib -lgdal_i
 

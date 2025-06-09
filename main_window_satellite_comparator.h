@@ -9,6 +9,7 @@
 #include "cross_square.h"
 #include "QDoubleSpinBox"
 #include "QComboBox"
+#include "bekas/GuiModules/UasvViewWindow.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowSatelliteComparator; }
@@ -129,7 +130,7 @@ private:
     CrossSquare *cross_square;
     QDoubleSpinBox* euclid_param_spinbox;
     QGraphicsTextItem* qgti;
-
+    UasvViewWindow* bekas_window;
     void paintSamplePoints(const QColor &color);
     QString getGeoCoordinates(const int x, const int y);
 

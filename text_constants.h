@@ -3,6 +3,8 @@
 
 namespace satc{
 
+extern const char app_name[];
+
 extern const char euclid_metrika[];
 extern const char spectral_angle[];
 

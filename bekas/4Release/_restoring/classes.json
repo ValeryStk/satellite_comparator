@@ -1,0 +1,364 @@
+{
+    "classification": [
+        {
+            "classes": [
+                {
+                    "class_name": "Не задан",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                }
+            ],
+            "gen_type": "Антропогенные объекты"
+        },
+        {
+            "classes": [
+                {
+                    "class_name": "Моря и океаны",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Не задан",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Водотоки",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        },
+                        {
+                            "specific_name": "Реки"
+                        },
+                        {
+                            "specific_name": "Ручьи"
+                        },
+                        {
+                            "specific_name": "Каналы"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Водоемы",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        },
+                        {
+                            "specific_name": "Озера"
+                        },
+                        {
+                            "specific_name": "Пруды"
+                        },
+                        {
+                            "specific_name": "Обводненные карьеры"
+                        },
+                        {
+                            "specific_name": "Водохранилища"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Болота",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        },
+                        {
+                            "specific_name": "Низинные"
+                        },
+                        {
+                            "specific_name": "Переходные"
+                        },
+                        {
+                            "specific_name": "Верховые"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Природные выходы вод",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        },
+                        {
+                            "specific_name": "Родники"
+                        },
+                        {
+                            "specific_name": "Гейзеры"
+                        }
+                    ]
+                }
+            ],
+            "gen_type": "Водные объекты"
+        },
+        {
+            "classes": [
+                {
+                    "class_name": "Не задан",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                }
+            ],
+            "gen_type": "Газы"
+        },
+        {
+            "classes": [
+                {
+                    "class_name": "Не задан",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                }
+            ],
+            "gen_type": "Горы"
+        },
+        {
+            "classes": [
+                {
+                    "class_name": "Не задан",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                }
+            ],
+            "gen_type": "Не задан"
+        },
+        {
+            "classes": [
+                {
+                    "class_name": "Не задан",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Карьерный",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Мытый",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Сеяный",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Речной",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Морской",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Кварцевый",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                }
+            ],
+            "gen_type": "Пески"
+        },
+        {
+            "classes": [
+                {
+                    "class_name": "Болотистая",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Глинистая",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Известковая",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Не задан",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Песчаная",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Суглинистая",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Супесчаная",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Черноземы",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                }
+            ],
+            "gen_type": "Почвы"
+        },
+        {
+            "classes": [
+                {
+                    "class_name": "Злаковые",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Корнеплоды",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Леса",
+                    "object_names": [
+                        {
+                            "specific_name": "Сосна"
+                        },
+                        {
+                            "specific_name": "Ель"
+                        },
+                        {
+                            "specific_name": "Лиственное дерево"
+                        },
+                        {
+                            "specific_name": "Подлесок"
+                        },
+                        {
+                            "specific_name": "Усохшее дерево"
+                        },
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Не задан",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Трава",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                }
+            ],
+            "gen_type": "Растительность"
+        },
+        {
+            "classes": [
+                {
+                    "class_name": "Не задан",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Ледники",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                },
+                {
+                    "class_name": "Снежники",
+                    "object_names": [
+                        {
+                            "specific_name": "Не задан"
+                        }
+                    ]
+                }
+            ],
+            "gen_type": "Снежные покровы"
+        }
+    ]
+}

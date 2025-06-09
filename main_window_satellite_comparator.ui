@@ -78,6 +78,7 @@
      <addaction name="actionKanopus_B"/>
     </widget>
     <addaction name="menu_2"/>
+    <addaction name="actionBekas"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -100,6 +101,11 @@
   <action name="actionKanopus_B">
    <property name="text">
     <string>Канопус-B</string>
+   </property>
+  </action>
+  <action name="actionBekas">
+   <property name="text">
+    <string>Загрузка данных БЕКАС</string>
    </property>
   </action>
  </widget>

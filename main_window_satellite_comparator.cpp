@@ -29,8 +29,10 @@
 
 
 
+
 uchar *raster_char;
 QGraphicsScene *scene;
+
 
 
 
@@ -40,6 +42,17 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     , m_sat_comparator(new SatteliteComparator)
 {
     ui->setupUi(this);
+    setWindowTitle(satc::app_name);
+    bekas_window = nullptr;
+    connect(ui->actionBekas,&QAction::triggered,[this](){
+        //if(bekas_window)return;
+        bekas_window = new UasvViewWindow;
+        bekas_window->setWindowTitle(satc::app_name);
+        bekas_window->setAttribute(Qt::WA_DeleteOnClose);
+        bekas_window->show();
+    });
+
+
     connect(ui->actionLandsat_8,&QAction::triggered,[this](){openHeaderData();});
     scene = new QGraphicsScene;
     qgti = new QGraphicsTextItem;
