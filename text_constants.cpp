@@ -9,4 +9,6 @@ const char spectral_angle[] = "Спектральный угол";
 
 const char message_changing_bands[] = "Изменение отображения каналов...";
 
+const char action_send_sample_text[] = "Выбрать как образец\n для сравнения со спутниковыми данными";
+
 }

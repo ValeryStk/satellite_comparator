@@ -10,6 +10,8 @@ extern const char spectral_angle[];
 
 extern const char message_changing_bands[];
 
+extern const char action_send_sample_text[];
+
 }
 
 #endif // TEXT_CONSTANTS_H

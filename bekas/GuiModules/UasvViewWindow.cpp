@@ -5,12 +5,15 @@
 #include <QMessageBox>
 #include <bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.h>
 #include <bekas/ProcessingModules/SpectrDataSaver.h>
+#include "text_constants.h"
 
 UasvViewWindow::UasvViewWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::UasvViewWindow)
 {
     ui->setupUi(this);
+    QAction* sendAsSample = new QAction(satc::action_send_sample_text);
+    ui->widgetSpectra->addAction(sendAsSample);
     setupProject();
     initObjects();
     setupGui();
