@@ -23,7 +23,6 @@ SOURCES += \
     bekas/BaseTools/QrcFilesRestorer.cpp \
     bekas/GuiModules/ImageWidgets/PhotospectralGraphicsView.cpp \
     bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.cpp \
-    bekas/ProcessingModules/ClassificationFile.cpp \
     bekas/ProcessingModules/FilesParser.cpp \
     bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.cpp \
     bekas/ProcessingModules/SpectrDataSaver.cpp\
@@ -46,7 +45,6 @@ HEADERS += \
     bekas/BaseTools/QrcFilesRestorer.h \
     bekas/GuiModules/ImageWidgets/PhotospectralGraphicsView.h \
     bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.h \
-    bekas/ProcessingModules/ClassificationFile.h \
     bekas/ProcessingModules/FilesParser.h \
     bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.h \
     bekas/ProcessingModules/SpectrDataSaver.h \

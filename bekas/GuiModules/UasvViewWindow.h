@@ -5,7 +5,6 @@
 #include <QSettings>
 #include <bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.h>
 #include <bekas/ProcessingModules/FilesParser.h>
-#include <bekas/ProcessingModules/ClassificationFile.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class UasvViewWindow; }
@@ -36,17 +35,17 @@ private slots:
 
     void on_pushButtonSetWaveRange_clicked();
 
-    void on_pushButtonLaunchConnectionModule_clicked();
+
 
     void on_pushButtonPrevious_clicked();
 
     void on_pushButtonNext_clicked();
 
-    void on_pushButtonClassificationName_clicked();
 
-    void on_pushButtonClassificationClass_clicked();
 
-    void on_pushButtonClassifiacationType_clicked();
+
+
+
 
     void on_listViewSpectraNames_activated(const QModelIndex &index);
 
@@ -56,13 +55,7 @@ private slots:
 
     void on_pushButtonOpenSavingFolder_clicked();
 
-    void on_pushButtonCalculateIndexes_clicked();
 
-    void on_actionClassificationFilePath_triggered();
-
-    void on_comboBoxClassificationType_currentTextChanged(const QString &arg1);
-
-    void on_comboBoxClassificationClass_currentTextChanged(const QString &arg1);
 
 private:
     /**
@@ -106,6 +99,5 @@ private:
     QSettings *m_settings;                  //!< Settings
     FilesParser *m_filesParser;             //!< The object for files parsing
     QStringListModel *m_slModel;            //!< String list model (for the list of spectra)
-    ClassificationFile *m_classification;   //!< The object for classification
 };
 #endif // UASVVIEWWINDOW_H

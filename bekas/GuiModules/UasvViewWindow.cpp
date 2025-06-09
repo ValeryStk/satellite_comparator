@@ -11,7 +11,6 @@ UasvViewWindow::UasvViewWindow(QWidget *parent)
     , ui(new Ui::UasvViewWindow)
 {
     ui->setupUi(this);
-    ui->frame->setVisible(true);
     setupProject();
     initObjects();
     setupGui();
@@ -43,19 +42,12 @@ void UasvViewWindow::setupGui()
     m_plotterWidget = new SpectrPlotterWidget(ui->widgetSpectra);
     m_slModel = new QStringListModel(this);
     ui->listViewSpectraNames->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
-    QList<QString> generalTypes = m_classification->getGeneralTypesList();
-    if(!generalTypes.isEmpty()){
-        ui->comboBoxClassificationType->addItems(generalTypes);
-    }
 }
 
 void UasvViewWindow::initObjects()
 {
     ui->lineEditInputPath->setText(m_settings->value("Pathes/InputPath").toString());
     m_filesParser = new FilesParser(this, ui->lineEditInputPath->text());
-
-    m_classification = new ClassificationFile(this, m_settings->value("Pathes/ClassificationFile").toString());
 }
 
 
@@ -88,8 +80,6 @@ void UasvViewWindow::updateDataInGui()
         QString imageFilePath = m_filesParser->getImagePath(spFov);
         ui->graphicsViewImage->setShowingImage(imageFilePath, spFov);
 
-        checkClassifAndSetupCBox(m_filesParser->currClassification().general_type,
-                                 ui->comboBoxClassificationType, "Растительность");
     }
 }
 
@@ -106,10 +96,14 @@ void UasvViewWindow::fillListOfSpectra()
         ui->listViewSpectraNames->setCurrentIndex(ui->listViewSpectraNames->indexAt(QPoint(0,0)));
 }
 
-void UasvViewWindow::drawSpectrum(QVector<double> &waves, QVector<double> &values, double maxValue,
-                                  db_json::BandUnits bandsUnits, db_json::SpectrumUnits spUnits, QString spName)
+void UasvViewWindow::drawSpectrum(QVector<double> &waves,
+                                  QVector<double> &values,
+                                  double maxValue,
+                                  db_json::BandUnits bandsUnits,
+                                  db_json::SpectrumUnits spUnits,
+                                  QString spName)
 {
-    qDebug()<<waves.count()<<values.count()<<spName;
+    //qDebug()<<waves.count()<<values.count()<<spName;
     m_plotterWidget->setBands(waves, bandsUnits);
     m_plotterWidget->setGraphValues(spUnits);
     m_plotterWidget->showSpectrum(values, maxValue, false, spName);
@@ -226,11 +220,6 @@ void UasvViewWindow::on_pushButtonShowTemplBright_clicked()
 
 void UasvViewWindow::on_pushButtonSaveChanges_clicked()
 {
-    db_json::CLASSIFICATION classification;
-    classification.general_type = ui->comboBoxClassificationType->currentText();
-    classification.class_name = ui->comboBoxClassificationClass->currentText();
-    classification.object_name = ui->comboBoxClassificationName->currentText();
-    m_filesParser->setClassification(classification);
     m_filesParser->saveCurrentSpectrum();
 }
 
@@ -255,14 +244,12 @@ void UasvViewWindow::on_pushButtonExportAsText_clicked()
     QString spectrumAttrs = db_json::getStringSpecAttrsFromStruct(m_filesParser->spectrum().sd.attributes.at(currSpecIndex));
     QString spectrumWV = SpectrDataSaver::getStringSpectrumFromVectors(m_plotterWidget->showingBands(),
                                                                       m_plotterWidget->showingValues());
-    qDebug()<<"spectrum_data: "<<spectrumWV;
+    //qDebug()<<"spectrum_data: "<<spectrumWV;
     /*SpectrDataSaver textSaver;
     connect(&textSaver, SIGNAL(sendTextMessage(QString)), ui->statusbar, SLOT(showMessage(QString)));
     textSaver.setSingleFileName(basePath + fileName + currSpectrumName + ".txt");
     textSaver.saveStrInSeparateThread(spectrumMd + spectrumAttrs + spectrumWV);*/
 }
-
-
 
 void UasvViewWindow::on_pushButtonSetWaveRange_clicked()
 {
@@ -277,11 +264,6 @@ void UasvViewWindow::on_pushButtonSetWaveRange_clicked()
         m_settings->setValue("Settings/ShowingStartWave", wavesDialog.minWave());
         m_settings->setValue("Settings/ShowingEndWave", wavesDialog.maxWave());
     }
-}
-
-void UasvViewWindow::on_pushButtonLaunchConnectionModule_clicked()
-{
-
 }
 
 void UasvViewWindow::on_pushButtonPrevious_clicked()
@@ -309,43 +291,6 @@ void UasvViewWindow::on_pushButtonNext_clicked()
         QMessageBox::information(this, tr("БЕКАС"),
                                   tr("Переход к следующему спектру невозможен:\n"
                                      "Вы достигли конца списка!"));
-    }
-}
-
-void UasvViewWindow::on_pushButtonClassificationName_clicked()
-{
-    bool ok;
-    QString text = QInputDialog::getText(this, tr("Наименование"),
-                                         tr("Новое наименование:"), QLineEdit::Normal,
-                                         "", &ok);
-    if (ok && !text.isEmpty()){
-        m_classification->addName(ui->comboBoxClassificationType->currentText(),
-                                  ui->comboBoxClassificationClass->currentText(), text);
-        ui->comboBoxClassificationName->addItem(text);
-    }
-}
-
-void UasvViewWindow::on_pushButtonClassificationClass_clicked()
-{
-    bool ok;
-    QString text = QInputDialog::getText(this, tr("Класс объекта"),
-                                         tr("Новый класс:"), QLineEdit::Normal,
-                                         "", &ok);
-    if (ok && !text.isEmpty()){
-        m_classification->addClass(ui->comboBoxClassificationType->currentText(), text);
-        ui->comboBoxClassificationClass->addItem(text);
-    }
-}
-
-void UasvViewWindow::on_pushButtonClassifiacationType_clicked()
-{
-    bool ok;
-    QString text = QInputDialog::getText(this, tr("Генеральный тип"),
-                                         tr("Новый тип:"), QLineEdit::Normal,
-                                         "", &ok);
-    if (ok && !text.isEmpty()){
-        m_classification->addGeneralType(text);
-        ui->comboBoxClassificationType->addItem(text);
     }
 }
 
@@ -400,48 +345,3 @@ void UasvViewWindow::on_pushButtonOpenSavingFolder_clicked()
     }
     QDesktopServices::openUrl(QUrl::fromLocalFile(dir.absolutePath()));
 }
-
-
-void UasvViewWindow::on_pushButtonCalculateIndexes_clicked()
-{
-
-}
-
-void UasvViewWindow::on_actionClassificationFilePath_triggered()
-{
-    QString checkPath;
-    QFileInfo fi(m_settings->value("Pathes/ClassificationFile").toString());
-    if(fi.absoluteDir().isReadable()){
-        checkPath = QFileDialog::getOpenFileName(this, tr("Выбор файла классификации"),
-                                                 fi.absoluteDir().path(),
-                                                 tr("JSON (*.json)"));
-    }else{
-        checkPath = QFileDialog::getOpenFileName(this, tr("Выбор файла классификации"),
-                                                 "/home", tr("JSON (*.json)"));
-    }
-    QFile file(checkPath);
-    if(file.exists()){
-        m_settings->setValue("Pathes/ClassificationFile", checkPath);
-    }
-}
-
-void UasvViewWindow::on_comboBoxClassificationType_currentTextChanged(const QString &arg1)
-{
-    ui->comboBoxClassificationClass->clear();
-    QList<QString> classes = m_classification->getClassesList(ui->comboBoxClassificationType->currentText());
-    ui->comboBoxClassificationClass->addItems(classes);
-
-    checkClassifAndSetupCBox(m_filesParser->currClassification().class_name,
-                             ui->comboBoxClassificationClass, "Леса");
-}
-
-void UasvViewWindow::on_comboBoxClassificationClass_currentTextChanged(const QString &arg1)
-{
-    ui->comboBoxClassificationName->clear();
-    if(!arg1.isEmpty()){
-        QList<QString> names = m_classification->getObjectNames(ui->comboBoxClassificationType->currentText(),
-                                                                ui->comboBoxClassificationClass->currentText());
-        ui->comboBoxClassificationName->addItems(names);
-    }
-}
-
