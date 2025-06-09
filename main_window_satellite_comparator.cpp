@@ -32,7 +32,7 @@
 
 uchar *raster_char;
 QGraphicsScene *scene;
-
+const QVector<double> waves = {440,480,560,655,860,1580,2200};
 
 
 
@@ -43,12 +43,15 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 {
     ui->setupUi(this);
     setWindowTitle(satc::app_name);
+
     bekas_window = nullptr;
     connect(ui->actionBekas,&QAction::triggered,[this](){
         //if(bekas_window)return;
         bekas_window = new UasvViewWindow;
         bekas_window->setWindowTitle(satc::app_name);
         bekas_window->setAttribute(Qt::WA_DeleteOnClose);
+        connect(bekas_window,SIGNAL(sendSampleForSatelliteComparator(QVector<double>, QVector<double>)),
+                this,SLOT(processBekasDataForComparing(QVector<double>,QVector<double>)));
         bekas_window->show();
     });
 
@@ -103,7 +106,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             qDebug()<<"ERROR SIZE:"<<data.size();
             return;
         }
-        const QVector<double> waves = {440,480,560,655,860,1580,2200};
+
         preview->graph(0)->data().clear();
         preview->graph(1)->data().clear();
         preview->graph(0)->setData(waves, data);
@@ -348,6 +351,15 @@ void MainWindowSatelliteComparator::openHeaderData()
     ui->statusbar->showMessage("");
     m_is_image_created = true;
     cross_square->setVisible(true);
+}
+
+void MainWindowSatelliteComparator::processBekasDataForComparing(QVector<double> x,
+                                                                 QVector<double> y)
+{
+    qDebug()<<"sat_comparator: "<<x.size()<<y.size();
+    m_sat_comparator->initial_fill_data_to_show(x,y,waves,m_landsat8_sample);
+    m_sat_comparator->fold_spectr_to_satellite_responses();
+
 }
 
 QStringList MainWindowSatelliteComparator::getLandSat8BandsFromTxtFormat(const QString& path)

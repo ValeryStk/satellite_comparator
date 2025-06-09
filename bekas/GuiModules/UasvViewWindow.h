@@ -35,17 +35,9 @@ private slots:
 
     void on_pushButtonSetWaveRange_clicked();
 
-
-
     void on_pushButtonPrevious_clicked();
 
     void on_pushButtonNext_clicked();
-
-
-
-
-
-
 
     void on_listViewSpectraNames_activated(const QModelIndex &index);
 
@@ -55,7 +47,8 @@ private slots:
 
     void on_pushButtonOpenSavingFolder_clicked();
 
-
+signals:
+    void sendSampleForSatelliteComparator(QVector<double> x, QVector<double> y);
 
 private:
     /**

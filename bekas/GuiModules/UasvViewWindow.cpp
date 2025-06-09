@@ -12,8 +12,22 @@ UasvViewWindow::UasvViewWindow(QWidget *parent)
     , ui(new Ui::UasvViewWindow)
 {
     ui->setupUi(this);
-    QAction* sendAsSample = new QAction(satc::action_send_sample_text);
-    ui->widgetSpectra->addAction(sendAsSample);
+
+    ui->widgetSpectra->setContextMenuPolicy(Qt::CustomContextMenu);
+    QMenu *menu = new QMenu(this);
+    QAction* sendAsSample = new QAction(satc::action_send_sample_text,this);
+    menu->addAction(sendAsSample);
+    connect(sendAsSample, &QAction::triggered, this, [this](){
+        double maxInSpectrum;
+        QVector<double> waves = m_filesParser->getRflWaves();
+        QVector<double> values = m_filesParser->getRflSpectrumValues(maxInSpectrum);
+        sendSampleForSatelliteComparator(waves,values);
+    });
+    connect(ui->widgetSpectra, &QCustomPlot::customContextMenuRequested, this, [menu](const QPoint &pos){
+        menu->exec(QCursor::pos());
+    });
+
+
     setupProject();
     initObjects();
     setupGui();

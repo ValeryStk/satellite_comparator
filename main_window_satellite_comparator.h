@@ -28,6 +28,7 @@ public:
 private slots:
     void change_bands_and_show_image();
     void openHeaderData();
+    void processBekasDataForComparing(QVector<double> x,QVector<double> y);
 
 private:
     Ui::MainWindowSatelliteComparator *ui;

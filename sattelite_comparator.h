@@ -78,13 +78,10 @@ private:
     QJsonObject get_sdb();
     QVector<double> get_common_waves();
     QVector<QVector<double>> get_bands(const QString &satellite_name);
-    void initial_fill_data_to_show(const QVector<double>& device_waves,
-                                   const QVector<double>& device_values,
-                                   const QVector<double>& satellite_waves,
-                                   const QVector<double>& satellite_values);
+
     bool auto_detect_satellite();
     void compare_spectrs();
-    void fold_spectr_to_satellite_responses();
+
     QVector<double> check_intersection(const QVector<double>&waves_1,
                                        const QVector<double>&waves_2);
 
@@ -102,6 +99,11 @@ public:
                                            const QVector<double> &new_x);
 
     void replot();
+    void initial_fill_data_to_show(const QVector<double>& device_waves,
+                                   const QVector<double>& device_values,
+                                   const QVector<double>& satellite_waves,
+                                   const QVector<double>& satellite_values);
+    void fold_spectr_to_satellite_responses();
 };
 
 #endif // SATTELITE_COMPARATOR_H

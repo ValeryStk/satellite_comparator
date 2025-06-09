@@ -35,11 +35,11 @@ SatteliteComparator::SatteliteComparator(QVector<double> device_waves,
     m_plot =  ui->widget_plot_comparator;
     m_plot->xAxis->setLabel("длина волны, нм");
     m_plot->legend->setVisible(true);
-    /*initial_fill_data_to_show(device_waves,
+    initial_fill_data_to_show(device_waves,
                               device_values,
                               satellite_waves,
                               satellite_values);
-    if(auto_detect_satellite()==false){
+    /*if(auto_detect_satellite()==false){
         uts::showErrorMessage("Ошибка загрузки данных","Данные для спутника не найдены.");
         this->close();
     };*/
@@ -49,6 +49,7 @@ SatteliteComparator::SatteliteComparator(QVector<double> device_waves,
     //fold_spectr_to_satellite_responses();
 
     //check_intersection({400,500,600,700,900},{390,401,402,403,505,1000});
+    show();
 
 }
 

@@ -50,13 +50,7 @@ db_json::META_DATA FilesParser::getCurrentMetadata()
 QVector<double> FilesParser::getRflSpectrumValues(double &maxValue)
 {
     QVector<double> spectrum = m_spectrum.sd.values.first();
-
-    maxValue = 0;
-    foreach(double value, spectrum){
-        if(value > maxValue)
-            maxValue = value;
-    }
-
+    maxValue = std::max(spectrum.first(),spectrum.last());
     return spectrum;
 }
 
