@@ -178,7 +178,7 @@ private:
                 graphPen.setWidth(2);
                 m_customPlot->graph(0)->setPen(QPen(graphPen));
                 qDebug()<<"bands count:"<<m_showingBands.count()<<m_bands.count();
-                m_customPlot->graph(0)->setData(m_showingBands, fillSpectrumVector(data));
+                m_customPlot->graph(0)->setData(m_bands, fillSpectrumVector(data));
                 m_customPlot->graph(0)->setName(spName);
 
                 if(m_bandUnits == db_json::BU_NUMBERS){
@@ -198,7 +198,8 @@ private:
                 if(m_isNeedToShowPoints)
                     m_customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCrossCircle, QPen(Qt::black, 0), QColor(40, 70, 255, 50), 10));
 
-                updateSpectrumView();
+                m_customPlot->rescaleAxes(true);
+                m_customPlot->replot();
             }
         }
     }
@@ -223,8 +224,8 @@ private:
             }
             index++;
         }
-        qDebug()<<"values count:"<<m_showingValues.count();
-        return m_showingValues;
+        qDebug()<<"values count:"<<m_values.count();
+        return m_values;
     }
 
 
