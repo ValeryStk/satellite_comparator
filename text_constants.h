@@ -12,6 +12,9 @@ extern const char message_changing_bands[];
 
 extern const char action_send_sample_text[];
 
+
+extern const char satellite_name_landsat_9[];
+
 }
 
 #endif // TEXT_CONSTANTS_H

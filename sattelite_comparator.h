@@ -79,15 +79,14 @@ private:
     QVector<double> get_common_waves();
     QVector<QVector<double>> get_bands(const QString &satellite_name);
 
-    bool auto_detect_satellite();
-    void compare_spectrs();
 
-    QVector<double> check_intersection(const QVector<double>&waves_1,
-                                       const QVector<double>&waves_2);
+    void compare_spectrs();
+    void setSetSatelliteResponses(const QString& satellite_name);
 
 
 public:
     QHash<QString,satellites_data> get_satellites_data();
+    bool auto_detect_satellite();
 
     int tryToFindTheSameVector(const QVector<QVector<double> > &vectorOfVectors,
                                const QVector<double> &targetVector);
@@ -103,7 +102,11 @@ public:
                                    const QVector<double>& device_values,
                                    const QVector<double>& satellite_waves,
                                    const QVector<double>& satellite_values);
-    void fold_spectr_to_satellite_responses();
+
+    QVector<double> check_intersection(const QVector<double>&waves_1,
+                                       const QVector<double>&waves_2);
+
+    QVector<double> fold_spectr_to_satellite_responses();
 };
 
 #endif // SATTELITE_COMPARATOR_H

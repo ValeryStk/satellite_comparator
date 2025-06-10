@@ -86,9 +86,7 @@ void UasvViewWindow::updateDataInGui()
         double maxInSpectrum;
         QVector<double> waves = m_filesParser->getRflWaves();
         QVector<double> values = m_filesParser->getRflSpectrumValues(maxInSpectrum);
-        qDebug()<<"drawing";
         drawSpectrum(waves, values, maxInSpectrum, db_json::BU_WAVELENGTH, db_json::SU_RFL, m_filesParser->currentSpName());
-        qDebug()<<"drawn";
         ui->pushButtonShowRfl->setChecked(true);
         ui->pushButtonShowPattBright->setChecked(false);
         ui->pushButtonShowTemplBright->setChecked(false);

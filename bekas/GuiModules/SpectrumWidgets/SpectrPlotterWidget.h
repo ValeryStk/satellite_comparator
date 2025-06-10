@@ -177,7 +177,7 @@ private:
                 QPen graphPen(m_graphColor);
                 graphPen.setWidth(2);
                 m_customPlot->graph(0)->setPen(QPen(graphPen));
-                qDebug()<<"bands count:"<<m_showingBands.count()<<m_bands.count();
+                //qDebug()<<"bands count:"<<m_showingBands.count()<<m_bands.count();
                 m_customPlot->graph(0)->setData(m_bands, fillSpectrumVector(data));
                 m_customPlot->graph(0)->setName(spName);
 
@@ -224,7 +224,6 @@ private:
             }
             index++;
         }
-        qDebug()<<"values count:"<<m_values.count();
         return m_values;
     }
 

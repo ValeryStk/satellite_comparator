@@ -124,9 +124,11 @@ private:
     double m_longitude;
 
     bool m_is_image_created;
+    bool m_is_bekas;
     QCustomPlot* preview;
     QComboBox* calculation_method;
-    QVector<double> m_landsat8_sample;
+    QVector<double> m_landsat9_sample;
+    QVector<double> m_bekas_sample;
     QGraphicsPixmapItem* m_image_item = nullptr;
     CrossSquare *cross_square;
     QDoubleSpinBox* euclid_param_spinbox;

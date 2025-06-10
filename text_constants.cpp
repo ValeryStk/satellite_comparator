@@ -11,4 +11,7 @@ const char message_changing_bands[] = "Изменение отображения
 
 const char action_send_sample_text[] = "Выбрать как образец\n для сравнения со спутниковыми данными";
 
+
+const char satellite_name_landsat_9[] = "LANDSAT 9";
+
 }

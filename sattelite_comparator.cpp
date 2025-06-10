@@ -49,7 +49,7 @@ SatteliteComparator::SatteliteComparator(QVector<double> device_waves,
     //fold_spectr_to_satellite_responses();
 
     //check_intersection({400,500,600,700,900},{390,401,402,403,505,1000});
-    show();
+    //show();
 
 }
 
@@ -233,7 +233,7 @@ bool SatteliteComparator::auto_detect_satellite()
     for(const auto &sat_name:qAsConst(m_satellites_list)){
         auto check = m_all_satellites_data[sat_name];
         //qDebug()<<"--->"<<m_data_to_show.satellite_waves<<"----"<<check.central_waves;
-        if(areVectorsEqual(check.central_waves,m_data_to_show.satellite_waves)){
+        if(sat_name=="landsat9"){
             m_sat_data.satellite_name = sat_name;
             m_sat_data.alias = check.alias;
             m_sat_data.bands = check.bands;
@@ -255,7 +255,7 @@ void SatteliteComparator::compare_spectrs()
     //dv::show(x_y.first,x_y.second);
 }
 
-void SatteliteComparator::fold_spectr_to_satellite_responses()
+QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses()
 {
     static const int SATTELITE_WAVE_OFFSET = 400;
     QVector<double>folded_spectr(m_sat_data.bands.size());
@@ -283,32 +283,37 @@ void SatteliteComparator::fold_spectr_to_satellite_responses()
         folded_spectr[i]=device_spectr_bands_sum[i]/satellite_bands_sum[i];
     }
     qDebug()<<"folded_spectr"<<folded_spectr;
+
+
+    return folded_spectr;
     //dv::show(m_data_to_show.device_waves,m_data_to_show.device_values);
-    m_plot->graph((int)plot_type::SATELLITE_SPECTR)->setData(m_data_to_show.satellite_waves,
+    /*m_plot->graph((int)plot_type::SATELLITE_SPECTR)->setData(m_data_to_show.satellite_waves,
                                                              m_data_to_show.satellite_values);
     m_plot->graph((int)plot_type::ORIGIN_DEVICE_SPECTR)->setData(m_data_to_show.device_waves,
-                                                             m_data_to_show.device_values);
+                                                                 m_data_to_show.device_values);
 
     m_plot->graph((int)plot_type::INTERPOLATED_DEVICE_SPECTR)->setData(m_data_to_show.satellite_waves,
-                                                             folded_spectr);
+                                                                       folded_spectr);
     m_plot->rescaleAxes();
-    m_plot->replot();
+    m_plot->replot();*/
 }
+
+
 QVector<double> SatteliteComparator::check_intersection(
-                                             const QVector<double> &waves_1,
-                                             const QVector<double> &waves_2)
+        const QVector<double> &waves_1,
+        const QVector<double> &waves_2)
 {
     QVector<double>intersection;
     double start = std::max(waves_1.first(), waves_2.first());
     double end = std::min(waves_1.last(), waves_2.last());
     qDebug()<<"start-end-->"<<start<<end;
-        if (start <= end){
-            intersection = {start,end};
-            qDebug()<<"***INTERSECTION***--->"<<intersection;
-            return {start, end}; // Возвращаем пересечение
-        }
-        else
-            return {}; // Нет пересечения
+    if (start <= end){
+        intersection = {start,end};
+        qDebug()<<"***INTERSECTION***--->"<<intersection;
+        return {start, end}; // Возвращаем пересечение
+    }
+    else
+        return {}; // Нет пересечения
 }
 
 
