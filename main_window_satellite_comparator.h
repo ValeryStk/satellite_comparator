@@ -47,10 +47,10 @@ private:
 
     QString m_root_path;
     QImage m_satellite_image;
-    uint16_t* m_landsat8_data_bands[LANDSAT_BANDS_NUMBER];
-    QPair<int,int> m_landsat8_bands_image_sizes[LANDSAT_BANDS_NUMBER];
+    uint16_t* m_landsat9_data_bands[LANDSAT_BANDS_NUMBER];
+    QPair<int,int> m_landsat9_bands_image_sizes[LANDSAT_BANDS_NUMBER];
 
-    const QString m_landsat8_bands_keys[LANDSAT_BANDS_NUMBER] = {
+    const QString m_landsat9_bands_keys[LANDSAT_BANDS_NUMBER] = {
         "FILE_NAME_BAND_1",
         "FILE_NAME_BAND_2",
         "FILE_NAME_BAND_3",
@@ -63,7 +63,7 @@ private:
         "FILE_NAME_BAND_10",
         "FILE_NAME_BAND_11"
     };
-    const QString m_landsat8_mult_radiance_keys[LANDSAT_BANDS_NUMBER] = {
+    const QString m_landsat9_mult_radiance_keys[LANDSAT_BANDS_NUMBER] = {
         "RADIANCE_MULT_BAND_1",
         "RADIANCE_MULT_BAND_2",
         "RADIANCE_MULT_BAND_3",
@@ -76,7 +76,7 @@ private:
         "RADIANCE_MULT_BAND_10",
         "RADIANCE_MULT_BAND_11"
     };
-    const QString m_landsat8_add_radiance_keys[LANDSAT_BANDS_NUMBER] = {
+    const QString m_landsat9_add_radiance_keys[LANDSAT_BANDS_NUMBER] = {
         "RADIANCE_ADD_BAND_1",
         "RADIANCE_ADD_BAND_2",
         "RADIANCE_ADD_BAND_3",
@@ -90,7 +90,7 @@ private:
         "RADIANCE_ADD_BAND_11"
     };
 
-    const QString m_landsat8_mult_reflectence_keys[LANDSAT_BANDS_NUMBER] = {
+    const QString m_landsat9_mult_reflectence_keys[LANDSAT_BANDS_NUMBER] = {
         "REFLECTANCE_MULT_BAND_1",
         "REFLECTANCE_MULT_BAND_2",
         "REFLECTANCE_MULT_BAND_3",
@@ -104,7 +104,7 @@ private:
         "REFLECTANCE_MULT_BAND_11"
     };
 
-    const QString m_landsat8_add_reflectence_keys[LANDSAT_BANDS_NUMBER] = {
+    const QString m_landsat9_add_reflectence_keys[LANDSAT_BANDS_NUMBER] = {
         "REFLECTANCE_ADD_BAND_1",
         "REFLECTANCE_ADD_BAND_2",
         "REFLECTANCE_ADD_BAND_3",
@@ -116,6 +116,20 @@ private:
         "REFLECTANCE_ADD_BAND_9",
         "REFLECTANCE_ADD_BAND_10",
         "REFLECTANCE_ADD_BAND_11"
+    };
+
+    const QString m_landsat9_bands_gui_names[LANDSAT_BANDS_NUMBER] = {
+        "443 nm (Aerosol) 30 m",
+        "482 nm (Blue) 30 m",
+        "562 nm (Green) 30 m",
+        "655 nm (Red) 30 m",
+        "865 nm (Near infrared) 30 m",
+        "1610 nm (SWIR 1) 30 m",
+        "2200 nm (SWIR 2) 30 m",
+        "590 nm (Panchromatic) 15 m",
+        "1375 nm (Cirrus) 30 m",
+        "10800 nm (LWIR) 100 m",
+        "12000 nm (LWIR) 100 m"
     };
 
     double m_radiance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];
@@ -139,13 +153,13 @@ private:
 
 
 
-double euclideanDistance(const QVector<double>& v1,
-                         const QVector<double>& v2);
+    double euclideanDistance(const QVector<double>& v1,
+                             const QVector<double>& v2);
 
-double calculateSpectralAngle(const QVector<double>& S1,
-                              const QVector<double>& S2);
+    double calculateSpectralAngle(const QVector<double>& S1,
+                                  const QVector<double>& S2);
 
-void showGoogleMap();
+    void showGoogleMap();
 
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

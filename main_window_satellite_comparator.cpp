@@ -283,7 +283,7 @@ MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
 void MainWindowSatelliteComparator::openHeaderData()
 {
     QString headerName =  QFileDialog::getOpenFileName(this, "Открыть файл _MTL.json","",
-                                                       "JSON и XML файлы(*_MTL.json)");
+                                                       "JSON файлы(*_MTL.json)");
     QFile file(headerName);
     static bool isHeaderValid = false;
     if(file.exists()==false)return;
@@ -291,7 +291,9 @@ void MainWindowSatelliteComparator::openHeaderData()
     QFileInfo fi(headerName);
     m_root_path = fi.path();
     const QString extension =fi.completeSuffix();
-    ui->statusbar->showMessage("Загрузка данных...");
+    ui->statusbar->showMessage("Загрузка данных Landsat 9...");
+    QApplication::processEvents();
+    QList<QString> landsat9_gui_available_bands;
     if(extension == "json"){
         QJsonObject jo;
         jsn::getJsonObjectFromFile(headerName,jo);
@@ -300,30 +302,30 @@ void MainWindowSatelliteComparator::openHeaderData()
             QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL1_RADIOMETRIC_RESCALING"});
             QJsonObject check_bands = value.toObject();
             QJsonObject radiance = radiance_value.toObject();
-            //qDebug()<<"Radiance: "<<radiance;
 
-
-            for(int i=0;i<LANDSAT_BANDS_NUMBER-4;++i){// TODO LOAD ALL AVAIALBLE CHANNELS
-                auto band_file_name = check_bands[m_landsat8_bands_keys[i]].toString();
+            for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+                if(check_bands.value(m_landsat9_bands_keys[i]).isUndefined()){
+                    qDebug()<<"missed band: "<<m_landsat9_bands_keys[i];
+                    continue;
+                }
+                landsat9_gui_available_bands.append(m_landsat9_bands_gui_names[i]);
+                auto band_file_name = check_bands[m_landsat9_bands_keys[i]].toString();
                 int xS;
                 int yS;
-                m_landsat8_data_bands[i] = readTiff(fi.path()+"/"+band_file_name,xS,yS);
-                m_landsat8_bands_image_sizes[i] = {xS,yS};
-                double mult_rad = radiance[m_landsat8_mult_radiance_keys[i]].toString().toDouble();
-                double add_rad = radiance[m_landsat8_add_radiance_keys[i]].toString().toDouble();
-                if(i<LANDSAT_BANDS_NUMBER-4){
-                    double mult_refl = radiance[m_landsat8_mult_reflectence_keys[i]].toString().toDouble();
-                    double add_refl = radiance[m_landsat8_add_reflectence_keys[i]].toString().toDouble();
+                m_landsat9_data_bands[i] = readTiff(fi.path()+"/"+band_file_name,xS,yS);
+                m_landsat9_bands_image_sizes[i] = {xS,yS};
+                double mult_rad = radiance[m_landsat9_mult_radiance_keys[i]].toString().toDouble();
+                double add_rad = radiance[m_landsat9_add_radiance_keys[i]].toString().toDouble();
+
+                if(i<LANDSAT_BANDS_NUMBER-4){//TODO TEST REFLECTANCE_MULT_BAND_9  REFLECTANCE_ADD_BAND_9
+                    double mult_refl = radiance[m_landsat9_mult_reflectence_keys[i]].toString().toDouble();
+                    double add_refl = radiance[m_landsat9_add_reflectence_keys[i]].toString().toDouble();
                     m_reflectance_mult_add_arrays[i][0] = mult_refl;
                     m_reflectance_mult_add_arrays[i][1] = add_refl;
                 }
                 m_radiance_mult_add_arrays[i][0] = mult_rad;
                 m_radiance_mult_add_arrays[i][1] = add_rad;
             }
-            /*for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
-              qDebug()<<"mult"<<i<<"mult"<<m_radiance_mult_add_arrays[i][0];
-              qDebug()<<"add"<<i<<"add"<<m_radiance_mult_add_arrays[i][1];
-            }*/
             isHeaderValid = true;
         }else{
             return;// Пока работает только LANDSAT 9
@@ -339,23 +341,7 @@ void MainWindowSatelliteComparator::openHeaderData()
     }
     if(isHeaderValid == false)return;
 
-
-    QList<QString> landsat_bands_ranges;
-    landsat_bands_ranges =             {"443 nm (Aerosol) 30 m",
-                                        "482 nm (Blue) 30 m",
-                                        "562 nm (Green) 30 m",
-                                        "655 nm (Red) 30 m",
-                                        "865 nm (Near infrared) 30 m",
-                                        "1610 nm (SWIR 1) 30 m",
-                                        "2200 nm (SWIR 2) 30 m"//,
-                                        //"590 nm (Panchromatic) 15 m",
-                                        //"1375 nm (Cirrus) 30 m",
-                                        //"10800 nm (LWIR) 100 m",
-                                        //"12000 nm (LWIR) 100 m"
-                                       };
-
-
-    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(landsat_bands_ranges,
+    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(landsat9_gui_available_bands,
                                                             ui->verticalLayout_bands);
     m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
     connect(m_dynamic_checkboxes_widget,
@@ -363,11 +349,11 @@ void MainWindowSatelliteComparator::openHeaderData()
             this,SLOT(change_bands_and_show_image()));
 
 
-
     change_bands_and_show_image();
     ui->statusbar->showMessage("");
     m_is_image_created = true;
     cross_square->setVisible(true);
+
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(QVector<double> x,
@@ -464,8 +450,8 @@ void MainWindowSatelliteComparator::read_landsat_bands_data(const QStringList& f
         auto band_file_name = file_names[i];
         int xS;
         int yS;
-        m_landsat8_data_bands[i] = readTiff(m_root_path+"/"+band_file_name,xS,yS);
-        m_landsat8_bands_image_sizes[i] = {xS,yS};
+        m_landsat9_data_bands[i] = readTiff(m_root_path+"/"+band_file_name,xS,yS);
+        m_landsat9_bands_image_sizes[i] = {xS,yS};
     }
 }
 
@@ -473,14 +459,14 @@ QVector<double> MainWindowSatelliteComparator::getLandsat8Speya(const int x,
                                                                 const int y)
 {
     if(m_is_image_created==false)return {};
-    int xSize= m_landsat8_bands_image_sizes->first;
-    int ySize= m_landsat8_bands_image_sizes->second;
+    int xSize= m_landsat9_bands_image_sizes->first;
+    int ySize= m_landsat9_bands_image_sizes->second;
     if(x>xSize||y>ySize) return {};
     if(x<0||y<0) return {};
     QVector<double> speya;
     for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
         if(i==7||i==9||i==10)continue;// пропускаем каналы panchrom, и последние два LWR-100m
-        uint16_t value = m_landsat8_data_bands[i][(y*xSize) + x];
+        uint16_t value = m_landsat9_data_bands[i][(y*xSize) + x];
         double speya_d = m_radiance_mult_add_arrays[i][0]*value+m_radiance_mult_add_arrays[i][1];
         speya.append(speya_d);
     }
@@ -492,14 +478,14 @@ QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x,
                                                               const int y)
 {
     if(m_is_image_created==false)return {};
-    int xSize= m_landsat8_bands_image_sizes->first;
-    int ySize= m_landsat8_bands_image_sizes->second;
+    int xSize= m_landsat9_bands_image_sizes->first;
+    int ySize= m_landsat9_bands_image_sizes->second;
     if(x>xSize||y>ySize) return {};
     if(x<0||y<0) return {};
     QVector<double> ksy;
     for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
         if(i==7||i==8||i==9||i==10)continue;// пропускаем каналы panchrom, и последние два LWR-100m
-        uint16_t value = m_landsat8_data_bands[i][(y*xSize) + x];
+        uint16_t value = m_landsat9_data_bands[i][(y*xSize) + x];
         double ksy_d = m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
         ksy.append(ksy_d);
     }
@@ -508,8 +494,8 @@ QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x,
 
 void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 {
-    int xSize= m_landsat8_bands_image_sizes->first;
-    int ySize= m_landsat8_bands_image_sizes->second;
+    int xSize= m_landsat9_bands_image_sizes->first;
+    int ySize= m_landsat9_bands_image_sizes->second;
     QVector<double>sample;
     if(m_is_bekas){
         sample = m_bekas_sample;
@@ -651,8 +637,8 @@ void MainWindowSatelliteComparator::showGoogleMap()
 void MainWindowSatelliteComparator::change_bands_and_show_image()
 {
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
-    const int nXSize = m_landsat8_bands_image_sizes->first;
-    const int nYSize = m_landsat8_bands_image_sizes->second;
+    const int nXSize = m_landsat9_bands_image_sizes->first;
+    const int nYSize = m_landsat9_bands_image_sizes->second;
     if(m_is_image_created==false){
         m_satellite_image = QImage(nXSize, nYSize, QImage::QImage::Format_RGB888);
     }else{
@@ -669,13 +655,13 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
             for(int j=0;j<bands.size();++j){
                 int choosedColor = -1;
                 if(bands[j].second==BLUE){
-                    B = static_cast<int>(m_landsat8_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
+                    B = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
                     choosedColor = BLUE;
                 }else if(bands[j].second==GREEN){
-                    G = static_cast<int>(m_landsat8_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
+                    G = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
                     choosedColor = GREEN;
                 }else if(bands[j].second==RED){
-                    R = static_cast<int>(m_landsat8_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
+                    R = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
                     choosedColor = RED;
                 }
                 QRgb rgb;
