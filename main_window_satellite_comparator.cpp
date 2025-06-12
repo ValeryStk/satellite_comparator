@@ -306,8 +306,10 @@ void MainWindowSatelliteComparator::openHeaderData()
             for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
                 if(check_bands.value(m_landsat9_bands_keys[i]).isUndefined()){
                     qDebug()<<"missed band: "<<m_landsat9_bands_keys[i];
+                    m_landsat9_missed_channels[i] = true;
                     continue;
                 }
+                m_landsat9_missed_channels[i] = false;
                 landsat9_gui_available_bands.append(m_landsat9_bands_gui_names[i]);
                 auto band_file_name = check_bands[m_landsat9_bands_keys[i]].toString();
                 int xS;
@@ -317,7 +319,7 @@ void MainWindowSatelliteComparator::openHeaderData()
                 double mult_rad = radiance[m_landsat9_mult_radiance_keys[i]].toString().toDouble();
                 double add_rad = radiance[m_landsat9_add_radiance_keys[i]].toString().toDouble();
 
-                if(i<LANDSAT_BANDS_NUMBER-4){//TODO TEST REFLECTANCE_MULT_BAND_9  REFLECTANCE_ADD_BAND_9
+                if(i<9){//TODO TEST Есть только до 9 канала TEST REFLECTANCE_MULT_BAND_9  REFLECTANCE_ADD_BAND_9
                     double mult_refl = radiance[m_landsat9_mult_reflectence_keys[i]].toString().toDouble();
                     double add_refl = radiance[m_landsat9_add_reflectence_keys[i]].toString().toDouble();
                     m_reflectance_mult_add_arrays[i][0] = mult_refl;
