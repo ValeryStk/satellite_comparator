@@ -284,6 +284,7 @@ void MainWindowSatelliteComparator::openHeaderData()
 {
     QString headerName =  QFileDialog::getOpenFileName(this, "Открыть файл _MTL.json","",
                                                        "JSON файлы(*_MTL.json)");
+    clearLandsat9DataBands();
     QFile file(headerName);
     static bool isHeaderValid = false;
     if(file.exists()==false)return;
@@ -412,6 +413,15 @@ void MainWindowSatelliteComparator::fillLandSat8radianceMultAdd(const QString& p
             qDebug()<<"RADIANCE: "<<mult;
             break;
         }
+    }
+}
+
+void MainWindowSatelliteComparator::clearLandsat9DataBands()
+{
+    for (int i = 0; i < LANDSAT_BANDS_NUMBER; ++i) {
+        if(m_landsat9_data_bands[i]==nullptr)continue;
+        delete[] m_landsat9_data_bands[i];
+        m_landsat9_data_bands[i] = nullptr;
     }
 }
 

@@ -37,6 +37,7 @@ private:
 
     QStringList getLandSat8BandsFromTxtFormat(const QString& path);
     void fillLandSat8radianceMultAdd(const QString& path);
+    void clearLandsat9DataBands();
     uint16_t* readTiff(const QString& path,
                        int& xSize,
                        int& ySize);
@@ -47,7 +48,7 @@ private:
 
     QString m_root_path;
     QImage m_satellite_image;
-    uint16_t* m_landsat9_data_bands[LANDSAT_BANDS_NUMBER];
+    uint16_t* m_landsat9_data_bands[LANDSAT_BANDS_NUMBER] = {nullptr};
     QPair<int,int> m_landsat9_bands_image_sizes[LANDSAT_BANDS_NUMBER];
     bool m_landsat9_missed_channels[LANDSAT_BANDS_NUMBER];
     const QString m_landsat9_bands_keys[LANDSAT_BANDS_NUMBER] = {
