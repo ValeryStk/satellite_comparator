@@ -106,7 +106,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::pointChanged,[this](QPointF pos){
         auto data = getLandsat8Ksy(pos.x(),pos.y());
         if(data.empty())return;
-        if(data.size()!=(int)LANDSAT_BANDS_NUMBER-4){
+        if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
             qDebug()<<"ERROR SIZE:"<<data.size();
             return;
         }
@@ -155,7 +155,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         cross_square->setPos(pos);
         cross_square->update();
         if(data.empty())return;
-        if(data.size()!=(int)LANDSAT_BANDS_NUMBER-4){
+        if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
             qDebug()<<"ERROR SIZE:"<<data.size();
             return;
         }
@@ -304,7 +304,7 @@ void MainWindowSatelliteComparator::openHeaderData()
             QJsonObject check_bands = value.toObject();
             QJsonObject radiance = radiance_value.toObject();
 
-            for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+            for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
                 if(check_bands.value(m_landsat9_bands_keys[i]).isUndefined()){
                     qDebug()<<"missed band: "<<m_landsat9_bands_keys[i];
                     m_landsat9_missed_channels[i] = true;
@@ -387,7 +387,7 @@ QStringList MainWindowSatelliteComparator::getLandSat8BandsFromTxtFormat(const Q
             temp.replace('"',"");
             bands.append(temp);
         }
-        if(bands.size()==LANDSAT_BANDS_NUMBER)break;
+        if(bands.size()==LANDSAT_9_BANDS_NUMBER)break;
     }
     return bands;
 }
@@ -409,7 +409,7 @@ void MainWindowSatelliteComparator::fillLandSat8radianceMultAdd(const QString& p
             bands.append(temp);
             mult.append(temp.toDouble());
         }
-        if(bands.size()==LANDSAT_BANDS_NUMBER){
+        if(bands.size()==LANDSAT_9_BANDS_NUMBER){
             qDebug()<<"RADIANCE: "<<mult;
             break;
         }
@@ -418,7 +418,7 @@ void MainWindowSatelliteComparator::fillLandSat8radianceMultAdd(const QString& p
 
 void MainWindowSatelliteComparator::clearLandsat9DataBands()
 {
-    for (int i = 0; i < LANDSAT_BANDS_NUMBER; ++i) {
+    for (int i = 0; i < LANDSAT_9_BANDS_NUMBER; ++i) {
         if(m_landsat9_data_bands[i]==nullptr)continue;
         delete[] m_landsat9_data_bands[i];
         m_landsat9_data_bands[i] = nullptr;
@@ -457,8 +457,8 @@ uint16_t* MainWindowSatelliteComparator::readTiff(const QString& path,
 
 void MainWindowSatelliteComparator::read_landsat_bands_data(const QStringList& file_names)
 {
-    if(file_names.size()!=LANDSAT_BANDS_NUMBER)return;
-    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+    if(file_names.size()!=LANDSAT_9_BANDS_NUMBER)return;
+    for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
         auto band_file_name = file_names[i];
         int xS;
         int yS;
@@ -476,7 +476,7 @@ QVector<double> MainWindowSatelliteComparator::getLandsat8Speya(const int x,
     if(x>xSize||y>ySize) return {};
     if(x<0||y<0) return {};
     QVector<double> speya;
-    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+    for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
         if(i==7||i==9||i==10)continue;// пропускаем каналы panchrom, и последние два LWR-100m
         uint16_t value = m_landsat9_data_bands[i][(y*xSize) + x];
         double speya_d = m_radiance_mult_add_arrays[i][0]*value+m_radiance_mult_add_arrays[i][1];
@@ -495,7 +495,7 @@ QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x,
     if(x>xSize||y>ySize) return {};
     if(x<0||y<0) return {};
     QVector<double> ksy;
-    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+    for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
         if(i==7||i==8||i==9||i==10)continue;// пропускаем каналы panchrom, и последние два LWR-100m
         uint16_t value = m_landsat9_data_bands[i][(y*xSize) + x];
         double ksy_d = m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
@@ -676,7 +676,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
                     R = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
                     choosedColor = RED;
                 }
-                QRgb rgb;
+                QRgb rgb = 0;
                 if(bands.size() == 1){
                     switch (choosedColor) {
                     case RED:
