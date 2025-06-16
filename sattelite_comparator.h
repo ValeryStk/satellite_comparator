@@ -86,7 +86,7 @@ private:
 
 public:
     QHash<QString,satellites_data> get_satellites_data();
-    bool auto_detect_satellite();
+    bool set_satellite_responses(const QString &satellite_name);
 
     int tryToFindTheSameVector(const QVector<QVector<double> > &vectorOfVectors,
                                const QVector<double> &targetVector);

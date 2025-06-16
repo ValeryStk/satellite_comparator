@@ -359,17 +359,15 @@ void MainWindowSatelliteComparator::openHeaderData()
 
 }
 
-void MainWindowSatelliteComparator::processBekasDataForComparing(QVector<double> x,
-                                                                 QVector<double> y)
+void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<double>& x,
+                                                                 const QVector<double>& y)
 {
-    qDebug()<<"sat_comparator: "<<x.size()<<y.size();
+    //qDebug()<<"sat_comparator: "<<x.size()<<y.size();
     m_sat_comparator->initial_fill_data_to_show(x,y,waves_landsat9,m_landsat9_sample);
-    m_sat_comparator->auto_detect_satellite();
+    m_sat_comparator->set_satellite_responses("landsat9");
     auto folded_device_spectr_for_landsat9 = m_sat_comparator->fold_spectr_to_satellite_responses();
     m_is_bekas = true;
     m_bekas_sample = folded_device_spectr_for_landsat9;
-    //m_sat_comparator->check_intersection(x,waves_landsat9);
-
 }
 
 QStringList MainWindowSatelliteComparator::getLandSat8BandsFromTxtFormat(const QString& path)

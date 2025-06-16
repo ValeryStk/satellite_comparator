@@ -228,12 +228,12 @@ void SatteliteComparator::initial_fill_data_to_show(const QVector<double>& devic
     m_data_to_show.satellite_values = satellite_values;
 }
 
-bool SatteliteComparator::auto_detect_satellite()
+bool SatteliteComparator::set_satellite_responses(const QString& satellite_name)
 {
     for(const auto &sat_name:qAsConst(m_satellites_list)){
         auto check = m_all_satellites_data[sat_name];
         //qDebug()<<"--->"<<m_data_to_show.satellite_waves<<"----"<<check.central_waves;
-        if(sat_name=="landsat9"){
+        if(sat_name==satellite_name){
             m_sat_data.satellite_name = sat_name;
             m_sat_data.alias = check.alias;
             m_sat_data.bands = check.bands;
