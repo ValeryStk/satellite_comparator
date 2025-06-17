@@ -164,5 +164,16 @@ private:
 
     void showGoogleMap();
 
+
+    struct geoTransform {
+        double ulX = 0;           // Верхний левый X (восточное направление)
+        double resX = 0;          // Разрешение по X
+        double rotateX = 0;       // Поворот X (обычно 0 для Landsat)
+        double ulY = 0;           // Верхний левый Y (северное направление)
+        double rotateY = 0;       // Поворот Y (обычно 0 для Landsat)
+        double resY = 0;          // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
+        double utmZone = 0;
+    } m_geo;
+
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

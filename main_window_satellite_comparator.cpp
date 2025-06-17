@@ -303,6 +303,12 @@ void MainWindowSatelliteComparator::openHeaderData()
             QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL1_RADIOMETRIC_RESCALING"});
             QJsonObject check_bands = value.toObject();
             QJsonObject radiance = radiance_value.toObject();
+            QJsonObject projection = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PROJECTION_ATTRIBUTES"}).toObject();
+            m_geo.utmZone = projection["UTM_ZONE"].toString().toDouble();
+            m_geo.ulX = projection["CORNER_UL_PROJECTION_X_PRODUCT"].toString().toDouble();
+            m_geo.ulY = projection["CORNER_UL_PROJECTION_Y_PRODUCT"].toString().toDouble();
+            m_geo.resX = projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
+            m_geo.resY = - m_geo.resX;
 
             for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
                 if(check_bands.value(m_landsat9_bands_keys[i]).isUndefined()){
@@ -570,19 +576,19 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
 
     // Строим геотрансформацию (предполагается, что изображение не имеет поворота)
     double geoTransform[6] = {
-        402000.0,            // Верхний левый X (восточное направление)
-        30,                  // Разрешение по X
-        0,                   // Поворот (обычно 0 для Landsat)
-        6003300.0,           // Верхний левый Y (северное направление)
-        0,                   // Поворот
-        -30                  // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
+        m_geo.ulX,            // Верхний левый X (восточное направление)
+        m_geo.resX,           // Разрешение по X
+        0,                    // Поворот (обычно 0 для Landsat)
+        m_geo.ulY,            // Верхний левый Y (северное направление)
+        0,                    // Поворот
+        m_geo.resY                 // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
     };
 
     // Создаем проекцию UTM
     OGRSpatialReference utmSrs;
     utmSrs.SetProjCS("UTM");
     utmSrs.SetWellKnownGeogCS("WGS84"); // DATUM из MTL.json
-    utmSrs.SetUTM(35, true);   // Северное - true или южное - false полушарие
+    utmSrs.SetUTM(m_geo.utmZone, true);   // Северное - true или южное - false полушарие
 
     // Создаем целевую проекцию (WGS84)
     OGRSpatialReference wgs84Srs;
