@@ -97,12 +97,12 @@ void SatteliteComparator::base_check_before_interpolation(const QVector<double>&
                                                           const QVector<double>& y)
 {
     if (x.size() != y.size() || x.empty()) {
-        throw std::exception("Sizes must be the same");
+        //throw std::exception("Sizes must be the same");
     }
 
     // Проверка, что вектор x отсортирован по возрастанию
     if (!std::is_sorted(x.begin(), x.end())) {
-        throw std::exception("Вектор x должен быть отсортирован по возрастанию.");
+        //throw std::exception("Вектор x должен быть отсортирован по возрастанию.");
     }
 }
 

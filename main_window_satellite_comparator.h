@@ -36,8 +36,9 @@ private:
     DynamicCheckboxWidget *m_dynamic_checkboxes_widget;
     SatteliteComparator* m_sat_comparator;
 
-    QStringList getLandSat8BandsFromTxtFormat(const QString& path);
-    void fillLandSat8radianceMultAdd(const QString& path);
+    QStringList getLandSat9BandsFromTxtFormat(const QString& path,
+                                              QList<QString> &available_gui_bands);
+    void fillLandSat9radianceMultAdd(const QString& path);
     void clearLandsat9DataBands();
     uint16_t* readTiff(const QString& path,
                        int& xSize,

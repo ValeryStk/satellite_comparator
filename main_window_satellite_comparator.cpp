@@ -104,7 +104,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 
     connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::pointChanged,[this](QPointF pos){
-        auto data = getLandsat8Ksy(pos.x(),pos.y());
+        QVector<double> data = getLandsat8Ksy(pos.x(),pos.y());
         if(data.empty())return;
         if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
             qDebug()<<"ERROR SIZE:"<<data.size();
@@ -112,14 +112,14 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         }
 
         if(m_is_bekas){
-          sample = m_bekas_sample;
-          waves = waves_landsat9_5;
-          size_t elems_to_copy = std::min(data.toStdVector().size(), static_cast<size_t>(5));
-          trimmed_satellite_data = QVector<double>(data.begin(), data.begin() + elems_to_copy);
+            sample = m_bekas_sample;
+            waves = waves_landsat9_5;
+            size_t elems_to_copy = std::min(data.toStdVector().size(), static_cast<size_t>(5));
+            trimmed_satellite_data = data.mid(0, elems_to_copy);
         }else{
-          sample = m_landsat9_sample;
-          waves = waves_landsat9;
-          trimmed_satellite_data = data;
+            sample = m_landsat9_sample;
+            waves = waves_landsat9;
+            trimmed_satellite_data = data;
         }
 
         preview->graph(0)->data().clear();
@@ -135,9 +135,9 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         //auto ksy = getLandsat8Ksy(pos.x(),pos.y());
         double result = 999;
         if(calculation_method->currentText()==satc::spectral_angle){
-        result = calculateSpectralAngle(trimmed_satellite_data,sample);
+            result = calculateSpectralAngle(trimmed_satellite_data,sample);
         }else if(calculation_method->currentText()==satc::euclid_metrika){
-        result = euclideanDistance(trimmed_satellite_data,sample);
+            result = euclideanDistance(trimmed_satellite_data,sample);
         }
         qgti->setPos(pos.x(),pos.y()+5);
         qgti->setPlainText(QString::number(result));
@@ -268,8 +268,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     connect(resetToRGB,&QPushButton::clicked,[this](){
         if(m_dynamic_checkboxes_widget){
-        m_dynamic_checkboxes_widget->setRGBchannels();
-        change_bands_and_show_image();
+            m_dynamic_checkboxes_widget->setRGBchannels();
+            change_bands_and_show_image();
         }
     });
 
@@ -283,7 +283,7 @@ MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
 void MainWindowSatelliteComparator::openHeaderData()
 {
     QString headerName =  QFileDialog::getOpenFileName(this, "Открыть файл _MTL.json","",
-                                                       "JSON файлы(*_MTL.json)");
+                                                       "JSON файлы(*_MTL.json *_MTL.txt)");
     clearLandsat9DataBands();
     QFile file(headerName);
     static bool isHeaderValid = false;
@@ -334,10 +334,10 @@ void MainWindowSatelliteComparator::openHeaderData()
             return;// Пока работает только LANDSAT 9
         };
     }else if(extension == "txt"){
-        return; //TODO dynamic composition for different number of bands
-        auto file_names = getLandSat8BandsFromTxtFormat(headerName);
+        //return; //TODO dynamic composition for different number of bands
+        auto file_names = getLandSat9BandsFromTxtFormat(headerName,landsat9_gui_available_bands);
         read_landsat_bands_data(file_names);
-        fillLandSat8radianceMultAdd(headerName);
+        fillLandSat9radianceMultAdd(headerName);
         isHeaderValid = true;
     }else{
         return;
@@ -370,7 +370,8 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<d
     m_bekas_sample = folded_device_spectr_for_landsat9;
 }
 
-QStringList MainWindowSatelliteComparator::getLandSat8BandsFromTxtFormat(const QString& path)
+QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const QString& path,
+                                                                         QList<QString>& available_gui_bands)
 {
     QStringList bands;
     QFile file(path);
@@ -379,18 +380,38 @@ QStringList MainWindowSatelliteComparator::getLandSat8BandsFromTxtFormat(const Q
     ts.setCodec("UTF-8");
     if(file.open(QIODevice::ReadOnly)==false)return bands;
     QString temp;
+    QStringList bands_lines;
     while(ts.readLineInto(&temp)){
+
         if(temp.contains("FILE_NAME_BAND_")){
+             bands_lines.append(temp);
             temp = temp.mid(temp.indexOf('"'),temp.lastIndexOf('"'));
             temp.replace('"',"");
             bands.append(temp);
         }
-        if(bands.size()==LANDSAT_9_BANDS_NUMBER)break;
+    }
+    //qDebug()<<bands_lines;
+    for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
+        QString searchString = m_landsat9_bands_keys[i];
+        bool found = false;
+            for (const QString &item : bands_lines) {
+                if (item.contains(searchString, Qt::CaseInsensitive)) {
+                    found = true;
+                    break;
+                }
+            }
+        if(found==false){
+            qDebug()<<"missed band: "<<m_landsat9_bands_keys[i];
+            m_landsat9_missed_channels[i] = true;
+        }else{
+            m_landsat9_missed_channels[i] = false;
+            available_gui_bands.append(m_landsat9_bands_gui_names[i]);
+        }
     }
     return bands;
 }
 
-void MainWindowSatelliteComparator::fillLandSat8radianceMultAdd(const QString& path)
+void MainWindowSatelliteComparator::fillLandSat9radianceMultAdd(const QString& path)
 {
     QStringList bands;
     QFile file(path);
@@ -455,8 +476,7 @@ uint16_t* MainWindowSatelliteComparator::readTiff(const QString& path,
 
 void MainWindowSatelliteComparator::read_landsat_bands_data(const QStringList& file_names)
 {
-    if(file_names.size()!=LANDSAT_9_BANDS_NUMBER)return;
-    for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
+    for(int i=0;i<file_names.size();++i){
         auto band_file_name = file_names[i];
         int xS;
         int yS;
@@ -520,13 +540,13 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 
             if(m_is_bekas){// TODO FLEXIBLE NUMBER OF CHANNELS OPTIMIZATION
                 size_t elems_to_copy = std::min(ksy.toStdVector().size(), static_cast<size_t>(5));
-                ksy = QVector<double>(ksy.begin(), ksy.begin() + elems_to_copy);
+                //ksy = QVector<double>(ksy.begin(), ksy.begin() + elems_to_copy);
             }
             double result = 999;
             if(calculation_method->currentText()==satc::spectral_angle){
-            result = calculateSpectralAngle(ksy,sample);
+                result = calculateSpectralAngle(ksy,sample);
             }else if(calculation_method->currentText()==satc::euclid_metrika){
-            result = euclideanDistance(ksy,sample);
+                result = euclideanDistance(ksy,sample);
             }
             if(result<euclid_param_spinbox->value()){
                 m_satellite_image.setPixelColor(QPoint(i,j),color);
