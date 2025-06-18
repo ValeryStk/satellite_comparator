@@ -38,7 +38,8 @@ private:
 
     QStringList getLandSat9BandsFromTxtFormat(const QString& path,
                                               QList<QString> &available_gui_bands);
-    void fillLandSat9radianceMultAdd(const QString& path);
+    void fillLandSat9ReflectanceMultAdd(const QString& path);
+    void fillLandSat9GeoData(const QString& path);
     void clearLandsat9DataBands();
     uint16_t* readTiff(const QString& path,
                        int& xSize,

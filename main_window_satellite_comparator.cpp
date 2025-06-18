@@ -47,8 +47,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     setWindowTitle(satc::app_name);
     m_is_bekas = false;
     bekas_window = nullptr;
+
     connect(ui->actionBekas,&QAction::triggered,[this](){
-        //if(bekas_window)return;
         bekas_window = new UasvViewWindow;
         bekas_window->setWindowTitle(satc::app_name);
         bekas_window->setAttribute(Qt::WA_DeleteOnClose);
@@ -82,24 +82,21 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     preview->xAxis->setLabel("Длина волны, nm");
     preview->yAxis->setLabel("КСЯ");
     // Создаем заголовок
-    QCPTextElement *title = new QCPTextElement(preview, satc::satellite_name_landsat_9, QFont("Arial", 10, QFont::Bold));
-
-    // Добавляем заголовок в layout
+    QCPTextElement *title = new QCPTextElement(preview,
+                                               satc::satellite_name_landsat_9,
+                                               QFont("Arial", 10,
+                                                     QFont::Bold));
     preview->plotLayout()->insertRow(0);
     preview->plotLayout()->addElement(0, 0, title);
     graph_satellite->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
     QCPGraph *graph_device = preview->addGraph();
     graph_device->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCrossSquare, 5));
 
-
     preview->graph(0)->setName("Курсорный");
     preview->graph(1)->setName("Образец для поиска");
 
     preview->graph(0)->setPen(QPen(Qt::blue));
     preview->graph(1)->setPen(QPen(Qt::red));
-
-
-
 
     connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::pointChanged,[this](QPointF pos){
         QVector<double> data = getLandsat8Ksy(pos.x(),pos.y());
@@ -125,12 +122,6 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         preview->graph(0)->setData(waves, trimmed_satellite_data);
         preview->graph(1)->setData(waves, sample);
 
-        //preview->graph(0)->rescaleAxes(true);
-        //qDebug()<<data;
-
-
-
-        //auto ksy = getLandsat8Ksy(pos.x(),pos.y());
         double result = 999;
         if(calculation_method->currentText()==satc::spectral_angle){
             result = calculateSpectralAngle(trimmed_satellite_data,sample);
@@ -139,11 +130,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         }
         qgti->setPos(pos.x(),pos.y()+5);
         qgti->setPlainText(QString::number(result));
-
-
         preview->replot();
-        //auto result = calculateSpectralAngle(data,m_landsat8_sample);
-        //qDebug()<<"Spectral angle: "<<result;
     });
 
 
@@ -202,13 +189,11 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     resetToRGB->setText("RC");
     resetToRGB->setFixedSize(tool_element_size);
 
-
     QVBoxLayout *euclid_layout = new QVBoxLayout;
     QSpacerItem *spacer1 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Fixed);
     QSpacerItem *spacer2 = new QSpacerItem(20, 40, QSizePolicy::Expanding, QSizePolicy::Expanding);
     QPushButton *pushbutton_paint_samples = new QPushButton;
     pushbutton_paint_samples->setText("Запуск поиска");
-    //pushbutton_paint_samples->setFixedSize(tool_element_size);
 
     euclid_param_spinbox = new QDoubleSpinBox;
     euclid_layout->addWidget(calculation_method);
@@ -220,7 +205,6 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     euclid_param_spinbox->setMaximum(100);
     euclid_param_spinbox->setSingleStep(0.001);
     euclid_param_spinbox->setValue(0.2);
-
 
     toolLayOut->addWidget(pushbutton_centerOn);
     toolLayOut->addWidget(zoomInButton);
@@ -244,7 +228,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     connect(pushbutton_centerOn,&QPushButton::clicked,[this](){ // Центрирование
         ui->graphicsView_satellite_image->centerOn(cross_square);
-        ui->graphicsView_satellite_image->setTransform(QTransform()); // Уменьшение масштаба
+        ui->graphicsView_satellite_image->setTransform(QTransform()); //Дефолтный масштаба
 
     });
 
@@ -322,8 +306,6 @@ void MainWindowSatelliteComparator::openHeaderData()
                 int yS;
                 m_landsat9_data_bands[i] = readTiff(fi.path()+"/"+band_file_name,xS,yS);
                 m_landsat9_bands_image_sizes[i] = {xS,yS};
-                double mult_rad = radiance[m_landsat9_mult_radiance_keys[i]].toString().toDouble();
-                double add_rad = radiance[m_landsat9_add_radiance_keys[i]].toString().toDouble();
 
                 if(i<9){//TODO TEST Есть только до 9 канала TEST REFLECTANCE_MULT_BAND_9  REFLECTANCE_ADD_BAND_9
                     double mult_refl = radiance[m_landsat9_mult_reflectence_keys[i]].toString().toDouble();
@@ -331,8 +313,6 @@ void MainWindowSatelliteComparator::openHeaderData()
                     m_reflectance_mult_add_arrays[i][0] = mult_refl;
                     m_reflectance_mult_add_arrays[i][1] = add_refl;
                 }
-                m_radiance_mult_add_arrays[i][0] = mult_rad;
-                m_radiance_mult_add_arrays[i][1] = add_rad;
             }
             isHeaderValid = true;
         }else{
@@ -342,7 +322,8 @@ void MainWindowSatelliteComparator::openHeaderData()
         auto file_names = getLandSat9BandsFromTxtFormat(headerName,
                                                         landsat9_gui_available_bands);
         read_landsat_bands_data(file_names);
-        fillLandSat9radianceMultAdd(headerName);
+        fillLandSat9ReflectanceMultAdd(headerName);
+        fillLandSat9GeoData(headerName);
         isHeaderValid = true;
     }else{
         return;
@@ -392,7 +373,7 @@ QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const Q
         if(temp.contains("END_GROUP = PRODUCT_CONTENTS")){break;}
         if(isGroupProductContentsStart==false)continue;
         if(temp.contains("FILE_NAME_BAND_")){
-             bands_lines.append(temp);
+            bands_lines.append(temp);
             temp = temp.mid(temp.indexOf('"'),temp.lastIndexOf('"'));
             temp.replace('"',"");
             bands.append(temp);
@@ -402,14 +383,14 @@ QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const Q
     for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
         QString searchString = m_landsat9_bands_keys[i];
         bool found = false;
-            for (const QString &item : bands_lines)
-            {
-                if (item.contains(searchString, Qt::CaseSensitive)) {
-                    found = true;
-                    qDebug()<<item<<"********** MATCHED ****************"<<searchString;
-                    break;
-                }
+        for (const QString &item : bands_lines)
+        {
+            if (item.contains(searchString, Qt::CaseSensitive)) {
+                found = true;
+                qDebug()<<item<<"********** MATCHED ****************"<<searchString;
+                break;
             }
+        }
         if(found==false){
             qDebug()<<"missed band: "<<m_landsat9_bands_keys[i];
             m_landsat9_missed_channels[i] = true;
@@ -421,9 +402,8 @@ QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const Q
     return bands;
 }
 
-void MainWindowSatelliteComparator::fillLandSat9radianceMultAdd(const QString& path)
+void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString& path)
 {
-    QStringList bands;
     QFile file(path);
     if(file.exists()==false) return;
     QTextStream ts(&file);
@@ -431,18 +411,84 @@ void MainWindowSatelliteComparator::fillLandSat9radianceMultAdd(const QString& p
     if(file.open(QIODevice::ReadOnly)==false) return;
     QString temp;
     QVector<double> mult;
+    QVector<double> add;
+    bool isReflectanceGroup = false;
     while(ts.readLineInto(&temp)){
-        if(temp.contains("RADIANCE_MULT_BAND_")){
-            temp = temp.mid(temp.indexOf("= "),temp.size()-1);
-            temp.replace("= ","");
-            bands.append(temp);
-            mult.append(temp.toDouble());
+        if(temp.contains("GROUP = LEVEL1_RADIOMETRIC_RESCALING")){
+            isReflectanceGroup = true;
+            continue;
         }
-        if(bands.size()==LANDSAT_9_BANDS_NUMBER){
-            qDebug()<<"RADIANCE: "<<mult;
+        if(isReflectanceGroup==false)continue;
+        if(temp.contains("END_GROUP = LEVEL1_RADIOMETRIC_RESCALING")){
             break;
         }
+        if(temp.contains("REFLECTANCE_MULT_BAND_")){
+            QString band_name = temp;
+            temp = temp.mid(temp.indexOf("= "),temp.size()-1);
+            temp.replace("= ","");
+            mult.append(temp.toDouble());
+        }else
+            if(temp.contains("REFLECTANCE_ADD_BAND_")){
+                QString band_name = temp;
+                temp = temp.mid(temp.indexOf("= "),temp.size()-1);
+                temp.replace("= ","");
+                add.append(temp.toDouble());
+            }
     }
+
+    if(mult.size()&&add.size()<10){//TODO MORE DEFINITE
+        for(int i=0;i<9;++i){
+            m_reflectance_mult_add_arrays[i][0] = mult[i];
+            m_reflectance_mult_add_arrays[i][1] = add[i];
+        }
+    }
+
+}
+
+void MainWindowSatelliteComparator::fillLandSat9GeoData(const QString &path)
+{
+    QFile file(path);
+    if(file.exists()==false) return;
+    QTextStream ts(&file);
+    ts.setCodec("UTF-8");
+    if(file.open(QIODevice::ReadOnly)==false) return;
+    QString temp;
+    bool isProjectionGroup = false;
+    while(ts.readLineInto(&temp)){
+        //
+
+        if(temp.contains("GROUP = PROJECTION_ATTRIBUTES")){
+            isProjectionGroup = true;
+            continue;
+        }
+        if(isProjectionGroup==false)continue;
+        if(temp.contains("END_GROUP = PROJECTION_ATTRIBUTES")){
+            break;
+        }
+        if(temp.contains("CORNER_UL_PROJECTION_X_PRODUCT")){
+            temp = temp.mid(temp.indexOf("= "),temp.size()-1);
+            temp.replace("= ","");
+            m_geo.ulX = temp.toDouble();
+        }else
+            if(temp.contains("CORNER_UL_PROJECTION_Y_PRODUCT")){
+                temp = temp.mid(temp.indexOf("= "),temp.size()-1);
+                temp.replace("= ","");
+                m_geo.ulY = temp.toDouble();
+            }else
+                if(temp.contains("UTM_ZONE")){
+                    temp = temp.mid(temp.indexOf("= "),temp.size()-1);
+                    temp.replace("= ","");
+                    m_geo.utmZone = temp.toDouble();
+                }else
+                    if(temp.contains("GRID_CELL_SIZE_REFLECTIVE")){
+                        temp = temp.mid(temp.indexOf("= "),temp.size()-1);
+                        temp.replace("= ","");
+                        m_geo.resX = temp.toDouble();
+                        m_geo.resY = - m_geo.resX;
+                    }
+    }
+
+
 }
 
 void MainWindowSatelliteComparator::clearLandsat9DataBands()
