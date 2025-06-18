@@ -29,8 +29,6 @@
 
 
 
-
-uchar *raster_char;
 QGraphicsScene *scene;
 QVector<double> waves_landsat9 = {443,482,562,655,865,1610,2200};
 QVector<double> waves_landsat9_5 = {443,482,562,655,865};
@@ -284,17 +282,18 @@ void MainWindowSatelliteComparator::openHeaderData()
 {
     QString headerName =  QFileDialog::getOpenFileName(this, "Открыть файл _MTL.json","",
                                                        "JSON файлы(*_MTL.json *_MTL.txt)");
-    clearLandsat9DataBands();
+    //clearLandsat9DataBands();
     QFile file(headerName);
     static bool isHeaderValid = false;
     if(file.exists()==false)return;
     if(m_dynamic_checkboxes_widget)m_dynamic_checkboxes_widget->clear();
     QFileInfo fi(headerName);
     m_root_path = fi.path();
-    const QString extension =fi.completeSuffix();
+    const QString extension = fi.completeSuffix();
     ui->statusbar->showMessage("Загрузка данных Landsat 9...");
     QApplication::processEvents();
     QList<QString> landsat9_gui_available_bands;
+
     if(extension == "json"){
         QJsonObject jo;
         jsn::getJsonObjectFromFile(headerName,jo);
@@ -340,8 +339,8 @@ void MainWindowSatelliteComparator::openHeaderData()
             return;// Пока работает только LANDSAT 9
         };
     }else if(extension == "txt"){
-        //return; //TODO dynamic composition for different number of bands
-        auto file_names = getLandSat9BandsFromTxtFormat(headerName,landsat9_gui_available_bands);
+        auto file_names = getLandSat9BandsFromTxtFormat(headerName,
+                                                        landsat9_gui_available_bands);
         read_landsat_bands_data(file_names);
         fillLandSat9radianceMultAdd(headerName);
         isHeaderValid = true;
@@ -387,8 +386,11 @@ QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const Q
     if(file.open(QIODevice::ReadOnly)==false)return bands;
     QString temp;
     QStringList bands_lines;
+    bool isGroupProductContentsStart = false;
     while(ts.readLineInto(&temp)){
-
+        if(temp.contains("GROUP = PRODUCT_CONTENTS")){isGroupProductContentsStart = true;}
+        if(temp.contains("END_GROUP = PRODUCT_CONTENTS")){break;}
+        if(isGroupProductContentsStart==false)continue;
         if(temp.contains("FILE_NAME_BAND_")){
              bands_lines.append(temp);
             temp = temp.mid(temp.indexOf('"'),temp.lastIndexOf('"'));
@@ -400,9 +402,11 @@ QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const Q
     for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
         QString searchString = m_landsat9_bands_keys[i];
         bool found = false;
-            for (const QString &item : bands_lines) {
-                if (item.contains(searchString, Qt::CaseInsensitive)) {
+            for (const QString &item : bands_lines)
+            {
+                if (item.contains(searchString, Qt::CaseSensitive)) {
                     found = true;
+                    qDebug()<<item<<"********** MATCHED ****************"<<searchString;
                     break;
                 }
             }

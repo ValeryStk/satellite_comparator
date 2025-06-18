@@ -53,6 +53,7 @@ private:
     uint16_t* m_landsat9_data_bands[LANDSAT_9_BANDS_NUMBER] = {nullptr};
     QPair<int,int> m_landsat9_bands_image_sizes[LANDSAT_9_BANDS_NUMBER];
     bool m_landsat9_missed_channels[LANDSAT_9_BANDS_NUMBER];
+
     const QString m_landsat9_bands_keys[LANDSAT_9_BANDS_NUMBER] = {
         "FILE_NAME_BAND_1",
         "FILE_NAME_BAND_2",
