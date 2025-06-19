@@ -26,6 +26,7 @@
 #include "text_constants.h"
 #include "google_maps_url_maker.h"
 #include <QSpacerItem>
+#include "satellite_xml_reader.h"
 
 
 
@@ -47,6 +48,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     setWindowTitle(satc::app_name);
     m_is_bekas = false;
     bekas_window = nullptr;
+    std::fill(std::begin(m_landsat9_missed_channels),std::end(m_landsat9_missed_channels),true);
 
     connect(ui->actionBekas,&QAction::triggered,[this](){
         bekas_window = new UasvViewWindow;
@@ -264,9 +266,9 @@ MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
 
 void MainWindowSatelliteComparator::openHeaderData()
 {
-    QString headerName =  QFileDialog::getOpenFileName(this, "Открыть файл _MTL.json","",
-                                                       "JSON файлы(*_MTL.json *_MTL.txt)");
-    //clearLandsat9DataBands();
+    QString headerName =  QFileDialog::getOpenFileName(this, "Открыть заголовочный файл LANDSAT","",
+                                                       "JSON файлы(*_MTL.json *_MTL.txt *_MTL.xml)");
+    clearLandsat9DataBands();
     QFile file(headerName);
     static bool isHeaderValid = false;
     if(file.exists()==false)return;
@@ -325,7 +327,8 @@ void MainWindowSatelliteComparator::openHeaderData()
         fillLandSat9ReflectanceMultAdd(headerName);
         fillLandSat9GeoData(headerName);
         isHeaderValid = true;
-    }else{
+    }else if(extension == "xml"){
+        satc::readLandsatXmlHeader(headerName);
         return;
     }
     if(isHeaderValid == false)return;
@@ -455,8 +458,6 @@ void MainWindowSatelliteComparator::fillLandSat9GeoData(const QString &path)
     QString temp;
     bool isProjectionGroup = false;
     while(ts.readLineInto(&temp)){
-        //
-
         if(temp.contains("GROUP = PROJECTION_ATTRIBUTES")){
             isProjectionGroup = true;
             continue;
@@ -487,15 +488,15 @@ void MainWindowSatelliteComparator::fillLandSat9GeoData(const QString &path)
                         m_geo.resY = - m_geo.resX;
                     }
     }
-
-
 }
 
 void MainWindowSatelliteComparator::clearLandsat9DataBands()
 {
     for (int i = 0; i < LANDSAT_9_BANDS_NUMBER; ++i) {
+        if(m_landsat9_missed_channels[i])continue;
         if(m_landsat9_data_bands[i]==nullptr)continue;
         delete[] m_landsat9_data_bands[i];
+        m_landsat9_missed_channels[i]=true;
         m_landsat9_data_bands[i] = nullptr;
     }
 }

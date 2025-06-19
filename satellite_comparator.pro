@@ -26,7 +26,8 @@ SOURCES += \
     bekas/ProcessingModules/FilesParser.cpp \
     bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.cpp \
     bekas/ProcessingModules/SpectrDataSaver.cpp\
-    bekas/GuiModules/UasvViewWindow.cpp
+    bekas/GuiModules/UasvViewWindow.cpp \
+    satellite_xml_reader.cpp
 
 HEADERS += \
     cross_square.h \
@@ -48,7 +49,9 @@ HEADERS += \
     bekas/ProcessingModules/FilesParser.h \
     bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.h \
     bekas/ProcessingModules/SpectrDataSaver.h \
-    bekas/GuiModules/UasvViewWindow.h
+    bekas/GuiModules/UasvViewWindow.h \
+    satellite_xml_reader.h \
+    satellites_structs.h
 
 FORMS += \
     main_window_satellite_comparator.ui \
