@@ -6,7 +6,7 @@
 
 namespace satc{
 
-sas::LANDSAT_METADATA_FILE readLandsatXmlHeader(const QString& pathToLandsatHeader);
+sad::LANDSAT_METADATA_FILE readLandsatXmlHeader(const QString& pathToLandsatHeader);
 
 }
 
