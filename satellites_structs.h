@@ -123,7 +123,7 @@ struct LANDSAT_METADATA_FILE{
     PRODUCT_CONTENTS product_contents;
     IMAGE_ATTRIBUTES image_attributes;
     PROJECTION_ATTRIBUTES projection_attributes;
-    LEVEL1_RADIOMETRIC_RESCALING level1_radiometric_rescaling;
+    LEVEL1_RADIOMETRIC_RESCALING level2_surface_reflectance_parameters;
 };
 
 }
