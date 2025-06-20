@@ -329,7 +329,7 @@ void MainWindowSatelliteComparator::openHeaderData()
         fillLandSat9GeoData(headerName);
         isHeaderValid = true;
     }else if(extension == "xml"){
-        satc::readLandsatXmlHeader(headerName);
+        auto data = satc::readLandsatXmlHeader(headerName);
         return;
     }
     if(isHeaderValid == false)return;

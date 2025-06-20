@@ -86,6 +86,32 @@ sad::LANDSAT_METADATA_FILE readLandsatXmlHeader(const QString &pathToLandsatHead
     lmd.image_attributes.sun_elevation = result;
 
 
+    // READING PROJECTION_ATTRIBUTES FOR LANDSAT FROM XML
+
+    result = traverseDom(root,"PROJECTION_ATTRIBUTES","UTM_ZONE");
+    lmd.projection_attributes.utm_zone = result;
+
+    result = traverseDom(root,"PROJECTION_ATTRIBUTES","GRID_CELL_SIZE_REFLECTIVE");
+    lmd.projection_attributes.grid_cell_size_reflective = result;
+
+    result = traverseDom(root,"PROJECTION_ATTRIBUTES","ORIENTATION");
+    lmd.projection_attributes.orientation = result;
+
+    result = traverseDom(root,"PROJECTION_ATTRIBUTES","CORNER_UL_PROJECTION_X_PRODUCT");
+    lmd.projection_attributes.corner_ul_projection_x_product = result;
+
+    result = traverseDom(root,"PROJECTION_ATTRIBUTES","CORNER_UL_PROJECTION_Y_PRODUCT");
+    lmd.projection_attributes.corner_ul_projection_y_product = result;
+
+
+    // READING LEVEL2_SURFACE_REFLECTANCE_PARAMETERS FOR LANDSAT FROM XML
+    for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
+      QString add_result = traverseDom(root,"LEVEL2_SURFACE_REFLECTANCE_PARAMETERS",sad::landsat9_add_reflectence_keys[i]);
+      QString mult_result = traverseDom(root,"LEVEL2_SURFACE_REFLECTANCE_PARAMETERS",sad::landsat9_mult_reflectence_keys[i]);
+      lmd.level2_surface_reflectance_parameters.reflectance_add_band[i] = add_result;
+      lmd.level2_surface_reflectance_parameters.reflectance_mult_band[i] = mult_result;
+    }
+
     file.close();
     return lmd;
 
