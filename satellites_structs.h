@@ -91,34 +91,35 @@ const QString landsat9_bands_gui_names[LANDSAT_9_BANDS_NUMBER] = {
 
 
 struct PRODUCT_CONTENTS{
-    std::string landsat_product_id;
-    std::string processing_level;
-    std::string file_name_bands[LANDSAT_9_BANDS_NUMBER];
+    QString landsat_product_id;
+    QString processing_level;
+    QString file_name_bands[LANDSAT_9_BANDS_NUMBER];
 };
 
 struct IMAGE_ATTRIBUTES{
-    std::string spacecraft_id;
-    std::string sensor_id;
-    std::string date_acquired;
-    std::string sun_azimuth;
-    std::string sun_elevation;
+    QString spacecraft_id;
+    QString sensor_id;
+    QString date_acquired;
+    QString sun_azimuth;
+    QString sun_elevation;
 };
 
 struct PROJECTION_ATTRIBUTES{
-    std::string utm_zone;
-    std::string grid_cell_size_reflective;
-    std::string orientation;
-    std::string corner_ul_projection_x_product;
-    std::string corner_ul_projection_y_product;
+    QString utm_zone;
+    QString grid_cell_size_reflective;
+    QString orientation;
+    QString corner_ul_projection_x_product;
+    QString corner_ul_projection_y_product;
 };
 
 struct LEVEL1_RADIOMETRIC_RESCALING{
-    std::string reflectance_mult_band[LANDSAT_9_BANDS_NUMBER];
-    std::string reflectance_add_band[LANDSAT_9_BANDS_NUMBER];
+    QString reflectance_mult_band[LANDSAT_9_BANDS_NUMBER];
+    QString reflectance_add_band[LANDSAT_9_BANDS_NUMBER];
 };
 
 struct LANDSAT_METADATA_FILE{
     bool isHeaderValid = false;
+    bool landsat9_missed_channels[LANDSAT_9_BANDS_NUMBER];
     PRODUCT_CONTENTS product_contents;
     IMAGE_ATTRIBUTES image_attributes;
     PROJECTION_ATTRIBUTES projection_attributes;

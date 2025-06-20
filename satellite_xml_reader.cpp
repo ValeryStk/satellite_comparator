@@ -32,7 +32,7 @@ QString traverseDom(const QDomNode& node,
 
 namespace satc{
 
-sad::LANDSAT_METADATA_FILE satc::readLandsatXmlHeader(const QString &pathToLandsatHeader)
+sad::LANDSAT_METADATA_FILE readLandsatXmlHeader(const QString &pathToLandsatHeader)
 {
     sad::LANDSAT_METADATA_FILE lmd;
     QFile file(pathToLandsatHeader);
@@ -48,12 +48,42 @@ sad::LANDSAT_METADATA_FILE satc::readLandsatXmlHeader(const QString &pathToLands
     }
 
     QDomElement root = doc.documentElement();
+    QString result;
 
-    //qDebug()<<traverseDom(root,"PRODUCT_CONTENTS","LANDSAT_PRODUCT_ID");
+    // READING PRODUCT_CONTENTS FOR LANDSAT FROM XML
+    result = traverseDom(root,"PRODUCT_CONTENTS","LANDSAT_PRODUCT_ID");
+    lmd.product_contents.landsat_product_id = result;
+
+    result = traverseDom(root,"PRODUCT_CONTENTS","PROCESSING_LEVEL");
+    lmd.product_contents.processing_level = result;
+
     for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
       QString result = traverseDom(root,"PRODUCT_CONTENTS",sad::landsat9_bands_keys[i]);
+      if(result.isEmpty()){
+          lmd.landsat9_missed_channels[i]=true;
+      }
+      else{
+          lmd.landsat9_missed_channels[i]=false;
+      }
+      lmd.product_contents.file_name_bands[i] = result;
       qDebug()<<result;
     }
+
+    // READING IMAGE_ATTRIBUTES FOR LANDSAT FROM XML
+    result = traverseDom(root,"IMAGE_ATTRIBUTES","SPACECRAFT_ID");
+    lmd.image_attributes.spacecraft_id = result;
+
+    result = traverseDom(root,"IMAGE_ATTRIBUTES","SENSOR_ID");
+    lmd.image_attributes.sensor_id = result;
+
+    result = traverseDom(root,"IMAGE_ATTRIBUTES","DATE_ACQUIRED");
+    lmd.image_attributes.date_acquired = result;
+
+    result = traverseDom(root,"IMAGE_ATTRIBUTES","SUN_AZIMUTH");
+    lmd.image_attributes.sun_azimuth = result;
+
+    result = traverseDom(root,"IMAGE_ATTRIBUTES","SUN_ELEVATION");
+    lmd.image_attributes.sun_elevation = result;
 
 
     file.close();
