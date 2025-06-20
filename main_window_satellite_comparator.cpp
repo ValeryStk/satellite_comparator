@@ -39,6 +39,7 @@ QVector<double> waves;
 QVector<double> trimmed_satellite_data;
 
 
+
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindowSatelliteComparator)
@@ -285,7 +286,7 @@ void MainWindowSatelliteComparator::openHeaderData()
         jsn::getJsonObjectFromFile(headerName,jo);
         if(jo.contains("LANDSAT_METADATA_FILE")){
             QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
-            QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL1_RADIOMETRIC_RESCALING"});
+            QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"});
             QJsonObject check_bands = value.toObject();
             QJsonObject radiance = radiance_value.toObject();
             QJsonObject projection = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PROJECTION_ATTRIBUTES"}).toObject();
@@ -309,7 +310,7 @@ void MainWindowSatelliteComparator::openHeaderData()
                 m_landsat9_data_bands[i] = readTiff(fi.path()+"/"+band_file_name,xS,yS);
                 m_landsat9_bands_image_sizes[i] = {xS,yS};
 
-                if(i<9){//TODO TEST Есть только до 9 канала TEST REFLECTANCE_MULT_BAND_9  REFLECTANCE_ADD_BAND_9
+                if(i<7){//TODO TEST Есть только до 9 канала TEST REFLECTANCE_MULT_BAND_9  REFLECTANCE_ADD_BAND_9
                     double mult_refl = radiance[sad::landsat9_mult_reflectence_keys[i]].toString().toDouble();
                     double add_refl = radiance[sad::landsat9_add_reflectence_keys[i]].toString().toDouble();
                     m_reflectance_mult_add_arrays[i][0] = mult_refl;
@@ -597,7 +598,7 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 
             if(m_is_bekas){// TODO FLEXIBLE NUMBER OF CHANNELS OPTIMIZATION
                 size_t elems_to_copy = std::min(ksy.toStdVector().size(), static_cast<size_t>(5));
-                //ksy = QVector<double>(ksy.begin(), ksy.begin() + elems_to_copy);
+                ksy = QVector<double>(ksy.begin(), ksy.begin() + elems_to_copy);
             }
             double result = 999;
             if(calculation_method->currentText()==satc::spectral_angle){
