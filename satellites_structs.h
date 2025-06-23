@@ -3,6 +3,7 @@
 #include "string"
 #include "QString"
 
+#define LANDSAT_8_BANDS_NUMBER 11
 #define LANDSAT_9_BANDS_NUMBER 11
 
 namespace sad{
@@ -73,6 +74,21 @@ const QString landsat9_add_reflectence_keys[LANDSAT_9_BANDS_NUMBER] = {
     "REFLECTANCE_ADD_BAND_9",
     "REFLECTANCE_ADD_BAND_10",
     "REFLECTANCE_ADD_BAND_11"
+};
+
+
+const QString landsat8_bands_gui_names[LANDSAT_8_BANDS_NUMBER] = {
+    "443 nm (Aerosol) 30 m",
+    "482 nm (Blue) 30 m",
+    "561 nm (Green) 30 m",
+    "655 nm (Red) 30 m",
+    "865 nm (Near infrared) 30 m",
+    "1610 nm (SWIR 1) 30 m",
+    "2200 nm (SWIR 2) 30 m",
+    "590 nm (Panchromatic) 15 m",
+    "1375 nm (Cirrus) 30 m",
+    "10900 nm (LWIR) 100 m",
+    "12000 nm (LWIR) 100 m"
 };
 
 const QString landsat9_bands_gui_names[LANDSAT_9_BANDS_NUMBER] = {

@@ -82,7 +82,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionLandsat_8">
    <property name="text">
-    <string>Landsat 9</string>
+    <string>Landsat</string>
    </property>
   </action>
   <action name="actionLandsat_9">

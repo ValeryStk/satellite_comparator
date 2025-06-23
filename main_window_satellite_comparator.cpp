@@ -29,7 +29,7 @@
 #include "satellite_xml_reader.h"
 
 
-
+QCPTextElement *title_satellite_name;
 QGraphicsScene *scene;
 QVector<double> waves_landsat9 = {443,482,562,655,865,1610,2200};
 QVector<double> waves_landsat9_5 = {443,482,562,655,865};
@@ -85,12 +85,12 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     preview->xAxis->setLabel("Длина волны, nm");
     preview->yAxis->setLabel("КСЯ");
     // Создаем заголовок
-    QCPTextElement *title = new QCPTextElement(preview,
-                                               satc::satellite_name_landsat_9,
-                                               QFont("Arial", 10,
-                                                     QFont::Bold));
+    title_satellite_name = new QCPTextElement(preview,
+                               "",//satc::satellite_name_landsat_9
+                               QFont("Arial", 10,
+                               QFont::Bold));
     preview->plotLayout()->insertRow(0);
-    preview->plotLayout()->addElement(0, 0, title);
+    preview->plotLayout()->addElement(0, 0, title_satellite_name);
     graph_satellite->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
     QCPGraph *graph_device = preview->addGraph();
     graph_device->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCrossSquare, 5));
@@ -285,6 +285,8 @@ void MainWindowSatelliteComparator::openHeaderData()
         QJsonObject jo;
         jsn::getJsonObjectFromFile(headerName,jo);
         if(jo.contains("LANDSAT_METADATA_FILE")){
+            QJsonObject image_attributes = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","IMAGE_ATTRIBUTES"}).toObject();
+            title_satellite_name->setText(image_attributes.value("SPACECRAFT_ID").toString());
             QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
             QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"});
             QJsonObject check_bands = value.toObject();
@@ -330,6 +332,7 @@ void MainWindowSatelliteComparator::openHeaderData()
         isHeaderValid = true;
     }else if(extension == "xml"){
         auto data = satc::readLandsatXmlHeader(headerName);
+        title_satellite_name->setText(data.image_attributes.spacecraft_id);
         QStringList file_names;
         for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
             if(data.landsat9_missed_channels[i])continue;
