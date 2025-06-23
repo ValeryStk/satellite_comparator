@@ -333,8 +333,10 @@ void MainWindowSatelliteComparator::openHeaderData()
         QStringList file_names;
         for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
             if(data.landsat9_missed_channels[i])continue;
-           file_names.append(data.product_contents.file_name_bands[i]);
-           landsat9_gui_available_bands.append(sad::landsat9_bands_gui_names[i]);
+            file_names.append(data.product_contents.file_name_bands[i]);
+            landsat9_gui_available_bands.append(sad::landsat9_bands_gui_names[i]);
+            m_reflectance_mult_add_arrays[i][0] = data.level2_surface_reflectance_parameters.reflectance_mult_band[i].toDouble();
+            m_reflectance_mult_add_arrays[i][1] = data.level2_surface_reflectance_parameters.reflectance_add_band[i].toDouble();
         }
         read_landsat_bands_data(file_names);
         if(!data.isHeaderValid)return;
