@@ -111,7 +111,7 @@ sad::LANDSAT_METADATA_FILE readLandsatXmlHeader(const QString &pathToLandsatHead
       lmd.level2_surface_reflectance_parameters.reflectance_add_band[i] = add_result;
       lmd.level2_surface_reflectance_parameters.reflectance_mult_band[i] = mult_result;
     }
-
+    lmd.isHeaderValid = true;
     file.close();
     return lmd;
 
