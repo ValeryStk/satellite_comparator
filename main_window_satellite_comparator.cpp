@@ -343,6 +343,11 @@ void MainWindowSatelliteComparator::openHeaderData()
             m_reflectance_mult_add_arrays[i][1] = data.level2_surface_reflectance_parameters.reflectance_add_band[i].toDouble();
         }
         read_landsat_bands_data(file_names);
+        m_geo.utmZone = data.projection_attributes.utm_zone.toDouble();
+        m_geo.resX = data.projection_attributes.grid_cell_size_reflective.toDouble();
+        m_geo.resY = -m_geo.resX;
+        m_geo.ulX = data.projection_attributes.corner_ul_projection_x_product.toDouble();
+        m_geo.ulY = data.projection_attributes.corner_ul_projection_y_product.toDouble();
         if(!data.isHeaderValid)return;
         isHeaderValid = true;
     }
@@ -477,13 +482,15 @@ void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString
             }
     }
 
-    if(mult.size()&&add.size()<10){//TODO MORE DEFINITE
-        for(int i=0;i<9;++i){
+       if(mult.size()!=add.size()){
+       qDebug()<<"SIZES ARE NOT THE SAME....";
+       }
+        for(int i=0;i<mult.size();++i){
             m_reflectance_mult_add_arrays[i][0] = mult[i];
             m_reflectance_mult_add_arrays[i][1] = add[i];
             qDebug()<<"*******************--->"<<mult[i]<<add[i];
         }
-    }
+
 
 }
 
@@ -765,6 +772,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
     const int nXSize = m_landsat9_bands_image_sizes->first;
     const int nYSize = m_landsat9_bands_image_sizes->second;
+    qDebug()<<"x -- y: "<<nXSize<<nYSize;
     if(m_is_image_created==false){
         m_satellite_image = QImage(nXSize, nYSize, QImage::QImage::Format_RGB888);
     }else{
@@ -809,7 +817,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
                     rgb = qRgb(R,G,B);
                 }
 
-                m_satellite_image.setPixel(x,y,rgb);
+               m_satellite_image.setPixel(x,y,rgb);
             }
 
         }
