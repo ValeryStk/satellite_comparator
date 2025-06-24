@@ -326,6 +326,7 @@ void MainWindowSatelliteComparator::openHeaderData()
     }else if(extension == "txt"){
         auto file_names = getLandSat9BandsFromTxtFormat(headerName,
                                                         landsat9_gui_available_bands);
+        title_satellite_name->setText(getLandSatSpaceCraftIDFromTxtFormat(headerName));
         read_landsat_bands_data(file_names);
         fillLandSat9ReflectanceMultAdd(headerName);
         fillLandSat9GeoData(headerName);
@@ -419,6 +420,29 @@ QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const Q
     return bands;
 }
 
+QString MainWindowSatelliteComparator::getLandSatSpaceCraftIDFromTxtFormat(const QString &path)
+{
+    QFile file(path);
+    if(file.exists()==false)return "";
+    QTextStream ts(&file);
+    ts.setCodec("UTF-8");
+    if(file.open(QIODevice::ReadOnly)==false)return "";
+    QString temp;
+    QStringList bands_lines;
+    bool isGroupImageAttributes = false;
+    while(ts.readLineInto(&temp)){
+        if(temp.contains("GROUP = IMAGE_ATTRIBUTES")){isGroupImageAttributes = true;}
+        if(temp.contains("END_GROUP = IMAGE_ATTRIBUTES")){break;}
+        if(isGroupImageAttributes==false)continue;
+        if(temp.contains("SPACECRAFT_ID")){
+            bands_lines.append(temp);
+            temp = temp.mid(temp.indexOf('"'),temp.lastIndexOf('"'));
+            temp.replace('"',"");
+            return temp;
+        }
+    }
+}
+
 void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString& path)
 {
     QFile file(path);
@@ -431,12 +455,12 @@ void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString
     QVector<double> add;
     bool isReflectanceGroup = false;
     while(ts.readLineInto(&temp)){
-        if(temp.contains("GROUP = LEVEL1_RADIOMETRIC_RESCALING")){
+        if(temp.contains("GROUP = LEVEL2_SURFACE_REFLECTANCE_PARAMETERS")){
             isReflectanceGroup = true;
             continue;
         }
         if(isReflectanceGroup==false)continue;
-        if(temp.contains("END_GROUP = LEVEL1_RADIOMETRIC_RESCALING")){
+        if(temp.contains("END_GROUP = LEVEL2_SURFACE_REFLECTANCE_PARAMETERS")){
             break;
         }
         if(temp.contains("REFLECTANCE_MULT_BAND_")){
@@ -457,6 +481,7 @@ void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString
         for(int i=0;i<9;++i){
             m_reflectance_mult_add_arrays[i][0] = mult[i];
             m_reflectance_mult_add_arrays[i][1] = add[i];
+            qDebug()<<"*******************--->"<<mult[i]<<add[i];
         }
     }
 
