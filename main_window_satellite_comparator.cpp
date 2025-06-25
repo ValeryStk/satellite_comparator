@@ -278,7 +278,7 @@ void MainWindowSatelliteComparator::openLandsat8HeaderData()
 void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& satellite_name)
 {
     QString openSatMessage = QString("Открыть заголовочный файл %1").arg(satellite_name);
-    QString headerName =  QFileDialog::getOpenFileName(this,openSatMessage,""
+    QString headerName =  QFileDialog::getOpenFileName(this,openSatMessage,"",
                                                        "JSON файлы(*_MTL.json *_MTL.txt *_MTL.xml)");
     clearLandsat9DataBands();
     m_satelite_type = sad::UKNOWN_SATELLITE;
