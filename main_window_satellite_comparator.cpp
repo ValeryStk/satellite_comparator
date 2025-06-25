@@ -339,6 +339,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     }else if(extension == "txt"){
         auto file_names = getLandSat9BandsFromTxtFormat(headerName,
                                                         landsat9_gui_available_bands);
+        qDebug()<<"TXT filenames: "<<landsat9_gui_available_bands;
         title_satellite_name->setText(getLandSatSpaceCraftIDFromTxtFormat(headerName));
         read_landsat_bands_data(file_names);
         fillLandSat9ReflectanceMultAdd(headerName);
@@ -376,7 +377,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
 
     change_bands_and_show_image();
     ui->statusbar->showMessage("");
-    m_is_image_created = true;
+    //m_is_image_created = true;
     cross_square->setVisible(true);
 }
 
@@ -596,6 +597,7 @@ void MainWindowSatelliteComparator::read_landsat_bands_data(const QStringList& f
         int xS;
         int yS;
         m_landsat9_data_bands[i] = readTiff(m_root_path+"/"+band_file_name,xS,yS);
+        qDebug()<<"x y -- sizes: "<<xS<<yS;
         m_landsat9_bands_image_sizes[i] = {xS,yS};
     }
 }
@@ -784,21 +786,22 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
     const int nXSize = m_landsat9_bands_image_sizes->first;
     const int nYSize = m_landsat9_bands_image_sizes->second;
-    qDebug()<<"x -- y: "<<nXSize<<nYSize;
-    if(m_is_image_created==false){
+    qDebug()<<"x -- y: "<<nXSize<<nYSize<<"is_image_ready: "<<m_is_image_created;
+    //if(m_is_image_created==false){
         m_satellite_image = QImage(nXSize, nYSize, QImage::QImage::Format_RGB888);
-    }else{
+    //}else{
         ProgressInformator progress_info(ui->graphicsView_satellite_image,
                                          satc::message_changing_bands);
         progress_info.show();
         QApplication::processEvents();
-    }
+    //}
     for (int y = 0; y < nYSize; ++y) {
         for (int x = 0; x < nXSize; ++x) {
             int B = 0;
             int G = 0;
             int R = 0;
             for(int j=0;j<bands.size();++j){
+               // qDebug()<<"j band --> "<<bands[j].first;
                 int choosedColor = -1;
                 if(bands[j].second==BLUE){
                     B = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
@@ -830,6 +833,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
                 }
 
                 m_satellite_image.setPixel(x,y,rgb);
+                //qDebug()<<"R G B: "<<R<<G<<B;
             }
 
         }
