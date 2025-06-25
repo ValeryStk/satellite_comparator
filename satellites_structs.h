@@ -8,6 +8,14 @@
 
 namespace sad{
 
+enum SATELLITE_TYPE{
+    LANDSAT_9,
+    LANDSAT_8,
+    SENTINEL_2A,
+    SENTINEL_2B,
+    UKNOWN_SATELLITE
+};
+
 const QString landsat9_bands_keys[LANDSAT_9_BANDS_NUMBER] = {
     "FILE_NAME_BAND_1",
     "FILE_NAME_BAND_2",

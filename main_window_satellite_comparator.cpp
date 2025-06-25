@@ -61,7 +61,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     });
 
 
-    connect(ui->actionLandsat_8,&QAction::triggered,[this](){openHeaderData();});
+    connect(ui->actionOpenLandsat9Header,&QAction::triggered,[this](){openLandsat9HeaderData();});
     scene = new QGraphicsScene;
     qgti = new QGraphicsTextItem;
     qgti->setDefaultTextColor(Qt::black);
@@ -86,9 +86,9 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     preview->yAxis->setLabel("КСЯ");
     // Создаем заголовок
     title_satellite_name = new QCPTextElement(preview,
-                               "",//satc::satellite_name_landsat_9
-                               QFont("Arial", 10,
-                               QFont::Bold));
+                                              "",//satc::satellite_name_landsat_9
+                                              QFont("Arial", 10,
+                                                    QFont::Bold));
     preview->plotLayout()->insertRow(0);
     preview->plotLayout()->addElement(0, 0, title_satellite_name);
     graph_satellite->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
@@ -265,11 +265,23 @@ MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
     delete ui;
 }
 
-void MainWindowSatelliteComparator::openHeaderData()
+void MainWindowSatelliteComparator::openLandsat9HeaderData()
 {
-    QString headerName =  QFileDialog::getOpenFileName(this, "Открыть заголовочный файл LANDSAT","",
+    openCommonLandsatHeaderData(satc::satellite_name_landsat_9);
+}
+
+void MainWindowSatelliteComparator::openLandsat8HeaderData()
+{
+   openCommonLandsatHeaderData(satc::satellite_name_landsat_8);
+}
+
+void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& satellite_name)
+{
+    QString openSatMessage = QString("Открыть заголовочный файл %1").arg(satellite_name);
+    QString headerName =  QFileDialog::getOpenFileName(this,openSatMessage,""
                                                        "JSON файлы(*_MTL.json *_MTL.txt *_MTL.xml)");
     clearLandsat9DataBands();
+    m_satelite_type = sad::UKNOWN_SATELLITE;
     QFile file(headerName);
     static bool isHeaderValid = false;
     if(file.exists()==false)return;
@@ -277,7 +289,8 @@ void MainWindowSatelliteComparator::openHeaderData()
     QFileInfo fi(headerName);
     m_root_path = fi.path();
     const QString extension = fi.completeSuffix();
-    ui->statusbar->showMessage("Загрузка данных Landsat 9...");
+    QString dataLoadingMessage = QString("Загрузка данных %1...").arg(satellite_name);
+    ui->statusbar->showMessage(dataLoadingMessage);
     QApplication::processEvents();
     QList<QString> landsat9_gui_available_bands;
 
@@ -365,7 +378,6 @@ void MainWindowSatelliteComparator::openHeaderData()
     ui->statusbar->showMessage("");
     m_is_image_created = true;
     cross_square->setVisible(true);
-
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<double>& x,
@@ -482,14 +494,14 @@ void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString
             }
     }
 
-       if(mult.size()!=add.size()){
-       qDebug()<<"SIZES ARE NOT THE SAME....";
-       }
-        for(int i=0;i<mult.size();++i){
-            m_reflectance_mult_add_arrays[i][0] = mult[i];
-            m_reflectance_mult_add_arrays[i][1] = add[i];
-            qDebug()<<"*******************--->"<<mult[i]<<add[i];
-        }
+    if(mult.size()!=add.size()){
+        qDebug()<<"SIZES ARE NOT THE SAME....";
+    }
+    for(int i=0;i<mult.size();++i){
+        m_reflectance_mult_add_arrays[i][0] = mult[i];
+        m_reflectance_mult_add_arrays[i][1] = add[i];
+        qDebug()<<"*******************--->"<<mult[i]<<add[i];
+    }
 
 
 }
@@ -817,7 +829,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
                     rgb = qRgb(R,G,B);
                 }
 
-               m_satellite_image.setPixel(x,y,rgb);
+                m_satellite_image.setPixel(x,y,rgb);
             }
 
         }

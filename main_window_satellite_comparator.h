@@ -28,12 +28,15 @@ public:
 
 private slots:
     void change_bands_and_show_image();
-    void openHeaderData();
+    void openLandsat9HeaderData();
+    void openLandsat8HeaderData();
+    void openCommonLandsatHeaderData(const QString& satellite_name);
     void processBekasDataForComparing(const QVector<double>& x,
                                       const QVector<double>& y);
 
 private:
     Ui::MainWindowSatelliteComparator *ui;
+    sad::SATELLITE_TYPE m_satelite_type = sad::UKNOWN_SATELLITE;
     DynamicCheckboxWidget *m_dynamic_checkboxes_widget;
     SatteliteComparator* m_sat_comparator;
 

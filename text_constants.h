@@ -14,6 +14,7 @@ extern const char action_send_sample_text[];
 
 
 extern const char satellite_name_landsat_9[];
+extern const char satellite_name_landsat_8[];
 
 }
 

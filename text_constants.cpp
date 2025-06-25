@@ -14,4 +14,6 @@ const char action_send_sample_text[] = "Выбрать как образец\n �
 
 const char satellite_name_landsat_9[] = "LANDSAT 9";
 
+const char satellite_name_landsat_8[] = "LANDSAT 8";
+
 }

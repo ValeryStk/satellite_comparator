@@ -72,7 +72,8 @@
      <property name="title">
       <string>Загрузка спутниковых данных</string>
      </property>
-     <addaction name="actionLandsat_8"/>
+     <addaction name="actionOpenLandsat9Header"/>
+     <addaction name="actionOpenLandsat8Header"/>
     </widget>
     <addaction name="menu_2"/>
     <addaction name="actionBekas"/>
@@ -80,29 +81,19 @@
    <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionLandsat_8">
-   <property name="text">
-    <string>Landsat</string>
-   </property>
-  </action>
-  <action name="actionLandsat_9">
+  <action name="actionOpenLandsat9Header">
    <property name="text">
     <string>Landsat 9</string>
-   </property>
-  </action>
-  <action name="actionSentinel_2A">
-   <property name="text">
-    <string>Sentinel 2A</string>
-   </property>
-  </action>
-  <action name="actionKanopus_B">
-   <property name="text">
-    <string>Канопус-B</string>
    </property>
   </action>
   <action name="actionBekas">
    <property name="text">
     <string>Загрузка данных БЕКАС</string>
+   </property>
+  </action>
+  <action name="actionOpenLandsat8Header">
+   <property name="text">
+    <string>Landsat 8</string>
    </property>
   </action>
  </widget>
