@@ -10,6 +10,11 @@ class SatelliteGraphicsView: public QGraphicsView
 public:
     SatelliteGraphicsView(QWidget *parent = nullptr);
 
+    void setIsSignal(bool value);
+
+private:
+    bool isSignal = false;
+
 protected:
     void mouseMoveEvent(QMouseEvent* event) override;
 

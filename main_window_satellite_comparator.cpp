@@ -30,7 +30,6 @@
 
 
 QCPTextElement *title_satellite_name;
-QGraphicsScene *scene;
 QVector<double> waves_landsat9 = {443,482,562,655,865,1610,2200};
 QVector<double> waves_landsat9_5 = {443,482,562,655,865};
 
@@ -43,11 +42,15 @@ QVector<double> trimmed_satellite_data;
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindowSatelliteComparator)
+    , scene(new QGraphicsScene)
     , m_sat_comparator(new SatteliteComparator)
+    , m_is_bekas(false)
+    , cross_square(new CrossSquare(100))
+
+
 {
     ui->setupUi(this);
     setWindowTitle(satc::app_name);
-    m_is_bekas = false;
     bekas_window = nullptr;
     std::fill(std::begin(m_landsat9_missed_channels),std::end(m_landsat9_missed_channels),true);
 
@@ -62,14 +65,14 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 
     connect(ui->actionOpenLandsat9Header,&QAction::triggered,[this](){openLandsat9HeaderData();});
-    scene = new QGraphicsScene;
+
     qgti = new QGraphicsTextItem;
     qgti->setDefaultTextColor(Qt::black);
     qgti->setFont(QFont("Arial", 12));
     qgti->setZValue(1001);
     scene->addItem(qgti);
     m_dynamic_checkboxes_widget = nullptr;
-    cross_square = new CrossSquare(100);
+
     calculation_method = new QComboBox;
     calculation_method->addItems({satc::euclid_metrika,satc::spectral_angle});
     cross_square->setPos(0,0);
@@ -101,7 +104,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     preview->graph(0)->setPen(QPen(Qt::blue));
     preview->graph(1)->setPen(QPen(Qt::red));
 
-    connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::pointChanged,[this](QPointF pos){
+    connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::pointChanged,this, [this](QPointF pos){
         QVector<double> data = getLandsat8Ksy(pos.x(),pos.y());
         if(data.empty()){
             qDebug()<<"DATA EMPTY!!!!";
@@ -111,7 +114,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             qDebug()<<"ERROR SIZE:"<<data.size();
             return;
         }
-
+m_is_bekas = false;
         if(m_is_bekas){
             sample = m_bekas_sample;
             waves = waves_landsat9_5;
@@ -122,7 +125,12 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             waves = waves_landsat9;
             trimmed_satellite_data = data;
         }
-
+        qDebug()<<"count: "<< preview->graphCount();
+        if (preview->graph(0)) {
+            qDebug() << "График 0 существует!";
+        } else {
+            qDebug() << "График 0 не найден.";
+        }
         preview->graph(0)->data().clear();
         preview->graph(1)->data().clear();
         preview->graph(0)->setData(waves, trimmed_satellite_data);
@@ -285,6 +293,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     QString openSatMessage = QString("Открыть заголовочный файл %1").arg(satellite_name);
     QString headerName =  QFileDialog::getOpenFileName(this,openSatMessage,"",
                                                        "JSON файлы(*_MTL.json *_MTL.txt *_MTL.xml)");
+    ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
     m_satelite_type = sad::UKNOWN_SATELLITE;
     QFile file(headerName);
@@ -383,7 +392,9 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     change_bands_and_show_image();
     ui->statusbar->showMessage("");
     m_is_image_created = true;
-    cross_square->setVisible(true);
+    //cross_square->setVisible(true);
+    ui->graphicsView_satellite_image->setIsSignal(true);
+
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<double>& x,
@@ -641,6 +652,8 @@ QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x,
         double ksy_d = m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
         ksy.append(ksy_d);
     }
+
+    int stop = 7;;
     return ksy;
 }
 
