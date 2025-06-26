@@ -112,7 +112,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         if(m_is_bekas){
             sample = m_bekas_sample;
             waves = waves_landsat9_5;
-            size_t elems_to_copy = std::min(data.toStdVector().size(), static_cast<size_t>(5));
+            size_t elems_to_copy = std::min(static_cast<size_t>(data.size()), static_cast<size_t>(5));
             trimmed_satellite_data = data.mid(0, elems_to_copy);
         }else{
             sample = m_landsat9_sample;
