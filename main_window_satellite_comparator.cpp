@@ -103,7 +103,10 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::pointChanged,[this](QPointF pos){
         QVector<double> data = getLandsat8Ksy(pos.x(),pos.y());
-        if(data.empty())return;
+        if(data.empty()){
+            qDebug()<<"DATA EMPTY!!!!";
+            return;
+        }
         if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
             qDebug()<<"ERROR SIZE:"<<data.size();
             return;
@@ -112,7 +115,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         if(m_is_bekas){
             sample = m_bekas_sample;
             waves = waves_landsat9_5;
-            size_t elems_to_copy = std::min(data.toStdVector().size(), static_cast<size_t>(5));
+            size_t elems_to_copy = std::min(static_cast<size_t>(data.size()), static_cast<size_t>(5));
             trimmed_satellite_data = data.mid(0, elems_to_copy);
         }else{
             sample = m_landsat9_sample;
@@ -133,6 +136,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         }
         qgti->setPos(pos.x(),pos.y()+5);
         qgti->setPlainText(QString::number(result));
+        preview->rescaleAxes(true);
         preview->replot();
     });
 
@@ -153,6 +157,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         preview->graph(1)->data().clear();
         preview->graph(0)->setData(waves_landsat9, data);
         preview->graph(1)->setData(waves_landsat9, m_landsat9_sample);
+        preview->rescaleAxes(true);
         preview->replot();
         getGeoCoordinates(pos.x(),pos.y());
     });
@@ -272,7 +277,7 @@ void MainWindowSatelliteComparator::openLandsat9HeaderData()
 
 void MainWindowSatelliteComparator::openLandsat8HeaderData()
 {
-   openCommonLandsatHeaderData(satc::satellite_name_landsat_8);
+    openCommonLandsatHeaderData(satc::satellite_name_landsat_8);
 }
 
 void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& satellite_name)
@@ -291,7 +296,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     const QString extension = fi.completeSuffix();
     QString dataLoadingMessage = QString("Загрузка данных %1...").arg(satellite_name);
     ui->statusbar->showMessage(dataLoadingMessage);
-    QApplication::processEvents();
+    //QApplication::processEvents();
     QList<QString> landsat9_gui_available_bands;
 
     if(extension == "json"){
@@ -377,7 +382,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
 
     change_bands_and_show_image();
     ui->statusbar->showMessage("");
-    //m_is_image_created = true;
+    m_is_image_created = true;
     cross_square->setVisible(true);
 }
 
@@ -788,12 +793,12 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     const int nYSize = m_landsat9_bands_image_sizes->second;
     qDebug()<<"x -- y: "<<nXSize<<nYSize<<"is_image_ready: "<<m_is_image_created;
     //if(m_is_image_created==false){
-        m_satellite_image = QImage(nXSize, nYSize, QImage::QImage::Format_RGB888);
+    m_satellite_image = QImage(nXSize, nYSize, QImage::QImage::Format_RGB888);
     //}else{
-        ProgressInformator progress_info(ui->graphicsView_satellite_image,
-                                         satc::message_changing_bands);
-        progress_info.show();
-        QApplication::processEvents();
+    ProgressInformator progress_info(ui->graphicsView_satellite_image,
+                                     satc::message_changing_bands);
+    progress_info.show();
+    //QApplication::processEvents();
     //}
     for (int y = 0; y < nYSize; ++y) {
         for (int x = 0; x < nXSize; ++x) {
@@ -801,7 +806,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
             int G = 0;
             int R = 0;
             for(int j=0;j<bands.size();++j){
-               // qDebug()<<"j band --> "<<bands[j].first;
+                // qDebug()<<"j band --> "<<bands[j].first;
                 int choosedColor = -1;
                 if(bands[j].second==BLUE){
                     B = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
