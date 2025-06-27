@@ -45,9 +45,9 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     , ui(new Ui::MainWindowSatelliteComparator)
     , scene(new QGraphicsScene)
     , m_sat_comparator(new SatteliteComparator)
+    , m_is_image_created(false)
     , m_is_bekas(false)
     , cross_square(new CrossSquare(100))
-
 
 {
     ui->setupUi(this);
@@ -172,7 +172,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     ui->graphicsView_satellite_image->setScene(scene);
     ui->graphicsView_satellite_image->setRenderHint(QPainter::Antialiasing);
     ui->graphicsView_satellite_image->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
-    m_is_image_created = false;
+
 
 
 
