@@ -66,6 +66,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 
     connect(ui->actionOpenLandsat9Header,&QAction::triggered,[this](){openLandsat9HeaderData();});
+    connect(ui->actionOpenLandsat8Header,&QAction::triggered,[this](){openLandsat8HeaderData();});
 
     qgti = new QGraphicsTextItem;
     qgti->setDefaultTextColor(Qt::black);
@@ -349,7 +350,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     }else if(extension == "txt"){
         auto file_names = getLandSat9BandsFromTxtFormat(headerName,
                                                         landsat9_gui_available_bands);
-        qDebug()<<"TXT filenames: "<<file_names;
+        //qDebug()<<"TXT filenames: "<<file_names;
         title_satellite_name->setText(getLandSatSpaceCraftIDFromTxtFormat(headerName));
         read_landsat_bands_data(file_names);
         fillLandSat9ReflectanceMultAdd(headerName);
@@ -435,7 +436,7 @@ QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const Q
         {
             if (item.contains(searchString, Qt::CaseSensitive)) {
                 found = true;
-                qDebug()<<item<<"********** MATCHED ****************"<<searchString;
+                //qDebug()<<item<<"********** MATCHED ****************"<<searchString;
                 break;
             }
         }
