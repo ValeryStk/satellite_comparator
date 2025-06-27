@@ -108,7 +108,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::pointChanged,this, [this](QPointF pos){
         QVector<double> data = getLandsat8Ksy(pos.x(),pos.y());
         if(data.empty()){
-            qDebug()<<"DATA EMPTY!!!!";
+            //qDebug()<<"DATA EMPTY!!!!";
             return;
         }
         if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
