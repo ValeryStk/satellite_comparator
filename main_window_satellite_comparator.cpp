@@ -296,6 +296,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
                                                        "JSON файлы(*_MTL.json *_MTL.txt *_MTL.xml)");
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
+    cross_square->setVisible(false);
     m_satelite_type = sad::UKNOWN_SATELLITE;
     QFile file(headerName);
     static bool isHeaderValid = false;
@@ -306,7 +307,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     const QString extension = fi.completeSuffix();
     QString dataLoadingMessage = QString("Загрузка данных %1...").arg(satellite_name);
     ui->statusbar->showMessage(dataLoadingMessage);
-    //QApplication::processEvents();
+    QApplication::processEvents();
     QList<QString> landsat9_gui_available_bands;
 
     if(extension == "json"){
@@ -393,7 +394,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     change_bands_and_show_image();
     ui->statusbar->showMessage("");
     m_is_image_created = true;
-    //cross_square->setVisible(true);
+    cross_square->setVisible(true);
     ui->graphicsView_satellite_image->setIsSignal(true);
 
 }
