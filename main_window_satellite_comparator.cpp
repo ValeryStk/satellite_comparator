@@ -90,7 +90,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     preview->yAxis->setLabel("КСЯ");
     // Создаем заголовок
     title_satellite_name = new QCPTextElement(preview,
-                                              "",//satc::satellite_name_landsat_9
+                                              "",
                                               QFont("Arial", 10,
                                                     QFont::Bold));
     preview->plotLayout()->insertRow(0);
@@ -115,23 +115,17 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             qDebug()<<"ERROR SIZE:"<<data.size();
             return;
         }
-m_is_bekas = false;
         if(m_is_bekas){
             sample = m_bekas_sample;
             waves = waves_landsat9_5;
             size_t elems_to_copy = std::min(static_cast<size_t>(data.size()), static_cast<size_t>(5));
-            trimmed_satellite_data = data.mid(0, elems_to_copy);
+            trimmed_satellite_data = data.mid(0,static_cast<int>(elems_to_copy));
         }else{
             sample = m_landsat9_sample;
             waves = waves_landsat9;
             trimmed_satellite_data = data;
         }
-        qDebug()<<"count: "<< preview->graphCount();
-        if (preview->graph(0)) {
-            qDebug() << "График 0 существует!";
-        } else {
-            qDebug() << "График 0 не найден.";
-        }
+
         preview->graph(0)->data().clear();
         preview->graph(1)->data().clear();
         preview->graph(0)->setData(waves, trimmed_satellite_data);
