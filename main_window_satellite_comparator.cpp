@@ -27,6 +27,7 @@
 #include "google_maps_url_maker.h"
 #include <QSpacerItem>
 #include "satellite_xml_reader.h"
+#include "string"
 
 
 QCPTextElement *title_satellite_name;
@@ -353,7 +354,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     }else if(extension == "txt"){
         auto file_names = getLandSat9BandsFromTxtFormat(headerName,
                                                         landsat9_gui_available_bands);
-        qDebug()<<"TXT filenames: "<<landsat9_gui_available_bands;
+        qDebug()<<"TXT filenames: "<<file_names;
         title_satellite_name->setText(getLandSatSpaceCraftIDFromTxtFormat(headerName));
         read_landsat_bands_data(file_names);
         fillLandSat9ReflectanceMultAdd(headerName);
@@ -489,12 +490,13 @@ void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString
     QVector<double> add;
     bool isReflectanceGroup = false;
     while(ts.readLineInto(&temp)){
-        if(temp.contains("GROUP = LEVEL2_SURFACE_REFLECTANCE_PARAMETERS")){
+        temp = temp.trimmed();
+        if(temp=="GROUP = LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"){
             isReflectanceGroup = true;
             continue;
         }
         if(isReflectanceGroup==false)continue;
-        if(temp.contains("END_GROUP = LEVEL2_SURFACE_REFLECTANCE_PARAMETERS")){
+        if(temp=="END_GROUP = LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"){
             break;
         }
         if(temp.contains("REFLECTANCE_MULT_BAND_")){
@@ -513,11 +515,16 @@ void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString
 
     if(mult.size()!=add.size()){
         qDebug()<<"SIZES ARE NOT THE SAME....";
+        return;
+    }
+    if(mult.size()>LANDSAT_9_BANDS_NUMBER){
+        qDebug()<<"SIZE TOO BIG...";
+        return;
     }
     for(int i=0;i<mult.size();++i){
         m_reflectance_mult_add_arrays[i][0] = mult[i];
         m_reflectance_mult_add_arrays[i][1] = add[i];
-        qDebug()<<"*******************--->"<<mult[i]<<add[i];
+        //qDebug()<<"*******************--->"<<mult[i]<<add[i];
     }
 
 
