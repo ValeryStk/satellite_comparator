@@ -402,11 +402,16 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<d
                                                                  const QVector<double>& y)
 {
     //qDebug()<<"sat_comparator: "<<x.size()<<y.size();
+    if(m_satelite_type == sad::UKNOWN_SATELLITE)return;
     m_sat_comparator->initial_fill_data_to_show(x,y,waves_landsat9,m_landsat9_sample);
+    if(m_satelite_type == sad::LANDSAT_9){
     m_sat_comparator->set_satellite_responses("landsat9");
-    auto folded_device_spectr_for_landsat9 = m_sat_comparator->fold_spectr_to_satellite_responses();
-    m_is_bekas = true;
-    m_bekas_sample = folded_device_spectr_for_landsat9;
+    }else if(m_satelite_type == sad::LANDSAT_8){
+    m_sat_comparator->set_satellite_responses("landsat8");
+    }
+    auto folded_device_spectr_for_landsat = m_sat_comparator->fold_spectr_to_satellite_responses();
+    m_is_bekas = true;// TODO check that VALUES ARE CORRECT
+    m_bekas_sample = folded_device_spectr_for_landsat;
 }
 
 QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const QString& path,
