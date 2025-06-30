@@ -276,11 +276,13 @@ MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
 
 void MainWindowSatelliteComparator::openLandsat9HeaderData()
 {
+    m_satelite_type = sad::LANDSAT_9;
     openCommonLandsatHeaderData(satc::satellite_name_landsat_9);
 }
 
 void MainWindowSatelliteComparator::openLandsat8HeaderData()
 {
+    m_satelite_type = sad::LANDSAT_8;
     openCommonLandsatHeaderData(satc::satellite_name_landsat_8);
 }
 
@@ -292,7 +294,6 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
     cross_square->setVisible(false);
-    m_satelite_type = sad::UKNOWN_SATELLITE;
     QFile file(headerName);
     static bool isHeaderValid = false;
     if(file.exists()==false)return;
@@ -303,7 +304,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     QString dataLoadingMessage = QString("Загрузка данных %1...").arg(satellite_name);
     ui->statusbar->showMessage(dataLoadingMessage);
     QApplication::processEvents();
-    QList<QString> landsat9_gui_available_bands;
+    QList<QString> landsat_gui_available_bands;
 
     if(extension == "json"){
         QJsonObject jo;
@@ -329,7 +330,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
                     continue;
                 }
                 m_landsat9_missed_channels[i] = false;
-                landsat9_gui_available_bands.append(sad::landsat9_bands_gui_names[i]);
+                landsat_gui_available_bands.append(sad::landsat9_bands_gui_names[i]);
                 auto band_file_name = check_bands[sad::landsat9_bands_keys[i]].toString();
                 int xS;
                 int yS;
@@ -349,7 +350,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
         };
     }else if(extension == "txt"){
         auto file_names = getLandSat9BandsFromTxtFormat(headerName,
-                                                        landsat9_gui_available_bands);
+                                                        landsat_gui_available_bands);
         //qDebug()<<"TXT filenames: "<<file_names;
         title_satellite_name->setText(getLandSatSpaceCraftIDFromTxtFormat(headerName));
         read_landsat_bands_data(file_names);
@@ -363,7 +364,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
         for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
             if(data.landsat9_missed_channels[i])continue;
             file_names.append(data.product_contents.file_name_bands[i]);
-            landsat9_gui_available_bands.append(sad::landsat9_bands_gui_names[i]);
+            landsat_gui_available_bands.append(sad::landsat9_bands_gui_names[i]);
             m_reflectance_mult_add_arrays[i][0] = data.level2_surface_reflectance_parameters.reflectance_mult_band[i].toDouble();
             m_reflectance_mult_add_arrays[i][1] = data.level2_surface_reflectance_parameters.reflectance_add_band[i].toDouble();
         }
@@ -376,9 +377,12 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
         if(!data.isHeaderValid)return;
         isHeaderValid = true;
     }
-    if(isHeaderValid == false)return;
+    if(isHeaderValid == false){
+        m_satelite_type = sad::UKNOWN_SATELLITE;
+        return;
+    }
 
-    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(landsat9_gui_available_bands,
+    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(landsat_gui_available_bands,
                                                             ui->verticalLayout_bands);
     m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
     connect(m_dynamic_checkboxes_widget,
