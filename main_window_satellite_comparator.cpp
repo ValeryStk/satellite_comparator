@@ -872,7 +872,9 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
         }
     }
     if(m_image_item){
-    scene->removeItem(m_image_item);
+    qDebug()<<"Delete image item....";
+    scene->removeItem(m_image_item);// удаление со сцены
+    delete m_image_item;            // освобождение памяти
     }
     m_satellite_image = QImage(m_image_data,nXSize,nYSize,nXSize*3,QImage::Format_RGB888);
     auto pixmap = QPixmap::fromImage(m_satellite_image);
