@@ -688,7 +688,7 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
             auto ksy = getLandsat8Ksy(i,j);
 
             if(m_is_bekas){// TODO FLEXIBLE NUMBER OF CHANNELS OPTIMIZATION
-                size_t elems_to_copy = std::min(ksy.toStdVector().size(), static_cast<size_t>(5));
+                size_t elems_to_copy = std::min(static_cast<size_t>(ksy.size()), static_cast<size_t>(5));
                 ksy = QVector<double>(ksy.begin(), ksy.begin() + elems_to_copy);
             }
             double result = 999;
