@@ -45,9 +45,11 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     , ui(new Ui::MainWindowSatelliteComparator)
     , scene(new QGraphicsScene)
     , m_sat_comparator(new SatteliteComparator)
+    , m_image_data(new uchar[10000 * 10000 * 3])
     , m_is_image_created(false)
     , m_is_bekas(false)
     , cross_square(new CrossSquare(100))
+
 
 {
     ui->setupUi(this);
@@ -817,19 +819,19 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     const int nXSize = m_landsat9_bands_image_sizes->first;
     const int nYSize = m_landsat9_bands_image_sizes->second;
     qDebug()<<"x -- y: "<<nXSize<<nYSize<<"is_image_ready: "<<m_is_image_created;
-    //if(m_is_image_created==false){
-    m_satellite_image = QImage(nXSize, nYSize, QImage::QImage::Format_RGB888);
-    //}else{
+
     ProgressInformator progress_info(ui->graphicsView_satellite_image,
                                      satc::message_changing_bands);
     progress_info.show();
-    //QApplication::processEvents();
-    //}
+    QApplication::processEvents();
+
+    int offset = 0;
     for (int y = 0; y < nYSize; ++y) {
         for (int x = 0; x < nXSize; ++x) {
             int B = 0;
             int G = 0;
             int R = 0;
+            QRgb rgb=0;
             for(int j=0;j<bands.size();++j){
                 // qDebug()<<"j band --> "<<bands[j].first;
                 int choosedColor = -1;
@@ -843,7 +845,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
                     R = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
                     choosedColor = RED;
                 }
-                QRgb rgb = 0;
+                rgb = 0;
                 if(bands.size() == 1){
                     switch (choosedColor) {
                     case RED:
@@ -862,13 +864,15 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
                     rgb = qRgb(R,G,B);
                 }
 
-                m_satellite_image.setPixel(x,y,rgb);
-                //qDebug()<<"R G B: "<<R<<G<<B;
             }
-
+            m_image_data[offset]=R;
+            m_image_data[offset+1]=G;
+            m_image_data[offset+2]=B;
+            offset = offset+3;
         }
     }
     //scene->clear();
+    m_satellite_image = QImage(m_image_data,nXSize,nYSize,nXSize*3,QImage::Format_RGB888);
     auto pixmap = QPixmap::fromImage(m_satellite_image);
     m_image_item = new QGraphicsPixmapItem(pixmap);
     m_image_item->setCursor(Qt::CrossCursor);

@@ -47,6 +47,7 @@ private:
     void fillLandSat9ReflectanceMultAdd(const QString& path);
     void fillLandSat9GeoData(const QString& path);
     void clearLandsat9DataBands();
+    uchar* m_image_data;
     uint16_t* readTiff(const QString& path,
                        int& xSize,
                        int& ySize);
