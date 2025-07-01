@@ -702,7 +702,10 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
             };
         }
     };
+    if(m_image_item){
     scene->removeItem(m_image_item);
+    delete m_image_item;
+    }
     auto pixmap = QPixmap::fromImage(m_satellite_image);
     m_image_item = new QGraphicsPixmapItem(pixmap);
     m_image_item->setCursor(Qt::CrossCursor);
