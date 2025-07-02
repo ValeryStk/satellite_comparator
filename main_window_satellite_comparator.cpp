@@ -29,6 +29,8 @@
 #include "satellite_xml_reader.h"
 #include "string"
 
+#define MAX_BYTES_IN_BASE_IMAGE_LAYER 10000 * 10000 * 3 // без альфа канала
+#define MAX_BYTES_IN_CLAS_IMAGE_LAYER 10000 * 10000 * 4 // слои с альфа каналом
 
 QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443,482,562,655,865,1610,2200};
@@ -37,6 +39,7 @@ QVector<double> waves_landsat9_5 = {443,482,562,655,865};
 QVector<double> sample;
 QVector<double> waves;
 QVector<double> trimmed_satellite_data;
+QVector<uchar*> m_layers;
 
 
 
@@ -45,7 +48,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     , ui(new Ui::MainWindowSatelliteComparator)
     , scene(new QGraphicsScene)
     , m_sat_comparator(new SatteliteComparator)
-    , m_image_data(new uchar[10000 * 10000 * 3])
+    , m_image_data(new uchar[MAX_BYTES_IN_BASE_IMAGE_LAYER])
     , m_is_image_created(false)
     , m_is_bekas(false)
     , cross_square(new CrossSquare(100))
@@ -651,7 +654,7 @@ QVector<double> MainWindowSatelliteComparator::getLandsat8Speya(const int x,
     return speya;
 }
 
-QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x,
+inline QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x,
                                                               const int y)
 {
     if(m_is_image_created==false)return {};
@@ -666,8 +669,6 @@ QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x,
         double ksy_d = m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
         ksy.append(ksy_d);
     }
-
-    int stop = 7;;
     return ksy;
 }
 
@@ -675,6 +676,7 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 {
     int xSize= m_landsat9_bands_image_sizes->first;
     int ySize= m_landsat9_bands_image_sizes->second;
+    int offset = 0;
     QVector<double>sample;
     if(m_is_bekas){
         sample = m_bekas_sample;
@@ -682,11 +684,12 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
         sample = m_landsat9_sample;
     }
 
+    auto new_layer = new uchar[MAX_BYTES_IN_CLAS_IMAGE_LAYER];
+    m_layers.append(new_layer);
 
-    for(int i=0;i<xSize;++i){
-        for(int j=0;j<ySize;++j){
-            auto ksy = getLandsat8Ksy(i,j);
-
+    for(int y=0;y<ySize;++y){
+        for(int x=0;x<xSize;++x){
+            auto ksy = getLandsat8Ksy(x,y);
             if(m_is_bekas){// TODO FLEXIBLE NUMBER OF CHANNELS OPTIMIZATION
                 size_t elems_to_copy = std::min(static_cast<size_t>(ksy.size()), static_cast<size_t>(5));
                 ksy = QVector<double>(ksy.begin(), ksy.begin() + elems_to_copy);
@@ -697,22 +700,22 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
             }else if(calculation_method->currentText()==satc::euclid_metrika){
                 result = euclideanDistance(ksy,sample);
             }
+            new_layer[offset]=color.red();
+            new_layer[offset+1]=color.green();
+            new_layer[offset+2]=color.blue();
             if(result<euclid_param_spinbox->value()){
-                m_satellite_image.setPixelColor(QPoint(i,j),color);
+             new_layer[offset+3]=255;
+            }else{
+                new_layer[offset+3]=0;
             };
+            offset = offset+4;
         }
     };
-    if(m_image_item){
-    scene->removeItem(m_image_item);
-    delete m_image_item;
-    }
-    auto pixmap = QPixmap::fromImage(m_satellite_image);
-    m_image_item = new QGraphicsPixmapItem(pixmap);
-    m_image_item->setCursor(Qt::CrossCursor);
-    scene->addItem(m_image_item);
-    scene->setSceneRect(pixmap.rect());
-    cross_square->setZValue(1000);
-    cross_square->update();
+
+    auto img = QImage(new_layer,xSize,ySize,xSize*4,QImage::Format_RGBA8888);
+    auto pixmap = QPixmap::fromImage(img);
+    auto new_image_item = new QGraphicsPixmapItem(pixmap);
+    scene->addItem(new_image_item);
     ui->graphicsView_satellite_image->centerOn(cross_square);
 }
 
@@ -767,7 +770,7 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
 
 }
 
-double MainWindowSatelliteComparator::euclideanDistance(const QVector<double> &v1,
+inline double MainWindowSatelliteComparator::euclideanDistance(const QVector<double> &v1,
                                                         const QVector<double> &v2)
 {
     if (v1.size() != v2.size()) {
@@ -782,7 +785,7 @@ double MainWindowSatelliteComparator::euclideanDistance(const QVector<double> &v
     return qSqrt(sum);
 }
 
-double MainWindowSatelliteComparator::calculateSpectralAngle(const QVector<double> &S1,
+inline double MainWindowSatelliteComparator::calculateSpectralAngle(const QVector<double> &S1,
                                                              const QVector<double> &S2)
 {
     if (S1.size() != S2.size()) {

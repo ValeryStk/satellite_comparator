@@ -54,7 +54,7 @@ private:
 
     void read_landsat_bands_data(const QStringList& file_names);
     QVector<double> getLandsat8Speya(const int x, const int y);
-    QVector<double> getLandsat8Ksy(const int x, const int y);
+    inline QVector<double> getLandsat8Ksy(const int x, const int y);
 
     QString m_root_path;
     QImage m_satellite_image;
@@ -85,10 +85,10 @@ private:
 
 
 
-    double euclideanDistance(const QVector<double>& v1,
+    inline double euclideanDistance(const QVector<double>& v1,
                              const QVector<double>& v2);
 
-    double calculateSpectralAngle(const QVector<double>& S1,
+    inline double calculateSpectralAngle(const QVector<double>& S1,
                                   const QVector<double>& S2);
 
     void showGoogleMap();
