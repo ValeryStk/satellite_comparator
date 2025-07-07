@@ -10,6 +10,7 @@ SOURCES += \
     dynamic_checkbox_widget.cpp \
     google_maps_url_maker.cpp \
     json_utils.cpp \
+    layer_list.cpp \
     main.cpp \
     main_window_satellite_comparator.cpp \
     message_reporter.cpp \
@@ -34,6 +35,7 @@ HEADERS += \
     dynamic_checkbox_widget.h \
     google_maps_url_maker.h \
     json_utils.h \
+    layer_list.h \
     main_window_satellite_comparator.h \
     message_reporter.h \
     progress_informator.h \

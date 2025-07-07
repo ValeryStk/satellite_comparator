@@ -28,6 +28,7 @@
 #include <QSpacerItem>
 #include "satellite_xml_reader.h"
 #include "string"
+#include "layer_list.h"
 
 #define Z_INDEX_CROSS_SQUARE_CURSOR 9999
 #define Z_INDEX_CROSS_SQUARE_CURSOR_TEXT 10000
@@ -202,7 +203,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 
     QWidget* widget_tools = new QWidget(ui->graphicsView_satellite_image);
-    m_layer_list = new QListWidget;
+    m_layer_list = new LayerList;
     QHBoxLayout* tool_root_layout = new QHBoxLayout;
     QVBoxLayout* toolLayOut = new QVBoxLayout;
     tool_root_layout->addLayout(toolLayOut);
@@ -743,7 +744,7 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     ui->graphicsView_satellite_image->centerOn(cross_square);
     auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
     m_layer_items.insert(stamp,new_image_item);
-    m_layer_list->addItem(stamp);
+    m_layer_list->addItemToList(stamp);
 }
 
 QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,

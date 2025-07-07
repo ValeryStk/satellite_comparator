@@ -11,6 +11,7 @@
 #include "QComboBox"
 #include "bekas/GuiModules/UasvViewWindow.h"
 #include "satellites_structs.h"
+#include "layer_list.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowSatelliteComparator; }
@@ -71,7 +72,7 @@ private:
 
     bool m_is_image_created;
     bool m_is_bekas;
-    QListWidget* m_layer_list;
+    LayerList* m_layer_list;
     QCustomPlot* preview;
     QComboBox* calculation_method;
     QVector<double> m_landsat9_sample;
