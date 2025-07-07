@@ -29,6 +29,8 @@
 #include "satellite_xml_reader.h"
 #include "string"
 
+#define Z_INDEX_CROSS_SQUARE_CURSOR 9999
+#define Z_INDEX_CROSS_SQUARE_CURSOR_TEXT 10000
 #define MAX_BYTES_IN_BASE_IMAGE_LAYER 10000 * 10000 * 3 // без альфа канала
 #define MAX_BYTES_IN_CLAS_IMAGE_LAYER 10000 * 10000 * 4 // слои с альфа каналом
 
@@ -40,6 +42,24 @@ QVector<double> sample;
 QVector<double> waves;
 QVector<double> trimmed_satellite_data;
 QVector<uchar*> m_layers;
+
+
+namespace {
+
+qreal getMaxZValue(QGraphicsScene* scene) {
+    qreal maxZ = std::numeric_limits<qreal>::lowest();
+    for (QGraphicsItem* item : scene->items()) {
+        if (item->zValue() > maxZ) {
+            if(item->zValue()==Z_INDEX_CROSS_SQUARE_CURSOR||
+                    item->zValue()==Z_INDEX_CROSS_SQUARE_CURSOR_TEXT)continue;
+            maxZ = item->zValue();
+        }
+    }
+    return maxZ;
+}
+
+}
+
 
 
 
@@ -76,7 +96,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     qgti = new QGraphicsTextItem;
     qgti->setDefaultTextColor(Qt::black);
     qgti->setFont(QFont("Arial", 12));
-    qgti->setZValue(1001);
+    qgti->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR_TEXT);
     scene->addItem(qgti);
     m_dynamic_checkboxes_widget = nullptr;
 
@@ -84,7 +104,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     calculation_method->addItems({satc::euclid_metrika,satc::spectral_angle});
     cross_square->setPos(0,0);
     cross_square->setVisible(false);
-    cross_square->setZValue(1000);
+    cross_square->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR);
     scene->addItem(cross_square);
     m_landsat9_sample = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     preview = new QCustomPlot;
@@ -182,6 +202,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 
     QWidget* widget_tools = new QWidget(ui->graphicsView_satellite_image);
+    m_layer_list = new QListWidget;
     QHBoxLayout* tool_root_layout = new QHBoxLayout;
     QVBoxLayout* toolLayOut = new QVBoxLayout;
     tool_root_layout->addLayout(toolLayOut);
@@ -232,6 +253,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     tool_root_layout->addWidget(preview);
     widget_tools->setLayout(tool_root_layout);
     tool_root_layout->addLayout(euclid_layout);
+    tool_root_layout->addWidget(m_layer_list);
     widget_tools->show();
     QGraphicsProxyWidget* proxy = scene->addWidget(widget_tools);
     proxy->setPos(0, 50);
@@ -715,8 +737,13 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     auto img = QImage(new_layer,xSize,ySize,xSize*4,QImage::Format_RGBA8888);
     auto pixmap = QPixmap::fromImage(img);
     auto new_image_item = new QGraphicsPixmapItem(pixmap);
+    new_image_item->setZValue(getMaxZValue(scene)+1);
     scene->addItem(new_image_item);
+    delete[] new_layer;
     ui->graphicsView_satellite_image->centerOn(cross_square);
+    auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
+    m_layer_items.insert(stamp,new_image_item);
+    m_layer_list->addItem(stamp);
 }
 
 QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
@@ -890,4 +917,9 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     scene->addItem(m_image_item);
     scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(m_image_item);
+    /*for(int i=0;i<m_layer_list->count();++i){
+        auto item = m_layer_items.value(m_layer_list->item(i)->text());
+        item->setZValue(2000+i);
+        scene->addItem(item);
+    };*/
 }

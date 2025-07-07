@@ -71,11 +71,13 @@ private:
 
     bool m_is_image_created;
     bool m_is_bekas;
+    QListWidget* m_layer_list;
     QCustomPlot* preview;
     QComboBox* calculation_method;
     QVector<double> m_landsat9_sample;
     QVector<double> m_bekas_sample;
     QGraphicsPixmapItem* m_image_item = nullptr;
+    QHash<const QString,QGraphicsPixmapItem*> m_layer_items;
     CrossSquare *cross_square;
     QDoubleSpinBox* euclid_param_spinbox;
     QGraphicsTextItem* qgti;
