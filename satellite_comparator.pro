@@ -1,4 +1,4 @@
-QT       += core gui xml multimedia multimediawidgets
+QT       += core gui xml multimedia multimediawidgets svg
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 RC_FILE = resource.rc
@@ -9,6 +9,7 @@ SOURCES += \
     cross_square.cpp \
     dynamic_checkbox_widget.cpp \
     google_maps_url_maker.cpp \
+    icon_generator.cpp \
     json_utils.cpp \
     layer_list.cpp \
     main.cpp \
@@ -34,6 +35,7 @@ HEADERS += \
     cross_square.h \
     dynamic_checkbox_widget.h \
     google_maps_url_maker.h \
+    icon_generator.h \
     json_utils.h \
     layer_list.h \
     main_window_satellite_comparator.h \

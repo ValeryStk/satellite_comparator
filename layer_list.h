@@ -8,7 +8,7 @@ class LayerList:public QListWidget
     Q_OBJECT
 public:
     explicit LayerList(QWidget* parent = nullptr);
-    void addItemToList(const QString& item);
+    void addItemToList(const QString& item, const QColor &color);
     void removeItemList(const QString& item);
 
 

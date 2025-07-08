@@ -29,6 +29,7 @@
 #include "satellite_xml_reader.h"
 #include "string"
 #include "layer_list.h"
+#include "icon_generator.h"
 
 #define Z_INDEX_CROSS_SQUARE_CURSOR 9999
 #define Z_INDEX_CROSS_SQUARE_CURSOR_TEXT 10000
@@ -204,6 +205,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     QWidget* widget_tools = new QWidget(ui->graphicsView_satellite_image);
     m_layer_list = new LayerList;
+    connect(m_layer_list,SIGNAL(show(const QString)),SLOT(show_layer(const QString)));
+    connect(m_layer_list,SIGNAL(hide(const QString)),SLOT(hide_layer(const QString)));
     QHBoxLayout* tool_root_layout = new QHBoxLayout;
     QVBoxLayout* toolLayOut = new QVBoxLayout;
     tool_root_layout->addLayout(toolLayOut);
@@ -697,6 +700,7 @@ inline QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x
 
 void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 {
+
     int xSize= m_landsat9_bands_image_sizes->first;
     int ySize= m_landsat9_bands_image_sizes->second;
     int offset = 0;
@@ -742,9 +746,12 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     scene->addItem(new_image_item);
     delete[] new_layer;
     ui->graphicsView_satellite_image->centerOn(cross_square);
+
+
+
     auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
     m_layer_items.insert(stamp,new_image_item);
-    m_layer_list->addItemToList(stamp);
+    m_layer_list->addItemToList(stamp,color);
 }
 
 QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
@@ -923,4 +930,18 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
         item->setZValue(2000+i);
         scene->addItem(item);
     };*/
+}
+
+void MainWindowSatelliteComparator::show_layer(const QString id)
+{
+    //qDebug()<<"SLOT layer SHOW: "<<id;
+    m_layer_items.value(id)->setVisible(true);
+
+}
+
+void MainWindowSatelliteComparator::hide_layer(const QString id)
+{
+    //qDebug()<<"SLOT layer HIDE: "<<id;
+    m_layer_items.value(id)->setVisible(false);
+
 }
