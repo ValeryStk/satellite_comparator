@@ -8,8 +8,12 @@ class LayerList:public QListWidget
     Q_OBJECT
 public:
     explicit LayerList(QWidget* parent = nullptr);
-    void addItemToList(const QString& item, const QColor &color);
+    void addItemToList(const QString& item,
+                       const QString& toolTip,
+                       const QColor& color);
+
     void removeItemList(const QString& item);
+    void mayBeHideMayBeShow(QListWidgetItem* item);
 
 
 private slots:

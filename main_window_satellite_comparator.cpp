@@ -207,6 +207,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     m_layer_list = new LayerList;
     connect(m_layer_list,SIGNAL(show(const QString)),SLOT(show_layer(const QString)));
     connect(m_layer_list,SIGNAL(hide(const QString)),SLOT(hide_layer(const QString)));
+    connect(m_layer_list,SIGNAL(remove(const QString)),SLOT(remove_layer(const QString)));
+
     QHBoxLayout* tool_root_layout = new QHBoxLayout;
     QVBoxLayout* toolLayOut = new QVBoxLayout;
     tool_root_layout->addLayout(toolLayOut);
@@ -748,10 +750,10 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     ui->graphicsView_satellite_image->centerOn(cross_square);
 
 
-
+    const QString searchParams = calculation_method->currentText() + ": "+QString::number(euclid_param_spinbox->value());
     auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
     m_layer_items.insert(stamp,new_image_item);
-    m_layer_list->addItemToList(stamp,color);
+    m_layer_list->addItemToList(stamp,searchParams,color);
 }
 
 QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
@@ -944,4 +946,13 @@ void MainWindowSatelliteComparator::hide_layer(const QString id)
     //qDebug()<<"SLOT layer HIDE: "<<id;
     m_layer_items.value(id)->setVisible(false);
 
+}
+
+void MainWindowSatelliteComparator::remove_layer(const QString id)
+{
+    qDebug()<<"Remove image item event..."<<id;
+    auto image_item = m_layer_items.value(id);
+    scene->removeItem(image_item);
+    m_layer_items.remove(id);
+    delete image_item;
 }
