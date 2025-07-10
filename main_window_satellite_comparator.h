@@ -92,10 +92,10 @@ private:
 
 
     inline double euclideanDistance(const QVector<double>& v1,
-                             const QVector<double>& v2);
+                                    const QVector<double>& v2);
 
     inline double calculateSpectralAngle(const QVector<double>& S1,
-                                  const QVector<double>& S2);
+                                         const QVector<double>& S2);
 
     void showGoogleMap();
 
@@ -109,6 +109,14 @@ private:
         double resY = 0;          // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
         double utmZone = 0;
     } m_geo;
+
+    void processLayer(uchar* layer,
+                      int xSize,
+                      int yStart,
+                      int yEnd,
+                      const QVector<double> sample,
+                      QColor color,
+                      int offsetStart);
 
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

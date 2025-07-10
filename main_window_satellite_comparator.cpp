@@ -30,6 +30,7 @@
 #include "string"
 #include "layer_list.h"
 #include "icon_generator.h"
+#include "thread"
 
 #define Z_INDEX_CROSS_SQUARE_CURSOR 9999
 #define Z_INDEX_CROSS_SQUARE_CURSOR_TEXT 10000
@@ -705,7 +706,8 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 
     int xSize= m_landsat9_bands_image_sizes->first;
     int ySize= m_landsat9_bands_image_sizes->second;
-    int offset = 0;
+    int total_pixels = xSize*ySize;
+    //int offset = 0;
     QVector<double>sample;
     if(m_is_bekas){
         sample = m_bekas_sample;
@@ -713,10 +715,14 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
         sample = m_landsat9_sample;
     }
 
-    auto new_layer = new uchar[MAX_BYTES_IN_CLAS_IMAGE_LAYER];
+    auto new_layer = new uchar[total_pixels*4];
     m_layers.append(new_layer);
 
-    for(int y=0;y<ySize;++y){
+    int midY = ySize / 2;
+    int offset1 = 0;
+    int offset2 = midY * xSize * 4;
+
+    /*for(int y=0;y<ySize;++y){
         for(int x=0;x<xSize;++x){
             auto ksy = getLandsat8Ksy(x,y);
             if(m_is_bekas){// TODO FLEXIBLE NUMBER OF CHANNELS OPTIMIZATION
@@ -739,14 +745,20 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
             };
             offset = offset+4;
         }
-    };
+    };*/
 
-    auto img = QImage(new_layer,xSize,ySize,xSize*4,QImage::Format_RGBA8888);
+    std::thread t1(&MainWindowSatelliteComparator::processLayer,this, new_layer, xSize, 0, midY, sample, color, offset1);
+    std::thread t2(&MainWindowSatelliteComparator::processLayer,this, new_layer, xSize, midY, ySize, sample, color, offset2);
+    t1.join();
+    t2.join();
+    auto cleanup = [](void* info) {
+        delete[] static_cast<uchar*>(info);
+    };
+    auto img = QImage(new_layer,xSize,ySize,xSize*4,QImage::Format_RGBA8888,cleanup,new_layer);
     auto pixmap = QPixmap::fromImage(img);
     auto new_image_item = new QGraphicsPixmapItem(pixmap);
     new_image_item->setZValue(getMaxZValue(scene)+1);
     scene->addItem(new_image_item);
-    delete[] new_layer;
     ui->graphicsView_satellite_image->centerOn(cross_square);
 
 
@@ -927,25 +939,16 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     scene->addItem(m_image_item);
     scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(m_image_item);
-    /*for(int i=0;i<m_layer_list->count();++i){
-        auto item = m_layer_items.value(m_layer_list->item(i)->text());
-        item->setZValue(2000+i);
-        scene->addItem(item);
-    };*/
 }
 
 void MainWindowSatelliteComparator::show_layer(const QString id)
 {
-    //qDebug()<<"SLOT layer SHOW: "<<id;
     m_layer_items.value(id)->setVisible(true);
-
 }
 
 void MainWindowSatelliteComparator::hide_layer(const QString id)
 {
-    //qDebug()<<"SLOT layer HIDE: "<<id;
     m_layer_items.value(id)->setVisible(false);
-
 }
 
 void MainWindowSatelliteComparator::remove_layer(const QString id)
@@ -955,4 +958,38 @@ void MainWindowSatelliteComparator::remove_layer(const QString id)
     scene->removeItem(image_item);
     m_layer_items.remove(id);
     delete image_item;
+}
+
+
+void MainWindowSatelliteComparator::processLayer(uchar* layer,
+                                                 int xSize,
+                                                 int yStart,
+                                                 int yEnd,
+                                                 const QVector<double> sample,
+                                                 QColor color,
+                                                 int offsetStart) {
+    int offset = offsetStart;
+    for (int y = yStart; y < yEnd; ++y) {
+        for (int x = 0; x < xSize; ++x) {
+            auto ksy = getLandsat8Ksy(x, y);
+            if (m_is_bekas) {
+                size_t elems_to_copy = std::min(static_cast<size_t>(ksy.size()), static_cast<size_t>(5));//TO DO DIFINE NUMBER OF CHANNELS
+                ksy = QVector<double>(ksy.begin(), ksy.begin() + elems_to_copy);
+            }
+
+            double result = 999;
+            if (calculation_method->currentText() == satc::spectral_angle) {
+                result = calculateSpectralAngle(ksy, sample);
+            } else if (calculation_method->currentText() == satc::euclid_metrika) {
+                result = euclideanDistance(ksy, sample);
+            }
+
+            layer[offset]     = color.red();
+            layer[offset + 1] = color.green();
+            layer[offset + 2] = color.blue();
+            layer[offset + 3] = result < euclid_param_spinbox->value() ? 255 : 0;
+
+            offset += 4;
+        }
+    }
 }
