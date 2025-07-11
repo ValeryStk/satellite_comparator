@@ -31,6 +31,7 @@
 #include "layer_list.h"
 #include "icon_generator.h"
 #include "thread"
+#include <QDomDocument>
 
 #define Z_INDEX_CROSS_SQUARE_CURSOR 9999
 #define Z_INDEX_CROSS_SQUARE_CURSOR_TEXT 10000
@@ -95,6 +96,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     connect(ui->actionOpenLandsat9Header,&QAction::triggered,[this](){openLandsat9HeaderData();});
     connect(ui->actionOpenLandsat8Header,&QAction::triggered,[this](){openLandsat8HeaderData();});
+    connect(ui->actionSentinel_2A,&QAction::triggered,[this](){openSentinel2AHeaderData();});
 
     qgti = new QGraphicsTextItem;
     qgti->setDefaultTextColor(Qt::black);
@@ -320,11 +322,17 @@ void MainWindowSatelliteComparator::openLandsat8HeaderData()
     openCommonLandsatHeaderData(satc::satellite_name_landsat_8);
 }
 
+void MainWindowSatelliteComparator::openSentinel2AHeaderData()
+{
+    m_satelite_type = sad::SENTINEL_2A;
+   openCommonSentinelHeaderData(satc::satellite_name_sentinel_2A);
+}
+
 void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& satellite_name)
 {
     QString openSatMessage = QString("Открыть заголовочный файл %1").arg(satellite_name);
     QString headerName =  QFileDialog::getOpenFileName(this,openSatMessage,"",
-                                                       "JSON файлы(*_MTL.json *_MTL.txt *_MTL.xml)");
+                                                       "файлы(*_MTL.json *_MTL.txt *_MTL.xml)");
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
     cross_square->setVisible(false);
@@ -429,6 +437,40 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     m_is_image_created = true;
     cross_square->setVisible(true);
     ui->graphicsView_satellite_image->setIsSignal(true);
+
+}
+
+void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &satellite_name)
+{
+    QString openSatMessage = QString("Открыть заголовочный файл %1").arg(satellite_name);
+    QString headerName =  QFileDialog::getOpenFileName(this,openSatMessage,"",
+                                                       "файлы(MTD_MSIL2A.xml)");
+
+    QFile file(headerName);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Не удалось открыть файл";
+        return;
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "Ошибка разбора XML";
+        file.close();
+        return;
+    }
+    file.close();
+
+    // Поиск тега <n1:General_Info>
+    QDomNodeList infoList = doc.elementsByTagName("Granule_List");
+    if (infoList.isEmpty()) {
+        qWarning() << "Тег <n1:General_Info> не найден";
+        return;
+    }
+
+    QDomNode generalInfoNode = infoList.at(0);
+    QDomElement generalInfoElement = generalInfoNode.toElement();
+    qDebug()<<generalInfoElement.text();
+
 
 }
 

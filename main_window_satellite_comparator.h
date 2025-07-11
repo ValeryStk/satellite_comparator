@@ -34,7 +34,9 @@ private slots:
     void remove_layer(const QString id);
     void openLandsat9HeaderData();
     void openLandsat8HeaderData();
+    void openSentinel2AHeaderData();
     void openCommonLandsatHeaderData(const QString& satellite_name);
+    void openCommonSentinelHeaderData(const QString& satellite_name);
     void processBekasDataForComparing(const QVector<double>& x,
                                       const QVector<double>& y);
 
