@@ -120,5 +120,12 @@ private:
                       QColor color,
                       int offsetStart);
 
+
+    sad::SENTINEL_METADATA m_sentinel_metadata;
+
+
+
+    void initSentinelStructs();
+
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

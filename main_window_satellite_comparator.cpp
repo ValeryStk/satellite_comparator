@@ -81,6 +81,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 {
     ui->setupUi(this);
     setWindowTitle(satc::app_name);
+    initSentinelStructs();
     bekas_window = nullptr;
     std::fill(std::begin(m_landsat9_missed_channels),std::end(m_landsat9_missed_channels),true);
 
@@ -460,18 +461,66 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     }
     file.close();
 
-    // Поиск тега <n1:General_Info>
-    QDomNodeList infoList = doc.elementsByTagName("Granule_List");
-    if (infoList.isEmpty()) {
-        qWarning() << "Тег <n1:General_Info> не найден";
-        return;
+    QStringList imageFiles;
+    QDomNodeList imageNodes = doc.elementsByTagName("IMAGE_FILE");
+    for (int i = 0; i < imageNodes.count(); ++i) {
+        QDomNode node = imageNodes.at(i);
+        imageFiles << node.toElement().text();
+    }
+    //qDebug()<<imageFiles;
+    QStringList filteredFiles;
+
+    for (const QString& file : imageFiles) {
+        for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
+            // Ищем точное вхождение ключа как часть имени файла
+            if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
+                filteredFiles << file;
+                break; // нашли — переходим к следующему файлу
+            }
+        }
+    }
+    //qDebug()<<filteredFiles;
+    QStringList finalFiles;
+    QMap<QString, QString> bestResolutionForBand;
+    const QStringList priorityOrder = { "R10m", "R20m", "R60m" };
+
+    // Для каждого band ищем путь с наивысшим приоритетом по разрешению
+    for (const QString& bandKey : sad::sentinel_bands_keys) {
+        for (const QString& resolution : priorityOrder) {
+            for (const QString& file : filteredFiles) {
+                if (file.contains(resolution) && file.contains("_" + bandKey + "_")) {
+                    bestResolutionForBand[bandKey] = file;
+                    break; // нашли лучший — переходим к следующему band
+                }
+            }
+            if (bestResolutionForBand.contains(bandKey)) break; // если уже найден — не ищем в меньших разрешениях
+        }
     }
 
-    QDomNode generalInfoNode = infoList.at(0);
-    QDomElement generalInfoElement = generalInfoNode.toElement();
-    qDebug()<<generalInfoElement.text();
+    // Собираем финальный список
+    finalFiles = bestResolutionForBand.values();
+    qDebug()<<finalFiles;
 
+    for (const QString& file : finalFiles) {
+        for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
+            if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
+                m_sentinel_metadata.sentinel_missed_channels[i] = false; // Канал найден — не пропущен
+                break;
+            }
+        }
+    }
 
+    if(m_dynamic_checkboxes_widget)m_dynamic_checkboxes_widget->clear();
+    QList<QString> availableBandNames;
+
+    for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
+        if (!m_sentinel_metadata.sentinel_missed_channels[i]) {
+            availableBandNames << sad::sentinel2_gui_band_names[i];
+        }
+    }
+    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(availableBandNames,
+                                                            ui->verticalLayout_bands);
+    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});//RGB
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<double>& x,
@@ -1034,4 +1083,12 @@ void MainWindowSatelliteComparator::processLayer(uchar* layer,
             offset += 4;
         }
     }
+}
+
+void MainWindowSatelliteComparator::initSentinelStructs()
+{
+m_sentinel_metadata.isHeaderValid = false;
+for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
+    m_sentinel_metadata.sentinel_missed_channels[i] = true; // Изначально считаем все каналы пропущенными
+}
 }

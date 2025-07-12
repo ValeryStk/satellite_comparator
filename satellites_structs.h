@@ -5,6 +5,7 @@
 
 #define LANDSAT_8_BANDS_NUMBER 11
 #define LANDSAT_9_BANDS_NUMBER 11
+#define SENTINEL_2A_BANDS_NUMBER 12
 
 namespace sad{
 
@@ -149,6 +150,46 @@ struct LANDSAT_METADATA_FILE{
     PROJECTION_ATTRIBUTES projection_attributes;
     LEVEL1_RADIOMETRIC_RESCALING level2_surface_reflectance_parameters;
 };
+
+// SENTINEL SECTION
+
+
+const QString sentinel2_gui_band_names[SENTINEL_2A_BANDS_NUMBER] = {
+    "443 nm (Coastal aerosol) 60 m",
+    "490 nm (Blue) 10 m",
+    "560 nm (Green) 10 m",
+    "665 nm (Red) 10 m",
+    "705 nm (Red edge 1) 20 m",
+    "740 nm (Red edge 2) 20 m",
+    "783 nm (Red edge 3) 20 m",
+    "842 nm (NIR) 10 m",
+    "865 nm (Narrow NIR) 20 m",
+    "945 nm (Water vapor) 60 m",
+    "1610 nm (SWIR 1) 20 m",
+    "2190 nm (SWIR 2) 20 m"
+};
+
+
+const QString sentinel_bands_keys[SENTINEL_2A_BANDS_NUMBER] = {
+    "B01",
+    "B02",
+    "B03",
+    "B04",
+    "B05",
+    "B06",
+    "B07",
+    "B08",
+    "B09",
+    "B10",
+    "B11",
+    "B12"
+};
+
+struct SENTINEL_METADATA {
+    bool isHeaderValid = false;
+    bool sentinel_missed_channels[SENTINEL_2A_BANDS_NUMBER];
+};
+
 
 }
 
