@@ -32,6 +32,9 @@
 #include "icon_generator.h"
 #include "thread"
 #include <QDomDocument>
+#include "cpl_conv.h" // Для CPLSetConfigOption
+#include "QApplication"
+
 
 #define Z_INDEX_CROSS_SQUARE_CURSOR 9999
 #define Z_INDEX_CROSS_SQUARE_CURSOR_TEXT 10000
@@ -80,6 +83,10 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 {
     ui->setupUi(this);
+    //CPLSetConfigOption("GDAL_DATA", "E:/004_QT/_satellite_comparator/release/release/data");
+    QString dataPath = QApplication::applicationDirPath() + "/data";
+    CPLSetConfigOption("GDAL_DATA", dataPath.toUtf8().constData());
+
     setWindowTitle(satc::app_name);
     initSentinelStructs();
     bekas_window = nullptr;
@@ -460,6 +467,8 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
         return;
     }
     file.close();
+    QFileInfo fi(headerName);
+    m_root_path = fi.path();
 
     QStringList imageFiles;
     QDomNodeList imageNodes = doc.elementsByTagName("IMAGE_FILE");
@@ -520,7 +529,12 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     }
     m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(availableBandNames,
                                                             ui->verticalLayout_bands);
-    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});//RGB
+    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
+
+
+    read_sentinel2_bands_data(finalFiles);
+
+
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<double>& x,
@@ -1091,4 +1105,20 @@ m_sentinel_metadata.isHeaderValid = false;
 for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
     m_sentinel_metadata.sentinel_missed_channels[i] = true; // Изначально считаем все каналы пропущенными
 }
+}
+
+void MainWindowSatelliteComparator::read_sentinel2_bands_data(const QStringList &file_names)
+{
+
+    for (int i = 0; i < file_names.size(); ++i) {
+        const QString& band_file_name = file_names[i];
+        int xS, yS;
+        readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
+        //m_sentinel_data_bands[i] = readTiff(m_root_path + "/" + band_file_name+".jp2", xS, yS);
+        qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
+        m_sentinel_bands_image_sizes[i] = {xS, yS};
+    }
+
+    //uint16_t* m_sentinel_data_bands[SENTINEL_2A_BANDS_NUMBER] = {nullptr};
+    //QPair<int,int> m_sentinel_bands_image_sizes[SENTINEL_2A_BANDS_NUMBER];
 }

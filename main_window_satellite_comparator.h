@@ -126,6 +126,9 @@ private:
 
 
     void initSentinelStructs();
+    uint16_t* m_sentinel_data_bands[SENTINEL_2A_BANDS_NUMBER] = {nullptr};
+    QPair<int,int> m_sentinel_bands_image_sizes[SENTINEL_2A_BANDS_NUMBER];
+    void read_sentinel2_bands_data(const QStringList& file_names);
 
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H
