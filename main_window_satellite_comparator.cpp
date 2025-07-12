@@ -85,6 +85,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     ui->setupUi(this);
     //CPLSetConfigOption("GDAL_DATA", "E:/004_QT/_satellite_comparator/release/release/data");
     QString dataPath = QApplication::applicationDirPath() + "/data";
+    qDebug()<<dataPath;
     CPLSetConfigOption("GDAL_DATA", dataPath.toUtf8().constData());
 
     setWindowTitle(satc::app_name);
