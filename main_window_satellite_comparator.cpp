@@ -1114,12 +1114,82 @@ void MainWindowSatelliteComparator::read_sentinel2_bands_data(const QStringList 
     for (int i = 0; i < file_names.size(); ++i) {
         const QString& band_file_name = file_names[i];
         int xS, yS;
-        readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
-        //m_sentinel_data_bands[i] = readTiff(m_root_path + "/" + band_file_name+".jp2", xS, yS);
+        m_sentinel_data_bands[i]  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
         qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
         m_sentinel_bands_image_sizes[i] = {xS, yS};
     }
 
-    //uint16_t* m_sentinel_data_bands[SENTINEL_2A_BANDS_NUMBER] = {nullptr};
-    //QPair<int,int> m_sentinel_bands_image_sizes[SENTINEL_2A_BANDS_NUMBER];
+
+    // DUBLICATED CODE REFACTORING !!!!!!
+    auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
+    const int nXSize = m_sentinel_bands_image_sizes->first;
+    const int nYSize = m_sentinel_bands_image_sizes->second;
+    qDebug()<<"x -- y: "<<nXSize<<nYSize<<"is_image_ready: "<<m_is_image_created;
+
+    ProgressInformator progress_info(ui->graphicsView_satellite_image,
+                                     satc::message_changing_bands);
+    progress_info.show();
+    QApplication::processEvents();
+
+    int offset = 0;
+    for (int y = 0; y < nYSize; ++y) {
+        for (int x = 0; x < nXSize; ++x) {
+            int B = 0;
+            int G = 0;
+            int R = 0;
+            QRgb rgb=0;
+            for(int j=0;j<bands.size();++j){
+                // qDebug()<<"j band --> "<<bands[j].first;
+                int choosedColor = -1;
+                if(bands[j].second==BLUE){
+                    B = static_cast<int>(m_sentinel_data_bands[bands[j].first][y * nXSize + x] / 255.0)*10;
+                    choosedColor = BLUE;
+                }else if(bands[j].second==GREEN){
+                    G = static_cast<int>(m_sentinel_data_bands[bands[j].first][y * nXSize + x] / 255.0)*10;
+                    choosedColor = GREEN;
+                }else if(bands[j].second==RED){
+                    R = static_cast<int>(m_sentinel_data_bands[bands[j].first][y * nXSize + x] / 255.0)*10;
+                    choosedColor = RED;
+                }
+                rgb = 0;
+                if(bands.size() == 1){
+                    switch (choosedColor) {
+                    case RED:
+                        rgb = qRgb(R,R,R);
+                        break;
+                    case GREEN:
+                        rgb = qRgb(G,G,G);
+                        break;
+                    case BLUE:
+                        rgb = qRgb(B,B,B);
+                        break;
+                    default:
+                        break;
+                    }
+                }else{
+                    rgb = qRgb(R,G,B);
+                }
+
+            }
+            m_image_data[offset]=R;
+            m_image_data[offset+1]=G;
+            m_image_data[offset+2]=B;
+            offset = offset+3;
+        }
+    }
+    if(m_image_item){
+    qDebug()<<"Delete image item....";
+    scene->removeItem(m_image_item);// удаление со сцены
+    delete m_image_item;            // освобождение памяти
+    }
+    m_satellite_image = QImage(m_image_data,nXSize,nYSize,nXSize*3,QImage::Format_RGB888);
+    auto pixmap = QPixmap::fromImage(m_satellite_image);
+    m_image_item = new QGraphicsPixmapItem(pixmap);
+    m_image_item->setCursor(Qt::CrossCursor);
+    m_image_item->setZValue(0);
+    scene->addItem(m_image_item);
+    scene->setSceneRect(pixmap.rect());
+    ui->graphicsView_satellite_image->centerOn(m_image_item);
+
+
 }
