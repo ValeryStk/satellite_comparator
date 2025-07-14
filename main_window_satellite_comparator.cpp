@@ -745,6 +745,11 @@ uint16_t* MainWindowSatelliteComparator::readTiff(const QString& path,
     }
     const char *fileName = ba.constData();
     GDALAllRegister();
+    CPLSetConfigOption("GDAL_NUM_THREADS", "ALL_CPUS");
+    CPLSetConfigOption("OPENJPEG_NUM_THREADS", "AUTO");
+    CPLSetConfigOption("GDAL_CACHEMAX", "512");
+    CPLSetConfigOption("CPL_VSIL_USE_TEMP_FILE", "NO");
+    CPLSetConfigOption("GDAL_JP2KAK_USE", "YES"); // если доступен
     GDALDataset* poDataset = (GDALDataset*) GDALOpen( fileName, GA_ReadOnly );
     GDALRasterBand* poBand;
     poBand = poDataset->GetRasterBand(1);
