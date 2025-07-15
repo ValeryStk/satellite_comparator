@@ -130,5 +130,8 @@ private:
     QPair<int,int> m_sentinel_bands_image_sizes[SENTINEL_2A_BANDS_NUMBER];
     void read_sentinel2_bands_data(const QStringList& file_names);
 
+    void gdal_start_driver();
+    void gdal_close_driver();
+
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H
