@@ -188,6 +188,7 @@ const QString sentinel_bands_keys[SENTINEL_2A_BANDS_NUMBER] = {
 struct SENTINEL_METADATA {
     bool isHeaderValid = false;
     bool sentinel_missed_channels[SENTINEL_2A_BANDS_NUMBER];
+    QString files[SENTINEL_2A_BANDS_NUMBER];
 };
 
 

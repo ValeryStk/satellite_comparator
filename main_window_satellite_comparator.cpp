@@ -529,6 +529,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
         for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
             if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
                 m_sentinel_metadata.sentinel_missed_channels[i] = false; // Канал найден — не пропущен
+                m_sentinel_metadata.files[i] = file;
                 break;
             }
         }
@@ -1201,8 +1202,9 @@ for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
 void MainWindowSatelliteComparator::read_sentinel2_bands_data(const QStringList &file_names)
 {
 
-    for (int i = 0; i < file_names.size(); ++i) {
-        const QString& band_file_name = file_names[i];
+    for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
+        if(m_sentinel_metadata.sentinel_missed_channels[i])continue;
+        const QString& band_file_name = m_sentinel_metadata.files[i];
         int xS, yS;
         m_sentinel_data_bands[i]  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
         qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
