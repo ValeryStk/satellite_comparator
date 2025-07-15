@@ -29,6 +29,7 @@ public:
 
 private slots:
     void change_bands_and_show_image();
+    void change_bands_sentinel_and_show_image();
     void show_layer(const QString id);
     void hide_layer(const QString id);
     void remove_layer(const QString id);
