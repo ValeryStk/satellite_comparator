@@ -83,6 +83,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 {
     ui->setupUi(this);
+    gdal_start_driver();
     //CPLSetConfigOption("GDAL_DATA", "E:/004_QT/_satellite_comparator/release/release/data");
     QString dataPath = QApplication::applicationDirPath() + "/data";
     qDebug()<<dataPath;
@@ -317,6 +318,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
 {
     delete ui;
+    gdal_close_driver();
 }
 
 void MainWindowSatelliteComparator::openLandsat9HeaderData()
@@ -621,6 +623,7 @@ QString MainWindowSatelliteComparator::getLandSatSpaceCraftIDFromTxtFormat(const
             return temp;
         }
     }
+    return "";
 }
 
 void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString& path)
@@ -744,12 +747,7 @@ uint16_t* MainWindowSatelliteComparator::readTiff(const QString& path,
         return nullptr;
     }
     const char *fileName = ba.constData();
-    GDALAllRegister();
-    CPLSetConfigOption("GDAL_NUM_THREADS", "ALL_CPUS");
-    CPLSetConfigOption("OPENJPEG_NUM_THREADS", "AUTO");
-    CPLSetConfigOption("GDAL_CACHEMAX", "512");
-    CPLSetConfigOption("CPL_VSIL_USE_TEMP_FILE", "NO");
-    CPLSetConfigOption("GDAL_JP2KAK_USE", "YES"); // если доступен
+
     GDALDataset* poDataset = (GDALDataset*) GDALOpen( fileName, GA_ReadOnly );
     GDALRasterBand* poBand;
     poBand = poDataset->GetRasterBand(1);
@@ -758,7 +756,6 @@ uint16_t* MainWindowSatelliteComparator::readTiff(const QString& path,
     uint16_t* raster = new uint16[xSize*ySize];
     poBand->RasterIO(GF_Read, 0, 0, xSize, ySize, raster, xSize, ySize, GDT_UInt16, 0, 0);
     GDALClose(poDataset);
-    GDALDestroyDriverManager();
     return raster;
 
 }
@@ -1197,4 +1194,19 @@ void MainWindowSatelliteComparator::read_sentinel2_bands_data(const QStringList 
     ui->graphicsView_satellite_image->centerOn(m_image_item);
 
 
+}
+
+void MainWindowSatelliteComparator::gdal_start_driver()
+{
+    GDALAllRegister();
+    CPLSetConfigOption("GDAL_NUM_THREADS", "ALL_CPUS");
+    CPLSetConfigOption("OPENJPEG_NUM_THREADS", "AUTO");
+    CPLSetConfigOption("GDAL_CACHEMAX", "512");
+    CPLSetConfigOption("CPL_VSIL_USE_TEMP_FILE", "NO");
+    CPLSetConfigOption("GDAL_JP2KAK_USE", "YES");
+}
+
+void MainWindowSatelliteComparator::gdal_close_driver()
+{
+    GDALDestroyDriverManager();
 }
