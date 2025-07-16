@@ -348,7 +348,7 @@ void MainWindowSatelliteComparator::openLandsat8HeaderData()
 void MainWindowSatelliteComparator::openSentinel2AHeaderData()
 {
     m_satelite_type = sad::SENTINEL_2A;
-   openCommonSentinelHeaderData(satc::satellite_name_sentinel_2A);
+    openCommonSentinelHeaderData(satc::satellite_name_sentinel_2A);
 }
 
 void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& satellite_name)
@@ -469,6 +469,10 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     QString headerName =  QFileDialog::getOpenFileName(this,openSatMessage,"",
                                                        "файлы(MTD_MSIL2A.xml)");
 
+    ui->graphicsView_satellite_image->setIsSignal(false);
+    clearLandsat9DataBands();
+    cross_square->setVisible(false);
+
     QFile file(headerName);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "Не удалось открыть файл";
@@ -524,6 +528,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     // Собираем финальный список
     finalFiles = bestResolutionForBand.values();
     qDebug()<<finalFiles;
+    title_satellite_name->setText(satc::satellite_name_sentinel_2A);
 
     for (const QString& file : finalFiles) {
         for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
@@ -541,6 +546,11 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
         if (!m_sentinel_metadata.sentinel_missed_channels[i]) {
             availableBandNames << sad::sentinel2_gui_band_names[i];
+            sad::BAND_DATA data;
+            data.gui_name = sad::sentinel2_gui_band_names[i];
+            data.central_wave_length = sad::sentinel_central_wave_lengths[i];
+            data.file_name = m_sentinel_metadata.files[i];
+            m_sentinel_data.append(data);
         }
     }
     m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(availableBandNames,
@@ -550,8 +560,15 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     connect(m_dynamic_checkboxes_widget,
             SIGNAL(choosed_bands_changed()),
             this,SLOT(change_bands_sentinel_and_show_image()));
+
     read_sentinel2_bands_data(finalFiles);
     change_bands_sentinel_and_show_image();
+
+    ui->statusbar->showMessage("");
+    m_is_image_created = true;
+    cross_square->setVisible(true);
+
+    //ui->graphicsView_satellite_image->setIsSignal(true);
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<double>& x,
@@ -561,9 +578,9 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<d
     if(m_satelite_type == sad::UKNOWN_SATELLITE)return;
     m_sat_comparator->initial_fill_data_to_show(x,y,waves_landsat9,m_landsat9_sample);
     if(m_satelite_type == sad::LANDSAT_9){
-    m_sat_comparator->set_satellite_responses("landsat9");
+        m_sat_comparator->set_satellite_responses("landsat9");
     }else if(m_satelite_type == sad::LANDSAT_8){
-    m_sat_comparator->set_satellite_responses("landsat8");
+        m_sat_comparator->set_satellite_responses("landsat8");
     }
     auto folded_device_spectr_for_landsat = m_sat_comparator->fold_spectr_to_satellite_responses();
     m_is_bekas = true;// TODO check that VALUES ARE CORRECT
@@ -806,7 +823,7 @@ QVector<double> MainWindowSatelliteComparator::getLandsat8Speya(const int x,
 }
 
 inline QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x,
-                                                              const int y)
+                                                                     const int y)
 {
     if(m_is_image_created==false)return {};
     int xSize= m_landsat9_bands_image_sizes->first;
@@ -942,7 +959,7 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
 }
 
 inline double MainWindowSatelliteComparator::euclideanDistance(const QVector<double> &v1,
-                                                        const QVector<double> &v2)
+                                                               const QVector<double> &v2)
 {
     if (v1.size() != v2.size()) {
         throw std::invalid_argument("Векторы должны быть одинаковой длины");
@@ -957,7 +974,7 @@ inline double MainWindowSatelliteComparator::euclideanDistance(const QVector<dou
 }
 
 inline double MainWindowSatelliteComparator::calculateSpectralAngle(const QVector<double> &S1,
-                                                             const QVector<double> &S2)
+                                                                    const QVector<double> &S2)
 {
     if (S1.size() != S2.size()) {
         return -1;
@@ -1049,9 +1066,9 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
         }
     }
     if(m_image_item){
-    qDebug()<<"Delete image item....";
-    scene->removeItem(m_image_item);// удаление со сцены
-    delete m_image_item;            // освобождение памяти
+        qDebug()<<"Delete image item....";
+        scene->removeItem(m_image_item);// удаление со сцены
+        delete m_image_item;            // освобождение памяти
     }
     m_satellite_image = QImage(m_image_data,nXSize,nYSize,nXSize*3,QImage::Format_RGB888);
     auto pixmap = QPixmap::fromImage(m_satellite_image);
@@ -1124,9 +1141,9 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
         }
     }
     if(m_image_item){
-    qDebug()<<"Delete image item....";
-    scene->removeItem(m_image_item);// удаление со сцены
-    delete m_image_item;            // освобождение памяти
+        qDebug()<<"Delete image item....";
+        scene->removeItem(m_image_item);// удаление со сцены
+        delete m_image_item;            // освобождение памяти
     }
     m_satellite_image = QImage(m_image_data,nXSize,nYSize,nXSize*3,QImage::Format_RGB888);
     auto pixmap = QPixmap::fromImage(m_satellite_image);
@@ -1193,10 +1210,10 @@ void MainWindowSatelliteComparator::processLayer(uchar* layer,
 
 void MainWindowSatelliteComparator::initSentinelStructs()
 {
-m_sentinel_metadata.isHeaderValid = false;
-for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
-    m_sentinel_metadata.sentinel_missed_channels[i] = true; // Изначально считаем все каналы пропущенными
-}
+    m_sentinel_metadata.isHeaderValid = false;
+    for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
+        m_sentinel_metadata.sentinel_missed_channels[i] = true; // Изначально считаем все каналы пропущенными
+    }
 }
 
 void MainWindowSatelliteComparator::read_sentinel2_bands_data(const QStringList &file_names)

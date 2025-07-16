@@ -129,6 +129,7 @@ private:
     void initSentinelStructs();
     uint16_t* m_sentinel_data_bands[SENTINEL_2A_BANDS_NUMBER] = {nullptr};
     QPair<int,int> m_sentinel_bands_image_sizes[SENTINEL_2A_BANDS_NUMBER];
+    QVector<sad::BAND_DATA> m_sentinel_data;
     void read_sentinel2_bands_data(const QStringList& file_names);
 
     void gdal_start_driver();

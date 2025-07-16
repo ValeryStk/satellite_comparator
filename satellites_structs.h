@@ -185,10 +185,36 @@ const QString sentinel_bands_keys[SENTINEL_2A_BANDS_NUMBER] = {
     "B12"
 };
 
+const double sentinel_central_wave_lengths[SENTINEL_2A_BANDS_NUMBER] = {
+    443,
+    490,
+    560,
+    665,
+    705,
+    740,
+    783,
+    842,
+    865,
+    945,
+    1610,
+    2190
+};
+
 struct SENTINEL_METADATA {
     bool isHeaderValid = false;
     bool sentinel_missed_channels[SENTINEL_2A_BANDS_NUMBER];
     QString files[SENTINEL_2A_BANDS_NUMBER];
+};
+
+struct BAND_DATA{
+    double central_wave_length;
+    QString gui_name;
+    double reflectance_mult;
+    double reflectance_add;
+    int original_height;
+    int original_width;
+    QString file_name;
+    uint16_t* data;
 };
 
 
