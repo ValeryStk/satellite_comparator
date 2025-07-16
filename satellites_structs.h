@@ -214,7 +214,7 @@ struct BAND_DATA{
     int original_height;
     int original_width;
     QString file_name;
-    uint16_t* data;
+    uint16_t* data = nullptr;
 };
 
 

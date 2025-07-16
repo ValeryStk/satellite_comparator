@@ -1084,7 +1084,7 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
 {
     // DUBLICATED CODE REFACTORING !!!!!!
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
-    auto best_resolution = getHighestResolution(m_sentinel_bands_image_sizes,SENTINEL_2A_BANDS_NUMBER);
+    auto best_resolution = QPair<int,int>(10980,10980);//getHighestResolution(m_sentinel_bands_image_sizes,SENTINEL_2A_BANDS_NUMBER);
     const int nXSize = best_resolution.first;
     const int nYSize = best_resolution.second;
     qDebug()<<"x -- y: "<<nXSize<<nYSize<<"is_image_ready: "<<m_is_image_created;
@@ -1105,26 +1105,29 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
                 // qDebug()<<"j band --> "<<bands[j].first;
                 int choosedColor = -1;
                 if(bands[j].second==BLUE){
-                    B = static_cast<int>(m_sentinel_data_bands[bands[j].first][y * nXSize + x] / 255.0)*2;
+                    B = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0)*2;
                     choosedColor = BLUE;
                 }else if(bands[j].second==GREEN){
-                    G = static_cast<int>(m_sentinel_data_bands[bands[j].first][y * nXSize + x] / 255.0)*2;
+                    G = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0)*2;
                     choosedColor = GREEN;
                 }else if(bands[j].second==RED){
-                    R = static_cast<int>(m_sentinel_data_bands[bands[j].first][y * nXSize + x] / 255.0)*2;
+                    R = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0)*2;
                     choosedColor = RED;
                 }
                 rgb = 0;
                 if(bands.size() == 1){
                     switch (choosedColor) {
                     case RED:
-                        rgb = qRgb(R,R,R);
+                        G=R;
+                        B=R;
                         break;
                     case GREEN:
-                        rgb = qRgb(G,G,G);
+                        B=G;
+                        R=G;
                         break;
                     case BLUE:
-                        rgb = qRgb(B,B,B);
+                        R=B;
+                        G=B;
                         break;
                     default:
                         break;
@@ -1219,17 +1222,23 @@ void MainWindowSatelliteComparator::initSentinelStructs()
 void MainWindowSatelliteComparator::read_sentinel2_bands_data(const QStringList &file_names)
 {
 
-    for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
+    /*for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
         if(m_sentinel_metadata.sentinel_missed_channels[i])continue;
         const QString& band_file_name = m_sentinel_metadata.files[i];
         int xS, yS;
         m_sentinel_data_bands[i]  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
         qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
         m_sentinel_bands_image_sizes[i] = {xS, yS};
-    }
+    }*/
 
-
-
+     for (int i = 0; i < m_sentinel_data.size(); ++i) {
+         const QString& band_file_name = m_sentinel_data[i].file_name;
+         int xS, yS;
+         m_sentinel_data[i].data  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
+         qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
+         m_sentinel_data[i].original_width = xS;
+         m_sentinel_data[i].original_height = yS;
+     }
 
 
 }
