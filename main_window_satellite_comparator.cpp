@@ -80,6 +80,28 @@ QPair<int, int> getHighestResolution(const QPair<int, int> imageSizes[], int cou
     return maxResolution;
 }
 
+
+void downsample_uint16(const uint16_t* input, uint16_t* output, int width, int height) {
+    int outWidth = width / 2;
+    int outHeight = height / 2;
+
+    for (int y = 0; y < outHeight; ++y) {
+        for (int x = 0; x < outWidth; ++x) {
+            // Среднее значение 2×2 пикселей
+            int inX = x * 2;
+            int inY = y * 2;
+
+            uint32_t sum = 0;
+            sum += input[inY * width + inX];
+            sum += input[inY * width + (inX + 1)];
+            sum += input[(inY + 1) * width + inX];
+            sum += input[(inY + 1) * width + (inX + 1)];
+
+            output[y * outWidth + x] = static_cast<uint16_t>(sum / 4);
+        }
+    }
+}
+
 }
 
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
@@ -1247,10 +1269,24 @@ void MainWindowSatelliteComparator::read_sentinel2_bands_data()
      for (int i = 0; i < m_sentinel_data.size(); ++i) {
          const QString& band_file_name = m_sentinel_data[i].file_name;
          int xS, yS;
+
          m_sentinel_data[i].data  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
+
+         if(m_sentinel_data[i].resolution_in_pixel_meters=="R10m"){
+             qDebug()<<"RESOLUTION 10 TO 20";
+             int outX = xS/2;
+             int outY = yS/2;
+             // Выделяем буфер вручную
+             uint16_t* buffer = new uint16_t[(sizeof(uint16_t) * outX * outY)];
+             downsample_uint16(m_sentinel_data[i].data,buffer,xS,yS);
+             delete []m_sentinel_data[i].data;
+             m_sentinel_data[i].data = buffer;
+
+         }
          qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
          if(m_sentinel_data[i].width != xS)qDebug()<<"WRONG X";
          if(m_sentinel_data[i].height != yS)qDebug()<<"WRONG Y";
+
      }
 
 
