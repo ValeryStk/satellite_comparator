@@ -129,7 +129,7 @@ private:
     void initSentinelStructs();
 
     QVector<sad::BAND_DATA> m_sentinel_data;
-    void read_sentinel2_bands_data(const QStringList& file_names);
+    void read_sentinel2_bands_data();
 
     void gdal_start_driver();
     void gdal_close_driver();

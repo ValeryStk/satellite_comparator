@@ -510,7 +510,9 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     //qDebug()<<filteredFiles;
     QStringList finalFiles;
     QMap<QString, QString> bestResolutionForBand;
-    const QStringList priorityOrder = { "R10m", "R20m", "R60m" };
+    const QStringList priorityOrder = { "R20m","R10m","R60m" };
+
+
 
     // Для каждого band ищем путь с наивысшим приоритетом по разрешению
     for (const QString& bandKey : sad::sentinel_bands_keys) {
@@ -550,6 +552,26 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
             data.gui_name = sad::sentinel2_gui_band_names[i];
             data.central_wave_length = sad::sentinel_central_wave_lengths[i];
             data.file_name = m_sentinel_metadata.files[i];
+
+            bool isResolutionMissed = true;
+            for (const QString& resolution : priorityOrder) {
+                if (data.file_name.contains(resolution)){
+                    data.resolution_in_pixel_meters = resolution;
+                    data.width = sad::sentinel_resolutions.value(resolution).first;
+                    data.height = sad::sentinel_resolutions.value(resolution).second;
+                    isResolutionMissed = false;
+                    qDebug()<<"r, w, h: "<<data.resolution_in_pixel_meters<<data.width<<data.height;
+                    break;
+                };
+            }
+            if(isResolutionMissed){
+
+                //TODO EXCEPTION
+                //Мы обязательно должны знать разрешение
+                // Выбросить исключение
+                qDebug()<<"<--------------------- NO RESOLUTION EXCEPTION !!!------------------>";
+
+            }
             m_sentinel_data.append(data);
         }
     }
@@ -561,7 +583,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
             SIGNAL(choosed_bands_changed()),
             this,SLOT(change_bands_sentinel_and_show_image()));
 
-    read_sentinel2_bands_data(finalFiles);
+    read_sentinel2_bands_data();
     change_bands_sentinel_and_show_image();
 
     ui->statusbar->showMessage("");
@@ -1084,7 +1106,7 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
 {
     // DUBLICATED CODE REFACTORING !!!!!!
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
-    auto best_resolution = QPair<int,int>(10980,10980);//getHighestResolution(m_sentinel_bands_image_sizes,SENTINEL_2A_BANDS_NUMBER);
+    auto best_resolution = QPair<int,int>(5490,5490);//getHighestResolution(m_sentinel_bands_image_sizes,SENTINEL_2A_BANDS_NUMBER);
     const int nXSize = best_resolution.first;
     const int nYSize = best_resolution.second;
     qDebug()<<"x -- y: "<<nXSize<<nYSize<<"is_image_ready: "<<m_is_image_created;
@@ -1219,25 +1241,16 @@ void MainWindowSatelliteComparator::initSentinelStructs()
     }
 }
 
-void MainWindowSatelliteComparator::read_sentinel2_bands_data(const QStringList &file_names)
+void MainWindowSatelliteComparator::read_sentinel2_bands_data()
 {
-
-    /*for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
-        if(m_sentinel_metadata.sentinel_missed_channels[i])continue;
-        const QString& band_file_name = m_sentinel_metadata.files[i];
-        int xS, yS;
-        m_sentinel_data_bands[i]  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
-        qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
-        m_sentinel_bands_image_sizes[i] = {xS, yS};
-    }*/
 
      for (int i = 0; i < m_sentinel_data.size(); ++i) {
          const QString& band_file_name = m_sentinel_data[i].file_name;
          int xS, yS;
          m_sentinel_data[i].data  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
          qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
-         m_sentinel_data[i].original_width = xS;
-         m_sentinel_data[i].original_height = yS;
+         if(m_sentinel_data[i].width != xS)qDebug()<<"WRONG X";
+         if(m_sentinel_data[i].height != yS)qDebug()<<"WRONG Y";
      }
 
 

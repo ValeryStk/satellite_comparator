@@ -2,6 +2,7 @@
 #define SATELLITES_STRUCTS_H
 #include "string"
 #include "QString"
+#include <QHash>
 
 #define LANDSAT_8_BANDS_NUMBER 11
 #define LANDSAT_9_BANDS_NUMBER 11
@@ -155,18 +156,18 @@ struct LANDSAT_METADATA_FILE{
 
 
 const QString sentinel2_gui_band_names[SENTINEL_2A_BANDS_NUMBER] = {
-    "443 nm (Coastal aerosol) 60 m",
-    "490 nm (Blue) 10 m",
-    "560 nm (Green) 10 m",
-    "665 nm (Red) 10 m",
-    "705 nm (Red edge 1) 20 m",
-    "740 nm (Red edge 2) 20 m",
-    "783 nm (Red edge 3) 20 m",
-    "842 nm (NIR) 10 m",
-    "865 nm (Narrow NIR) 20 m",
-    "945 nm (Water vapor) 60 m",
-    "1610 nm (SWIR 1) 20 m",
-    "2190 nm (SWIR 2) 20 m"
+    "443 nm (Coastal aerosol)",
+    "490 nm (Blue)",
+    "560 nm (Green)",
+    "665 nm (Red)",
+    "705 nm (Red edge 1)",
+    "740 nm (Red edge 2)",
+    "783 nm (Red edge 3)",
+    "842 nm (NIR)",
+    "865 nm (Narrow NIR)",
+    "945 nm (Water vapor)",
+    "1610 nm (SWIR 1)",
+    "2190 nm (SWIR 2)"
 };
 
 
@@ -179,7 +180,7 @@ const QString sentinel_bands_keys[SENTINEL_2A_BANDS_NUMBER] = {
     "B06",
     "B07",
     "B08",
-    "B09",
+    "B8A",
     "B10",
     "B11",
     "B12"
@@ -200,6 +201,13 @@ const double sentinel_central_wave_lengths[SENTINEL_2A_BANDS_NUMBER] = {
     2190
 };
 
+
+const QHash<const QString,QPair<int,int>> sentinel_resolutions = {
+    {"R10m",{10980,10980}},
+    {"R20m",{5490,5490}},
+    {"R60m",{1830,1830}}
+};
+
 struct SENTINEL_METADATA {
     bool isHeaderValid = false;
     bool sentinel_missed_channels[SENTINEL_2A_BANDS_NUMBER];
@@ -209,10 +217,11 @@ struct SENTINEL_METADATA {
 struct BAND_DATA{
     double central_wave_length;
     QString gui_name;
+    QString resolution_in_pixel_meters;
     double reflectance_mult;
     double reflectance_add;
-    int original_height;
-    int original_width;
+    int height;
+    int width;
     QString file_name;
     uint16_t* data = nullptr;
 };
