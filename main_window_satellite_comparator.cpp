@@ -192,7 +192,11 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             auto w_k = getSentinelKsy(pos.x(),pos.y());
             data = w_k.second;
             waves = w_k.first;
+            if(m_sentinel_sample.empty()){
             sample = data;//TEMPORARY
+            }else{
+            sample = m_sentinel_sample;
+            }
             trimmed_satellite_data = data;
         }
         if(data.empty()){
@@ -238,9 +242,14 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::sampleChanged,[this](QPointF pos){
         m_is_bekas = false;
-        auto data = getLandsat8Ksy(pos.x(),pos.y());
         cross_square->setPos(pos);
         cross_square->update();
+        QVector<double> data;
+        QVector<double> sample;
+        QVector<double> waves;
+        if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8){
+        data = getLandsat8Ksy(pos.x(),pos.y());
+
         if(data.empty())return;
         if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
             qDebug()<<"ERROR SIZE:"<<data.size();
@@ -248,13 +257,27 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         }
 
         m_landsat9_sample = data;
+        sample = m_landsat9_sample;
+        waves = waves_landsat9;
+        getGeoCoordinates(pos.x(),pos.y());// TODO SENTINEL GEO
+
+        }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
+        auto w_k = getSentinelKsy(pos.x(),pos.y());
+        data = w_k.second;
+        waves = w_k.first;
+        m_sentinel_sample = data;
+        sample = m_sentinel_sample;
+        }
+
+
         preview->graph(0)->data().clear();
         preview->graph(1)->data().clear();
-        preview->graph(0)->setData(waves_landsat9, data);
-        preview->graph(1)->setData(waves_landsat9, m_landsat9_sample);
+        preview->graph(0)->setData(waves, data);
+        preview->graph(1)->setData(waves, sample);
         preview->rescaleAxes(true);
         preview->replot();
-        getGeoCoordinates(pos.x(),pos.y());
+
+
     });
 
 
@@ -1337,7 +1360,7 @@ QPair<QVector<double>, QVector<double> > MainWindowSatelliteComparator::getSenti
     for(int i=0;i<m_sentinel_data.size();++i){
         uint16_t value = m_sentinel_data[i].data[(y*xSize) + x];
         //double ksy_d = m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
-        ksy.append(value);
+        ksy.append(value/10000.0);
         waves.append(m_sentinel_data[i].central_wave_length);
     }
     return {waves,ksy};
