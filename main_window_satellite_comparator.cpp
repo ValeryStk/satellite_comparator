@@ -186,16 +186,16 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         QVector<double> trimmed_satellite_data;
 
         if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
-        data = getLandsat8Ksy(pos.x(),pos.y());
+            data = getLandsat8Ksy(pos.x(),pos.y());
         }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
             //qDebug()<<" sentinel position: "<<pos.x()<<pos.y();
             auto w_k = getSentinelKsy(pos.x(),pos.y());
             data = w_k.second;
             waves = w_k.first;
             if(m_sentinel_sample.empty()){
-            sample = data;//TEMPORARY
+                sample = data;//TEMPORARY
             }else{
-            sample = m_sentinel_sample;
+                sample = m_sentinel_sample;
             }
             trimmed_satellite_data = data;
         }
@@ -206,20 +206,20 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
         if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
 
-        if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
-            qDebug()<<"ERROR SIZE:"<<data.size();
-            return;
-        }
-        if(m_is_bekas){
-            sample = m_bekas_sample;
-            waves = waves_landsat9_5;
-            size_t elems_to_copy = std::min(static_cast<size_t>(data.size()), static_cast<size_t>(5));
-            trimmed_satellite_data = data.mid(0,static_cast<int>(elems_to_copy));
-        }else{
-            sample = m_landsat9_sample;
-            waves = waves_landsat9;
-            trimmed_satellite_data = data;
-        }
+            if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
+                qDebug()<<"ERROR SIZE:"<<data.size();
+                return;
+            }
+            if(m_is_bekas){
+                sample = m_bekas_sample;
+                waves = waves_landsat9_5;
+                size_t elems_to_copy = std::min(static_cast<size_t>(data.size()), static_cast<size_t>(5));
+                trimmed_satellite_data = data.mid(0,static_cast<int>(elems_to_copy));
+            }else{
+                sample = m_landsat9_sample;
+                waves = waves_landsat9;
+                trimmed_satellite_data = data;
+            }
         }
 
         preview->graph(0)->data().clear();
@@ -248,25 +248,25 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         QVector<double> sample;
         QVector<double> waves;
         if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8){
-        data = getLandsat8Ksy(pos.x(),pos.y());
+            data = getLandsat8Ksy(pos.x(),pos.y());
 
-        if(data.empty())return;
-        if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
-            qDebug()<<"ERROR SIZE:"<<data.size();
-            return;
-        }
+            if(data.empty())return;
+            if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
+                qDebug()<<"ERROR SIZE:"<<data.size();
+                return;
+            }
 
-        m_landsat9_sample = data;
-        sample = m_landsat9_sample;
-        waves = waves_landsat9;
-        getGeoCoordinates(pos.x(),pos.y());// TODO SENTINEL GEO
+            m_landsat9_sample = data;
+            sample = m_landsat9_sample;
+            waves = waves_landsat9;
+            getGeoCoordinates(pos.x(),pos.y());// TODO SENTINEL GEO
 
         }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
-        auto w_k = getSentinelKsy(pos.x(),pos.y());
-        data = w_k.second;
-        waves = w_k.first;
-        m_sentinel_sample = data;
-        sample = m_sentinel_sample;
+            auto w_k = getSentinelKsy(pos.x(),pos.y());
+            data = w_k.second;
+            waves = w_k.first;
+            m_sentinel_sample = data;
+            sample = m_sentinel_sample;
         }
 
 
@@ -420,6 +420,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
                                                        "файлы(*_MTL.json *_MTL.txt *_MTL.xml)");
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
+    clear_satellite_data();
     cross_square->setVisible(false);
     QFile file(headerName);
     static bool isHeaderValid = false;
@@ -533,6 +534,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
 
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
+    clear_satellite_data();
     cross_square->setVisible(false);
 
     QFile file(headerName);
@@ -926,15 +928,27 @@ inline QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x
 void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 {
 
-    int xSize= m_landsat9_bands_image_sizes->first;
-    int ySize= m_landsat9_bands_image_sizes->second;
-    int total_pixels = xSize*ySize;
-    //int offset = 0;
+    int xSize = 0;
+    int ySize = 0;
     QVector<double>sample;
+
+    if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
+        xSize = m_landsat9_bands_image_sizes->first;
+        ySize = m_landsat9_bands_image_sizes->second;
+        sample = m_landsat9_sample;
+    }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
+        if(m_sentinel_data.empty())return;//MESSAGE WARNING
+        xSize = m_sentinel_data[0].width;
+        ySize = m_sentinel_data[0].height;
+        sample = m_sentinel_sample;
+        if(sample.empty())return;
+    };
+
+    int total_pixels = xSize*ySize;
+
+
     if(m_is_bekas){
         sample = m_bekas_sample;
-    }else{
-        sample = m_landsat9_sample;
     }
 
     auto new_layer = new uchar[total_pixels*4];
@@ -943,31 +957,6 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     int midY = ySize / 2;
     int offset1 = 0;
     int offset2 = midY * xSize * 4;
-
-    /*for(int y=0;y<ySize;++y){
-        for(int x=0;x<xSize;++x){
-            auto ksy = getLandsat8Ksy(x,y);
-            if(m_is_bekas){// TODO FLEXIBLE NUMBER OF CHANNELS OPTIMIZATION
-                size_t elems_to_copy = std::min(static_cast<size_t>(ksy.size()), static_cast<size_t>(5));
-                ksy = QVector<double>(ksy.begin(), ksy.begin() + elems_to_copy);
-            }
-            double result = 999;
-            if(calculation_method->currentText()==satc::spectral_angle){
-                result = calculateSpectralAngle(ksy,sample);
-            }else if(calculation_method->currentText()==satc::euclid_metrika){
-                result = euclideanDistance(ksy,sample);
-            }
-            new_layer[offset]=color.red();
-            new_layer[offset+1]=color.green();
-            new_layer[offset+2]=color.blue();
-            if(result<euclid_param_spinbox->value()){
-             new_layer[offset+3]=255;
-            }else{
-                new_layer[offset+3]=0;
-            };
-            offset = offset+4;
-        }
-    };*/
 
     std::thread t1(&MainWindowSatelliteComparator::processLayer,this, new_layer, xSize, 0, midY, sample, color, offset1);
     std::thread t2(&MainWindowSatelliteComparator::processLayer,this, new_layer, xSize, midY, ySize, sample, color, offset2);
@@ -1271,9 +1260,15 @@ void MainWindowSatelliteComparator::processLayer(uchar* layer,
     int offset = offsetStart;
     for (int y = yStart; y < yEnd; ++y) {
         for (int x = 0; x < xSize; ++x) {
-            auto ksy = getLandsat8Ksy(x, y);
+            QVector<double> ksy;
+            if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
+            ksy = getLandsat8Ksy(x, y);
+            }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
+             auto w_k = getSentinelKsy(x, y);
+             ksy = w_k.second;
+            }
             if (m_is_bekas) {
-                size_t elems_to_copy = std::min(static_cast<size_t>(ksy.size()), static_cast<size_t>(5));//TO DO DIFINE NUMBER OF CHANNELS
+                size_t elems_to_copy = std::min(static_cast<size_t>(ksy.size()), static_cast<size_t>(5));//TO DO DEFINE NUMBER OF CHANNELS
                 ksy = QVector<double>(ksy.begin(), ksy.begin() + elems_to_copy);
             }
 
@@ -1305,28 +1300,28 @@ void MainWindowSatelliteComparator::initSentinelStructs()
 void MainWindowSatelliteComparator::read_sentinel2_bands_data()
 {
 
-     for (int i = 0; i < m_sentinel_data.size(); ++i) {
-         const QString& band_file_name = m_sentinel_data[i].file_name;
-         int xS, yS;
+    for (int i = 0; i < m_sentinel_data.size(); ++i) {
+        const QString& band_file_name = m_sentinel_data[i].file_name;
+        int xS, yS;
 
-         m_sentinel_data[i].data  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
+        m_sentinel_data[i].data  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
 
-         if(m_sentinel_data[i].resolution_in_pixel_meters=="R10m"){
-             qDebug()<<"RESOLUTION 10 TO 20";
-             int outX = xS/2;
-             int outY = yS/2;
-             // Выделяем буфер вручную
-             uint16_t* buffer = new uint16_t[(sizeof(uint16_t) * outX * outY)];
-             downsample_uint16(m_sentinel_data[i].data,buffer,xS,yS);
-             delete []m_sentinel_data[i].data;
-             m_sentinel_data[i].data = buffer;
+        if(m_sentinel_data[i].resolution_in_pixel_meters=="R10m"){
+            qDebug()<<"RESOLUTION 10 TO 20";
+            int outX = xS/2;
+            int outY = yS/2;
+            // Выделяем буфер вручную
+            uint16_t* buffer = new uint16_t[(sizeof(uint16_t) * outX * outY)];
+            downsample_uint16(m_sentinel_data[i].data,buffer,xS,yS);
+            delete []m_sentinel_data[i].data;
+            m_sentinel_data[i].data = buffer;
 
-         }
-         qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
-         if(m_sentinel_data[i].width != xS)qDebug()<<"WRONG X";
-         if(m_sentinel_data[i].height != yS)qDebug()<<"WRONG Y";
+        }
+        qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
+        if(m_sentinel_data[i].width != xS)qDebug()<<"WRONG X";
+        if(m_sentinel_data[i].height != yS)qDebug()<<"WRONG Y";
 
-     }
+    }
 
 
 }
@@ -1364,4 +1359,14 @@ QPair<QVector<double>, QVector<double> > MainWindowSatelliteComparator::getSenti
         waves.append(m_sentinel_data[i].central_wave_length);
     }
     return {waves,ksy};
+}
+
+void MainWindowSatelliteComparator::clear_satellite_data()
+{
+    if(m_sentinel_data.empty())return;
+    for(int i=0;i<m_sentinel_data.size();++i){
+        auto data = m_sentinel_data[i].data;
+        if(data)delete[]data;
+    }
+    m_sentinel_data.clear();
 }

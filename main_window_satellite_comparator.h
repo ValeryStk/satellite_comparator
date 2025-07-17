@@ -137,5 +137,7 @@ private:
 
     QPair<QVector<double>,QVector<double>> getSentinelKsy(const int x, const int y);
 
+    void clear_satellite_data();
+
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H
