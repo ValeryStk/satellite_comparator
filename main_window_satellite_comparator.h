@@ -134,5 +134,7 @@ private:
     void gdal_start_driver();
     void gdal_close_driver();
 
+    QPair<QVector<double>,QVector<double>> getSentinelKsy(const int x, const int y);
+
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

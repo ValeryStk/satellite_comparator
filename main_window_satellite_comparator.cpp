@@ -45,9 +45,7 @@ QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443,482,562,655,865,1610,2200};
 QVector<double> waves_landsat9_5 = {443,482,562,655,865};
 
-QVector<double> sample;
-QVector<double> waves;
-QVector<double> trimmed_satellite_data;
+
 QVector<uchar*> m_layers;
 
 
@@ -181,11 +179,29 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     preview->graph(1)->setPen(QPen(Qt::red));
 
     connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::pointChanged,this, [this](QPointF pos){
-        QVector<double> data = getLandsat8Ksy(pos.x(),pos.y());
+
+        QVector<double> data;
+        QVector<double> waves;
+        QVector<double> sample;
+        QVector<double> trimmed_satellite_data;
+
+        if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
+        data = getLandsat8Ksy(pos.x(),pos.y());
+        }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
+            //qDebug()<<" sentinel position: "<<pos.x()<<pos.y();
+            auto w_k = getSentinelKsy(pos.x(),pos.y());
+            data = w_k.second;
+            waves = w_k.first;
+            sample = data;//TEMPORARY
+            trimmed_satellite_data = data;
+        }
         if(data.empty()){
             //qDebug()<<"DATA EMPTY!!!!";
             return;
         }
+
+        if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
+
         if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
             qDebug()<<"ERROR SIZE:"<<data.size();
             return;
@@ -199,6 +215,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             sample = m_landsat9_sample;
             waves = waves_landsat9;
             trimmed_satellite_data = data;
+        }
         }
 
         preview->graph(0)->data().clear();
@@ -611,8 +628,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     ui->statusbar->showMessage("");
     m_is_image_created = true;
     cross_square->setVisible(true);
-
-    //ui->graphicsView_satellite_image->setIsSignal(true);
+    ui->graphicsView_satellite_image->setIsSignal(true);
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<double>& x,
@@ -1305,4 +1321,24 @@ void MainWindowSatelliteComparator::gdal_start_driver()
 void MainWindowSatelliteComparator::gdal_close_driver()
 {
     GDALDestroyDriverManager();
+}
+
+QPair<QVector<double>, QVector<double> > MainWindowSatelliteComparator::getSentinelKsy(const int x,
+                                                                                       const int y)
+{
+    if(m_is_image_created==false)return {};
+    if(m_sentinel_data.empty())return {};
+    int xSize= m_sentinel_data[0].width;
+    int ySize= m_sentinel_data[0].width;
+    if(x>xSize||y>ySize) return {};
+    if(x<0||y<0) return {};
+    QVector<double> ksy;
+    QVector<double> waves;
+    for(int i=0;i<m_sentinel_data.size();++i){
+        uint16_t value = m_sentinel_data[i].data[(y*xSize) + x];
+        //double ksy_d = m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
+        ksy.append(value);
+        waves.append(m_sentinel_data[i].central_wave_length);
+    }
+    return {waves,ksy};
 }
