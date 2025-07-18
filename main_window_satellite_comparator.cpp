@@ -259,7 +259,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             m_landsat9_sample = data;
             sample = m_landsat9_sample;
             waves = waves_landsat9;
-            getGeoCoordinates(pos.x(),pos.y());// TODO SENTINEL GEO
+
 
         }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
             auto w_k = getSentinelKsy(pos.x(),pos.y());
@@ -276,6 +276,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         preview->graph(1)->setData(waves, sample);
         preview->rescaleAxes(true);
         preview->replot();
+
+        getGeoCoordinates(pos.x(),pos.y());
 
 
     });
@@ -658,13 +660,19 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
 
     if(finalFiles.empty()==false){
     QFileInfo finfo(m_root_path + "/" + finalFiles[0]+".jp2");
-    qDebug()<<finfo.absolutePath();
     QDir dir(finfo.absolutePath());
-    qDebug()<<"L1: "<<dir.path();
     dir.cdUp();
-    qDebug()<<"L2: "<<dir.path();
     dir.cdUp();
-    qDebug()<<"L2: "<<dir.path();
+    const QString geo_file = dir.path()+"/MTD_TL.xml";
+    fi.setFile(geo_file);
+    auto xml_doc = fi.absoluteFilePath();
+    qDebug()<<xml_doc<<"--->"<<fi.exists();
+    m_geo.utmZone = extractUTMZoneFromXML(xml_doc);
+    sentinel_geo = extractGeoPositions(xml_doc);
+    m_geo.ulX = sentinel_geo["20"].ulX;
+    m_geo.ulY = sentinel_geo["20"].ulY;
+    m_geo.resX = 20;
+    m_geo.resY = -20;
     }
 }
 
@@ -1030,9 +1038,9 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
         return "";
     }
 
-    //qDebug()<< "Географические координаты (WGS84):";
-    //qDebug()<< "Долгота: " << lon;
-    //qDebug()<< "Широта: " << lat;
+    qDebug()<< "Географические координаты (WGS84):";
+    qDebug()<< "Долгота: " << lon;
+    qDebug()<< "Широта: " << lat;
     m_lattitude = lat;
     m_longitude = lon;
     QString lat_lon = QString("Широта: %1 Долгота: %2").arg(lat).arg(lon);
@@ -1381,4 +1389,71 @@ void MainWindowSatelliteComparator::clear_satellite_data()
         if(data)delete[]data;
     }
     m_sentinel_data.clear();
+}
+
+QHash<QString, MainWindowSatelliteComparator::geoTransform> MainWindowSatelliteComparator::extractGeoPositions
+(const QString &xmlFilePath)
+{
+    QHash<QString, geoTransform> positions;
+
+        QFile file(xmlFilePath);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            qWarning() << "Не удалось открыть файл:" << xmlFilePath;
+            return positions;
+        }
+
+        QDomDocument doc;
+        if (!doc.setContent(&file)) {
+            qWarning() << "Ошибка парсинга XML";
+            file.close();
+            return positions;
+        }
+        file.close();
+
+        QDomNodeList geoNodes = doc.elementsByTagName("Geoposition");
+        for (int i = 0; i < geoNodes.count(); ++i) {
+            QDomElement geoElem = geoNodes.at(i).toElement();
+            QString resolution = geoElem.attribute("resolution");
+
+            geoTransform pos;
+            pos.ulX = geoElem.firstChildElement("ULX").text().toDouble();
+            pos.ulY = geoElem.firstChildElement("ULY").text().toDouble();
+            positions.insert(resolution, pos);
+        }
+
+        return positions;
+}
+
+int MainWindowSatelliteComparator::extractUTMZoneFromXML(const QString &xmlFilePath)
+{
+    QFile file(xmlFilePath);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            qWarning() << "Не удалось открыть файл:" << xmlFilePath;
+            return -1;
+        }
+
+        QDomDocument doc;
+        if (!doc.setContent(&file)) {
+            qWarning() << "Ошибка парсинга XML";
+            file.close();
+            return -1;
+        }
+        file.close();
+
+        QDomNodeList nodes = doc.elementsByTagName("HORIZONTAL_CS_NAME");
+        if (nodes.isEmpty()) {
+            qWarning() << "Тег <HORIZONTAL_CS_NAME> не найден";
+            return -1;
+        }
+
+        QString csName = nodes.at(0).toElement().text();
+        QRegularExpression re("zone\\s*(\\d+)");
+        QRegularExpressionMatch match = re.match(csName);
+
+        if (match.hasMatch()) {
+            return match.captured(1).toInt();  // Возвращает номер зоны
+        }
+
+        qWarning() << "UTM зона не найдена в строке:" << csName;
+        return -1;
 }

@@ -139,5 +139,8 @@ private:
 
     void clear_satellite_data();
 
+    QHash <QString,geoTransform> sentinel_geo;
+    QHash<QString, geoTransform> extractGeoPositions(const QString& xmlFilePath);
+    int extractUTMZoneFromXML(const QString& xmlFilePath);
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H
