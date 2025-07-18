@@ -532,6 +532,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     QString headerName =  QFileDialog::getOpenFileName(this,openSatMessage,"",
                                                        "файлы(MTD_MSIL2A.xml)");
 
+
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
     clear_satellite_data();
@@ -563,7 +564,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     QStringList filteredFiles;
 
     for (const QString& file : imageFiles) {
-        for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
+        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
             // Ищем точное вхождение ключа как часть имени файла
             if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
                 filteredFiles << file;
@@ -597,7 +598,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     title_satellite_name->setText(satc::satellite_name_sentinel_2A);
 
     for (const QString& file : finalFiles) {
-        for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
+        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
             if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
                 m_sentinel_metadata.sentinel_missed_channels[i] = false; // Канал найден — не пропущен
                 m_sentinel_metadata.files[i] = file;
@@ -609,7 +610,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     if(m_dynamic_checkboxes_widget)m_dynamic_checkboxes_widget->clear();
     QList<QString> availableBandNames;
 
-    for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
+    for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         if (!m_sentinel_metadata.sentinel_missed_channels[i]) {
             availableBandNames << sad::sentinel2_gui_band_names[i];
             sad::BAND_DATA data;
@@ -654,6 +655,17 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     m_is_image_created = true;
     cross_square->setVisible(true);
     ui->graphicsView_satellite_image->setIsSignal(true);
+
+    if(finalFiles.empty()==false){
+    QFileInfo finfo(m_root_path + "/" + finalFiles[0]+".jp2");
+    qDebug()<<finfo.absolutePath();
+    QDir dir(finfo.absolutePath());
+    qDebug()<<"L1: "<<dir.path();
+    dir.cdUp();
+    qDebug()<<"L2: "<<dir.path();
+    dir.cdUp();
+    qDebug()<<"L2: "<<dir.path();
+    }
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<double>& x,
@@ -1292,7 +1304,7 @@ void MainWindowSatelliteComparator::processLayer(uchar* layer,
 void MainWindowSatelliteComparator::initSentinelStructs()
 {
     m_sentinel_metadata.isHeaderValid = false;
-    for (int i = 0; i < SENTINEL_2A_BANDS_NUMBER; ++i) {
+    for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         m_sentinel_metadata.sentinel_missed_channels[i] = true; // Изначально считаем все каналы пропущенными
     }
 }

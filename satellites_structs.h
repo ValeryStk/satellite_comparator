@@ -6,7 +6,7 @@
 
 #define LANDSAT_8_BANDS_NUMBER 11
 #define LANDSAT_9_BANDS_NUMBER 11
-#define SENTINEL_2A_BANDS_NUMBER 12
+#define SENTINEL_BANDS_NUMBER 13
 
 namespace sad{
 
@@ -155,23 +155,24 @@ struct LANDSAT_METADATA_FILE{
 // SENTINEL SECTION
 
 
-const QString sentinel2_gui_band_names[SENTINEL_2A_BANDS_NUMBER] = {
-    "443 nm (Coastal aerosol)",
-    "490 nm (Blue)",
-    "560 nm (Green)",
-    "665 nm (Red)",
-    "705 nm (Red edge 1)",
-    "740 nm (Red edge 2)",
-    "783 nm (Red edge 3)",
-    "842 nm (NIR)",
-    "865 nm (Narrow NIR)",
-    "945 nm (Water vapor)",
-    "1610 nm (SWIR 1)",
-    "2190 nm (SWIR 2)"
+const QString sentinel2_gui_band_names[SENTINEL_BANDS_NUMBER] = {
+    "B01 - 443 nm aerosol",
+    "B02 - 490 nm blue",
+    "B03 - 560 nm green",
+    "B04 - 665 nm red",
+    "B05 - 705 nm VNIR",
+    "B06 - 740 nm VNIR",
+    "B07 - 783 nm VNIR",
+    "B08 - 842 nm VNIR",
+    "B8A - 865 nm SWIR",
+    "B09 - 945 nm SWIR",
+    "B10 - 1375 nm SWIR",
+    "B11 - 1610 nm SWIR",
+    "B12 - 2190 nm SWIR"
 };
 
 
-const QString sentinel_bands_keys[SENTINEL_2A_BANDS_NUMBER] = {
+const QString sentinel_bands_keys[SENTINEL_BANDS_NUMBER] = {
     "B01",
     "B02",
     "B03",
@@ -181,12 +182,13 @@ const QString sentinel_bands_keys[SENTINEL_2A_BANDS_NUMBER] = {
     "B07",
     "B08",
     "B8A",
+    "B09"
     "B10",
     "B11",
     "B12"
 };
 
-const double sentinel_central_wave_lengths[SENTINEL_2A_BANDS_NUMBER] = {
+const double sentinel_central_wave_lengths[SENTINEL_BANDS_NUMBER] = {
     443,
     490,
     560,
@@ -197,6 +199,7 @@ const double sentinel_central_wave_lengths[SENTINEL_2A_BANDS_NUMBER] = {
     842,
     865,
     945,
+    1375,
     1610,
     2190
 };
@@ -210,8 +213,8 @@ const QHash<const QString,QPair<int,int>> sentinel_resolutions = {
 
 struct SENTINEL_METADATA {
     bool isHeaderValid = false;
-    bool sentinel_missed_channels[SENTINEL_2A_BANDS_NUMBER];
-    QString files[SENTINEL_2A_BANDS_NUMBER];
+    bool sentinel_missed_channels[SENTINEL_BANDS_NUMBER];
+    QString files[SENTINEL_BANDS_NUMBER];
 };
 
 struct BAND_DATA{
