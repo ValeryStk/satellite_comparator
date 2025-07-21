@@ -116,7 +116,6 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 {
     ui->setupUi(this);
     gdal_start_driver();
-    //CPLSetConfigOption("GDAL_DATA", "E:/004_QT/_satellite_comparator/release/release/data");
     QString dataPath = QApplication::applicationDirPath() + "/data";
     qDebug()<<dataPath;
     CPLSetConfigOption("GDAL_DATA", dataPath.toUtf8().constData());
@@ -542,7 +541,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
 
     QFile file(headerName);
     if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "Не удалось открыть файл";
+        qWarning() << "Не удалось открыть файл Sentinel XML";
         return;
     }
 
