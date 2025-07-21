@@ -49,6 +49,13 @@ void LayerList::mayBeHideMayBeShow(QListWidgetItem *item)
     }
 }
 
+void LayerList::deleteAllItems()
+{
+    while (count() > 0) {
+        delete takeItem(0);
+    }
+}
+
 void LayerList::showContextMenu(const QPoint &pos)
 {
     QListWidgetItem* item = itemAt(pos);
@@ -73,7 +80,3 @@ void LayerList::showContextMenu(const QPoint &pos)
     }
 }
 
-void LayerList::setupContextMenu()
-{
-
-}

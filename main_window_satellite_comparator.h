@@ -32,7 +32,7 @@ private slots:
     void change_bands_sentinel_and_show_image();
     void show_layer(const QString id);
     void hide_layer(const QString id);
-    void remove_layer(const QString id);
+    void remove_scene_layer(const QString& id);
     void openLandsat9HeaderData();
     void openLandsat8HeaderData();
     void openSentinel2AHeaderData();
@@ -78,7 +78,7 @@ private:
 
     bool m_is_image_created;
     bool m_is_bekas;
-    LayerList* m_layer_list;
+    LayerList* m_layer_gui_list;
     QCustomPlot* preview;
     QComboBox* calculation_method;
     QVector<double> m_landsat9_sample;
@@ -138,9 +138,12 @@ private:
     QPair<QVector<double>,QVector<double>> getSentinelKsy(const int x, const int y);
 
     void clear_satellite_data();
+    void clear_all_layers();
 
     QHash <QString,geoTransform> sentinel_geo;
     QHash<QString, geoTransform> extractGeoPositions(const QString& xmlFilePath);
     int extractUTMZoneFromXML(const QString& xmlFilePath);
+
+
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

@@ -14,6 +14,7 @@ public:
 
     void removeItemList(const QString& item);
     void mayBeHideMayBeShow(QListWidgetItem* item);
+    void deleteAllItems();
 
 
 private slots:
@@ -21,7 +22,8 @@ private slots:
 
 private:
     QHash<QString,bool> m_states;
-    void setupContextMenu();
+
+
 
 signals:
     void hide(const QString);

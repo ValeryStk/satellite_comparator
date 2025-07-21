@@ -292,10 +292,10 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 
     QWidget* widget_tools = new QWidget(ui->graphicsView_satellite_image);
-    m_layer_list = new LayerList;
-    connect(m_layer_list,SIGNAL(show(const QString)),SLOT(show_layer(const QString)));
-    connect(m_layer_list,SIGNAL(hide(const QString)),SLOT(hide_layer(const QString)));
-    connect(m_layer_list,SIGNAL(remove(const QString)),SLOT(remove_layer(const QString)));
+    m_layer_gui_list = new LayerList;
+    connect(m_layer_gui_list,SIGNAL(show(const QString)),SLOT(show_layer(const QString)));
+    connect(m_layer_gui_list,SIGNAL(hide(const QString)),SLOT(hide_layer(const QString)));
+    connect(m_layer_gui_list,SIGNAL(remove(const QString)),SLOT(remove_scene_layer(const QString)));
 
     QHBoxLayout* tool_root_layout = new QHBoxLayout;
     QVBoxLayout* toolLayOut = new QVBoxLayout;
@@ -347,7 +347,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     tool_root_layout->addWidget(preview);
     widget_tools->setLayout(tool_root_layout);
     tool_root_layout->addLayout(euclid_layout);
-    tool_root_layout->addWidget(m_layer_list);
+    tool_root_layout->addWidget(m_layer_gui_list);
     widget_tools->show();
     QGraphicsProxyWidget* proxy = scene->addWidget(widget_tools);
     proxy->setPos(0, 50);
@@ -384,7 +384,11 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     connect(resetToRGB,&QPushButton::clicked,[this](){
         if(m_dynamic_checkboxes_widget){
             m_dynamic_checkboxes_widget->setRGBchannels();
-            change_bands_and_show_image();
+            if(m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 || m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9){
+                change_bands_and_show_image();
+            }else if(m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A || m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B){
+                change_bands_sentinel_and_show_image();
+            }
         }
     });
 
@@ -422,6 +426,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
     clear_satellite_data();
+    clear_all_layers();
     cross_square->setVisible(false);
     QFile file(headerName);
     static bool isHeaderValid = false;
@@ -537,6 +542,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
     clear_satellite_data();
+    clear_all_layers();
     cross_square->setVisible(false);
 
     QFile file(headerName);
@@ -658,20 +664,20 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     ui->graphicsView_satellite_image->setIsSignal(true);
 
     if(finalFiles.empty()==false){
-    QFileInfo finfo(m_root_path + "/" + finalFiles[0]+".jp2");
-    QDir dir(finfo.absolutePath());
-    dir.cdUp();
-    dir.cdUp();
-    const QString geo_file = dir.path()+"/MTD_TL.xml";
-    fi.setFile(geo_file);
-    auto xml_doc = fi.absoluteFilePath();
-    qDebug()<<xml_doc<<"--->"<<fi.exists();
-    m_geo.utmZone = extractUTMZoneFromXML(xml_doc);
-    sentinel_geo = extractGeoPositions(xml_doc);
-    m_geo.ulX = sentinel_geo["20"].ulX;
-    m_geo.ulY = sentinel_geo["20"].ulY;
-    m_geo.resX = 20;
-    m_geo.resY = -20;
+        QFileInfo finfo(m_root_path + "/" + finalFiles[0]+".jp2");
+        QDir dir(finfo.absolutePath());
+        dir.cdUp();
+        dir.cdUp();
+        const QString geo_file = dir.path()+"/MTD_TL.xml";
+        fi.setFile(geo_file);
+        auto xml_doc = fi.absoluteFilePath();
+        qDebug()<<xml_doc<<"--->"<<fi.exists();
+        m_geo.utmZone = extractUTMZoneFromXML(xml_doc);
+        sentinel_geo = extractGeoPositions(xml_doc);
+        m_geo.ulX = sentinel_geo["20"].ulX;
+        m_geo.ulY = sentinel_geo["20"].ulY;
+        m_geo.resX = 20;
+        m_geo.resY = -20;
     }
 }
 
@@ -995,7 +1001,7 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     const QString searchParams = calculation_method->currentText() + ": "+QString::number(euclid_param_spinbox->value());
     auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
     m_layer_items.insert(stamp,new_image_item);
-    m_layer_list->addItemToList(stamp,searchParams,color);
+    m_layer_gui_list->addItemToList(stamp,searchParams,color);
 }
 
 QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
@@ -1259,13 +1265,15 @@ void MainWindowSatelliteComparator::hide_layer(const QString id)
     m_layer_items.value(id)->setVisible(false);
 }
 
-void MainWindowSatelliteComparator::remove_layer(const QString id)
+void MainWindowSatelliteComparator::remove_scene_layer(const QString& id)
 {
     qDebug()<<"Remove image item event..."<<id;
     auto image_item = m_layer_items.value(id);
-    scene->removeItem(image_item);
-    m_layer_items.remove(id);
-    delete image_item;
+
+    if(image_item) {
+        scene->removeItem(image_item);
+        delete image_item;
+    }
 }
 
 
@@ -1281,10 +1289,10 @@ void MainWindowSatelliteComparator::processLayer(uchar* layer,
         for (int x = 0; x < xSize; ++x) {
             QVector<double> ksy;
             if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
-            ksy = getLandsat8Ksy(x, y);
+                ksy = getLandsat8Ksy(x, y);
             }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
-             auto w_k = getSentinelKsy(x, y);
-             ksy = w_k.second;
+                auto w_k = getSentinelKsy(x, y);
+                ksy = w_k.second;
             }
             if (m_is_bekas) {
                 size_t elems_to_copy = std::min(static_cast<size_t>(ksy.size()), static_cast<size_t>(5));//TO DO DEFINE NUMBER OF CHANNELS
@@ -1390,69 +1398,80 @@ void MainWindowSatelliteComparator::clear_satellite_data()
     m_sentinel_data.clear();
 }
 
+void MainWindowSatelliteComparator::clear_all_layers()
+{
+    if(m_layer_items.empty())return;
+    for (auto it = m_layer_items.constBegin(); it != m_layer_items.constEnd(); ++it) {
+        QString key = it.key();
+        remove_scene_layer(key);
+    }
+    m_layer_gui_list->clear();
+    m_layer_items.clear();
+}
+
 QHash<QString, MainWindowSatelliteComparator::geoTransform> MainWindowSatelliteComparator::extractGeoPositions
 (const QString &xmlFilePath)
 {
     QHash<QString, geoTransform> positions;
 
-        QFile file(xmlFilePath);
-        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            qWarning() << "Не удалось открыть файл:" << xmlFilePath;
-            return positions;
-        }
-
-        QDomDocument doc;
-        if (!doc.setContent(&file)) {
-            qWarning() << "Ошибка парсинга XML";
-            file.close();
-            return positions;
-        }
-        file.close();
-
-        QDomNodeList geoNodes = doc.elementsByTagName("Geoposition");
-        for (int i = 0; i < geoNodes.count(); ++i) {
-            QDomElement geoElem = geoNodes.at(i).toElement();
-            QString resolution = geoElem.attribute("resolution");
-
-            geoTransform pos;
-            pos.ulX = geoElem.firstChildElement("ULX").text().toDouble();
-            pos.ulY = geoElem.firstChildElement("ULY").text().toDouble();
-            positions.insert(resolution, pos);
-        }
-
+    QFile file(xmlFilePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Не удалось открыть файл:" << xmlFilePath;
         return positions;
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "Ошибка парсинга XML";
+        file.close();
+        return positions;
+    }
+    file.close();
+
+    QDomNodeList geoNodes = doc.elementsByTagName("Geoposition");
+    for (int i = 0; i < geoNodes.count(); ++i) {
+        QDomElement geoElem = geoNodes.at(i).toElement();
+        QString resolution = geoElem.attribute("resolution");
+
+        geoTransform pos;
+        pos.ulX = geoElem.firstChildElement("ULX").text().toDouble();
+        pos.ulY = geoElem.firstChildElement("ULY").text().toDouble();
+        positions.insert(resolution, pos);
+    }
+
+    return positions;
 }
 
 int MainWindowSatelliteComparator::extractUTMZoneFromXML(const QString &xmlFilePath)
 {
     QFile file(xmlFilePath);
-        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            qWarning() << "Не удалось открыть файл:" << xmlFilePath;
-            return -1;
-        }
-
-        QDomDocument doc;
-        if (!doc.setContent(&file)) {
-            qWarning() << "Ошибка парсинга XML";
-            file.close();
-            return -1;
-        }
-        file.close();
-
-        QDomNodeList nodes = doc.elementsByTagName("HORIZONTAL_CS_NAME");
-        if (nodes.isEmpty()) {
-            qWarning() << "Тег <HORIZONTAL_CS_NAME> не найден";
-            return -1;
-        }
-
-        QString csName = nodes.at(0).toElement().text();
-        QRegularExpression re("zone\\s*(\\d+)");
-        QRegularExpressionMatch match = re.match(csName);
-
-        if (match.hasMatch()) {
-            return match.captured(1).toInt();  // Возвращает номер зоны
-        }
-
-        qWarning() << "UTM зона не найдена в строке:" << csName;
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Не удалось открыть файл:" << xmlFilePath;
         return -1;
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "Ошибка парсинга XML";
+        file.close();
+        return -1;
+    }
+    file.close();
+
+    QDomNodeList nodes = doc.elementsByTagName("HORIZONTAL_CS_NAME");
+    if (nodes.isEmpty()) {
+        qWarning() << "Тег <HORIZONTAL_CS_NAME> не найден";
+        return -1;
+    }
+
+    QString csName = nodes.at(0).toElement().text();
+    QRegularExpression re("zone\\s*(\\d+)");
+    QRegularExpressionMatch match = re.match(csName);
+
+    if (match.hasMatch()) {
+        return match.captured(1).toInt();  // Возвращает номер зоны
+    }
+
+    qWarning() << "UTM зона не найдена в строке:" << csName;
+    return -1;
 }
