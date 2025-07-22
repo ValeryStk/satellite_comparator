@@ -18,6 +18,7 @@ SOURCES += \
     progress_informator.cpp \
     qcustomplot.cpp \
     satellite_graphics_view.cpp \
+    satellites_structs.cpp \
     sattelite_comparator.cpp \
     text_constants.cpp\
     bekas/BaseTools/DBJson.cpp \

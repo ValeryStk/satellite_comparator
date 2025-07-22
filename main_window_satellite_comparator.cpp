@@ -512,7 +512,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
         isHeaderValid = true;
     }
     if(isHeaderValid == false){
-        m_satelite_type = sad::UKNOWN_SATELLITE;
+        m_satelite_type = sad::UNKNOWN_SATELLITE;
         return;
     }
 
@@ -685,7 +685,7 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<d
                                                                  const QVector<double>& y)
 {
     //qDebug()<<"sat_comparator: "<<x.size()<<y.size();
-    if(m_satelite_type == sad::UKNOWN_SATELLITE)return;
+    if(m_satelite_type == sad::UNKNOWN_SATELLITE)return;
     m_sat_comparator->initial_fill_data_to_show(x,y,waves_landsat9,m_landsat9_sample);
     if(m_satelite_type == sad::LANDSAT_9){
         m_sat_comparator->set_satellite_responses("landsat9");

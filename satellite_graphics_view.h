@@ -17,16 +17,12 @@ private:
 
 protected:
     void mouseMoveEvent(QMouseEvent* event) override;
+    void wheelEvent(QWheelEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 signals:
     void pointChanged(QPointF point);
-    void sampleChanged(QPointF point);
-
-
-
-    // QWidget interface
-protected:
-    void mouseDoubleClickEvent(QMouseEvent *event) override;
+    void sampleChanged(QPointF point);  
 };
 
 #endif // SATELLITE_GRAPHICS_VIEW_H

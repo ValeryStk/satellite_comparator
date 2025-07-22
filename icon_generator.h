@@ -6,7 +6,7 @@
 
 namespace iut{
 
-   QIcon createIcon(int r, int g, int b, int a = 255, QSize size = QSize(100, 100));
+   QIcon createIcon(int r, int g, int b, QSize size = QSize(100, 100));
 
 }
 

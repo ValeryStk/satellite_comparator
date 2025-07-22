@@ -44,7 +44,7 @@ private slots:
 private:
     Ui::MainWindowSatelliteComparator *ui;
     QGraphicsScene *scene;
-    sad::SATELLITE_TYPE m_satelite_type = sad::UKNOWN_SATELLITE;
+    sad::SATELLITE_TYPE m_satelite_type = sad::UNKNOWN_SATELLITE;
     DynamicCheckboxWidget *m_dynamic_checkboxes_widget;
     SatteliteComparator* m_sat_comparator;
 

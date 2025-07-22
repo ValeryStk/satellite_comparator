@@ -26,7 +26,7 @@ void LayerList::addItemToList(const QString &itemName,
     item->setData(Qt::UserRole,itemName);
     addItem(item);
     item->setToolTip(toolTip);
-    item->setIcon(iut::createIcon(color.red(),color.green(),color.blue(),color.alpha()));
+    item->setIcon(iut::createIcon(color.red(),color.green(),color.blue()));
     connect(this, &QListWidget::itemChanged, this, [this](QListWidgetItem* item) {
         mayBeHideMayBeShow(item);
     });
