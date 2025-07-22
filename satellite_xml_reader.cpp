@@ -57,7 +57,7 @@ sad::LANDSAT_METADATA_FILE readLandsatXmlHeader(const QString &pathToLandsatHead
     result = traverseDom(root,"PRODUCT_CONTENTS","PROCESSING_LEVEL");
     lmd.product_contents.processing_level = result;
 
-    for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
+    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
       QString result = traverseDom(root,"PRODUCT_CONTENTS",sad::landsat9_bands_keys[i]);
       if(result.isEmpty()){
           lmd.landsat9_missed_channels[i]=true;
@@ -105,7 +105,7 @@ sad::LANDSAT_METADATA_FILE readLandsatXmlHeader(const QString &pathToLandsatHead
 
 
     // READING LEVEL2_SURFACE_REFLECTANCE_PARAMETERS FOR LANDSAT FROM XML
-    for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
+    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
       QString add_result = traverseDom(root,"LEVEL2_SURFACE_REFLECTANCE_PARAMETERS",sad::landsat9_add_reflectence_keys[i]);
       QString mult_result = traverseDom(root,"LEVEL2_SURFACE_REFLECTANCE_PARAMETERS",sad::landsat9_mult_reflectence_keys[i]);
       lmd.level2_surface_reflectance_parameters.reflectance_add_band[i] = add_result;

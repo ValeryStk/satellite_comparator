@@ -205,7 +205,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
         if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
 
-            if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
+            if(data.size()!=(int)LANDSAT_BANDS_NUMBER-4){
                 qDebug()<<"ERROR SIZE:"<<data.size();
                 return;
             }
@@ -250,7 +250,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             data = getLandsat8Ksy(pos.x(),pos.y());
 
             if(data.empty())return;
-            if(data.size()!=(int)LANDSAT_9_BANDS_NUMBER-4){
+            if(data.size()!=(int)LANDSAT_BANDS_NUMBER-4){
                 qDebug()<<"ERROR SIZE:"<<data.size();
                 return;
             }
@@ -457,14 +457,14 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
             m_geo.resX = projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
             m_geo.resY = - m_geo.resX;
 
-            for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
+            for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
                 if(check_bands.value(sad::landsat9_bands_keys[i]).isUndefined()){
                     qDebug()<<"missed band: "<<sad::landsat9_bands_keys[i];
                     m_landsat9_missed_channels[i] = true;
                     continue;
                 }
                 m_landsat9_missed_channels[i] = false;
-                landsat_gui_available_bands.append(sad::landsat9_bands_gui_names[i]);
+                landsat_gui_available_bands.append(sad::landsat_bands_gui_names[i]);
                 auto band_file_name = check_bands[sad::landsat9_bands_keys[i]].toString();
                 int xS;
                 int yS;
@@ -495,10 +495,10 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
         auto data = satc::readLandsatXmlHeader(headerName);
         title_satellite_name->setText(data.image_attributes.spacecraft_id);
         QStringList file_names;
-        for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
+        for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
             if(data.landsat9_missed_channels[i])continue;
             file_names.append(data.product_contents.file_name_bands[i]);
-            landsat_gui_available_bands.append(sad::landsat9_bands_gui_names[i]);
+            landsat_gui_available_bands.append(sad::landsat_bands_gui_names[i]);
             m_reflectance_mult_add_arrays[i][0] = data.level2_surface_reflectance_parameters.reflectance_mult_band[i].toDouble();
             m_reflectance_mult_add_arrays[i][1] = data.level2_surface_reflectance_parameters.reflectance_add_band[i].toDouble();
         }
@@ -721,7 +721,7 @@ QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const Q
         }
     }
     //qDebug()<<bands_lines;
-    for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
+    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
         QString searchString = sad::landsat9_bands_keys[i];
         bool found = false;
         for (const QString &item : bands_lines)
@@ -737,7 +737,7 @@ QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const Q
             m_landsat9_missed_channels[i] = true;
         }else{
             m_landsat9_missed_channels[i] = false;
-            available_gui_bands.append(sad::landsat9_bands_gui_names[i]);
+            available_gui_bands.append(sad::landsat_bands_gui_names[i]);
         }
     }
     return bands;
@@ -806,7 +806,7 @@ void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString
         qDebug()<<"SIZES ARE NOT THE SAME....";
         return;
     }
-    if(mult.size()>LANDSAT_9_BANDS_NUMBER){
+    if(mult.size()>LANDSAT_BANDS_NUMBER){
         qDebug()<<"SIZE TOO BIG...";
         return;
     }
@@ -863,7 +863,7 @@ void MainWindowSatelliteComparator::fillLandSat9GeoData(const QString &path)
 
 void MainWindowSatelliteComparator::clearLandsat9DataBands()
 {
-    for (int i = 0; i < LANDSAT_9_BANDS_NUMBER; ++i) {
+    for (int i = 0; i < LANDSAT_BANDS_NUMBER; ++i) {
         if(m_landsat9_missed_channels[i])continue;
         if(m_landsat9_data_bands[i]==nullptr)continue;
         delete[] m_landsat9_data_bands[i];
@@ -922,7 +922,7 @@ QVector<double> MainWindowSatelliteComparator::getLandsat8Speya(const int x,
     if(x>xSize||y>ySize) return {};
     if(x<0||y<0) return {};
     QVector<double> speya;
-    for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
+    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
         if(i==7||i==9||i==10)continue;// пропускаем каналы panchrom, и последние два LWR-100m
         uint16_t value = m_landsat9_data_bands[i][(y*xSize) + x];
         double speya_d = m_radiance_mult_add_arrays[i][0]*value+m_radiance_mult_add_arrays[i][1];
@@ -941,7 +941,7 @@ inline QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x
     if(x>xSize||y>ySize) return {};
     if(x<0||y<0) return {};
     QVector<double> ksy;
-    for(int i=0;i<LANDSAT_9_BANDS_NUMBER;++i){
+    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
         if(i==7||i==8||i==9||i==10)continue;// пропускаем каналы panchrom, и последние два LWR-100m
         uint16_t value = m_landsat9_data_bands[i][(y*xSize) + x];
         double ksy_d = m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];

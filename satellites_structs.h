@@ -4,8 +4,7 @@
 #include "QString"
 #include <QHash>
 
-#define LANDSAT_8_BANDS_NUMBER 11
-#define LANDSAT_9_BANDS_NUMBER 11
+#define LANDSAT_BANDS_NUMBER 11
 #define SENTINEL_BANDS_NUMBER 13
 
 namespace sad{
@@ -18,7 +17,7 @@ enum SATELLITE_TYPE{
     UKNOWN_SATELLITE
 };
 
-const QString landsat9_bands_keys[LANDSAT_9_BANDS_NUMBER] = {
+const QString landsat9_bands_keys[LANDSAT_BANDS_NUMBER] = {
     "FILE_NAME_BAND_1",
     "FILE_NAME_BAND_2",
     "FILE_NAME_BAND_3",
@@ -31,7 +30,7 @@ const QString landsat9_bands_keys[LANDSAT_9_BANDS_NUMBER] = {
     "FILE_NAME_BAND_10",
     "FILE_NAME_BAND_11"
 };
-const QString landsat9_mult_radiance_keys[LANDSAT_9_BANDS_NUMBER] = {
+const QString landsat9_mult_radiance_keys[LANDSAT_BANDS_NUMBER] = {
     "RADIANCE_MULT_BAND_1",
     "RADIANCE_MULT_BAND_2",
     "RADIANCE_MULT_BAND_3",
@@ -44,7 +43,7 @@ const QString landsat9_mult_radiance_keys[LANDSAT_9_BANDS_NUMBER] = {
     "RADIANCE_MULT_BAND_10",
     "RADIANCE_MULT_BAND_11"
 };
-const QString landsat9_add_radiance_keys[LANDSAT_9_BANDS_NUMBER] = {
+const QString landsat9_add_radiance_keys[LANDSAT_BANDS_NUMBER] = {
     "RADIANCE_ADD_BAND_1",
     "RADIANCE_ADD_BAND_2",
     "RADIANCE_ADD_BAND_3",
@@ -58,7 +57,7 @@ const QString landsat9_add_radiance_keys[LANDSAT_9_BANDS_NUMBER] = {
     "RADIANCE_ADD_BAND_11"
 };
 
-const QString landsat9_mult_reflectence_keys[LANDSAT_9_BANDS_NUMBER] = {
+const QString landsat9_mult_reflectence_keys[LANDSAT_BANDS_NUMBER] = {
     "REFLECTANCE_MULT_BAND_1",
     "REFLECTANCE_MULT_BAND_2",
     "REFLECTANCE_MULT_BAND_3",
@@ -72,7 +71,7 @@ const QString landsat9_mult_reflectence_keys[LANDSAT_9_BANDS_NUMBER] = {
     "REFLECTANCE_MULT_BAND_11"
 };
 
-const QString landsat9_add_reflectence_keys[LANDSAT_9_BANDS_NUMBER] = {
+const QString landsat9_add_reflectence_keys[LANDSAT_BANDS_NUMBER] = {
     "REFLECTANCE_ADD_BAND_1",
     "REFLECTANCE_ADD_BAND_2",
     "REFLECTANCE_ADD_BAND_3",
@@ -86,40 +85,25 @@ const QString landsat9_add_reflectence_keys[LANDSAT_9_BANDS_NUMBER] = {
     "REFLECTANCE_ADD_BAND_11"
 };
 
-
-const QString landsat8_bands_gui_names[LANDSAT_8_BANDS_NUMBER] = {
-    "443 nm (Aerosol) 30 m",
-    "482 nm (Blue) 30 m",
-    "561 nm (Green) 30 m",
-    "655 nm (Red) 30 m",
-    "865 nm (Near infrared) 30 m",
-    "1610 nm (SWIR 1) 30 m",
-    "2200 nm (SWIR 2) 30 m",
-    "590 nm (Panchromatic) 15 m",
-    "1375 nm (Cirrus) 30 m",
-    "10900 nm (LWIR) 100 m",
-    "12000 nm (LWIR) 100 m"
-};
-
-const QString landsat9_bands_gui_names[LANDSAT_9_BANDS_NUMBER] = {
-    "443 nm (Aerosol) 30 m",
-    "482 nm (Blue) 30 m",
-    "562 nm (Green) 30 m",
-    "655 nm (Red) 30 m",
-    "865 nm (Near infrared) 30 m",
-    "1610 nm (SWIR 1) 30 m",
-    "2200 nm (SWIR 2) 30 m",
-    "590 nm (Panchromatic) 15 m",
-    "1375 nm (Cirrus) 30 m",
-    "10800 nm (LWIR) 100 m",
-    "12000 nm (LWIR) 100 m"
+const QString landsat_bands_gui_names[LANDSAT_BANDS_NUMBER] = {
+    "B01 - 443 nm (Aerosol) 30 m",
+    "B02 - 482 nm (Blue) 30 m",
+    "B03 - 562 nm (Green) 30 m",
+    "B04 - 655 nm (Red) 30 m",
+    "B05 - 865 nm (Near infrared) 30 m",
+    "B06 - 1610 nm (SWIR 1) 30 m",
+    "B07 - 2200 nm (SWIR 2) 30 m",
+    "B08 - 590 nm (Panchromatic) 15 m",
+    "B09 - 1375 nm (Cirrus) 30 m",
+    "B10 - 10800 nm (LWIR) 100 m",
+    "B11 - 12000 nm (LWIR) 100 m"
 };
 
 
 struct PRODUCT_CONTENTS{
     QString landsat_product_id;
     QString processing_level;
-    QString file_name_bands[LANDSAT_9_BANDS_NUMBER];
+    QString file_name_bands[LANDSAT_BANDS_NUMBER];
 };
 
 struct IMAGE_ATTRIBUTES{
@@ -139,13 +123,13 @@ struct PROJECTION_ATTRIBUTES{
 };
 
 struct LEVEL1_RADIOMETRIC_RESCALING{
-    QString reflectance_mult_band[LANDSAT_9_BANDS_NUMBER];
-    QString reflectance_add_band[LANDSAT_9_BANDS_NUMBER];
+    QString reflectance_mult_band[LANDSAT_BANDS_NUMBER];
+    QString reflectance_add_band[LANDSAT_BANDS_NUMBER];
 };
 
 struct LANDSAT_METADATA_FILE{
     bool isHeaderValid = false;
-    bool landsat9_missed_channels[LANDSAT_9_BANDS_NUMBER];
+    bool landsat9_missed_channels[LANDSAT_BANDS_NUMBER];
     PRODUCT_CONTENTS product_contents;
     IMAGE_ATTRIBUTES image_attributes;
     PROJECTION_ATTRIBUTES projection_attributes;

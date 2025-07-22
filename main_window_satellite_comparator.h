@@ -65,14 +65,14 @@ private:
 
     QString m_root_path;
     QImage m_satellite_image;
-    uint16_t* m_landsat9_data_bands[LANDSAT_9_BANDS_NUMBER] = {nullptr};
-    QPair<int,int> m_landsat9_bands_image_sizes[LANDSAT_9_BANDS_NUMBER];
-    bool m_landsat9_missed_channels[LANDSAT_9_BANDS_NUMBER];
+    uint16_t* m_landsat9_data_bands[LANDSAT_BANDS_NUMBER] = {nullptr};
+    QPair<int,int> m_landsat9_bands_image_sizes[LANDSAT_BANDS_NUMBER];
+    bool m_landsat9_missed_channels[LANDSAT_BANDS_NUMBER];
 
 
 
-    double m_radiance_mult_add_arrays[LANDSAT_9_BANDS_NUMBER][2];
-    double m_reflectance_mult_add_arrays[LANDSAT_9_BANDS_NUMBER][2];
+    double m_radiance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];
+    double m_reflectance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];
     double m_lattitude;
     double m_longitude;
 
