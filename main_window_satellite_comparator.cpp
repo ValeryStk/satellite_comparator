@@ -100,6 +100,12 @@ void downsample_uint16(const uint16_t* input, uint16_t* output, int width, int h
     }
 }
 
+void copyQStringArray(const QString source[], QString destination[], int size) {
+    for (int i = 0; i < size; ++i) {
+        destination[i] = source[i];
+    }
+}
+
 }
 
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
@@ -532,7 +538,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
 
 }
 
-void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &satellite_name)
+void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& satellite_name)
 {
     QString openSatMessage = QString("Открыть заголовочный файл %1").arg(satellite_name);
     QString headerName =  QFileDialog::getOpenFileName(this,openSatMessage,"",
@@ -602,7 +608,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
     // Собираем финальный список
     finalFiles = bestResolutionForBand.values();
     qDebug()<<finalFiles;
-    title_satellite_name->setText(satc::satellite_name_sentinel_2A);
+    title_satellite_name->setText(satellite_name);
 
     for (const QString& file : finalFiles) {
         for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
@@ -616,13 +622,22 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString &
 
     if(m_dynamic_checkboxes_widget)m_dynamic_checkboxes_widget->clear();
     QList<QString> availableBandNames;
+    QString gui_channels[SENTINEL_BANDS_NUMBER];
+    double central_waves[SENTINEL_BANDS_NUMBER];
+    if(m_satelite_type == sad::SENTINEL_2A){
+    copyQStringArray(sad::sentinel_2A_gui_band_names,gui_channels,SENTINEL_BANDS_NUMBER);
+    std::copy(sad::sentinel_2A_central_wave_lengths,sad::sentinel_2A_central_wave_lengths+SENTINEL_BANDS_NUMBER,central_waves);
+    }else if(m_satelite_type == sad::SENTINEL_2B){
+    copyQStringArray(sad::sentinel_2B_gui_band_names,gui_channels,SENTINEL_BANDS_NUMBER);
+    std::copy(sad::sentinel_2B_central_wave_lengths,sad::sentinel_2B_central_wave_lengths+SENTINEL_BANDS_NUMBER,central_waves);
+    }
 
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         if (!m_sentinel_metadata.sentinel_missed_channels[i]) {
-            availableBandNames << sad::sentinel2_gui_band_names[i];
+            availableBandNames << gui_channels[i];
             sad::BAND_DATA data;
-            data.gui_name = sad::sentinel2_gui_band_names[i];
-            data.central_wave_length = sad::sentinel_central_wave_lengths[i];
+            data.gui_name = gui_channels[i];
+            data.central_wave_length = central_waves[i];
             data.file_name = m_sentinel_metadata.files[i];
 
             bool isResolutionMissed = true;

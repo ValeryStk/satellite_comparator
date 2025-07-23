@@ -67,14 +67,13 @@ struct LANDSAT_METADATA_FILE{
 };
 
 // SENTINEL SECTION
-
-extern const QString sentinel2_gui_band_names[SENTINEL_BANDS_NUMBER];
-
-extern const QString sentinel_bands_keys[SENTINEL_BANDS_NUMBER];
-
-extern const double sentinel_central_wave_lengths[SENTINEL_BANDS_NUMBER];
+extern const QString sentinel_2A_gui_band_names[SENTINEL_BANDS_NUMBER];
+extern const double sentinel_2A_central_wave_lengths[SENTINEL_BANDS_NUMBER];
+extern const QString sentinel_2B_gui_band_names[SENTINEL_BANDS_NUMBER];
+extern const double sentinel_2B_central_wave_lengths[SENTINEL_BANDS_NUMBER];
 
 extern const QHash<const QString,QPair<int,int>> sentinel_resolutions;
+extern const QString sentinel_bands_keys[SENTINEL_BANDS_NUMBER];
 
 
 struct SENTINEL_METADATA {

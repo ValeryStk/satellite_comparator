@@ -92,26 +92,73 @@ const QString landsat_bands_gui_names[LANDSAT_BANDS_NUMBER] = {
 
 
 
-//SENTINEL
-
-
-const QString sentinel2_gui_band_names[SENTINEL_BANDS_NUMBER] = {
+// SENTINEL-2A
+const QString sentinel_2A_gui_band_names[SENTINEL_BANDS_NUMBER] = {
     "B01 - 443 nm aerosol",
-    "B02 - 490 nm blue",
+    "B02 - 493 nm blue",
     "B03 - 560 nm green",
     "B04 - 665 nm red",
-    "B05 - 705 nm VNIR",
+    "B05 - 704 nm VNIR",
     "B06 - 740 nm VNIR",
     "B07 - 783 nm VNIR",
-    "B08 - 842 nm VNIR",
+    "B08 - 833 nm VNIR",
     "B8A - 865 nm SWIR",
     "B09 - 945 nm SWIR",
-    "B10 - 1375 nm SWIR",
-    "B11 - 1610 nm SWIR",
-    "B12 - 2190 nm SWIR"
+    "B10 - 1374 nm SWIR",
+    "B11 - 1614 nm SWIR",
+    "B12 - 2202 nm SWIR"
 };
 
+const double sentinel_2A_central_wave_lengths[SENTINEL_BANDS_NUMBER] = {
+    443,
+    493,
+    560,
+    665,
+    704,
+    740,
+    783,
+    833,
+    865,
+    945,
+    1374,
+    1614,
+    2202
+};
 
+// SENTINEL-2B
+const QString sentinel_2B_gui_band_names[SENTINEL_BANDS_NUMBER] = {
+    "B01 - 442 nm aerosol",
+    "B02 - 492 nm blue",
+    "B03 - 559 nm green",
+    "B04 - 665 nm red",
+    "B05 - 704 nm VNIR",
+    "B06 - 739 nm VNIR",
+    "B07 - 780 nm VNIR",
+    "B08 - 833 nm VNIR",
+    "B8A - 864 nm SWIR",
+    "B09 - 943 nm SWIR",
+    "B10 - 1377 nm SWIR",
+    "B11 - 1610 nm SWIR",
+    "B12 - 2186 nm SWIR"
+};
+
+const double sentinel_2B_central_wave_lengths[SENTINEL_BANDS_NUMBER] = {
+    442,
+    492,
+    559,
+    665,
+    704,
+    739,
+    780,
+    833,
+    864,
+    943,
+    1377,
+    1610,
+    2186
+};
+
+// COMMON SENTINEL
 const QString sentinel_bands_keys[SENTINEL_BANDS_NUMBER] = {
     "B01",
     "B02",
@@ -126,23 +173,6 @@ const QString sentinel_bands_keys[SENTINEL_BANDS_NUMBER] = {
     "B10",
     "B11",
     "B12"
-};
-
-
-const double sentinel_central_wave_lengths[SENTINEL_BANDS_NUMBER] = {
-    443,
-    490,
-    560,
-    665,
-    705,
-    740,
-    783,
-    842,
-    865,
-    945,
-    1375,
-    1610,
-    2190
 };
 
 
