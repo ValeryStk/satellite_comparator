@@ -144,6 +144,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     connect(ui->actionOpenLandsat9Header,&QAction::triggered,[this](){openLandsat9HeaderData();});
     connect(ui->actionOpenLandsat8Header,&QAction::triggered,[this](){openLandsat8HeaderData();});
     connect(ui->actionSentinel_2A,&QAction::triggered,[this](){openSentinel2AHeaderData();});
+    connect(ui->actionSentinel_2B,&QAction::triggered,[this](){openSentinel2BHeaderData();});
 
     qgti = new QGraphicsTextItem;
     qgti->setDefaultTextColor(Qt::black);
@@ -422,6 +423,12 @@ void MainWindowSatelliteComparator::openSentinel2AHeaderData()
 {
     m_satelite_type = sad::SENTINEL_2A;
     openCommonSentinelHeaderData(satc::satellite_name_sentinel_2A);
+}
+
+void MainWindowSatelliteComparator::openSentinel2BHeaderData()
+{
+    m_satelite_type = sad::SENTINEL_2B;
+    openCommonSentinelHeaderData(satc::satellite_name_sentinel_2B);
 }
 
 void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& satellite_name)

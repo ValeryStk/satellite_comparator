@@ -75,6 +75,7 @@
      <addaction name="actionOpenLandsat9Header"/>
      <addaction name="actionOpenLandsat8Header"/>
      <addaction name="actionSentinel_2A"/>
+     <addaction name="actionSentinel_2B"/>
     </widget>
     <addaction name="menu_2"/>
     <addaction name="actionBekas"/>
@@ -100,6 +101,11 @@
   <action name="actionSentinel_2A">
    <property name="text">
     <string>Sentinel 2A</string>
+   </property>
+  </action>
+  <action name="actionSentinel_2B">
+   <property name="text">
+    <string>Sentinel 2B</string>
    </property>
   </action>
  </widget>
