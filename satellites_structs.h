@@ -29,6 +29,10 @@ extern const QString landsat9_add_reflectence_keys[LANDSAT_BANDS_NUMBER];
 
 extern const QString landsat_bands_gui_names[LANDSAT_BANDS_NUMBER];
 
+extern const double landsat_central_wave_lengths[LANDSAT_BANDS_NUMBER];
+
+extern const int sorted_landsat_bands_order_by_wavelength[LANDSAT_BANDS_NUMBER];
+
 
 struct PRODUCT_CONTENTS{
     QString landsat_product_id;
