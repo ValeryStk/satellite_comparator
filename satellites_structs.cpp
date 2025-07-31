@@ -104,16 +104,20 @@ const double landsat_central_wave_lengths[LANDSAT_BANDS_NUMBER] = {
 
 
 const int sorted_landsat_bands_order_by_wavelength[LANDSAT_BANDS_NUMBER] = {
-    0,//443
-    1,//482
-    2,//562
-    7,//590
-    3,//655
-    4,//865
-    8,//1375
-    9,//10800
-    10//12000
+    0,//1  - 443
+    1,//2  - 482
+    2,//3  - 562
+    7,//4  - 590
+    3,//5  - 655
+    4,//6  - 865
+    8,//7  - 1375
+    5,//8  - 1610
+    6,//9  - 2200
+    9,//10 - 10800
+    10//11 - 12000
 };
+
+
 
 
 

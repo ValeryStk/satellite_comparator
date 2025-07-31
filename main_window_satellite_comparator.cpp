@@ -529,6 +529,15 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
         return;
     }
 
+
+    //fill universal struct instead of specific
+    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+        if(m_landsat9_missed_channels[sad::sorted_landsat_bands_order_by_wavelength[i]])continue;
+        qDebug()<<"----check test---"<<sad::landsat_bands_gui_names[sad::sorted_landsat_bands_order_by_wavelength[i]];
+    }
+
+
+
     m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(landsat_gui_available_bands,
                                                             ui->verticalLayout_bands);
     m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
