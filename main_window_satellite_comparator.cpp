@@ -1327,7 +1327,8 @@ void MainWindowSatelliteComparator::processLayer(uchar* layer,
             }
             if (m_is_bekas) {
                 size_t elems_to_copy = std::min(static_cast<size_t>(ksy.size()), static_cast<size_t>(5));//TO DO DEFINE NUMBER OF CHANNELS
-                ksy = QVector<double>(ksy.begin(), ksy.begin() + elems_to_copy);
+                std::vector<double> temp(ksy.begin(), ksy.begin() + elems_to_copy);
+                ksy = QVector<double>::fromStdVector(temp);
             }
 
             double result = 999;
