@@ -22,6 +22,7 @@ void SatelliteGraphicsView::setIsSignal(bool value)
 void SatelliteGraphicsView::setUp()
 {
     if(scene())
+        polygonItem->setZValue(9998);
     scene()->addItem(polygonItem);
 }
 
@@ -29,6 +30,7 @@ void SatelliteGraphicsView::mouseMoveEvent(QMouseEvent *event)
 {
     QPointF pos = mapToScene(event->pos()); // Получаем координаты в системе QGraphicsScene
     //qDebug() << "Cursor Position: x=" << pos.x() << ", y=" << pos.y(); // Отображаем координаты
+    m_current_point = pos;
     QGraphicsView::mouseMoveEvent(event);
     if(isSignal)
         emit pointChanged(pos);
@@ -51,24 +53,21 @@ void SatelliteGraphicsView::mouseDoubleClickEvent(QMouseEvent *event)
         sampleChanged(pos);
 }
 
-/*void SatelliteGraphicsView::mousePressEvent(QMouseEvent *event)
+void SatelliteGraphicsView::keyPressEvent(QKeyEvent *event)
 {
-    if (event->button() == Qt::LeftButton) {
-        QPointF scenePos = mapToScene(event->pos());
-        polygon << scenePos;
+    if (event->key() == Qt::Key_Space) {
+        polygon << m_current_point;
         polygonItem->setPolygon(polygon);
-    } else if (event->button() == Qt::RightButton) {
-        //selectItems();
+    }else if(event->key() == Qt::Key_Escape){
         polygon.clear();
         polygonItem->setPolygon(polygon);
-    } if (event->button() == Qt::LeftButton) {
-        QPointF scenePos = mapToScene(event->pos());
-        polygon << scenePos;
-        polygonItem->setPolygon(polygon);
-    } else if (event->button() == Qt::RightButton) {
-        //selectItems();
-        polygon.clear();
-        polygonItem->setPolygon(polygon);
+        polygonItem->setBrush(QBrush());
+    }else if(event->key() == Qt::Key_Return){
+        polygonItem->setBrush(QBrush(Qt::yellow, Qt::SolidPattern));
     }
-}*/
+
+    QGraphicsView::keyPressEvent(event);
+}
+
+
 

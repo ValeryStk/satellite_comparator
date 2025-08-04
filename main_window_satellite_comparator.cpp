@@ -35,11 +35,12 @@
 #include "cpl_conv.h" // Для CPLSetConfigOption
 #include "QApplication"
 
+constexpr int Z_INDEX_ROI_AREA_POLYGON  = 9998;
+constexpr int Z_INDEX_CROSS_SQUARE_CURSOR  = 9999;
+constexpr int Z_INDEX_CROSS_SQUARE_CURSOR_TEXT  = 10000;
 
-#define Z_INDEX_CROSS_SQUARE_CURSOR 9999
-#define Z_INDEX_CROSS_SQUARE_CURSOR_TEXT 10000
-#define MAX_BYTES_IN_BASE_IMAGE_LAYER 11000 * 11000 * 3 // без альфа канала
-#define MAX_BYTES_IN_CLAS_IMAGE_LAYER 11000 * 11000 * 4 // слои с альфа каналом
+constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER  = 11000 * 11000 * 3; // без альфа канала
+constexpr int MAX_BYTES_IN_CLAS_IMAGE_LAYER  = 11000 * 11000 * 4; // слои с альфа каналом
 
 QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443,482,562,655,865,1610,2200};
@@ -55,8 +56,7 @@ qreal getMaxZValue(QGraphicsScene* scene) {
     qreal maxZ = std::numeric_limits<qreal>::lowest();
     for (QGraphicsItem* item : scene->items()) {
         if (item->zValue() > maxZ) {
-            if(item->zValue()==Z_INDEX_CROSS_SQUARE_CURSOR||
-                    item->zValue()==Z_INDEX_CROSS_SQUARE_CURSOR_TEXT)continue;
+            if(item->zValue()>9998)continue;
             maxZ = item->zValue();
         }
     }

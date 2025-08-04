@@ -15,6 +15,7 @@ public:
 
 private:
     bool isSignal = false;
+    QPointF m_current_point;
     QPolygonF polygon;
     QGraphicsPolygonItem *polygonItem;
 
@@ -22,13 +23,11 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
-    //void mousePressEvent(QMouseEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
 
 signals:
     void pointChanged(QPointF point);
-    void sampleChanged(QPointF point);  
-
-
+    void sampleChanged(QPointF point);
 
 };
 
