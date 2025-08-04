@@ -11,18 +11,25 @@ public:
     SatelliteGraphicsView(QWidget *parent = nullptr);
 
     void setIsSignal(bool value);
+    void setUp();
 
 private:
     bool isSignal = false;
+    QPolygonF polygon;
+    QGraphicsPolygonItem *polygonItem;
 
 protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
+    //void mousePressEvent(QMouseEvent *event) override;
 
 signals:
     void pointChanged(QPointF point);
     void sampleChanged(QPointF point);  
+
+
+
 };
 
 #endif // SATELLITE_GRAPHICS_VIEW_H

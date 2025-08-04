@@ -292,6 +292,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     ui->graphicsView_satellite_image->setMouseTracking(true);
     ui->graphicsView_satellite_image->setScene(scene);
+    ui->graphicsView_satellite_image->setUp();
+
     ui->graphicsView_satellite_image->setRenderHint(QPainter::Antialiasing);
     ui->graphicsView_satellite_image->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 
