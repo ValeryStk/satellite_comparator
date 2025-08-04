@@ -56,7 +56,7 @@ qreal getMaxZValue(QGraphicsScene* scene) {
     qreal maxZ = std::numeric_limits<qreal>::lowest();
     for (QGraphicsItem* item : scene->items()) {
         if (item->zValue() > maxZ) {
-            if(item->zValue()>9998)continue;
+            if(item->zValue()>=Z_INDEX_ROI_AREA_POLYGON)continue;
             maxZ = item->zValue();
         }
     }
