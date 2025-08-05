@@ -4,6 +4,12 @@
 #include <QObject>
 #include <QGraphicsView>
 
+
+constexpr int Z_INDEX_ROI_AREA_POLYGON  = 9998;
+constexpr int Z_INDEX_CROSS_SQUARE_CURSOR  = 9999;
+constexpr int Z_INDEX_CROSS_SQUARE_CURSOR_TEXT  = 10000;
+
+
 class SatelliteGraphicsView: public QGraphicsView
 {
     Q_OBJECT

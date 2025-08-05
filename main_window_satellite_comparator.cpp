@@ -35,9 +35,6 @@
 #include "cpl_conv.h" // Для CPLSetConfigOption
 #include "QApplication"
 
-constexpr int Z_INDEX_ROI_AREA_POLYGON  = 9998;
-constexpr int Z_INDEX_CROSS_SQUARE_CURSOR  = 9999;
-constexpr int Z_INDEX_CROSS_SQUARE_CURSOR_TEXT  = 10000;
 
 constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER  = 11000 * 11000 * 3; // без альфа канала
 constexpr int MAX_BYTES_IN_CLAS_IMAGE_LAYER  = 11000 * 11000 * 4; // слои с альфа каналом

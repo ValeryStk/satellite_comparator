@@ -5,12 +5,13 @@
 #include <QGraphicsScene>
 
 
+
 SatelliteGraphicsView::SatelliteGraphicsView(QWidget *parent)
 {
     setParent(parent);
     isSignal = false;
     polygonItem = new QGraphicsPolygonItem();
-    polygonItem->setPen(QPen(Qt::DashLine));
+    polygonItem->setPen(QPen(QBrush(QColor(Qt::red)),2,Qt::DashLine));
 
 }
 
@@ -21,9 +22,10 @@ void SatelliteGraphicsView::setIsSignal(bool value)
 
 void SatelliteGraphicsView::setUp()
 {
-    if(scene())
-        polygonItem->setZValue(9998);
+    if(scene()){
+        polygonItem->setZValue(Z_INDEX_ROI_AREA_POLYGON);
     scene()->addItem(polygonItem);
+    }
 }
 
 void SatelliteGraphicsView::mouseMoveEvent(QMouseEvent *event)
