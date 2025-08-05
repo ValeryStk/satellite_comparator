@@ -804,13 +804,11 @@ void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString
             break;
         }
         if(temp.contains("REFLECTANCE_MULT_BAND_")){
-            QString band_name = temp;
             temp = temp.mid(temp.indexOf("= "),temp.size()-1);
             temp.replace("= ","");
             mult.append(temp.toDouble());
         }else
             if(temp.contains("REFLECTANCE_ADD_BAND_")){
-                QString band_name = temp;
                 temp = temp.mid(temp.indexOf("= "),temp.size()-1);
                 temp.replace("= ","");
                 add.append(temp.toDouble());
@@ -828,7 +826,6 @@ void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString
     for(int i=0;i<mult.size();++i){
         m_reflectance_mult_add_arrays[i][0] = mult[i];
         m_reflectance_mult_add_arrays[i][1] = add[i];
-        //qDebug()<<"*******************--->"<<mult[i]<<add[i];
     }
 
 

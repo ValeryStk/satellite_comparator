@@ -55,7 +55,7 @@ const QStringList SPECTRUM_UNITS_DESCRIPTION = {
     "Не задано",
     "ед. АЦП",
     "КСЯ, отн. ед.",
-    "СПЭЯ, Вт/(м\u00B3·ср)"
+    "СПЭЯ, Вт/(м³·ср)"
 };
 
 const QStringList BANDS_UNITS_DESCRIPTION = {
