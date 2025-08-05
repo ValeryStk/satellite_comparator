@@ -6,6 +6,7 @@
 #include <QLabel>
 #include "qcustomplot.h"
 #include "bekas/BaseTools/DBJson.h"
+#include "text_constants.h"
 
 /**
  * @brief The SpectrPlotterWidget class
@@ -192,7 +193,7 @@ private:
                 }else if (m_spectrumUnits == db_json::SU_RFL){
                     m_customPlot->yAxis->setLabel("КСЯ");
                 }else{
-                    m_customPlot->yAxis->setLabel("СПЭЯ, Вт/(м\u00B3·ср)");
+                    m_customPlot->yAxis->setLabel(satc::kSpeyaXUnit);
                 }
 
                 if(m_isNeedToShowPoints)

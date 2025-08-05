@@ -24,6 +24,7 @@ private:
     QPointF m_current_point;
     QPolygonF polygon;
     QGraphicsPolygonItem *polygonItem;
+    QVector<int> unused_trick = {Z_INDEX_ROI_AREA_POLYGON,Z_INDEX_CROSS_SQUARE_CURSOR,Z_INDEX_CROSS_SQUARE_CURSOR_TEXT};
 
 protected:
     void mouseMoveEvent(QMouseEvent* event) override;

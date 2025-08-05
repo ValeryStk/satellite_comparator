@@ -238,11 +238,12 @@ void SpectrPlotterWidget::keyPressEvent(QKeyEvent *event)
 void SpectrPlotterWidget::keyReleaseEvent(QKeyEvent *event)
 {
     m_customPlot->axisRect()->setRangeZoom(Qt::Horizontal | Qt::Vertical);
+    QWidget::keyReleaseEvent(event);
 }
 
 void SpectrPlotterWidget::contextMenuRequest(QPoint pos)
 {
-
+    Q_UNUSED(pos);
 }
 
 void SpectrPlotterWidget::mouseMoveRequest(QMouseEvent *e)

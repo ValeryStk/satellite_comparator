@@ -75,7 +75,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     res.qrc\
-    bekas\res.qrc
 
 LIBS += -L$$PWD/libs/gdal/x64/lib -lgdal_i
 

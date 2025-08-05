@@ -36,8 +36,8 @@
 #include "QApplication"
 
 
-constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER  = 11000 * 11000 * 3; // без альфа канала
-constexpr int MAX_BYTES_IN_CLAS_IMAGE_LAYER  = 11000 * 11000 * 4; // слои с альфа каналом
+constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER  = 11000 * 11000 * 3;
+
 
 QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443,482,562,655,865,1610,2200};
@@ -53,26 +53,11 @@ qreal getMaxZValue(QGraphicsScene* scene) {
     qreal maxZ = std::numeric_limits<qreal>::lowest();
     for (QGraphicsItem* item : scene->items()) {
         if (item->zValue() > maxZ) {
-            if(item->zValue()>=Z_INDEX_ROI_AREA_POLYGON)continue;
+            if(item->zValue() >= Z_INDEX_ROI_AREA_POLYGON)continue;
             maxZ = item->zValue();
         }
     }
     return maxZ;
-}
-
-QPair<int, int> getHighestResolution(const QPair<int, int> imageSizes[], int count) {
-    QPair<int, int> maxResolution = imageSizes[0];
-    int maxPixels = imageSizes[0].first * imageSizes[0].second;
-
-    for (int i = 1; i < count; ++i) {
-        int currentPixels = imageSizes[i].first * imageSizes[i].second;
-        if (currentPixels > maxPixels) {
-            maxPixels = currentPixels;
-            maxResolution = imageSizes[i];
-        }
-    }
-
-    return maxResolution;
 }
 
 
@@ -128,7 +113,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     bekas_window = nullptr;
     std::fill(std::begin(m_landsat9_missed_channels),std::end(m_landsat9_missed_channels),true);
 
-    connect(ui->actionBekas,&QAction::triggered,[this](){
+    connect(ui->actionBekas,&QAction::triggered,this,[this](){
         bekas_window = new UasvViewWindow;
         bekas_window->setWindowTitle(satc::app_name);
         bekas_window->setAttribute(Qt::WA_DeleteOnClose);
@@ -138,10 +123,10 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     });
 
 
-    connect(ui->actionOpenLandsat9Header,&QAction::triggered,[this](){openLandsat9HeaderData();});
-    connect(ui->actionOpenLandsat8Header,&QAction::triggered,[this](){openLandsat8HeaderData();});
-    connect(ui->actionSentinel_2A,&QAction::triggered,[this](){openSentinel2AHeaderData();});
-    connect(ui->actionSentinel_2B,&QAction::triggered,[this](){openSentinel2BHeaderData();});
+    connect(ui->actionOpenLandsat9Header,&QAction::triggered,this,[this](){openLandsat9HeaderData();});
+    connect(ui->actionOpenLandsat8Header,&QAction::triggered,this,[this](){openLandsat8HeaderData();});
+    connect(ui->actionSentinel_2A,&QAction::triggered,this,[this](){openSentinel2AHeaderData();});
+    connect(ui->actionSentinel_2B,&QAction::triggered,this,[this](){openSentinel2BHeaderData();});
 
     qgti = new QGraphicsTextItem;
     qgti->setDefaultTextColor(Qt::black);
@@ -243,7 +228,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     });
 
 
-    connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::sampleChanged,[this](QPointF pos){
+    connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::sampleChanged,this,[this](QPointF pos){
         m_is_bekas = false;
         cross_square->setPos(pos);
         cross_square->update();
@@ -358,20 +343,20 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     QGraphicsProxyWidget* proxy = scene->addWidget(widget_tools);
     proxy->setPos(0, 50);
     proxy->setGeometry(QRect(0,0,600,250));
-    QObject::connect(zoomInButton, &QPushButton::clicked, [this]() {
+    QObject::connect(zoomInButton, &QPushButton::clicked,this,[this]() {
         ui->graphicsView_satellite_image->scale(1.2, 1.2); // Увеличение масштаба
     });
-    QObject::connect(zoomOutButton, &QPushButton::clicked, [this]() {
+    QObject::connect(zoomOutButton, &QPushButton::clicked,this,[this]() {
         ui->graphicsView_satellite_image->scale(0.8, 0.8); // Уменьшение масштаба
     });
 
-    connect(pushbutton_centerOn,&QPushButton::clicked,[this](){ // Центрирование
+    connect(pushbutton_centerOn,&QPushButton::clicked,this,[this](){ // Центрирование
         ui->graphicsView_satellite_image->centerOn(cross_square);
         ui->graphicsView_satellite_image->setTransform(QTransform()); //Дефолтный масштаба
 
     });
 
-    connect(pushbutton_paint_samples,&QPushButton::clicked,[this](){
+    connect(pushbutton_paint_samples,&QPushButton::clicked,this,[this](){
         QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
         QString message = QString("Пожалуйста подождите,\nпроисходит поиск областей\n(%1)...").arg(calculation_method->currentText());
         ProgressInformator progress_info(ui->graphicsView_satellite_image,
@@ -383,11 +368,11 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     });
 
-    connect(googleMap,&QPushButton::clicked,[this](){
+    connect(googleMap,&QPushButton::clicked,this,[this](){
         showGoogleMap();
     });
 
-    connect(resetToRGB,&QPushButton::clicked,[this](){
+    connect(resetToRGB,&QPushButton::clicked,this,[this](){
         if(m_dynamic_checkboxes_widget){
             m_dynamic_checkboxes_widget->setRGBchannels();
             if(m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 || m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9){
@@ -640,11 +625,11 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
     QString gui_channels[SENTINEL_BANDS_NUMBER];
     double central_waves[SENTINEL_BANDS_NUMBER];
     if(m_satelite_type == sad::SENTINEL_2A){
-    copyQStringArray(sad::sentinel_2A_gui_band_names,gui_channels,SENTINEL_BANDS_NUMBER);
-    std::copy(sad::sentinel_2A_central_wave_lengths,sad::sentinel_2A_central_wave_lengths+SENTINEL_BANDS_NUMBER,central_waves);
+        copyQStringArray(sad::sentinel_2A_gui_band_names,gui_channels,SENTINEL_BANDS_NUMBER);
+        std::copy(sad::sentinel_2A_central_wave_lengths,sad::sentinel_2A_central_wave_lengths+SENTINEL_BANDS_NUMBER,central_waves);
     }else if(m_satelite_type == sad::SENTINEL_2B){
-    copyQStringArray(sad::sentinel_2B_gui_band_names,gui_channels,SENTINEL_BANDS_NUMBER);
-    std::copy(sad::sentinel_2B_central_wave_lengths,sad::sentinel_2B_central_wave_lengths+SENTINEL_BANDS_NUMBER,central_waves);
+        copyQStringArray(sad::sentinel_2B_gui_band_names,gui_channels,SENTINEL_BANDS_NUMBER);
+        std::copy(sad::sentinel_2B_central_wave_lengths,sad::sentinel_2B_central_wave_lengths+SENTINEL_BANDS_NUMBER,central_waves);
     }
 
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
@@ -935,10 +920,10 @@ void MainWindowSatelliteComparator::read_landsat_bands_data(const QStringList& f
 {
     for(int i=0;i<file_names.size();++i){
         auto band_file_name = file_names[i];
-        int xS;
-        int yS;
+        int xS = 0;
+        int yS = 0;
         m_landsat9_data_bands[i] = readTiff(m_root_path+"/"+band_file_name,xS,yS);
-        qDebug()<<"x y -- sizes: "<<xS<<yS;
+        //qDebug()<<"x y -- sizes: "<<xS<<yS;
         m_landsat9_bands_image_sizes[i] = {xS,yS};
     }
 }
@@ -1139,7 +1124,6 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
     const int nXSize = m_landsat9_bands_image_sizes->first;
     const int nYSize = m_landsat9_bands_image_sizes->second;
-    qDebug()<<"x -- y: "<<nXSize<<nYSize<<"is_image_ready: "<<m_is_image_created;
 
     ProgressInformator progress_info(ui->graphicsView_satellite_image,
                                      satc::message_changing_bands);
@@ -1152,9 +1136,8 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
             int B = 0;
             int G = 0;
             int R = 0;
-            QRgb rgb=0;
             for(int j=0;j<bands.size();++j){
-                // qDebug()<<"j band --> "<<bands[j].first;
+
                 int choosedColor = -1;
                 if(bands[j].second==BLUE){
                     B = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
@@ -1166,23 +1149,23 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
                     R = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
                     choosedColor = RED;
                 }
-                rgb = 0;
                 if(bands.size() == 1){
                     switch (choosedColor) {
                     case RED:
-                        rgb = qRgb(R,R,R);
+                        G=R;
+                        B=R;
                         break;
                     case GREEN:
-                        rgb = qRgb(G,G,G);
+                        B=G;
+                        R=G;
                         break;
                     case BLUE:
-                        rgb = qRgb(B,B,B);
+                        R=B;
+                        G=B;
                         break;
                     default:
                         break;
                     }
-                }else{
-                    rgb = qRgb(R,G,B);
                 }
 
             }
@@ -1211,7 +1194,7 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
 {
     // DUBLICATED CODE REFACTORING !!!!!!
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
-    auto best_resolution = QPair<int,int>(5490,5490);//getHighestResolution(m_sentinel_bands_image_sizes,SENTINEL_2A_BANDS_NUMBER);
+    auto best_resolution = QPair<int,int>(5490,5490);//HARDCODED MAKE IT FLEXIBLE
     const int nXSize = best_resolution.first;
     const int nYSize = best_resolution.second;
     qDebug()<<"x -- y: "<<nXSize<<nYSize<<"is_image_ready: "<<m_is_image_created;
@@ -1227,9 +1210,7 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
             int B = 0;
             int G = 0;
             int R = 0;
-            QRgb rgb=0;
             for(int j=0;j<bands.size();++j){
-                // qDebug()<<"j band --> "<<bands[j].first;
                 int choosedColor = -1;
                 if(bands[j].second==BLUE){
                     B = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0)*2;
@@ -1241,7 +1222,6 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
                     R = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0)*2;
                     choosedColor = RED;
                 }
-                rgb = 0;
                 if(bands.size() == 1){
                     switch (choosedColor) {
                     case RED:
@@ -1259,8 +1239,6 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
                     default:
                         break;
                     }
-                }else{
-                    rgb = qRgb(R,G,B);
                 }
 
             }
@@ -1360,7 +1338,8 @@ void MainWindowSatelliteComparator::read_sentinel2_bands_data()
 
     for (int i = 0; i < m_sentinel_data.size(); ++i) {
         const QString& band_file_name = m_sentinel_data[i].file_name;
-        int xS, yS;
+        int xS = 0;
+        int yS = 0;
 
         m_sentinel_data[i].data  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
 

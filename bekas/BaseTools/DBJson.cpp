@@ -25,6 +25,45 @@ bool checkNodes(const QJsonObject &obj,
 
 namespace db_json {
 
+const QStringList IMAGE_TYPES_DESCRIPTION = {
+    "Не задано",
+    "Обзорное",
+    "Визирное"
+};
+
+const QStringList WIND_DIRECTION_DESCRIPTION = {
+    "Не задано",
+    "Северо-западный",
+    "Северный",
+    "Северо-восточный",
+    "Восточный",
+    "Юго-восточный",
+    "Южный",
+    "Юго-западный",
+    "Западный"
+};
+
+const QStringList CAPTURE_LEVEL_DESCRIPTION = {
+    "Не задан",
+    "Лабораторный",
+    "Наземный",
+    "Авиационный",
+    "Космический"
+};
+
+const QStringList SPECTRUM_UNITS_DESCRIPTION = {
+    "Не задано",
+    "ед. АЦП",
+    "КСЯ, отн. ед.",
+    "СПЭЯ, Вт/(м\u00B3·ср)"
+};
+
+const QStringList BANDS_UNITS_DESCRIPTION = {
+    "Не задано",
+    "Номер канала",
+    "Длина волны, нм"
+};
+
 bool getJsonObjectFromFile(const QString &path,
                            QJsonObject &object)
 {
@@ -252,10 +291,10 @@ void getJsonObjectFromStruct(const SPECTRAL_STRUCT &spectral_struct, QJsonObject
     QJsonArray attributes;
     for(int i=0; i<spectral_struct.sd.attributes.size(); ++i){
         attributes.append(QJsonValue({
-                                        {"instrument",spectral_struct.sd.attributes[i].instrument},
-                                        {"type", SPECTRUM_UNITS_DESCRIPTION.at(spectral_struct.sd.attributes[i].type)},
-                                        {"description",spectral_struct.sd.attributes[i].description}
-                                    }));
+                                         {"instrument",spectral_struct.sd.attributes[i].instrument},
+                                         {"type", SPECTRUM_UNITS_DESCRIPTION.at(spectral_struct.sd.attributes[i].type)},
+                                         {"description",spectral_struct.sd.attributes[i].description}
+                                     }));
     }
     spectral_data["attributes"] = attributes;
     QJsonArray waves;

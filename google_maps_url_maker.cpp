@@ -30,8 +30,8 @@ std::string convertDecimalDegridToGradusMinutesSeconds(const double &latitude,
     int latMinutes = latSeconds / 60;
     latSeconds %= 60;
 
-    int longSeconds = std::round(longitude * 3600);
-    int longDegrees = longSeconds / 3600;
+    int longSeconds = static_cast<int>(std::round(longitude * 3600));
+    int longDegrees = static_cast<int>(longSeconds / 3600);
     longSeconds = std::abs(longSeconds % 3600);
     int longMinutes = longSeconds / 60;
     longSeconds %= 60;

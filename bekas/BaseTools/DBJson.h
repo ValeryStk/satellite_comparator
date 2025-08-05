@@ -13,6 +13,12 @@ namespace db_json {
 
 constexpr int UNDEFINED = -999;
 
+extern const QStringList IMAGE_TYPES_DESCRIPTION;
+extern const QStringList WIND_DIRECTION_DESCRIPTION;
+extern const QStringList SPECTRUM_UNITS_DESCRIPTION;
+extern const QStringList CAPTURE_LEVEL_DESCRIPTION;
+extern const QStringList BANDS_UNITS_DESCRIPTION;
+
 /**
  * @brief The ImageType enum
  * Enum for image type desription
@@ -20,7 +26,8 @@ constexpr int UNDEFINED = -999;
 enum ImageType{
     IT_UNKNOWN, IT_OBSERVE, IT_VISIR
 };
-const QStringList IMAGE_TYPES_DESCRIPTION = {"Не задано", "Обзорное", "Визирное"};
+
+
 
 /**
  * @brief The WindDirection enum
@@ -33,11 +40,7 @@ enum WindDirection{
     WD_SOUTH_EAST, WD_SOUTH, WD_SOUTH_WEST,
     WD_WEST,
 };
-const QStringList WIND_DIRECTION_DESCRIPTION = {"Не задано",
-                                                "Северо-западный", "Северный", "Северо-восточный",
-                                                "Восточный",
-                                                "Юго-восточный", "Южный", "Юго-западный",
-                                                "Западный"};
+
 
 /**
  * @brief The CaptureLevel enum
@@ -46,7 +49,8 @@ const QStringList WIND_DIRECTION_DESCRIPTION = {"Не задано",
 enum CaptureLevel{
     CL_UNKNOWN, CL_LAB, CL_EARTH, CL_AVIA, CL_SPACE
 };
-const QStringList CAPTURE_LEVEL_DESCRIPTION = {"Не задан", "Лабораторный", "Наземный", "Авиационный", "Космический"};
+
+
 
 /**
  * @brief The SpectrumUnits enum
@@ -55,7 +59,7 @@ const QStringList CAPTURE_LEVEL_DESCRIPTION = {"Не задан", "Лабора�
 enum SpectrumUnits{
     SU_UNKNOWN, SU_ADC, SU_RFL, SU_BRIGHT
 };
-const QStringList SPECTRUM_UNITS_DESCRIPTION = {"Не задано", "ед. АЦП", "КСЯ, отн. ед.", "СПЭЯ, Вт/(м\u00B3·ср)"};
+
 
 /**
  * @brief The BandUnits enum
@@ -67,7 +71,7 @@ const QStringList SPECTRUM_UNITS_DESCRIPTION = {"Не задано", "ед. АЦ
 enum BandUnits{
     BU_UNKNOWN, BU_NUMBERS, BU_WAVELENGTH
 };
-const QStringList BANDS_UNITS_DESCRIPTION = {"Не задано", "Номер канала", "Длина волны, нм"};
+
 
 /**
  * @brief The CLASSIFICATION struct

@@ -1,7 +1,9 @@
 #ifndef TEXT_CONSTANTS_H
 #define TEXT_CONSTANTS_H
 
+
 namespace satc{
+
 
 extern const char app_name[];
 
@@ -17,6 +19,9 @@ extern const char satellite_name_landsat_9[];
 extern const char satellite_name_landsat_8[];
 extern const char satellite_name_sentinel_2A[];
 extern const char satellite_name_sentinel_2B[];
+
+
+extern const char kSpeyaXUnit[];
 
 }
 
