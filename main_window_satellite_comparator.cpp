@@ -99,34 +99,23 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     , m_is_image_created(false)
     , m_is_bekas(false)
     , cross_square(new CrossSquare(100))
+    , bekas_window(nullptr)
 
 
 {
     ui->setupUi(this);
     gdal_start_driver();
     QString dataPath = QApplication::applicationDirPath() + "/data";
-    qDebug()<<dataPath;
     CPLSetConfigOption("GDAL_DATA", dataPath.toUtf8().constData());
-
     setWindowTitle(satc::app_name);
     initSentinelStructs();
-    bekas_window = nullptr;
     std::fill(std::begin(m_landsat9_missed_channels),std::end(m_landsat9_missed_channels),true);
 
-    connect(ui->actionBekas,&QAction::triggered,this,[this](){
-        bekas_window = new UasvViewWindow;
-        bekas_window->setWindowTitle(satc::app_name);
-        bekas_window->setAttribute(Qt::WA_DeleteOnClose);
-        connect(bekas_window,SIGNAL(sendSampleForSatelliteComparator(QVector<double>, QVector<double>)),
-                this,SLOT(processBekasDataForComparing(QVector<double>,QVector<double>)));
-        bekas_window->show();
-    });
-
-
-    connect(ui->actionOpenLandsat9Header,&QAction::triggered,this,[this](){openLandsat9HeaderData();});
-    connect(ui->actionOpenLandsat8Header,&QAction::triggered,this,[this](){openLandsat8HeaderData();});
-    connect(ui->actionSentinel_2A,&QAction::triggered,this,[this](){openSentinel2AHeaderData();});
-    connect(ui->actionSentinel_2B,&QAction::triggered,this,[this](){openSentinel2BHeaderData();});
+    connect(ui->actionBekas,SIGNAL(triggered()),this,SLOT(openBekasSpectraData()));
+    connect(ui->actionOpenLandsat9Header,SIGNAL(triggered()),this,SLOT(openLandsat9HeaderData()));
+    connect(ui->actionOpenLandsat8Header,SIGNAL(triggered()),this,SLOT(openLandsat8HeaderData()));
+    connect(ui->actionSentinel_2A,SIGNAL(triggered()),this,SLOT(openSentinel2AHeaderData()));
+    connect(ui->actionSentinel_2B,SIGNAL(triggered()),this,SLOT(openSentinel2BHeaderData()));
 
     qgti = new QGraphicsTextItem;
     qgti->setDefaultTextColor(Qt::black);
@@ -166,120 +155,12 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     preview->graph(0)->setPen(QPen(Qt::blue));
     preview->graph(1)->setPen(QPen(Qt::red));
 
-    connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::pointChanged,this, [this](QPointF pos){
+    connect(ui->graphicsView_satellite_image,SIGNAL(pointChanged(QPointF)),
+            this,SLOT(cursorPointOnSceneChangedEvent(QPointF)));
+    connect(ui->graphicsView_satellite_image,SIGNAL(sampleChanged(QPointF)),
+            this,SLOT(samplePointOnSceneChangedEvent(QPointF)));
 
-        QVector<double> data;
-        QVector<double> waves;
-        QVector<double> sample;
-        QVector<double> trimmed_satellite_data;
-
-        if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
-            data = getLandsat8Ksy(pos.x(),pos.y());
-        }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
-            //qDebug()<<" sentinel position: "<<pos.x()<<pos.y();
-            auto w_k = getSentinelKsy(pos.x(),pos.y());
-            data = w_k.second;
-            waves = w_k.first;
-            if(m_sentinel_sample.empty()){
-                sample = data;//TEMPORARY
-            }else{
-                sample = m_sentinel_sample;
-            }
-            trimmed_satellite_data = data;
-        }
-        if(data.empty()){
-            //qDebug()<<"DATA EMPTY!!!!";
-            return;
-        }
-
-        if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
-
-            if(data.size()!=(int)LANDSAT_BANDS_NUMBER-4){
-                qDebug()<<"ERROR SIZE:"<<data.size();
-                return;
-            }
-            if(m_is_bekas){
-                sample = m_bekas_sample;
-                waves = waves_landsat9_5;
-                size_t elems_to_copy = std::min(static_cast<size_t>(data.size()), static_cast<size_t>(5));
-                trimmed_satellite_data = data.mid(0,static_cast<int>(elems_to_copy));
-            }else{
-                sample = m_landsat9_sample;
-                waves = waves_landsat9;
-                trimmed_satellite_data = data;
-            }
-        }
-
-        preview->graph(0)->data().clear();
-        preview->graph(1)->data().clear();
-        preview->graph(0)->setData(waves, trimmed_satellite_data);
-        preview->graph(1)->setData(waves, sample);
-
-        double result = 999;
-        if(calculation_method->currentText()==satc::spectral_angle){
-            result = calculateSpectralAngle(trimmed_satellite_data,sample);
-        }else if(calculation_method->currentText()==satc::euclid_metrika){
-            result = euclideanDistance(trimmed_satellite_data,sample);
-        }
-        qgti->setPos(pos.x(),pos.y()+5);
-        qgti->setPlainText(QString::number(result));
-        preview->rescaleAxes(true);
-        preview->replot();
-    });
-
-
-    connect(ui->graphicsView_satellite_image,&SatelliteGraphicsView::sampleChanged,this,[this](QPointF pos){
-        m_is_bekas = false;
-        cross_square->setPos(pos);
-        cross_square->update();
-        QVector<double> data;
-        QVector<double> sample;
-        QVector<double> waves;
-        if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8){
-            data = getLandsat8Ksy(pos.x(),pos.y());
-
-            if(data.empty())return;
-            if(data.size()!=(int)LANDSAT_BANDS_NUMBER-4){
-                qDebug()<<"ERROR SIZE:"<<data.size();
-                return;
-            }
-
-            m_landsat9_sample = data;
-            sample = m_landsat9_sample;
-            waves = waves_landsat9;
-
-
-        }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
-            auto w_k = getSentinelKsy(pos.x(),pos.y());
-            data = w_k.second;
-            waves = w_k.first;
-            m_sentinel_sample = data;
-            sample = m_sentinel_sample;
-        }
-
-
-        preview->graph(0)->data().clear();
-        preview->graph(1)->data().clear();
-        preview->graph(0)->setData(waves, data);
-        preview->graph(1)->setData(waves, sample);
-        preview->rescaleAxes(true);
-        preview->replot();
-
-        getGeoCoordinates(pos.x(),pos.y());
-
-
-    });
-
-
-
-    ui->graphicsView_satellite_image->setMouseTracking(true);
-    ui->graphicsView_satellite_image->setScene(scene);
-    ui->graphicsView_satellite_image->setUp();
-
-    ui->graphicsView_satellite_image->setRenderHint(QPainter::Antialiasing);
-    ui->graphicsView_satellite_image->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
-
-
+    ui->graphicsView_satellite_image->setUp(scene);
 
 
     QWidget* widget_tools = new QWidget(ui->graphicsView_satellite_image);
@@ -411,6 +292,117 @@ void MainWindowSatelliteComparator::openSentinel2BHeaderData()
 {
     m_satelite_type = sad::SENTINEL_2B;
     openCommonSentinelHeaderData(satc::satellite_name_sentinel_2B);
+}
+
+void MainWindowSatelliteComparator::openBekasSpectraData()
+{
+    bekas_window = new UasvViewWindow;
+    bekas_window->setWindowTitle(satc::app_name);
+    bekas_window->setAttribute(Qt::WA_DeleteOnClose);
+    connect(bekas_window,SIGNAL(sendSampleForSatelliteComparator(QVector<double>, QVector<double>)),
+            this,SLOT(processBekasDataForComparing(QVector<double>,QVector<double>)));
+    bekas_window->show();
+}
+
+void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
+{
+    QVector<double> data;
+    QVector<double> waves;
+    QVector<double> sample;
+    QVector<double> trimmed_satellite_data;
+
+    if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
+        data = getLandsat8Ksy(pos.x(),pos.y());
+    }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
+        auto w_k = getSentinelKsy(pos.x(),pos.y());
+        data = w_k.second;
+        waves = w_k.first;
+        if(m_sentinel_sample.empty()){
+            sample = data;//TEMPORARY
+        }else{
+            sample = m_sentinel_sample;
+        }
+        trimmed_satellite_data = data;
+    }
+    if(data.empty()){
+        return;
+    }
+
+    if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
+
+        if(data.size()!=(int)LANDSAT_BANDS_NUMBER-4){
+            qDebug()<<"ERROR SIZE:"<<data.size();
+            return;
+        }
+        if(m_is_bekas){
+            sample = m_bekas_sample;
+            waves = waves_landsat9_5;
+            size_t elems_to_copy = std::min(static_cast<size_t>(data.size()), static_cast<size_t>(5));
+            trimmed_satellite_data = data.mid(0,static_cast<int>(elems_to_copy));
+        }else{
+            sample = m_landsat9_sample;
+            waves = waves_landsat9;
+            trimmed_satellite_data = data;
+        }
+    }
+
+    preview->graph(0)->data().clear();
+    preview->graph(1)->data().clear();
+    preview->graph(0)->setData(waves, trimmed_satellite_data);
+    preview->graph(1)->setData(waves, sample);
+
+    double result = 999;
+    if(calculation_method->currentText()==satc::spectral_angle){
+        result = calculateSpectralAngle(trimmed_satellite_data,sample);
+    }else if(calculation_method->currentText()==satc::euclid_metrika){
+        result = euclideanDistance(trimmed_satellite_data,sample);
+    }
+    qgti->setPos(pos.x(),pos.y()+5);
+    qgti->setPlainText(QString::number(result));
+    preview->rescaleAxes(true);
+    preview->replot();
+}
+
+void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
+{
+    m_is_bekas = false;
+    cross_square->setPos(pos);
+    cross_square->update();
+    QVector<double> data;
+    QVector<double> sample;
+    QVector<double> waves;
+    if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8){
+        data = getLandsat8Ksy(pos.x(),pos.y());
+
+        if(data.empty())return;
+        if(data.size()!=(int)LANDSAT_BANDS_NUMBER-4){
+            qDebug()<<"ERROR SIZE:"<<data.size();
+            return;
+        }
+
+        m_landsat9_sample = data;
+        sample = m_landsat9_sample;
+        waves = waves_landsat9;
+
+
+    }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
+        auto w_k = getSentinelKsy(pos.x(),pos.y());
+        data = w_k.second;
+        waves = w_k.first;
+        m_sentinel_sample = data;
+        sample = m_sentinel_sample;
+    }
+
+
+    preview->graph(0)->data().clear();
+    preview->graph(1)->data().clear();
+    preview->graph(0)->setData(waves, data);
+    preview->graph(1)->setData(waves, sample);
+    preview->rescaleAxes(true);
+    preview->replot();
+
+    getGeoCoordinates(pos.x(),pos.y());
+
 }
 
 void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& satellite_name)

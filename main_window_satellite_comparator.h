@@ -38,6 +38,10 @@ private slots:
     void openLandsat8HeaderData();
     void openSentinel2AHeaderData();
     void openSentinel2BHeaderData();
+    void openBekasSpectraData();
+
+    void cursorPointOnSceneChangedEvent(QPointF pos);
+    void samplePointOnSceneChangedEvent(QPointF pos);
 
     void openCommonLandsatHeaderData(const QString& satellite_name);
     void openCommonSentinelHeaderData(const QString& satellite_name);

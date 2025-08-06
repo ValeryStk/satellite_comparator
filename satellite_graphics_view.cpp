@@ -20,11 +20,15 @@ void SatelliteGraphicsView::setIsSignal(bool value)
     isSignal = value;
 }
 
-void SatelliteGraphicsView::setUp()
+void SatelliteGraphicsView::setUp(QGraphicsScene *scene)
 {
-    if(scene()){
+    setMouseTracking(true);
+    setRenderHint(QPainter::Antialiasing);
+    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    setScene(scene);
+    if(scene){
         polygonItem->setZValue(Z_INDEX_ROI_AREA_POLYGON);
-    scene()->addItem(polygonItem);
+        scene->addItem(polygonItem);
     }
 }
 

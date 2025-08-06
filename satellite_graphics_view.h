@@ -17,7 +17,7 @@ public:
     SatelliteGraphicsView(QWidget *parent = nullptr);
 
     void setIsSignal(bool value);
-    void setUp();
+    void setUp(QGraphicsScene* scene);
 
 private:
     bool isSignal = false;
