@@ -121,7 +121,7 @@ double SatteliteComparator::linearInterpolation(const QVector<double>& x,
     // Проверка, существует ли длина волны в массиве
     auto it = std::find(x.begin(), x.end(), target_x);
     if (it != x.end()) {
-        size_t idx = std::distance(x.begin(), it);
+        int idx = static_cast<int>(std::distance(x.begin(), it));
         return y[idx]; // Возврат значения без интерполяции
     }
 
@@ -132,7 +132,7 @@ double SatteliteComparator::linearInterpolation(const QVector<double>& x,
     }
 
     // Индексы для интерполяции
-    size_t idx = std::distance(x.begin(), lower);
+    int idx = static_cast<int>(std::distance(x.begin(), lower));
     double x1 = x[idx - 1], x2 = x[idx];
     double y1 = y[idx - 1], y2 = y[idx];
 

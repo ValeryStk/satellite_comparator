@@ -21,7 +21,7 @@ UasvViewWindow::UasvViewWindow(QWidget *parent)
         double maxInSpectrum;
         QVector<double> waves = m_filesParser->getRflWaves();
         QVector<double> values = m_filesParser->getRflSpectrumValues(maxInSpectrum);
-        sendSampleForSatelliteComparator(waves,values);
+        emit sendSampleForSatelliteComparator(waves,values);
     });
     connect(ui->widgetSpectra, &QCustomPlot::customContextMenuRequested, this, [menu](const QPoint &pos){
         menu->exec(QCursor::pos());
@@ -249,7 +249,7 @@ void UasvViewWindow::on_pushButtonSaveGraph_clicked()
 
 void UasvViewWindow::on_pushButtonExportAsText_clicked()
 {
-    QString basePath = ui->lineEditInputPath->text() + "/";
+    /*QString basePath = ui->lineEditInputPath->text() + "/";
     QString fileName = m_filesParser->spectraNamesList().at(ui->listViewSpectraNames->currentIndex().row());
     ui->graphicsViewImage->saveImageWithFov(basePath + fileName + ".bmp");
 
@@ -258,7 +258,7 @@ void UasvViewWindow::on_pushButtonExportAsText_clicked()
     QString spectrumMd = db_json::getStringMdFromStruct(m_filesParser->spectrum().md);
     QString spectrumAttrs = db_json::getStringSpecAttrsFromStruct(m_filesParser->spectrum().sd.attributes.at(currSpecIndex));
     QString spectrumWV = SpectrDataSaver::getStringSpectrumFromVectors(m_plotterWidget->showingBands(),
-                                                                      m_plotterWidget->showingValues());
+                                                                      m_plotterWidget->showingValues());*/
     //qDebug()<<"spectrum_data: "<<spectrumWV;
     /*SpectrDataSaver textSaver;
     connect(&textSaver, SIGNAL(sendTextMessage(QString)), ui->statusbar, SLOT(showMessage(QString)));

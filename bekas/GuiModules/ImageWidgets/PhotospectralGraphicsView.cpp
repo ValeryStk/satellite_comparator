@@ -40,6 +40,7 @@ void PhotospectralGraphicsView::resizeEvent(QResizeEvent *event)
 {
     m_scene->clear();
     paintImageAndFov();
+    QGraphicsView::resizeEvent(event);
 }
 
 void PhotospectralGraphicsView::paintImageAndFov()

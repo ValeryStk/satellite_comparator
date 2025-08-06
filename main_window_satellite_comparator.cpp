@@ -1,9 +1,9 @@
 #include "main_window_satellite_comparator.h"
 #include "ui_main_window_satellite_comparator.h"
+
 #include <algorithm>
 #include <QFile>
 #include <QFileDialog>
-#include <QString>
 #include <QTextStream>
 #include <QTextCodec>
 #include "libs/gdal/x64/include/gdal_priv.h"
@@ -27,7 +27,6 @@
 #include "google_maps_url_maker.h"
 #include <QSpacerItem>
 #include "satellite_xml_reader.h"
-#include "string"
 #include "layer_list.h"
 #include "icon_generator.h"
 #include "thread"
@@ -550,8 +549,12 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<d
         m_sat_comparator->set_satellite_responses("landsat8");
     }
     auto folded_device_spectr_for_landsat = m_sat_comparator->fold_spectr_to_satellite_responses();
-    m_is_bekas = true;// TODO check that VALUES ARE CORRECT
+    if(folded_device_spectr_for_landsat.empty()){
+       m_is_bekas = false;
+       return;
+    }
     m_bekas_sample = folded_device_spectr_for_landsat;
+    m_is_bekas = true;
 }
 
 QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const QString& path,
