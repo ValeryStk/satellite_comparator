@@ -89,7 +89,7 @@ private:
     bool m_is_bekas;
     LayerList* m_layer_gui_list;
     QCustomPlot* m_preview_plot;
-    QComboBox* calculation_method;
+    QComboBox* m_comboBox_calculation_method;
     QVector<double> m_landsat9_sample;
     QVector<double> m_sentinel_sample;
     QVector<double> m_bekas_sample;
@@ -137,6 +137,9 @@ private:
     void initSentinelStructs();
     void initLandsatStructs();
     void setUpPreviewPlot();
+    void setUpToolWidget();
+    void makeConnectsForMenuActions();
+    void addBaseItemsToScene();
 
     QVector<sad::BAND_DATA> m_sentinel_data;
     QVector<sad::BAND_DATA> m_landsat_data;

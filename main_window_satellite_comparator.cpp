@@ -60,7 +60,6 @@ qreal getMaxZValue(QGraphicsScene* scene) {
     return maxZ;
 }
 
-
 void downsample_uint16(const uint16_t* input, uint16_t* output, int width, int height) {
     int outWidth = width / 2;
     int outHeight = height / 2;
@@ -100,137 +99,25 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     , m_is_image_created(false)
     , m_is_bekas(false)
     , cross_square(new CrossSquare(100))
+    , m_scene_text_item_metric_value(new QGraphicsTextItem)
     , bekas_window(nullptr)
 
 
 {
     ui->setupUi(this);
-    gdal_start_driver();
-    QString dataPath = QApplication::applicationDirPath() + "/data";
-    CPLSetConfigOption("GDAL_DATA", dataPath.toUtf8().constData());
     setWindowTitle(satc::app_name);
+    gdal_start_driver();
     initSentinelStructs();
     initLandsatStructs();
-
-    connect(ui->actionBekas,SIGNAL(triggered()),this,SLOT(openBekasSpectraData()));
-    connect(ui->actionOpenLandsat9Header,SIGNAL(triggered()),this,SLOT(openLandsat9HeaderData()));
-    connect(ui->actionOpenLandsat8Header,SIGNAL(triggered()),this,SLOT(openLandsat8HeaderData()));
-    connect(ui->actionSentinel_2A,SIGNAL(triggered()),this,SLOT(openSentinel2AHeaderData()));
-    connect(ui->actionSentinel_2B,SIGNAL(triggered()),this,SLOT(openSentinel2BHeaderData()));
-
-    m_scene_text_item_metric_value = new QGraphicsTextItem;
-    m_scene_text_item_metric_value->setDefaultTextColor(Qt::black);
-    m_scene_text_item_metric_value->setFont(QFont("Arial", 12));
-    m_scene_text_item_metric_value->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR_TEXT);
-    m_scene->addItem(m_scene_text_item_metric_value);
-    cross_square->setPos(0,0);
-    cross_square->setVisible(false);
-    cross_square->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR);
-    m_scene->addItem(cross_square);
-
-
-    calculation_method = new QComboBox;
-    calculation_method->addItems({satc::euclid_metrika,satc::spectral_angle});
-
-
-
+    makeConnectsForMenuActions();
+    addBaseItemsToScene();
     setUpPreviewPlot();
-
     connect(ui->graphicsView_satellite_image,SIGNAL(pointChanged(QPointF)),
             this,SLOT(cursorPointOnSceneChangedEvent(QPointF)));
     connect(ui->graphicsView_satellite_image,SIGNAL(sampleChanged(QPointF)),
             this,SLOT(samplePointOnSceneChangedEvent(QPointF)));
-
     ui->graphicsView_satellite_image->setUp(m_scene);
-
-
-    QWidget* widget_tools = new QWidget(ui->graphicsView_satellite_image);
-    m_layer_gui_list = new LayerList;
-    connect(m_layer_gui_list,SIGNAL(show(const QString)),SLOT(show_layer(const QString)));
-    connect(m_layer_gui_list,SIGNAL(hide(const QString)),SLOT(hide_layer(const QString)));
-    connect(m_layer_gui_list,SIGNAL(remove(const QString)),SLOT(remove_scene_layer(const QString)));
-
-    QHBoxLayout* tool_root_layout = new QHBoxLayout;
-    QVBoxLayout* toolLayOut = new QVBoxLayout;
-    tool_root_layout->addLayout(toolLayOut);
-    const QSize tool_element_size(30,30);
-
-
-    QPushButton *pushbutton_centerOn = new QPushButton;
-    pushbutton_centerOn->setText("●");
-    pushbutton_centerOn->setFixedSize(tool_element_size);
-
-    QPushButton *zoomInButton = new QPushButton;
-    zoomInButton->setText("+");
-    zoomInButton->setFixedSize(tool_element_size);
-    QPushButton *zoomOutButton = new QPushButton;
-    zoomOutButton->setText("-");
-    zoomOutButton->setFixedSize(tool_element_size);
-    QPushButton *googleMap = new QPushButton;
-    googleMap->setText("GM");
-    googleMap->setFixedSize(tool_element_size);
-
-    QPushButton *resetToRGB = new QPushButton;
-    resetToRGB->setText("RC");
-    resetToRGB->setFixedSize(tool_element_size);
-
-    QVBoxLayout *euclid_layout = new QVBoxLayout;
-    QSpacerItem *spacer1 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Fixed);
-    QSpacerItem *spacer2 = new QSpacerItem(20, 40, QSizePolicy::Expanding, QSizePolicy::Expanding);
-    QPushButton *pushbutton_paint_samples = new QPushButton;
-    pushbutton_paint_samples->setText("Запуск поиска");
-
-    euclid_param_spinbox = new QDoubleSpinBox;
-    euclid_layout->addWidget(calculation_method);
-    euclid_layout->addWidget(euclid_param_spinbox);
-    euclid_layout->addItem(spacer1);
-    euclid_layout->addWidget(pushbutton_paint_samples);
-    euclid_layout->addItem(spacer2);
-    euclid_param_spinbox->setMinimum(0.001);
-    euclid_param_spinbox->setMaximum(100);
-    euclid_param_spinbox->setSingleStep(0.001);
-    euclid_param_spinbox->setValue(0.2);
-
-    toolLayOut->addWidget(pushbutton_centerOn);
-    toolLayOut->addWidget(zoomInButton);
-    toolLayOut->addWidget(zoomOutButton);
-    toolLayOut->addWidget(googleMap);
-    toolLayOut->addWidget(resetToRGB);
-
-    tool_root_layout->addWidget(m_preview_plot);
-    widget_tools->setLayout(tool_root_layout);
-    tool_root_layout->addLayout(euclid_layout);
-    tool_root_layout->addWidget(m_layer_gui_list);
-    widget_tools->show();
-
-    QObject::connect(zoomInButton, &QPushButton::clicked,this,[this]() {
-        ui->graphicsView_satellite_image->scale(1.2, 1.2); // Увеличение масштаба
-    });
-    QObject::connect(zoomOutButton, &QPushButton::clicked,this,[this]() {
-        ui->graphicsView_satellite_image->scale(0.8, 0.8); // Уменьшение масштаба
-    });
-
-    connect(pushbutton_centerOn,&QPushButton::clicked,this,[this](){ // Центрирование
-        ui->graphicsView_satellite_image->centerOn(cross_square);
-        ui->graphicsView_satellite_image->setTransform(QTransform()); //Дефолтный масштаба
-
-    });
-
-    connect(pushbutton_paint_samples,&QPushButton::clicked,this,[this](){
-        QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
-        QString message = QString("Пожалуйста подождите,\nпроисходит поиск областей\n(%1)...").arg(calculation_method->currentText());
-        ProgressInformator progress_info(ui->graphicsView_satellite_image,
-                                         message);
-        progress_info.show();
-        QApplication::processEvents();
-        paintSamplePoints(color);
-        progress_info.close();
-
-    });
-
-    connect(googleMap,SIGNAL(clicked()),this,SLOT(showGoogleMap()));
-    connect(resetToRGB,SIGNAL(clicked()),this,SLOT(resetColorsToDefaultRGB()));
-
+    setUpToolWidget();
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
@@ -321,9 +208,9 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
     m_preview_plot->graph(1)->setData(waves, sample);
 
     double result = 999;
-    if(calculation_method->currentText()==satc::spectral_angle){
+    if(m_comboBox_calculation_method->currentText()==satc::spectral_angle){
         result = calculateSpectralAngle(trimmed_satellite_data,sample);
-    }else if(calculation_method->currentText()==satc::euclid_metrika){
+    }else if(m_comboBox_calculation_method->currentText()==satc::euclid_metrika){
         result = euclideanDistance(trimmed_satellite_data,sample);
     }
     m_scene_text_item_metric_value->setPos(pos.x(),pos.y()+5);
@@ -965,7 +852,7 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     ui->graphicsView_satellite_image->centerOn(cross_square);
 
 
-    const QString searchParams = calculation_method->currentText() + ": "+QString::number(euclid_param_spinbox->value());
+    const QString searchParams = m_comboBox_calculation_method->currentText() + ": "+QString::number(euclid_param_spinbox->value());
     auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
     m_layer_items.insert(stamp,new_image_item);
     m_layer_gui_list->addItemToList(stamp,searchParams,color);
@@ -1010,9 +897,9 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
         return "";
     }
 
-    qDebug()<< "Географические координаты (WGS84):";
-    qDebug()<< "Долгота: " << lon;
-    qDebug()<< "Широта: " << lat;
+    //qDebug()<< "Географические координаты (WGS84):";
+    //qDebug()<< "Долгота: " << lon;
+    //qDebug()<< "Широта: " << lat;
     m_lattitude = lat;
     m_longitude = lon;
     QString lat_lon = QString("Широта: %1 Долгота: %2").arg(lat).arg(lon);
@@ -1273,9 +1160,9 @@ void MainWindowSatelliteComparator::processLayer(uchar* layer,
             }
 
             double result = 999;
-            if (calculation_method->currentText() == satc::spectral_angle) {
+            if (m_comboBox_calculation_method->currentText() == satc::spectral_angle) {
                 result = calculateSpectralAngle(ksy, sample);
-            } else if (calculation_method->currentText() == satc::euclid_metrika) {
+            } else if (m_comboBox_calculation_method->currentText() == satc::euclid_metrika) {
                 result = euclideanDistance(ksy, sample);
             }
 
@@ -1329,6 +1216,120 @@ void MainWindowSatelliteComparator::setUpPreviewPlot()
     m_preview_plot->graph(1)->setPen(QPen(Qt::red));
 }
 
+void MainWindowSatelliteComparator::setUpToolWidget()
+{
+    QWidget* widget_tools = new QWidget(ui->graphicsView_satellite_image);
+    m_comboBox_calculation_method = new QComboBox;
+    m_comboBox_calculation_method->addItems({satc::euclid_metrika,satc::spectral_angle});
+
+    m_layer_gui_list = new LayerList;
+    connect(m_layer_gui_list,SIGNAL(show(const QString)),SLOT(show_layer(const QString)));
+    connect(m_layer_gui_list,SIGNAL(hide(const QString)),SLOT(hide_layer(const QString)));
+    connect(m_layer_gui_list,SIGNAL(remove(const QString)),SLOT(remove_scene_layer(const QString)));
+
+    QHBoxLayout* tool_root_layout = new QHBoxLayout;
+    QVBoxLayout* toolLayOut = new QVBoxLayout;
+    tool_root_layout->addLayout(toolLayOut);
+    const QSize tool_element_size(30,30);
+
+
+    QPushButton *pushbutton_centerOn = new QPushButton;
+    pushbutton_centerOn->setText("●");
+    pushbutton_centerOn->setFixedSize(tool_element_size);
+
+    QPushButton *zoomInButton = new QPushButton;
+    zoomInButton->setText("+");
+    zoomInButton->setFixedSize(tool_element_size);
+    QPushButton *zoomOutButton = new QPushButton;
+    zoomOutButton->setText("-");
+    zoomOutButton->setFixedSize(tool_element_size);
+    QPushButton *googleMap = new QPushButton;
+    googleMap->setText("GM");
+    googleMap->setFixedSize(tool_element_size);
+
+    QPushButton *resetToRGB = new QPushButton;
+    resetToRGB->setText("RC");
+    resetToRGB->setFixedSize(tool_element_size);
+
+    QVBoxLayout *euclid_layout = new QVBoxLayout;
+    QSpacerItem *spacer1 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Fixed);
+    QSpacerItem *spacer2 = new QSpacerItem(20, 40, QSizePolicy::Expanding, QSizePolicy::Expanding);
+    QPushButton *pushbutton_paint_samples = new QPushButton;
+    pushbutton_paint_samples->setText("Запуск поиска");
+
+    euclid_param_spinbox = new QDoubleSpinBox;
+    euclid_layout->addWidget(m_comboBox_calculation_method);
+    euclid_layout->addWidget(euclid_param_spinbox);
+    euclid_layout->addItem(spacer1);
+    euclid_layout->addWidget(pushbutton_paint_samples);
+    euclid_layout->addItem(spacer2);
+    euclid_param_spinbox->setMinimum(0.001);
+    euclid_param_spinbox->setMaximum(100);
+    euclid_param_spinbox->setSingleStep(0.001);
+    euclid_param_spinbox->setValue(0.2);
+
+    toolLayOut->addWidget(pushbutton_centerOn);
+    toolLayOut->addWidget(zoomInButton);
+    toolLayOut->addWidget(zoomOutButton);
+    toolLayOut->addWidget(googleMap);
+    toolLayOut->addWidget(resetToRGB);
+
+    tool_root_layout->addWidget(m_preview_plot);
+    widget_tools->setLayout(tool_root_layout);
+    tool_root_layout->addLayout(euclid_layout);
+    tool_root_layout->addWidget(m_layer_gui_list);
+    widget_tools->show();
+
+    QObject::connect(zoomInButton, &QPushButton::clicked,this,[this]() {
+        ui->graphicsView_satellite_image->scale(1.2, 1.2); // Увеличение масштаба
+    });
+    QObject::connect(zoomOutButton, &QPushButton::clicked,this,[this]() {
+        ui->graphicsView_satellite_image->scale(0.8, 0.8); // Уменьшение масштаба
+    });
+
+    connect(pushbutton_centerOn,&QPushButton::clicked,this,[this](){ // Центрирование
+        ui->graphicsView_satellite_image->centerOn(cross_square);
+        ui->graphicsView_satellite_image->setTransform(QTransform()); //Дефолтный масштаба
+
+    });
+
+    connect(pushbutton_paint_samples,&QPushButton::clicked,this,[this](){
+        QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
+        QString message = QString("Пожалуйста подождите,\nпроисходит поиск областей\n(%1)...").arg(m_comboBox_calculation_method->currentText());
+        ProgressInformator progress_info(ui->graphicsView_satellite_image,
+                                         message);
+        progress_info.show();
+        QApplication::processEvents();
+        paintSamplePoints(color);
+        progress_info.close();
+
+    });
+
+    connect(googleMap,SIGNAL(clicked()),this,SLOT(showGoogleMap()));
+    connect(resetToRGB,SIGNAL(clicked()),this,SLOT(resetColorsToDefaultRGB()));
+}
+
+void MainWindowSatelliteComparator::makeConnectsForMenuActions()
+{
+    connect(ui->actionBekas,SIGNAL(triggered()),this,SLOT(openBekasSpectraData()));
+    connect(ui->actionOpenLandsat9Header,SIGNAL(triggered()),this,SLOT(openLandsat9HeaderData()));
+    connect(ui->actionOpenLandsat8Header,SIGNAL(triggered()),this,SLOT(openLandsat8HeaderData()));
+    connect(ui->actionSentinel_2A,SIGNAL(triggered()),this,SLOT(openSentinel2AHeaderData()));
+    connect(ui->actionSentinel_2B,SIGNAL(triggered()),this,SLOT(openSentinel2BHeaderData()));
+}
+
+void MainWindowSatelliteComparator::addBaseItemsToScene()
+{
+    m_scene_text_item_metric_value->setDefaultTextColor(Qt::black);
+    m_scene_text_item_metric_value->setFont(QFont("Arial", 12));
+    m_scene_text_item_metric_value->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR_TEXT);
+    m_scene->addItem(m_scene_text_item_metric_value);
+    cross_square->setPos(0,0);
+    cross_square->setVisible(false);
+    cross_square->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR);
+    m_scene->addItem(cross_square);
+}
+
 void MainWindowSatelliteComparator::read_sentinel2_bands_data()
 {
 
@@ -1361,6 +1362,8 @@ void MainWindowSatelliteComparator::read_sentinel2_bands_data()
 
 void MainWindowSatelliteComparator::gdal_start_driver()
 {
+    QString dataPath = QApplication::applicationDirPath() + "/data";
+    CPLSetConfigOption("GDAL_DATA", dataPath.toUtf8().constData());
     GDALAllRegister();
     CPLSetConfigOption("GDAL_NUM_THREADS", "ALL_CPUS");
     CPLSetConfigOption("OPENJPEG_NUM_THREADS", "AUTO");
