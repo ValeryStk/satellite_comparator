@@ -134,27 +134,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 
 
-    preview = new QCustomPlot;
-    preview->legend->setVisible(true);
-    QCPGraph *graph_satellite = preview->addGraph();
-    preview->xAxis->setRange(400,2400);
-    preview->yAxis->setRange(-0.2,1.2);
-    preview->xAxis->setLabel("Длина волны, nm");
-    preview->yAxis->setLabel("КСЯ");
-    // Создаем заголовок
-    title_satellite_name = new QCPTextElement(preview,
-                                              "",
-                                              QFont("Arial", 10,
-                                                    QFont::Bold));
-    preview->plotLayout()->insertRow(0);
-    preview->plotLayout()->addElement(0, 0, title_satellite_name);
-    graph_satellite->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
-    QCPGraph *graph_device = preview->addGraph();
-    graph_device->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCrossSquare, 5));
-    preview->graph(0)->setName("Курсорный");
-    preview->graph(1)->setName("Образец для поиска");
-    preview->graph(0)->setPen(QPen(Qt::blue));
-    preview->graph(1)->setPen(QPen(Qt::red));
+    setUpPreviewPlot();
 
     connect(ui->graphicsView_satellite_image,SIGNAL(pointChanged(QPointF)),
             this,SLOT(cursorPointOnSceneChangedEvent(QPointF)));
@@ -175,7 +155,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     tool_root_layout->addLayout(toolLayOut);
     const QSize tool_element_size(30,30);
 
-    preview->setFixedSize(400,200);
+
     QPushButton *pushbutton_centerOn = new QPushButton;
     pushbutton_centerOn->setText("●");
     pushbutton_centerOn->setFixedSize(tool_element_size);
@@ -217,7 +197,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     toolLayOut->addWidget(googleMap);
     toolLayOut->addWidget(resetToRGB);
 
-    tool_root_layout->addWidget(preview);
+    tool_root_layout->addWidget(m_preview_plot);
     widget_tools->setLayout(tool_root_layout);
     tool_root_layout->addLayout(euclid_layout);
     tool_root_layout->addWidget(m_layer_gui_list);
@@ -335,10 +315,10 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
         }
     }
 
-    preview->graph(0)->data().clear();
-    preview->graph(1)->data().clear();
-    preview->graph(0)->setData(waves, trimmed_satellite_data);
-    preview->graph(1)->setData(waves, sample);
+    m_preview_plot->graph(0)->data().clear();
+    m_preview_plot->graph(1)->data().clear();
+    m_preview_plot->graph(0)->setData(waves, trimmed_satellite_data);
+    m_preview_plot->graph(1)->setData(waves, sample);
 
     double result = 999;
     if(calculation_method->currentText()==satc::spectral_angle){
@@ -348,8 +328,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
     }
     m_scene_text_item_metric_value->setPos(pos.x(),pos.y()+5);
     m_scene_text_item_metric_value->setPlainText(QString::number(result));
-    preview->rescaleAxes(true);
-    preview->replot();
+    m_preview_plot->rescaleAxes(true);
+    m_preview_plot->replot();
 }
 
 void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
@@ -383,12 +363,12 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
     }
 
 
-    preview->graph(0)->data().clear();
-    preview->graph(1)->data().clear();
-    preview->graph(0)->setData(waves, data);
-    preview->graph(1)->setData(waves, sample);
-    preview->rescaleAxes(true);
-    preview->replot();
+    m_preview_plot->graph(0)->data().clear();
+    m_preview_plot->graph(1)->data().clear();
+    m_preview_plot->graph(0)->setData(waves, data);
+    m_preview_plot->graph(1)->setData(waves, sample);
+    m_preview_plot->rescaleAxes(true);
+    m_preview_plot->replot();
 
     getGeoCoordinates(pos.x(),pos.y());
 
@@ -1321,6 +1301,32 @@ void MainWindowSatelliteComparator::initLandsatStructs()
 {
     std::fill(std::begin(m_landsat9_missed_channels),std::end(m_landsat9_missed_channels),true);
     m_landsat9_sample = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+}
+
+void MainWindowSatelliteComparator::setUpPreviewPlot()
+{
+    m_preview_plot = new QCustomPlot;
+    m_preview_plot->setFixedSize(400,200);
+    m_preview_plot->legend->setVisible(true);
+    QCPGraph *graph_satellite = m_preview_plot->addGraph();
+    m_preview_plot->xAxis->setRange(400,2400);
+    m_preview_plot->yAxis->setRange(-0.2,1.2);
+    m_preview_plot->xAxis->setLabel("Длина волны, nm");
+    m_preview_plot->yAxis->setLabel("КСЯ");
+    // Создаем заголовок
+    title_satellite_name = new QCPTextElement(m_preview_plot,
+                                              "",
+                                              QFont("Arial", 10,
+                                                    QFont::Bold));
+    m_preview_plot->plotLayout()->insertRow(0);
+    m_preview_plot->plotLayout()->addElement(0, 0, title_satellite_name);
+    graph_satellite->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
+    QCPGraph *graph_device = m_preview_plot->addGraph();
+    graph_device->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCrossSquare, 5));
+    m_preview_plot->graph(0)->setName("Курсорный");
+    m_preview_plot->graph(1)->setName("Образец для поиска");
+    m_preview_plot->graph(0)->setPen(QPen(Qt::blue));
+    m_preview_plot->graph(1)->setPen(QPen(Qt::red));
 }
 
 void MainWindowSatelliteComparator::read_sentinel2_bands_data()

@@ -88,7 +88,7 @@ private:
     bool m_is_image_created;
     bool m_is_bekas;
     LayerList* m_layer_gui_list;
-    QCustomPlot* preview;
+    QCustomPlot* m_preview_plot;
     QComboBox* calculation_method;
     QVector<double> m_landsat9_sample;
     QVector<double> m_sentinel_sample;
@@ -136,6 +136,7 @@ private:
 
     void initSentinelStructs();
     void initLandsatStructs();
+    void setUpPreviewPlot();
 
     QVector<sad::BAND_DATA> m_sentinel_data;
     QVector<sad::BAND_DATA> m_landsat_data;
