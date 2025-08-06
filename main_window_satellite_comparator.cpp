@@ -340,9 +340,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     tool_root_layout->addLayout(euclid_layout);
     tool_root_layout->addWidget(m_layer_gui_list);
     widget_tools->show();
-    QGraphicsProxyWidget* proxy = scene->addWidget(widget_tools);
-    proxy->setPos(0, 50);
-    proxy->setGeometry(QRect(0,0,600,250));
+
     QObject::connect(zoomInButton, &QPushButton::clicked,this,[this]() {
         ui->graphicsView_satellite_image->scale(1.2, 1.2); // Увеличение масштаба
     });
