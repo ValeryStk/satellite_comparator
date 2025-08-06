@@ -45,7 +45,7 @@ void LayerList::mayBeHideMayBeShow(QListWidgetItem *item)
         Qt::CheckState state = item->checkState();
         QVariant nameData = item->data(Qt::UserRole);
         QString id = nameData.toString();
-        state == Qt::Checked?emit show(id):emit hide(id);
+        if(state == Qt::Checked){emit show(id);}else {emit hide(id);}
     }
 }
 
