@@ -34,12 +34,10 @@ void SatelliteGraphicsView::setUp(QGraphicsScene *scene)
 
 void SatelliteGraphicsView::mouseMoveEvent(QMouseEvent *event)
 {
-    QPointF pos = mapToScene(event->pos()); // Получаем координаты в системе QGraphicsScene
-    //qDebug() << "Cursor Position: x=" << pos.x() << ", y=" << pos.y(); // Отображаем координаты
+    QPointF pos = mapToScene(event->pos());
     m_current_point = pos;
     QGraphicsView::mouseMoveEvent(event);
-    if(isSignal)
-        emit pointChanged(pos);
+    if(isSignal) emit pointChanged(pos);
 }
 
 void SatelliteGraphicsView::wheelEvent(QWheelEvent *event)
@@ -55,8 +53,7 @@ void SatelliteGraphicsView::wheelEvent(QWheelEvent *event)
 void SatelliteGraphicsView::mouseDoubleClickEvent(QMouseEvent *event)
 {
     QPointF pos = mapToScene(event->pos());
-    if(isSignal)
-        sampleChanged(pos);
+    if(isSignal) emit sampleChanged(pos);
 }
 
 void SatelliteGraphicsView::keyPressEvent(QKeyEvent *event)
@@ -75,5 +72,12 @@ void SatelliteGraphicsView::keyPressEvent(QKeyEvent *event)
     QGraphicsView::keyPressEvent(event);
 }
 
+void SatelliteGraphicsView::zoomIn()
+{
+    scale(1.2, 1.2);
+}
 
-
+void SatelliteGraphicsView::zoomOut()
+{
+    scale(0.8, 0.8);
+}

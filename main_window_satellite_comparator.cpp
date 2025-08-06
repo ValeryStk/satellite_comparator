@@ -49,17 +49,22 @@ QVector<uchar*> m_layers;
 namespace {
 
 qreal getMaxZValue(QGraphicsScene* scene) {
+    const QList<QGraphicsItem*> items = scene->items();  // предотвращает detach
     qreal maxZ = std::numeric_limits<qreal>::lowest();
-    for (QGraphicsItem* item : scene->items()) {
-        if (item->zValue() > maxZ) {
-            if(item->zValue() >= Z_INDEX_ROI_AREA_POLYGON)continue;
-            maxZ = item->zValue();
+    for (QGraphicsItem* item : items) {
+        qreal z = item->zValue();
+        if (z < Z_INDEX_ROI_AREA_POLYGON && z > maxZ) {
+            maxZ = z;
         }
     }
-    return maxZ;
+    return (maxZ == std::numeric_limits<qreal>::lowest()) ? 0 : maxZ + 1;
 }
 
-void downsample_uint16(const uint16_t* input, uint16_t* output, int width, int height) {
+void downsample_uint16(const uint16_t* input,
+                       uint16_t* output,
+                       const int width,
+                       const int height) {
+
     int outWidth = width / 2;
     int outHeight = height / 2;
 
@@ -97,7 +102,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     , m_image_data(new uchar[MAX_BYTES_IN_BASE_IMAGE_LAYER])
     , m_is_image_created(false)
     , m_is_bekas(false)
-    , cross_square(new CrossSquare(100))
+    , m_scene_cross_square_item(new CrossSquare(100))
     , m_scene_text_item_metric_value(new QGraphicsTextItem)
     , bekas_window(nullptr)
 
@@ -157,6 +162,24 @@ void MainWindowSatelliteComparator::openBekasSpectraData()
     connect(bekas_window,SIGNAL(sendSampleForSatelliteComparator(QVector<double>, QVector<double>)),
             this,SLOT(processBekasDataForComparing(QVector<double>,QVector<double>)));
     bekas_window->show();
+}
+
+void MainWindowSatelliteComparator::findAreasUsingSelectedMetric()
+{
+    QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
+    QString message = QString("Пожалуйста подождите,\nпроисходит поиск областей\n(%1)...").arg(m_comboBox_calculation_method->currentText());
+    ProgressInformator progress_info(ui->graphicsView_satellite_image,
+                                     message);
+    progress_info.show();
+    QApplication::processEvents();
+    paintSamplePoints(color);
+    progress_info.close();
+}
+
+void MainWindowSatelliteComparator::centerSceneOnCrossSquare()
+{
+    ui->graphicsView_satellite_image->centerOn(m_scene_cross_square_item);
+    ui->graphicsView_satellite_image->setTransform(QTransform());
 }
 
 void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
@@ -221,8 +244,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
 void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
 {
     m_is_bekas = false;
-    cross_square->setPos(pos);
-    cross_square->update();
+    m_scene_cross_square_item->setPos(pos);
+    m_scene_cross_square_item->update();
     QVector<double> data;
     QVector<double> sample;
     QVector<double> waves;
@@ -269,7 +292,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     clearLandsat9DataBands();
     clear_satellite_data();
     clear_all_layers();
-    cross_square->setVisible(false);
+    m_scene_cross_square_item->setVisible(false);
     QFile file(headerName);
     static bool isHeaderValid = false;
     if(file.exists()==false)return;
@@ -359,7 +382,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     }
 
 
-    //fill universal struct instead of specific
+    //fill universal struct instead of specific (WORK IN PROGRESS)
     for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
         if(m_landsat9_missed_channels[sad::sorted_landsat_bands_order_by_wavelength[i]])continue;
         qDebug()<<"----check test---"<<sad::landsat_bands_gui_names[sad::sorted_landsat_bands_order_by_wavelength[i]];
@@ -378,7 +401,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     change_bands_and_show_image();
     ui->statusbar->showMessage("");
     m_is_image_created = true;
-    cross_square->setVisible(true);
+    m_scene_cross_square_item->setVisible(true);
     ui->graphicsView_satellite_image->setIsSignal(true);
 
 }
@@ -394,7 +417,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
     clearLandsat9DataBands();
     clear_satellite_data();
     clear_all_layers();
-    cross_square->setVisible(false);
+    m_scene_cross_square_item->setVisible(false);
 
     QFile file(headerName);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -411,6 +434,9 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
     file.close();
     QFileInfo fi(headerName);
     m_root_path = fi.path();
+    QString dataLoadingMessage = QString("Загрузка данных %1...").arg(satellite_name);
+    ui->statusbar->showMessage(dataLoadingMessage);
+    QApplication::processEvents();
 
     QStringList imageFiles;
     QDomNodeList imageNodes = doc.elementsByTagName("IMAGE_FILE");
@@ -516,7 +542,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
 
     ui->statusbar->showMessage("");
     m_is_image_created = true;
-    cross_square->setVisible(true);
+    m_scene_cross_square_item->setVisible(true);
     ui->graphicsView_satellite_image->setIsSignal(true);
 
     if(finalFiles.empty()==false){
@@ -550,8 +576,8 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<d
     }
     auto folded_device_spectr_for_landsat = m_sat_comparator->fold_spectr_to_satellite_responses();
     if(folded_device_spectr_for_landsat.empty()){
-       m_is_bekas = false;
-       return;
+        m_is_bekas = false;
+        return;
     }
     m_bekas_sample = folded_device_spectr_for_landsat;
     m_is_bekas = true;
@@ -850,9 +876,9 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     auto img = QImage(new_layer,xSize,ySize,xSize*4,QImage::Format_RGBA8888,cleanup,new_layer);
     auto pixmap = QPixmap::fromImage(img);
     auto new_image_item = new QGraphicsPixmapItem(pixmap);
-    new_image_item->setZValue(getMaxZValue(m_scene)+1);
+    new_image_item->setZValue(getMaxZValue(m_scene));
     m_scene->addItem(new_image_item);
-    ui->graphicsView_satellite_image->centerOn(cross_square);
+    ui->graphicsView_satellite_image->centerOn(m_scene_cross_square_item);
 
 
     const QString searchParams = m_comboBox_calculation_method->currentText() + ": "+QString::number(euclid_param_spinbox->value());
@@ -1283,33 +1309,13 @@ void MainWindowSatelliteComparator::setUpToolWidget()
     tool_root_layout->addWidget(m_layer_gui_list);
     widget_tools->show();
 
-    QObject::connect(zoomInButton, &QPushButton::clicked,this,[this]() {
-        ui->graphicsView_satellite_image->scale(1.2, 1.2); // Увеличение масштаба
-    });
-    QObject::connect(zoomOutButton, &QPushButton::clicked,this,[this]() {
-        ui->graphicsView_satellite_image->scale(0.8, 0.8); // Уменьшение масштаба
-    });
-
-    connect(pushbutton_centerOn,&QPushButton::clicked,this,[this](){ // Центрирование
-        ui->graphicsView_satellite_image->centerOn(cross_square);
-        ui->graphicsView_satellite_image->setTransform(QTransform()); //Дефолтный масштаба
-
-    });
-
-    connect(pushbutton_paint_samples,&QPushButton::clicked,this,[this](){
-        QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
-        QString message = QString("Пожалуйста подождите,\nпроисходит поиск областей\n(%1)...").arg(m_comboBox_calculation_method->currentText());
-        ProgressInformator progress_info(ui->graphicsView_satellite_image,
-                                         message);
-        progress_info.show();
-        QApplication::processEvents();
-        paintSamplePoints(color);
-        progress_info.close();
-
-    });
-
+    connect(pushbutton_centerOn,SIGNAL(clicked()),this,SLOT(centerSceneOnCrossSquare()));
+    connect(zoomInButton, SIGNAL(clicked()),ui->graphicsView_satellite_image,SLOT(zoomIn()));
+    connect(zoomOutButton, SIGNAL(clicked()),ui->graphicsView_satellite_image,SLOT(zoomOut()));
     connect(googleMap,SIGNAL(clicked()),this,SLOT(showGoogleMap()));
     connect(resetToRGB,SIGNAL(clicked()),this,SLOT(resetColorsToDefaultRGB()));
+    connect(pushbutton_paint_samples,SIGNAL(clicked()),this,SLOT(findAreasUsingSelectedMetric()));
+
 }
 
 void MainWindowSatelliteComparator::makeConnectsForMenuActions()
@@ -1327,10 +1333,10 @@ void MainWindowSatelliteComparator::addBaseItemsToScene()
     m_scene_text_item_metric_value->setFont(QFont("Arial", 12));
     m_scene_text_item_metric_value->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR_TEXT);
     m_scene->addItem(m_scene_text_item_metric_value);
-    cross_square->setPos(0,0);
-    cross_square->setVisible(false);
-    cross_square->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR);
-    m_scene->addItem(cross_square);
+    m_scene_cross_square_item->setPos(0,0);
+    m_scene_cross_square_item->setVisible(false);
+    m_scene_cross_square_item->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR);
+    m_scene->addItem(m_scene_cross_square_item);
 }
 
 void MainWindowSatelliteComparator::read_sentinel2_bands_data()

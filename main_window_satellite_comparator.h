@@ -39,6 +39,8 @@ private slots:
     void openSentinel2AHeaderData();
     void openSentinel2BHeaderData();
     void openBekasSpectraData();
+    void findAreasUsingSelectedMetric();
+    void centerSceneOnCrossSquare();
 
     void cursorPointOnSceneChangedEvent(QPointF pos);
     void samplePointOnSceneChangedEvent(QPointF pos);
@@ -95,7 +97,7 @@ private:
     QVector<double> m_bekas_sample;
     QGraphicsPixmapItem* m_image_item = nullptr;
     QHash<const QString,QGraphicsPixmapItem*> m_layer_items;
-    CrossSquare *cross_square;
+    CrossSquare* m_scene_cross_square_item;
     QDoubleSpinBox* euclid_param_spinbox;
     QGraphicsTextItem* m_scene_text_item_metric_value;
     UasvViewWindow* bekas_window;

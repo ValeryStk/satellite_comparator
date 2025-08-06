@@ -36,6 +36,10 @@ signals:
     void pointChanged(QPointF point);
     void sampleChanged(QPointF point);
 
+private slots:
+    void zoomIn();
+    void zoomOut();
+
 };
 
 #endif // SATELLITE_GRAPHICS_VIEW_H
