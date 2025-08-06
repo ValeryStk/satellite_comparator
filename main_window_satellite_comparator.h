@@ -30,8 +30,8 @@ public:
 private slots:
     void change_bands_and_show_image();
     void change_bands_sentinel_and_show_image();
-    void show_layer(const QString id);
-    void hide_layer(const QString id);
+    void show_layer(const QString& id);
+    void hide_layer(const QString& id);
     void remove_scene_layer(const QString& id);
 
     void openLandsat9HeaderData();
@@ -47,12 +47,14 @@ private slots:
     void openCommonSentinelHeaderData(const QString& satellite_name);
     void processBekasDataForComparing(const QVector<double>& x,
                                       const QVector<double>& y);
+    void showGoogleMap();
+    void resetColorsToDefaultRGB();
 
 private:
-    Ui::MainWindowSatelliteComparator *ui;
-    QGraphicsScene *scene;
+    Ui::MainWindowSatelliteComparator* ui;
+    QGraphicsScene* m_scene;
     sad::SATELLITE_TYPE m_satelite_type = sad::UNKNOWN_SATELLITE;
-    DynamicCheckboxWidget *m_dynamic_checkboxes_widget;
+    DynamicCheckboxWidget* m_dynamic_checkboxes_widget;
     SatteliteComparator* m_sat_comparator;
 
     QStringList getLandSat9BandsFromTxtFormat(const QString& path,
@@ -95,7 +97,7 @@ private:
     QHash<const QString,QGraphicsPixmapItem*> m_layer_items;
     CrossSquare *cross_square;
     QDoubleSpinBox* euclid_param_spinbox;
-    QGraphicsTextItem* qgti;
+    QGraphicsTextItem* m_scene_text_item_metric_value;
     UasvViewWindow* bekas_window;
     void paintSamplePoints(const QColor &color);
     QString getGeoCoordinates(const int x, const int y);
@@ -107,8 +109,6 @@ private:
 
     inline double calculateSpectralAngle(const QVector<double>& S1,
                                          const QVector<double>& S2);
-
-    void showGoogleMap();
 
 
     struct geoTransform {
@@ -135,6 +135,7 @@ private:
 
 
     void initSentinelStructs();
+    void initLandsatStructs();
 
     QVector<sad::BAND_DATA> m_sentinel_data;
     QVector<sad::BAND_DATA> m_landsat_data;

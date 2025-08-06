@@ -32,7 +32,7 @@
 #include "icon_generator.h"
 #include "thread"
 #include <QDomDocument>
-#include "cpl_conv.h" // Для CPLSetConfigOption
+#include "cpl_conv.h"
 #include "QApplication"
 
 
@@ -93,7 +93,8 @@ void copyQStringArray(const QString source[], QString destination[], int size) {
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindowSatelliteComparator)
-    , scene(new QGraphicsScene)
+    , m_scene(new QGraphicsScene)
+    , m_dynamic_checkboxes_widget(nullptr)
     , m_sat_comparator(new SatteliteComparator)
     , m_image_data(new uchar[MAX_BYTES_IN_BASE_IMAGE_LAYER])
     , m_is_image_created(false)
@@ -109,7 +110,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     CPLSetConfigOption("GDAL_DATA", dataPath.toUtf8().constData());
     setWindowTitle(satc::app_name);
     initSentinelStructs();
-    std::fill(std::begin(m_landsat9_missed_channels),std::end(m_landsat9_missed_channels),true);
+    initLandsatStructs();
 
     connect(ui->actionBekas,SIGNAL(triggered()),this,SLOT(openBekasSpectraData()));
     connect(ui->actionOpenLandsat9Header,SIGNAL(triggered()),this,SLOT(openLandsat9HeaderData()));
@@ -117,20 +118,22 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     connect(ui->actionSentinel_2A,SIGNAL(triggered()),this,SLOT(openSentinel2AHeaderData()));
     connect(ui->actionSentinel_2B,SIGNAL(triggered()),this,SLOT(openSentinel2BHeaderData()));
 
-    qgti = new QGraphicsTextItem;
-    qgti->setDefaultTextColor(Qt::black);
-    qgti->setFont(QFont("Arial", 12));
-    qgti->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR_TEXT);
-    scene->addItem(qgti);
-    m_dynamic_checkboxes_widget = nullptr;
-
-    calculation_method = new QComboBox;
-    calculation_method->addItems({satc::euclid_metrika,satc::spectral_angle});
+    m_scene_text_item_metric_value = new QGraphicsTextItem;
+    m_scene_text_item_metric_value->setDefaultTextColor(Qt::black);
+    m_scene_text_item_metric_value->setFont(QFont("Arial", 12));
+    m_scene_text_item_metric_value->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR_TEXT);
+    m_scene->addItem(m_scene_text_item_metric_value);
     cross_square->setPos(0,0);
     cross_square->setVisible(false);
     cross_square->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR);
-    scene->addItem(cross_square);
-    m_landsat9_sample = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    m_scene->addItem(cross_square);
+
+
+    calculation_method = new QComboBox;
+    calculation_method->addItems({satc::euclid_metrika,satc::spectral_angle});
+
+
+
     preview = new QCustomPlot;
     preview->legend->setVisible(true);
     QCPGraph *graph_satellite = preview->addGraph();
@@ -148,10 +151,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     graph_satellite->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
     QCPGraph *graph_device = preview->addGraph();
     graph_device->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCrossSquare, 5));
-
     preview->graph(0)->setName("Курсорный");
     preview->graph(1)->setName("Образец для поиска");
-
     preview->graph(0)->setPen(QPen(Qt::blue));
     preview->graph(1)->setPen(QPen(Qt::red));
 
@@ -160,7 +161,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     connect(ui->graphicsView_satellite_image,SIGNAL(sampleChanged(QPointF)),
             this,SLOT(samplePointOnSceneChangedEvent(QPointF)));
 
-    ui->graphicsView_satellite_image->setUp(scene);
+    ui->graphicsView_satellite_image->setUp(m_scene);
 
 
     QWidget* widget_tools = new QWidget(ui->graphicsView_satellite_image);
@@ -247,20 +248,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     });
 
-    connect(googleMap,&QPushButton::clicked,this,[this](){
-        showGoogleMap();
-    });
-
-    connect(resetToRGB,&QPushButton::clicked,this,[this](){
-        if(m_dynamic_checkboxes_widget){
-            m_dynamic_checkboxes_widget->setRGBchannels();
-            if(m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 || m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9){
-                change_bands_and_show_image();
-            }else if(m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A || m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B){
-                change_bands_sentinel_and_show_image();
-            }
-        }
-    });
+    connect(googleMap,SIGNAL(clicked()),this,SLOT(showGoogleMap()));
+    connect(resetToRGB,SIGNAL(clicked()),this,SLOT(resetColorsToDefaultRGB()));
 
 }
 
@@ -357,8 +346,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
     }else if(calculation_method->currentText()==satc::euclid_metrika){
         result = euclideanDistance(trimmed_satellite_data,sample);
     }
-    qgti->setPos(pos.x(),pos.y()+5);
-    qgti->setPlainText(QString::number(result));
+    m_scene_text_item_metric_value->setPos(pos.x(),pos.y()+5);
+    m_scene_text_item_metric_value->setPlainText(QString::number(result));
     preview->rescaleAxes(true);
     preview->replot();
 }
@@ -563,10 +552,9 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
         QDomNode node = imageNodes.at(i);
         imageFiles << node.toElement().text();
     }
-    //qDebug()<<imageFiles;
     QStringList filteredFiles;
 
-    for (const QString& file : imageFiles) {
+    for (const QString& file : qAsConst(imageFiles)) {
         for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
             // Ищем точное вхождение ключа как часть имени файла
             if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
@@ -575,17 +563,14 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
             }
         }
     }
-    //qDebug()<<filteredFiles;
     QStringList finalFiles;
     QMap<QString, QString> bestResolutionForBand;
     const QStringList priorityOrder = { "R20m","R10m","R60m" };
 
-
-
     // Для каждого band ищем путь с наивысшим приоритетом по разрешению
     for (const QString& bandKey : sad::sentinel_bands_keys) {
         for (const QString& resolution : priorityOrder) {
-            for (const QString& file : filteredFiles) {
+            for (const QString& file : qAsConst(filteredFiles)) {
                 if (file.contains(resolution) && file.contains("_" + bandKey + "_")) {
                     bestResolutionForBand[bandKey] = file;
                     break; // нашли лучший — переходим к следующему band
@@ -600,7 +585,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
     qDebug()<<finalFiles;
     title_satellite_name->setText(satellite_name);
 
-    for (const QString& file : finalFiles) {
+    for (const QString& file : qAsConst(finalFiles)) {
         for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
             if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
                 m_sentinel_metadata.sentinel_missed_channels[i] = false; // Канал найден — не пропущен
@@ -995,8 +980,8 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     auto img = QImage(new_layer,xSize,ySize,xSize*4,QImage::Format_RGBA8888,cleanup,new_layer);
     auto pixmap = QPixmap::fromImage(img);
     auto new_image_item = new QGraphicsPixmapItem(pixmap);
-    new_image_item->setZValue(getMaxZValue(scene)+1);
-    scene->addItem(new_image_item);
+    new_image_item->setZValue(getMaxZValue(m_scene)+1);
+    m_scene->addItem(new_image_item);
     ui->graphicsView_satellite_image->centerOn(cross_square);
 
 
@@ -1105,6 +1090,18 @@ void MainWindowSatelliteComparator::showGoogleMap()
     system(command.c_str());
 }
 
+void MainWindowSatelliteComparator::resetColorsToDefaultRGB()
+{
+    if(m_dynamic_checkboxes_widget){
+        m_dynamic_checkboxes_widget->setRGBchannels();
+        if(m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 || m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9){
+            change_bands_and_show_image();
+        }else if(m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A || m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B){
+            change_bands_sentinel_and_show_image();
+        }
+    }
+}
+
 
 void MainWindowSatelliteComparator::change_bands_and_show_image()
 {
@@ -1164,7 +1161,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     }
     if(m_image_item){
         qDebug()<<"Delete image item....";
-        scene->removeItem(m_image_item);// удаление со сцены
+        m_scene->removeItem(m_image_item);// удаление со сцены
         delete m_image_item;            // освобождение памяти
     }
     m_satellite_image = QImage(m_image_data,nXSize,nYSize,nXSize*3,QImage::Format_RGB888);
@@ -1172,8 +1169,8 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     m_image_item = new QGraphicsPixmapItem(pixmap);
     m_image_item->setCursor(Qt::CrossCursor);
     m_image_item->setZValue(0);
-    scene->addItem(m_image_item);
-    scene->setSceneRect(pixmap.rect());
+    m_scene->addItem(m_image_item);
+    m_scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(m_image_item);
 }
 
@@ -1237,7 +1234,7 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
     }
     if(m_image_item){
         qDebug()<<"Delete image item....";
-        scene->removeItem(m_image_item);// удаление со сцены
+        m_scene->removeItem(m_image_item);// удаление со сцены
         delete m_image_item;            // освобождение памяти
     }
     m_satellite_image = QImage(m_image_data,nXSize,nYSize,nXSize*3,QImage::Format_RGB888);
@@ -1245,17 +1242,17 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
     m_image_item = new QGraphicsPixmapItem(pixmap);
     m_image_item->setCursor(Qt::CrossCursor);
     m_image_item->setZValue(0);
-    scene->addItem(m_image_item);
-    scene->setSceneRect(pixmap.rect());
+    m_scene->addItem(m_image_item);
+    m_scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(m_image_item);
 }
 
-void MainWindowSatelliteComparator::show_layer(const QString id)
+void MainWindowSatelliteComparator::show_layer(const QString& id)
 {
     m_layer_items.value(id)->setVisible(true);
 }
 
-void MainWindowSatelliteComparator::hide_layer(const QString id)
+void MainWindowSatelliteComparator::hide_layer(const QString& id)
 {
     m_layer_items.value(id)->setVisible(false);
 }
@@ -1266,7 +1263,7 @@ void MainWindowSatelliteComparator::remove_scene_layer(const QString& id)
     auto image_item = m_layer_items.value(id);
 
     if(image_item) {
-        scene->removeItem(image_item);
+        m_scene->removeItem(image_item);
         delete image_item;
     }
 }
@@ -1318,6 +1315,12 @@ void MainWindowSatelliteComparator::initSentinelStructs()
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         m_sentinel_metadata.sentinel_missed_channels[i] = true; // Изначально считаем все каналы пропущенными
     }
+}
+
+void MainWindowSatelliteComparator::initLandsatStructs()
+{
+    std::fill(std::begin(m_landsat9_missed_channels),std::end(m_landsat9_missed_channels),true);
+    m_landsat9_sample = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 }
 
 void MainWindowSatelliteComparator::read_sentinel2_bands_data()
