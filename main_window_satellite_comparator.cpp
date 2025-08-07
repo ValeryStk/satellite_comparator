@@ -878,7 +878,7 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 
     const QString searchParams = m_comboBox_calculation_method->currentText() + ": "+QString::number(euclid_param_spinbox->value());
     auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
-    m_layer_items.insert(stamp,new_image_item);
+    m_layers_search_result_items.insert(stamp,new_image_item);
     m_layer_gui_list->addItemToList(stamp,searchParams,color);
 }
 
@@ -1138,23 +1138,22 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
 
 void MainWindowSatelliteComparator::show_layer(const QString& id)
 {
-    m_layer_items.value(id)->setVisible(true);
+    m_layers_search_result_items.value(id)->setVisible(true);
 }
 
 void MainWindowSatelliteComparator::hide_layer(const QString& id)
 {
-    m_layer_items.value(id)->setVisible(false);
+    m_layers_search_result_items.value(id)->setVisible(false);
 }
 
 void MainWindowSatelliteComparator::remove_scene_layer(const QString& id)
 {
-    qDebug()<<"Remove image item event..."<<id;
-    auto image_item = m_layer_items.value(id);
+    auto image_item = m_layers_search_result_items.value(id);
 
     if(image_item) {
         m_scene->removeItem(image_item);
         delete image_item;
-        m_layer_items.remove(id);
+        m_layers_search_result_items.remove(id);
     }
 }
 
@@ -1412,13 +1411,13 @@ void MainWindowSatelliteComparator::clear_satellite_data()
 
 void MainWindowSatelliteComparator::clear_all_layers()
 {
-    if(m_layer_items.empty())return;
-    for (auto it = m_layer_items.constBegin(); it != m_layer_items.constEnd(); ++it) {
+    if(m_layers_search_result_items.empty())return;
+    for (auto it = m_layers_search_result_items.constBegin(); it != m_layers_search_result_items.constEnd(); ++it) {
         QString key = it.key();
         remove_scene_layer(key);
     }
     m_layer_gui_list->clear();
-    m_layer_items.clear();
+    m_layers_search_result_items.clear();
 }
 
 QHash<QString, MainWindowSatelliteComparator::geoTransform> MainWindowSatelliteComparator::extractGeoPositions

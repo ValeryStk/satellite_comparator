@@ -55,6 +55,12 @@ private slots:
 private:
     Ui::MainWindowSatelliteComparator* ui;
     QGraphicsScene* m_scene;
+    QGraphicsPixmapItem* m_image_item = nullptr;
+    QHash<const QString,QGraphicsPixmapItem*>  m_layers_search_result_items;
+    QHash<const QString,QGraphicsPolygonItem*> m_layers_roi_items;
+    CrossSquare* m_scene_cross_square_item;
+
+
     sad::SATELLITE_TYPE m_satelite_type = sad::UNKNOWN_SATELLITE;
     DynamicCheckboxWidget* m_dynamic_checkboxes_widget;
     SatteliteComparator* m_sat_comparator;
@@ -95,9 +101,9 @@ private:
     QVector<double> m_landsat9_sample;
     QVector<double> m_sentinel_sample;
     QVector<double> m_bekas_sample;
-    QGraphicsPixmapItem* m_image_item = nullptr;
-    QHash<const QString,QGraphicsPixmapItem*> m_layer_items;
-    CrossSquare* m_scene_cross_square_item;
+
+
+
     QDoubleSpinBox* euclid_param_spinbox;
     QGraphicsTextItem* m_scene_text_item_metric_value;
     UasvViewWindow* bekas_window;
