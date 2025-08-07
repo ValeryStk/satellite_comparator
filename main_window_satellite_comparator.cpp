@@ -42,10 +42,6 @@ QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443,482,562,655,865,1610,2200};
 QVector<double> waves_landsat9_5 = {443,482,562,655,865};
 
-
-QVector<uchar*> m_layers;
-
-
 namespace {
 
 qreal getMaxZValue(QGraphicsScene* scene) {
@@ -860,7 +856,6 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     }
 
     auto new_layer = new uchar[total_pixels*4];
-    m_layers.append(new_layer);
 
     int midY = ySize / 2;
     int offset1 = 0;
