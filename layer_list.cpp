@@ -12,6 +12,7 @@ LayerList::LayerList(QWidget* parent):
     QListWidget(parent)
 {
     setContextMenuPolicy(Qt::CustomContextMenu);
+    setFixedWidth(280);
     connect(this, &QListWidget::customContextMenuRequested,
             this, &LayerList::showContextMenu);
 }

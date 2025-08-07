@@ -93,12 +93,12 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindowSatelliteComparator)
     , m_scene(new QGraphicsScene)
+    , m_scene_cross_square_item(new CrossSquare(100))
     , m_dynamic_checkboxes_widget(nullptr)
     , m_sat_comparator(new SatteliteComparator)
     , m_image_data(new uchar[MAX_BYTES_IN_BASE_IMAGE_LAYER])
     , m_is_image_created(false)
     , m_is_bekas(false)
-    , m_scene_cross_square_item(new CrossSquare(100))
     , m_scene_text_item_metric_value(new QGraphicsTextItem)
     , bekas_window(nullptr)
 
@@ -387,7 +387,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
 
 
     m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(landsat_gui_available_bands,
-                                                            ui->verticalLayout_bands);
+                                                            ui->verticalLayout_satellite_bands);
     m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
     connect(m_dynamic_checkboxes_widget,
             SIGNAL(choosed_bands_changed()),
@@ -526,7 +526,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
         }
     }
     m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(availableBandNames,
-                                                            ui->verticalLayout_bands);
+                                                            ui->verticalLayout_satellite_bands);
     m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
 
     connect(m_dynamic_checkboxes_widget,
@@ -1249,6 +1249,10 @@ void MainWindowSatelliteComparator::setUpToolWidget()
     connect(m_layer_gui_list,SIGNAL(hide(const QString)),SLOT(hide_layer(const QString)));
     connect(m_layer_gui_list,SIGNAL(remove(const QString)),SLOT(remove_scene_layer(const QString)));
 
+    m_layer_roi_list = new LayerList;
+    ui->verticalLayout_roi->addWidget(m_layer_roi_list);
+
+
     QHBoxLayout* tool_root_layout = new QHBoxLayout;
     QVBoxLayout* toolLayOut = new QVBoxLayout;
     tool_root_layout->addLayout(toolLayOut);
@@ -1299,7 +1303,8 @@ void MainWindowSatelliteComparator::setUpToolWidget()
     tool_root_layout->addWidget(m_preview_plot);
     widget_tools->setLayout(tool_root_layout);
     tool_root_layout->addLayout(euclid_layout);
-    tool_root_layout->addWidget(m_layer_gui_list);
+    //tool_root_layout->addWidget(m_layer_gui_list);
+    ui->verticalLayout_search_layers->addWidget(m_layer_gui_list);
     widget_tools->show();
 
     connect(pushbutton_centerOn,SIGNAL(clicked()),this,SLOT(centerSceneOnCrossSquare()));

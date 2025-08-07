@@ -96,6 +96,7 @@ private:
     bool m_is_image_created;
     bool m_is_bekas;
     LayerList* m_layer_gui_list;
+    LayerList* m_layer_roi_list;
     QCustomPlot* m_preview_plot;
     QComboBox* m_comboBox_calculation_method;
     QVector<double> m_landsat9_sample;
