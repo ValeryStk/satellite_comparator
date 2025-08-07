@@ -1154,6 +1154,7 @@ void MainWindowSatelliteComparator::remove_scene_layer(const QString& id)
     if(image_item) {
         m_scene->removeItem(image_item);
         delete image_item;
+        m_layer_items.remove(id);
     }
 }
 
