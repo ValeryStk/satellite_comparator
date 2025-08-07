@@ -1052,7 +1052,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
             m_image_data[offset]=R;
             m_image_data[offset+1]=G;
             m_image_data[offset+2]=B;
-            offset = offset+3;
+            offset = offset + 3;
         }
     }
     if(m_image_item){
@@ -1064,7 +1064,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     auto pixmap = QPixmap::fromImage(m_satellite_image);
     m_image_item = new QGraphicsPixmapItem(pixmap);
     m_image_item->setCursor(Qt::CrossCursor);
-    m_image_item->setZValue(0);
+    m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
     m_scene->addItem(m_image_item);
     m_scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(m_image_item);
@@ -1077,7 +1077,6 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
     auto best_resolution = QPair<int,int>(5490,5490);//HARDCODED MAKE IT FLEXIBLE
     const int nXSize = best_resolution.first;
     const int nYSize = best_resolution.second;
-    qDebug()<<"x -- y: "<<nXSize<<nYSize<<"is_image_ready: "<<m_is_image_created;
 
     ProgressInformator progress_info(ui->graphicsView_satellite_image,
                                      satc::message_changing_bands);
@@ -1129,15 +1128,14 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
         }
     }
     if(m_image_item){
-        qDebug()<<"Delete image item....";
-        m_scene->removeItem(m_image_item);// удаление со сцены
-        delete m_image_item;            // освобождение памяти
+        m_scene->removeItem(m_image_item);
+        delete m_image_item;
     }
     m_satellite_image = QImage(m_image_data,nXSize,nYSize,nXSize*3,QImage::Format_RGB888);
     auto pixmap = QPixmap::fromImage(m_satellite_image);
     m_image_item = new QGraphicsPixmapItem(pixmap);
     m_image_item->setCursor(Qt::CrossCursor);
-    m_image_item->setZValue(0);
+    m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
     m_scene->addItem(m_image_item);
     m_scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(m_image_item);
