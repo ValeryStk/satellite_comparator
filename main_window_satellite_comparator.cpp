@@ -44,18 +44,6 @@ QVector<double> waves_landsat9_5 = {443,482,562,655,865};
 
 namespace {
 
-qreal getMaxZValue(QGraphicsScene* scene) {
-    const QList<QGraphicsItem*> items = scene->items();  // предотвращает detach
-    qreal maxZ = std::numeric_limits<qreal>::lowest();
-    for (QGraphicsItem* item : items) {
-        qreal z = item->zValue();
-        if (z < Z_INDEX_ROI_AREA_POLYGON && z > maxZ) {
-            maxZ = z;
-        }
-    }
-    return (maxZ == std::numeric_limits<qreal>::lowest()) ? 0 : maxZ + 1;
-}
-
 void downsample_uint16(const uint16_t* input,
                        uint16_t* output,
                        const int width,
@@ -872,7 +860,7 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
     auto img = QImage(new_layer,xSize,ySize,xSize*4,QImage::Format_RGBA8888,cleanup,new_layer);
     auto pixmap = QPixmap::fromImage(img);
     auto new_image_item = new QGraphicsPixmapItem(pixmap);
-    new_image_item->setZValue(getMaxZValue(m_scene));
+    new_image_item->setZValue(ui->graphicsView_satellite_image->getMaxZValue(m_scene));
     m_scene->addItem(new_image_item);
     ui->graphicsView_satellite_image->centerOn(m_scene_cross_square_item);
 
@@ -1160,24 +1148,8 @@ void MainWindowSatelliteComparator::remove_scene_layer(const QString& id)
 
 void MainWindowSatelliteComparator::add_roi_to_gui_list(const QString &id)
 {
-    m_layer_roi_list->addItemToList(id,"Класс по умолчанию",QColor());
+    m_layer_roi_list->addItemToList(id,"Класс по умолчанию",QColor(Qt::yellow));
 }
-
-void MainWindowSatelliteComparator::show_roi_layer(const QString &id)
-{
-
-}
-
-void MainWindowSatelliteComparator::hide_roi_layer(const QString &id)
-{
-
-}
-
-void MainWindowSatelliteComparator::remove_roi_scene_layer(const QString &id)
-{
-
-}
-
 
 void MainWindowSatelliteComparator::processLayer(uchar* layer,
                                                  int xSize,

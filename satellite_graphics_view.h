@@ -18,6 +18,7 @@ public:
 
     void setIsSignal(bool value);
     void setUp(QGraphicsScene* scene);
+    qreal getMaxZValue(QGraphicsScene* scene);
 
 private:
     bool isSignal = false;

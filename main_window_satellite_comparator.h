@@ -33,11 +33,7 @@ private slots:
     void show_layer(const QString& id);
     void hide_layer(const QString& id);
     void remove_scene_layer(const QString& id);
-
     void add_roi_to_gui_list(const QString& id);
-    void show_roi_layer(const QString& id);
-    void hide_roi_layer(const QString& id);
-    void remove_roi_scene_layer(const QString& id);
 
     void openLandsat9HeaderData();
     void openLandsat8HeaderData();

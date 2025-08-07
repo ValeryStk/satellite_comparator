@@ -39,6 +39,13 @@
          <layout class="QVBoxLayout" name="verticalLayout_satellite_bands"/>
         </item>
         <item>
+         <widget class="Line" name="line">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QLabel" name="label">
           <property name="text">
            <string>Результаты поиска</string>

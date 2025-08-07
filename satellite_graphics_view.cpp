@@ -17,6 +17,18 @@ SatelliteGraphicsView::SatelliteGraphicsView(QWidget *parent)
 
 }
 
+qreal SatelliteGraphicsView::getMaxZValue(QGraphicsScene* scene) {
+    const QList<QGraphicsItem*> items = scene->items();  // предотвращает detach
+    qreal maxZ = std::numeric_limits<qreal>::lowest();
+    for (QGraphicsItem* item : items) {
+        qreal z = item->zValue();
+        if (z < Z_INDEX_ROI_AREA_POLYGON && z > maxZ) {
+            maxZ = z;
+        }
+    }
+    return (maxZ == std::numeric_limits<qreal>::lowest()) ? 0 : maxZ + 1;
+}
+
 void SatelliteGraphicsView::setIsSignal(bool value)
 {
     isSignal = value;
@@ -70,6 +82,7 @@ void SatelliteGraphicsView::keyPressEvent(QKeyEvent *event)
     }else if(event->key() == Qt::Key_Return){  
         auto new_polygon = new QGraphicsPolygonItem(polygonItem->polygon());
         new_polygon->setBrush(QBrush(Qt::yellow, Qt::SolidPattern));
+        new_polygon->setZValue(getMaxZValue(scene()));
         scene()->addItem(new_polygon);
         auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
         m_roi_polygons.insert(stamp,new_polygon);
