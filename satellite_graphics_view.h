@@ -25,6 +25,7 @@ private:
     QPolygonF polygon;
     QGraphicsPolygonItem *polygonItem;
     QVector<int> unused_trick = {Z_INDEX_BASE_IMAGE,Z_INDEX_ROI_AREA_POLYGON,Z_INDEX_CROSS_SQUARE_CURSOR,Z_INDEX_CROSS_SQUARE_CURSOR_TEXT};
+    QHash<QString,QGraphicsPolygonItem*> m_roi_polygons;
 
 protected:
     void mouseMoveEvent(QMouseEvent* event) override;
@@ -35,10 +36,14 @@ protected:
 signals:
     void pointChanged(QPointF point);
     void sampleChanged(QPointF point);
+    void roiPolygonAdded(const QString& id);
 
 private slots:
     void zoomIn();
     void zoomOut();
+    void show_roi_layer(const QString& id);
+    void hide_roi_layer(const QString& id);
+    void remove_roi_scene_layer(const QString& id);
 
 };
 

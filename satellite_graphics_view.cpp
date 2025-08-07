@@ -1,8 +1,10 @@
 #include "satellite_graphics_view.h"
+
 #include <QMouseEvent>
 #include <QDebug>
 #include <QGraphicsPolygonItem>
 #include <QGraphicsScene>
+#include <QDateTime>
 
 
 
@@ -65,8 +67,16 @@ void SatelliteGraphicsView::keyPressEvent(QKeyEvent *event)
         polygon.clear();
         polygonItem->setPolygon(polygon);
         polygonItem->setBrush(QBrush());
-    }else if(event->key() == Qt::Key_Return){
-        polygonItem->setBrush(QBrush(Qt::yellow, Qt::SolidPattern));
+    }else if(event->key() == Qt::Key_Return){  
+        auto new_polygon = new QGraphicsPolygonItem(polygonItem->polygon());
+        new_polygon->setBrush(QBrush(Qt::yellow, Qt::SolidPattern));
+        scene()->addItem(new_polygon);
+        auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
+        m_roi_polygons.insert(stamp,new_polygon);
+        emit roiPolygonAdded(stamp);
+        polygon.clear();
+        polygonItem->setPolygon(polygon);
+        polygonItem->setBrush(QBrush());
     }
 
     QGraphicsView::keyPressEvent(event);
@@ -80,4 +90,22 @@ void SatelliteGraphicsView::zoomIn()
 void SatelliteGraphicsView::zoomOut()
 {
     scale(0.8, 0.8);
+}
+
+void SatelliteGraphicsView::show_roi_layer(const QString &id)
+{
+    m_roi_polygons[id]->setVisible(true);
+}
+
+void SatelliteGraphicsView::hide_roi_layer(const QString &id)
+{
+   m_roi_polygons[id]->setVisible(false);
+}
+
+void SatelliteGraphicsView::remove_roi_scene_layer(const QString &id)
+{
+    auto polygon_item = m_roi_polygons[id];
+    scene()->removeItem(polygon_item);
+    delete polygon_item;
+    m_roi_polygons.remove(id);
 }

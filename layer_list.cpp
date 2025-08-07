@@ -37,7 +37,7 @@ void LayerList::addItemToList(const QString &itemName,
 
 void LayerList::removeItemList(const QString &item)
 {
-    remove(item);
+    emit remove(item);
 }
 
 void LayerList::mayBeHideMayBeShow(QListWidgetItem *item)

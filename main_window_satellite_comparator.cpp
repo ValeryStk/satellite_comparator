@@ -118,6 +118,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             this,SLOT(samplePointOnSceneChangedEvent(QPointF)));
     ui->graphicsView_satellite_image->setUp(m_scene);
     setUpToolWidget();
+    connect(ui->graphicsView_satellite_image,SIGNAL(roiPolygonAdded(const QString)),this,SLOT(add_roi_to_gui_list(const QString)));
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
@@ -1157,6 +1158,26 @@ void MainWindowSatelliteComparator::remove_scene_layer(const QString& id)
     }
 }
 
+void MainWindowSatelliteComparator::add_roi_to_gui_list(const QString &id)
+{
+    m_layer_roi_list->addItemToList(id,"Класс по умолчанию",QColor());
+}
+
+void MainWindowSatelliteComparator::show_roi_layer(const QString &id)
+{
+
+}
+
+void MainWindowSatelliteComparator::hide_roi_layer(const QString &id)
+{
+
+}
+
+void MainWindowSatelliteComparator::remove_roi_scene_layer(const QString &id)
+{
+
+}
+
 
 void MainWindowSatelliteComparator::processLayer(uchar* layer,
                                                  int xSize,
@@ -1251,6 +1272,9 @@ void MainWindowSatelliteComparator::setUpToolWidget()
 
     m_layer_roi_list = new LayerList;
     ui->verticalLayout_roi->addWidget(m_layer_roi_list);
+    connect(m_layer_roi_list,SIGNAL(show(const QString)),ui->graphicsView_satellite_image,SLOT(show_roi_layer(const QString)));
+    connect(m_layer_roi_list,SIGNAL(hide(const QString)),ui->graphicsView_satellite_image,SLOT(hide_roi_layer(const QString)));
+    connect(m_layer_roi_list,SIGNAL(remove(const QString)),ui->graphicsView_satellite_image,SLOT(remove_roi_scene_layer(const QString)));
 
 
     QHBoxLayout* tool_root_layout = new QHBoxLayout;
