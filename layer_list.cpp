@@ -20,6 +20,7 @@ LayerList::LayerList(QWidget* parent):
 {
     setContextMenuPolicy(Qt::CustomContextMenu);
     setFixedWidth(WIDGET_WIDTH);
+    setSelectionMode(QAbstractItemView::SingleSelection);
     connect(this, SIGNAL(customContextMenuRequested(const QPoint)),this, SLOT(showContextMenu(const QPoint)));
 }
 
@@ -92,6 +93,7 @@ void LayerList::handle_other_contextAction(const QString &actionId,
     Q_UNUSED(actionId)
     Q_UNUSED(item)
 }
+
 
 QMenu* LayerList::createContextMenu() {
     QMenu* menu = new QMenu(this);

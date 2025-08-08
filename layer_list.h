@@ -37,6 +37,8 @@ signals:
     void hideItem(const QString);
     void showItem(const QString);
     void removeItem(const QString);
+
+
 };
 
 #endif // LAYER_LIST_H

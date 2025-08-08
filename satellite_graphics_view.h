@@ -46,6 +46,7 @@ private slots:
     void hide_roi_layer(const QString& id);
     void remove_roi_scene_layer(const QString& id);
     void changeRoiColor(const QString& roi_id, const QColor& new_color);
+    void setRoiSelectEffect(const QString& roi_id);
 
 };
 

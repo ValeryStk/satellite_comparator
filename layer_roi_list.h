@@ -14,10 +14,14 @@ public:
 
 signals:
     void roi_color_changed(const QString& id, const QColor& color);
+    void roi_item_selected(const QString& id);
 
     // LayerList interface
 private:
     void handle_other_contextAction(const QString &actionId, QListWidgetItem *item) override;
+
+private slots:
+    void selectionChanged();
 
 };
 

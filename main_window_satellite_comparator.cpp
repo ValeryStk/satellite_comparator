@@ -1250,6 +1250,8 @@ void MainWindowSatelliteComparator::setUpToolWidget()
     connect(m_layer_roi_list,SIGNAL(removeItem(const QString)),ui->graphicsView_satellite_image,SLOT(remove_roi_scene_layer(const QString)));
     connect(m_layer_roi_list,SIGNAL(roi_color_changed(const QString, const QColor)),
             ui->graphicsView_satellite_image,SLOT(changeRoiColor(const QString, const QColor)));
+    connect(m_layer_roi_list,SIGNAL(roi_item_selected(const QString)),
+            ui->graphicsView_satellite_image,SLOT(setRoiSelectEffect(const QString)));
 
 
     QHBoxLayout* tool_root_layout = new QHBoxLayout;

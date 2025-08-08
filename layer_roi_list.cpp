@@ -7,7 +7,7 @@
 
 LayerRoiList::LayerRoiList()
 {
-
+    connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(selectionChanged()));
 }
 
 QMenu *LayerRoiList::createContextMenu()
@@ -28,5 +28,19 @@ void LayerRoiList::handle_other_contextAction(const QString &actionId,
         QString id = nameData.toString();
         emit roi_color_changed(id,color);
     }
+}
+
+void LayerRoiList::selectionChanged()
+{
+    QList<QListWidgetItem*> selectedItems = this->selectedItems();
+    QListWidgetItem *selected_item;
+    if(selectedItems.empty())return;
+    for (QListWidgetItem* item : qAsConst(selectedItems)) {
+        selected_item =  item;
+        break;
+    }
+    QVariant nameData = selected_item->data(Qt::UserRole);
+    const QString id = nameData.toString();
+    emit roi_item_selected(id);
 }
 

@@ -5,6 +5,7 @@
 #include <QGraphicsPolygonItem>
 #include <QGraphicsScene>
 #include <QDateTime>
+#include <QGraphicsDropShadowEffect>
 
 
 
@@ -130,4 +131,14 @@ void SatelliteGraphicsView::changeRoiColor(const QString &roi_id,
     if(!roi_item)return;
     roi_item->setBrush(QBrush(new_color));
     roi_item->update();
+}
+
+void SatelliteGraphicsView::setRoiSelectEffect(const QString &roi_id)
+{
+    auto roi_item = m_roi_polygons.value(roi_id);
+    if(!roi_item)return;
+    auto *effect = new QGraphicsDropShadowEffect;
+    roi_item->setGraphicsEffect(effect);
+    roi_item->update();
+    this->centerOn(roi_item);
 }
