@@ -8,13 +8,19 @@
 #include <QDebug>
 #include "icon_generator.h"
 
+const char action_show_text[] = "Показать";
+const char action_hide_text[] = "Спрятать";
+const char action_rename_text[] = "Переименовать";
+const char action_delete_text[] = "Удалить";
+
+constexpr int WIDGET_WIDTH = 280;
+
 LayerList::LayerList(QWidget* parent):
     QListWidget(parent)
 {
     setContextMenuPolicy(Qt::CustomContextMenu);
-    setFixedWidth(280);
-    connect(this, &QListWidget::customContextMenuRequested,
-            this, &LayerList::showContextMenu);
+    setFixedWidth(WIDGET_WIDTH);
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint)),this, SLOT(showContextMenu(const QPoint)));
 }
 
 void LayerList::addItemToList(const QString &itemName,
@@ -37,7 +43,7 @@ void LayerList::addItemToList(const QString &itemName,
 
 void LayerList::removeItemList(const QString &item)
 {
-    emit remove(item);
+    emit removeItem(item);
 }
 
 void LayerList::mayBeHideMayBeShow(QListWidgetItem *item)
@@ -46,7 +52,7 @@ void LayerList::mayBeHideMayBeShow(QListWidgetItem *item)
         Qt::CheckState state = item->checkState();
         QVariant nameData = item->data(Qt::UserRole);
         QString id = nameData.toString();
-        if(state == Qt::Checked){emit show(id);}else {emit hide(id);}
+        if(state == Qt::Checked){emit showItem(id);}else {emit hideItem(id);}
     }
 }
 
@@ -61,23 +67,38 @@ void LayerList::showContextMenu(const QPoint &pos)
 {
     QListWidgetItem* item = itemAt(pos);
     if (!item) return;
-    QMenu menu(this);
-    QAction* showAction = menu.addAction("Показать");
-    QAction* hideAction = menu.addAction("Спрятать");
-    QAction* deleteAction = menu.addAction("Удалить");
-    QAction* renameAction = menu.addAction("Переименовать");
-
-    QAction* selectedAction = menu.exec(viewport()->mapToGlobal(pos));
-    if (selectedAction == hideAction) {
-      item->setCheckState(Qt::CheckState::Unchecked);
-    }else if(selectedAction == showAction){
-       item->setCheckState(Qt::CheckState::Checked);
+    QMenu* menu = createContextMenu();
+    QAction* selectedAction = menu->exec(viewport()->mapToGlobal(pos));
+    if (!selectedAction) return;
+    const QString text = selectedAction->text();
+    if (text == action_hide_text) {
+        item->setCheckState(Qt::CheckState::Unchecked);
+    }else if(text == action_show_text){
+        item->setCheckState(Qt::CheckState::Checked);
     }
-    else if (selectedAction == deleteAction) {
-        emit remove(item->data(Qt::UserRole).toString());
+    else if (text == action_delete_text) {
+        emit removeItem(item->data(Qt::UserRole).toString());
         delete takeItem(row(item));
-    } else if(selectedAction == renameAction){
+    } else if(text == action_rename_text){
         editItem(item);
+    } else{
+        handle_other_contextAction(text,item);
     }
+}
+
+void LayerList::handle_other_contextAction(const QString &actionId,
+                                           QListWidgetItem *item)
+{
+    Q_UNUSED(actionId)
+    Q_UNUSED(item)
+}
+
+QMenu* LayerList::createContextMenu() {
+    QMenu* menu = new QMenu(this);
+    menu->addAction(action_show_text);
+    menu->addAction(action_hide_text);
+    menu->addAction(action_delete_text);
+    menu->addAction(action_rename_text);
+    return menu;
 }
 

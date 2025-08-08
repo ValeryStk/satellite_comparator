@@ -12,6 +12,7 @@ SOURCES += \
     icon_generator.cpp \
     json_utils.cpp \
     layer_list.cpp \
+    layer_roi_list.cpp \
     main.cpp \
     main_window_satellite_comparator.cpp \
     message_reporter.cpp \
@@ -39,6 +40,7 @@ HEADERS += \
     icon_generator.h \
     json_utils.h \
     layer_list.h \
+    layer_roi_list.h \
     main_window_satellite_comparator.h \
     message_reporter.h \
     progress_informator.h \

@@ -28,6 +28,7 @@
 #include <QSpacerItem>
 #include "satellite_xml_reader.h"
 #include "layer_list.h"
+#include "layer_roi_list.h"
 #include "icon_generator.h"
 #include "thread"
 #include <QDomDocument>
@@ -1238,15 +1239,17 @@ void MainWindowSatelliteComparator::setUpToolWidget()
     m_comboBox_calculation_method->addItems({satc::euclid_metrika,satc::spectral_angle});
 
     m_layer_gui_list = new LayerList;
-    connect(m_layer_gui_list,SIGNAL(show(const QString)),SLOT(show_layer(const QString)));
-    connect(m_layer_gui_list,SIGNAL(hide(const QString)),SLOT(hide_layer(const QString)));
-    connect(m_layer_gui_list,SIGNAL(remove(const QString)),SLOT(remove_scene_layer(const QString)));
+    connect(m_layer_gui_list,SIGNAL(showItem(const QString)),SLOT(show_layer(const QString)));
+    connect(m_layer_gui_list,SIGNAL(hideItem(const QString)),SLOT(hide_layer(const QString)));
+    connect(m_layer_gui_list,SIGNAL(removeItem(const QString)),SLOT(remove_scene_layer(const QString)));
 
-    m_layer_roi_list = new LayerList;
+    m_layer_roi_list = new LayerRoiList;
     ui->verticalLayout_roi->addWidget(m_layer_roi_list);
-    connect(m_layer_roi_list,SIGNAL(show(const QString)),ui->graphicsView_satellite_image,SLOT(show_roi_layer(const QString)));
-    connect(m_layer_roi_list,SIGNAL(hide(const QString)),ui->graphicsView_satellite_image,SLOT(hide_roi_layer(const QString)));
-    connect(m_layer_roi_list,SIGNAL(remove(const QString)),ui->graphicsView_satellite_image,SLOT(remove_roi_scene_layer(const QString)));
+    connect(m_layer_roi_list,SIGNAL(showItem(const QString)),ui->graphicsView_satellite_image,SLOT(show_roi_layer(const QString)));
+    connect(m_layer_roi_list,SIGNAL(hideItem(const QString)),ui->graphicsView_satellite_image,SLOT(hide_roi_layer(const QString)));
+    connect(m_layer_roi_list,SIGNAL(removeItem(const QString)),ui->graphicsView_satellite_image,SLOT(remove_roi_scene_layer(const QString)));
+    connect(m_layer_roi_list,SIGNAL(roi_color_changed(const QString, const QColor)),
+            ui->graphicsView_satellite_image,SLOT(changeRoiColor(const QString, const QColor)));
 
 
     QHBoxLayout* tool_root_layout = new QHBoxLayout;

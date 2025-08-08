@@ -3,6 +3,12 @@
 
 #include <QListWidget>
 
+extern const char action_show_text[];
+extern const char action_hide_text[];
+extern const char action_rename_text[];
+extern const char action_delete_text[];
+
+
 class LayerList:public QListWidget
 {
     Q_OBJECT
@@ -16,19 +22,21 @@ public:
     void mayBeHideMayBeShow(QListWidgetItem* item);
     void deleteAllItems();
 
+    virtual QMenu* createContextMenu();
+
 
 private slots:
     void showContextMenu(const QPoint& pos);
 
+
 private:
+    virtual void handle_other_contextAction(const QString& actionId, QListWidgetItem* item);
     QHash<QString,bool> m_states;
 
-
-
 signals:
-    void hide(const QString);
-    void show(const QString);
-    void remove(const QString);
+    void hideItem(const QString);
+    void showItem(const QString);
+    void removeItem(const QString);
 };
 
 #endif // LAYER_LIST_H

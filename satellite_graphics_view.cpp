@@ -122,3 +122,12 @@ void SatelliteGraphicsView::remove_roi_scene_layer(const QString &id)
     delete polygon_item;
     m_roi_polygons.remove(id);
 }
+
+void SatelliteGraphicsView::changeRoiColor(const QString &roi_id,
+                                           const QColor &new_color)
+{
+    auto roi_item = m_roi_polygons.value(roi_id);
+    if(!roi_item)return;
+    roi_item->setBrush(QBrush(new_color));
+    roi_item->update();
+}
