@@ -6,6 +6,7 @@
 #include <QGraphicsScene>
 #include <QDateTime>
 #include <QGraphicsDropShadowEffect>
+#include <QPropertyAnimation>
 
 
 
@@ -135,10 +136,24 @@ void SatelliteGraphicsView::changeRoiColor(const QString &roi_id,
 
 void SatelliteGraphicsView::setRoiSelectEffect(const QString &roi_id)
 {
+    for (auto it = m_roi_polygons.begin(); it != m_roi_polygons.end(); ++it) {
+        QGraphicsPolygonItem* item = it.value();
+        if (item && item->graphicsEffect()) {
+            item->setGraphicsEffect(nullptr);
+        }
+    }
     auto roi_item = m_roi_polygons.value(roi_id);
     if(!roi_item)return;
-    auto *effect = new QGraphicsDropShadowEffect;
+    auto *effect = new QGraphicsColorizeEffect;
     roi_item->setGraphicsEffect(effect);
+
+    QPropertyAnimation* anim = new QPropertyAnimation(effect, "color");
+    anim->setStartValue(roi_item->brush().color());
+    anim->setEndValue(QColor(Qt::transparent));
+    anim->setDuration(2000);
+    anim->setLoopCount(-1);
+    anim->start();
+
     roi_item->update();
     this->centerOn(roi_item);
 }
