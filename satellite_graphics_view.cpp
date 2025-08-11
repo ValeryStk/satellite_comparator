@@ -131,6 +131,9 @@ void SatelliteGraphicsView::changeRoiColor(const QString &roi_id,
     auto roi_item = m_roi_polygons.value(roi_id);
     if(!roi_item)return;
     roi_item->setBrush(QBrush(new_color));
+    if(roi_item->graphicsEffect()){
+        setRoiSelectEffect(roi_id);
+    }
     roi_item->update();
 }
 
