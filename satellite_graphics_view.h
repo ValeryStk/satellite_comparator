@@ -19,6 +19,9 @@ public:
     void setIsSignal(bool value);
     void setUp(QGraphicsScene* scene);
     qreal getMaxZValue(QGraphicsScene* scene);
+    QGraphicsPolygonItem *getPolygonById(const QString& id);
+    QVector<QPoint> getPointsInsidePolygon(QGraphicsPolygonItem *polygonItem,
+                                           QGraphicsPixmapItem *imageItem);
 
 private:
     bool isSignal = false;
@@ -27,6 +30,7 @@ private:
     QGraphicsPolygonItem *polygonItem;
     QVector<int> unused_trick = {Z_INDEX_BASE_IMAGE,Z_INDEX_ROI_AREA_POLYGON,Z_INDEX_CROSS_SQUARE_CURSOR,Z_INDEX_CROSS_SQUARE_CURSOR_TEXT};
     QHash<QString,QGraphicsPolygonItem*> m_roi_polygons;
+
 
 protected:
     void mouseMoveEvent(QMouseEvent* event) override;

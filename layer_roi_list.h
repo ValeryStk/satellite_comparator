@@ -15,6 +15,7 @@ public:
 signals:
     void roi_color_changed(const QString& id, const QColor& color);
     void roi_item_selected(const QString& id);
+    void roiPolygonAverage(const QString& id);
 
     // LayerList interface
 private:

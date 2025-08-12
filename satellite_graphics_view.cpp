@@ -31,6 +31,46 @@ qreal SatelliteGraphicsView::getMaxZValue(QGraphicsScene* scene) {
     return (maxZ == std::numeric_limits<qreal>::lowest()) ? 0 : maxZ + 1;
 }
 
+QGraphicsPolygonItem *SatelliteGraphicsView::getPolygonById(const QString &id)
+{
+    return m_roi_polygons.value(id);
+}
+
+QVector<QPoint> SatelliteGraphicsView::getPointsInsidePolygon(QGraphicsPolygonItem* polygonItem,
+                                                              QGraphicsPixmapItem*imageItem)
+{
+    QVector<QPoint> pixelCoords;
+
+    QPainterPath polygonPath = polygonItem->mapToScene(polygonItem->shape());
+    QPainterPath imagePath = imageItem->mapToScene(imageItem->shape());
+    QPainterPath intersection = polygonPath.intersected(imagePath);
+
+    QRegion region;
+    for (const QPolygonF& poly : intersection.toSubpathPolygons()) {
+        QPolygon imageCoords;
+        for (const QPointF& pt : poly) {
+            imageCoords << imageItem->mapFromScene(pt).toPoint();
+        }
+        region += QRegion(imageCoords);
+    }
+
+    QSize imageSize = imageItem->pixmap().size();
+    QRect imageRect(QPoint(0, 0), imageSize);
+
+    for (const QRect& rect : region.rects()) {
+        for (int y = rect.top(); y <= rect.bottom(); ++y) {
+            for (int x = rect.left(); x <= rect.right(); ++x) {
+                QPoint p(x, y);
+                if (region.contains(p) && imageRect.contains(p)) {
+                    pixelCoords.append(p);
+                }
+            }
+        }
+    }
+
+    return pixelCoords;
+}
+
 void SatelliteGraphicsView::setIsSignal(bool value)
 {
     isSignal = value;
@@ -81,7 +121,7 @@ void SatelliteGraphicsView::keyPressEvent(QKeyEvent *event)
         polygon.clear();
         polygonItem->setPolygon(polygon);
         polygonItem->setBrush(QBrush());
-    }else if(event->key() == Qt::Key_Return){  
+    }else if(event->key() == Qt::Key_Return){
         auto new_polygon = new QGraphicsPolygonItem(polygonItem->polygon());
         new_polygon->setBrush(QBrush(Qt::yellow, Qt::SolidPattern));
         new_polygon->setZValue(getMaxZValue(scene()));
@@ -114,7 +154,7 @@ void SatelliteGraphicsView::show_roi_layer(const QString &id)
 
 void SatelliteGraphicsView::hide_roi_layer(const QString &id)
 {
-   m_roi_polygons[id]->setVisible(false);
+    m_roi_polygons[id]->setVisible(false);
 }
 
 void SatelliteGraphicsView::remove_roi_scene_layer(const QString &id)

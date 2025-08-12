@@ -174,6 +174,10 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
     QVector<double> waves;
     QVector<double> sample;
     QVector<double> trimmed_satellite_data;
+    // Для того чтобы убедиться, что координаты сцены совпадают с координатами изображения.
+    /*const QString x_y = "x: %1   y:%2";
+    QString x_y_message = x_y.arg(QString::number(pos.x()),QString::number(pos.y()));
+    ui->statusbar->showMessage(x_y_message);*/
 
     if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
         data = getLandsat8Ksy(pos.x(),pos.y());
@@ -1152,6 +1156,17 @@ void MainWindowSatelliteComparator::add_roi_to_gui_list(const QString &id)
     m_layer_roi_list->addItemToList(id,"Класс по умолчанию",QColor(Qt::yellow));
 }
 
+void MainWindowSatelliteComparator::show_roi_average(const QString &id)
+{
+    qDebug()<<"TEST ROI POLYGON INTERSECTION CONNECTION....";
+    auto polItem = ui->graphicsView_satellite_image->getPolygonById(id);
+    auto points = ui->graphicsView_satellite_image->getPointsInsidePolygon(polItem,m_image_item);
+    qDebug()<<"POINTS SIZE: "<<points.size();
+    for(int i=0;i<points.size();++i){
+        qDebug()<<points[i].x()<<points[i].y();
+    }
+}
+
 void MainWindowSatelliteComparator::processLayer(uchar* layer,
                                                  int xSize,
                                                  int yStart,
@@ -1252,6 +1267,8 @@ void MainWindowSatelliteComparator::setUpToolWidget()
             ui->graphicsView_satellite_image,SLOT(changeRoiColor(const QString, const QColor)));
     connect(m_layer_roi_list,SIGNAL(roi_item_selected(const QString)),
             ui->graphicsView_satellite_image,SLOT(setRoiSelectEffect(const QString)));
+    connect(m_layer_roi_list,SIGNAL(roiPolygonAverage(const QString)),
+            this,SLOT(show_roi_average(const QString)));
 
 
     QHBoxLayout* tool_root_layout = new QHBoxLayout;
