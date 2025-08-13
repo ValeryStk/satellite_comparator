@@ -94,6 +94,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 {
     ui->setupUi(this);
+    m_label_scene_coord = new QLabel;
+    ui->statusbar->addPermanentWidget(m_label_scene_coord);
     setWindowTitle(satc::app_name);
     gdal_start_driver();
     initSentinelStructs();
@@ -175,9 +177,9 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
     QVector<double> sample;
     QVector<double> trimmed_satellite_data;
     // Для того чтобы убедиться, что координаты сцены совпадают с координатами изображения.
-    /*const QString x_y = "x: %1   y:%2";
+    const QString x_y = "x: %1   y:%2";
     QString x_y_message = x_y.arg(QString::number(pos.x()),QString::number(pos.y()));
-    ui->statusbar->showMessage(x_y_message);*/
+    m_label_scene_coord->setText(x_y_message);
 
     if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
         data = getLandsat8Ksy(pos.x(),pos.y());

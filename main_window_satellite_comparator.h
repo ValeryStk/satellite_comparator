@@ -56,6 +56,7 @@ private slots:
 
 private:
     Ui::MainWindowSatelliteComparator* ui;
+    QLabel* m_label_scene_coord;
     QGraphicsScene* m_scene;
     QGraphicsPixmapItem* m_image_item = nullptr;
     QHash<const QString,QGraphicsPixmapItem*>  m_layers_search_result_items;
