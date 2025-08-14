@@ -12,6 +12,7 @@
 #include "bekas/GuiModules/UasvViewWindow.h"
 #include "satellites_structs.h"
 #include "layer_list.h"
+#include "udpjsonrpc.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowSatelliteComparator; }
@@ -53,6 +54,10 @@ private slots:
                                       const QVector<double>& y);
     void showGoogleMap();
     void resetColorsToDefaultRGB();
+    void handleJsonRpcResult(const QJsonValue &result);
+
+    void processTestMatlabRequest(const QVariantMap &params);
+    void processpClassifiedBecasSpectraMatlabRequest(const QVariantMap &params);
 
 private:
     Ui::MainWindowSatelliteComparator* ui;
@@ -169,6 +174,9 @@ private:
     QHash<QString, geoTransform> extractGeoPositions(const QString& xmlFilePath);
     int extractUTMZoneFromXML(const QString& xmlFilePath);
     void getKSY(const QPointF& pos, QVector<double>& waves, QVector<double>& ksy);
+
+    void initUdpRpcConnection();
+    UdpJsonRpc   *m_rpc;
 
 
 };

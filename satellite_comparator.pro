@@ -15,6 +15,7 @@ SOURCES += \
     layer_roi_list.cpp \
     main.cpp \
     main_window_satellite_comparator.cpp \
+    MatFilesOperator.cpp \
     message_reporter.cpp \
     progress_informator.cpp \
     qcustomplot.cpp \
@@ -31,7 +32,8 @@ SOURCES += \
     bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.cpp \
     bekas/ProcessingModules/SpectrDataSaver.cpp\
     bekas/GuiModules/UasvViewWindow.cpp \
-    satellite_xml_reader.cpp
+    satellite_xml_reader.cpp \
+    udpjsonrpc.cpp
 
 HEADERS += \
     cross_square.h \
@@ -42,6 +44,7 @@ HEADERS += \
     layer_list.h \
     layer_roi_list.h \
     main_window_satellite_comparator.h \
+    MatFilesOperator.h \
     message_reporter.h \
     progress_informator.h \
     qcustomplot.h \
@@ -58,7 +61,8 @@ HEADERS += \
     bekas/ProcessingModules/SpectrDataSaver.h \
     bekas/GuiModules/UasvViewWindow.h \
     satellite_xml_reader.h \
-    satellites_structs.h
+    satellites_structs.h \
+    udpjsonrpc.h
 
 FORMS += \
     main_window_satellite_comparator.ui \
@@ -79,8 +83,19 @@ RESOURCES += \
     res.qrc\
 
 LIBS += -L$$PWD/libs/gdal/x64/lib -lgdal_i
-
 INCLUDEPATH += $$PWD/libs/gdal/x64/include
 DEPENDPATH += $$PWD/libs/gdal/x64/include
+
+INCLUDEPATH += $$PWD/libs/matio/src
+win32:CONFIG(release, debug|release) {
+    LIBS += -L$$PWD/libs/matio/build/Release/ -llibmatio
+}
+win32:CONFIG(debug, debug|release) {
+    LIBS += -L$$PWD/libs/matio/build/Debug/ -llibmatio
+}
+
+
+
+
 
 

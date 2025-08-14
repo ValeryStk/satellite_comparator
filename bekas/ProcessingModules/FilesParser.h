@@ -48,6 +48,10 @@ public:
 
     const db_json::CLASSIFICATION &currClassification() const;
 
+    QString getInputDirPathWithSlash() const;
+
+    QStringList getSpectraNamesWithExtensionList() const;
+
 signals:
     void sendMessage(QString text);
 
@@ -58,7 +62,9 @@ private:
     QString m_inputDirPath;
     int m_currentSpectrumIndex;
     QList<QString> m_spectraPathesList;
+
     QStringList m_spectraNamesList;
+    QStringList m_spectraNamesWithExtensionList;
     db_json::SPECTRAL_STRUCT m_spectrum;
     db_json::CLASSIFICATION m_currClassification;
 };

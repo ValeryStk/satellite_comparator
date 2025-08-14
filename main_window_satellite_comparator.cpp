@@ -34,6 +34,21 @@
 #include <QDomDocument>
 #include "cpl_conv.h"
 #include "QApplication"
+#include <algorithm>
+
+#include <QByteArray>
+#include <QDebug>
+
+#include <QByteArray>
+#include <QDebug>
+#include <QTextCodec>
+#include <algorithm> // для std::swap
+#include <matio.h>
+#include <MatFilesOperator.h>
+
+
+
+
 
 
 constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER  = 11000 * 11000 * 3;
@@ -42,6 +57,11 @@ constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER  = 11000 * 11000 * 3;
 QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443,482,562,655,865,1610,2200};
 QVector<double> waves_landsat9_5 = {443,482,562,655,865};
+
+
+// C++ слушает порт 5001, MATLAB — 5000
+constexpr int LOCAL_PORT = 5001;
+constexpr int MATLAB_PORT = 5000;
 
 namespace {
 
@@ -96,6 +116,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     ui->setupUi(this);
     m_label_scene_coord = new QLabel;
     ui->statusbar->addPermanentWidget(m_label_scene_coord);
+    initUdpRpcConnection();
     setWindowTitle(satc::app_name);
     gdal_start_driver();
     initSentinelStructs();
@@ -149,6 +170,7 @@ void MainWindowSatelliteComparator::openBekasSpectraData()
     bekas_window->setAttribute(Qt::WA_DeleteOnClose);
     connect(bekas_window,SIGNAL(sendSampleForSatelliteComparator(QVector<double>, QVector<double>)),
             this,SLOT(processBekasDataForComparing(QVector<double>,QVector<double>)));
+    bekas_window->setUDPobj(m_rpc);
     bekas_window->show();
 }
 
@@ -573,6 +595,34 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<d
     }
     m_bekas_sample = folded_device_spectr_for_landsat;
     m_is_bekas = true;
+}
+
+void MainWindowSatelliteComparator::handleJsonRpcResult(const QJsonValue &result)
+{
+    qDebug()<<"call handleJsonRpcResult from MainWindowSatelliteComparator";
+    qDebug()<<"result:"<< result.toString();
+}
+
+void MainWindowSatelliteComparator::processTestMatlabRequest(const QVariantMap &params)
+{
+    QString path = params["path"].toString();
+    int     mode = params["mode"].toInt();
+    qDebug()<<"matlab вызывал Test и передал параметры: "<<path<<" "<<mode;
+}
+
+void MainWindowSatelliteComparator::processpClassifiedBecasSpectraMatlabRequest(const QVariantMap &params)
+{
+    QString pathMatfile = params["matFilePath"].toString();
+    MatFilesOperator reader;
+    BecasDataFromMatlab dataReaded =  reader.readBecasDataFromMatlab(pathMatfile);
+    if(dataReaded.isSomeErrors){
+        qDebug()<<"при чтении файла произошли ошибки";
+        return;
+    }
+
+    bekas_window->updateListWithClustNums(dataReaded.specNames,
+                                          dataReaded.selectedClustIndxs,
+                                          dataReaded.colorsOfEachSpectr);
 }
 
 QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const QString& path,
@@ -1517,4 +1567,34 @@ void MainWindowSatelliteComparator::getKSY(const QPointF &pos,
                                            QVector<double> &ksy)
 {
 
+}
+void MainWindowSatelliteComparator::initUdpRpcConnection()
+{
+    m_rpc = new UdpJsonRpc(LOCAL_PORT,
+                           QHostAddress::LocalHost, MATLAB_PORT, this);
+
+    // Регистрируем методы, которые может вызывать Matlab app.
+
+    m_rpc->registerMethod("cppTestFunc",
+                          [this](const QJsonValue &params) -> QJsonValue {
+        qDebug()<<"cppTestFunc";
+        QVariantMap map = params.toVariant().toMap();
+        processTestMatlabRequest(map);
+        return NULL;
+    });
+
+    m_rpc->registerMethod("processClassifiedBecasSpectra",
+                          [this](const QJsonValue &params) -> QJsonValue {
+        qDebug()<<"processClassifiedBecasSpectra";
+        QVariantMap map = params.toVariant().toMap();
+        processpClassifiedBecasSpectraMatlabRequest(map);
+        return NULL;
+    });
+
+
+    // Подключаем сигнал получения результата к слоту обработки
+    connect(m_rpc,
+            &UdpJsonRpc::resultReady,
+            this,
+            &MainWindowSatelliteComparator::handleJsonRpcResult);
 }

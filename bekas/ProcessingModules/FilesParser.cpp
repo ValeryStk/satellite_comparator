@@ -18,6 +18,7 @@ void FilesParser::parseInputDir()
 {
     m_spectraPathesList.clear();
     m_spectraNamesList.clear();
+    m_spectraNamesWithExtensionList.clear();
     QDir parsingDir(m_inputDirPath);
     if(parsingDir.exists()){
         QStringList fileNamesList = prepareEntryList(m_inputDirPath);
@@ -26,6 +27,7 @@ void FilesParser::parseInputDir()
                 if(fileName.endsWith(".json", Qt::CaseInsensitive)){
                     m_spectraPathesList.append(m_inputDirPath + "/" + fileName);
                     m_spectraNamesList.append(fileName.split(".").first());
+                    m_spectraNamesWithExtensionList.append(fileName);
                 }
             }
             parseCurrentSpectrum();
@@ -126,6 +128,18 @@ void FilesParser::parseCurrentSpectrum()
         }
     }
 }
+
+QStringList FilesParser::getSpectraNamesWithExtensionList() const
+{
+    return m_spectraNamesWithExtensionList;
+}
+
+QString FilesParser::getInputDirPathWithSlash() const
+{
+    QString pathSlash = m_inputDirPath;
+    return pathSlash.append("/");
+}
+
 
 const db_json::CLASSIFICATION &FilesParser::currClassification() const
 {
