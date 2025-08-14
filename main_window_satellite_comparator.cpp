@@ -176,7 +176,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
     QVector<double> waves;
     QVector<double> sample;
     QVector<double> trimmed_satellite_data;
-    // Для того чтобы убедиться, что координаты сцены совпадают с координатами изображения.
+
     const QString x_y = "x: %1   y:%2";
     QString x_y_message = x_y.arg(QString::number(pos.x()),QString::number(pos.y()));
     m_label_scene_coord->setText(x_y_message);
@@ -1510,4 +1510,11 @@ int MainWindowSatelliteComparator::extractUTMZoneFromXML(const QString &xmlFileP
 
     qWarning() << "UTM зона не найдена в строке:" << csName;
     return -1;
+}
+
+void MainWindowSatelliteComparator::getKSY(const QPointF &pos,
+                                           QVector<double> &waves,
+                                           QVector<double> &ksy)
+{
+
 }

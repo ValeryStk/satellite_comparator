@@ -168,6 +168,7 @@ private:
     QHash <QString,geoTransform> sentinel_geo;
     QHash<QString, geoTransform> extractGeoPositions(const QString& xmlFilePath);
     int extractUTMZoneFromXML(const QString& xmlFilePath);
+    void getKSY(const QPointF& pos, QVector<double>& waves, QVector<double>& ksy);
 
 
 };
