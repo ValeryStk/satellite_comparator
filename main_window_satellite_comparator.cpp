@@ -131,6 +131,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     ui->graphicsView_satellite_image->setUp(m_scene);
     setUpToolWidget();
     connect(ui->graphicsView_satellite_image,SIGNAL(roiPolygonAdded(const QString)),this,SLOT(add_roi_to_gui_list(const QString)));
+    connect(ui->widget_image_saturation_light_corrector,SIGNAL(slidersWereChanged()), SLOT(updateImage()));
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
@@ -623,6 +624,22 @@ void MainWindowSatelliteComparator::processpClassifiedBecasSpectraMatlabRequest(
     bekas_window->updateListWithClustNums(dataReaded.specNames,
                                           dataReaded.selectedClustIndxs,
                                           dataReaded.colorsOfEachSpectr);
+}
+
+void MainWindowSatelliteComparator::updateImage()
+{
+    if(m_image_item){
+        double coef_sat = ui->widget_image_saturation_light_corrector->getCoef1();
+        double coef_light = ui->widget_image_saturation_light_corrector->getCoef2();
+        QImage imgNew = createModifiedImage(m_satellite_image, coef_sat, coef_light);
+        auto pixmap = QPixmap::fromImage(imgNew);
+        m_scene->removeItem(m_image_item);
+        delete m_image_item;
+        m_image_item = new QGraphicsPixmapItem(pixmap);
+        m_image_item->setZValue(0);
+        m_scene->addItem(m_image_item);
+        m_scene->update();
+    }
 }
 
 QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const QString& path,
@@ -1567,6 +1584,38 @@ void MainWindowSatelliteComparator::getKSY(const QPointF &pos,
                                            QVector<double> &ksy)
 {
 
+}
+
+QImage MainWindowSatelliteComparator::createModifiedImage(const QImage &img,
+                                                          double coefSat,
+                                                          double coefLight)
+{
+    QImage adjusted = img.convertToFormat(QImage::Format_ARGB32_Premultiplied).copy();
+    const int pixelCount = adjusted.width() * adjusted.height();
+    QRgb* pixels = reinterpret_cast<QRgb*>(adjusted.bits());
+
+    const int threadCount = std::thread::hardware_concurrency();
+    const int chunkSize = pixelCount / threadCount;
+
+    std::vector<std::future<void>> futures;
+    for (int i = 0; i < threadCount; ++i) {
+        int start = i * chunkSize;
+        int end = (i == threadCount - 1) ? pixelCount : start + chunkSize;
+        futures.push_back(std::async(std::launch::async, [=] {
+            for (int j = start; j < end; ++j) {
+                QColor color(pixels[j]);
+                qreal h, s, l;
+                color.getHslF(&h, &s, &l);
+                s = qBound(0.0, s * coefSat, 1.0);
+                l = qBound(0.0, l * coefLight, 1.0);
+                color.setHslF(h, s, l);
+                pixels[j] = color.rgba();
+            }
+        }));
+    }
+
+    for (auto& f : futures) f.wait();
+    return adjusted;
 }
 void MainWindowSatelliteComparator::initUdpRpcConnection()
 {
