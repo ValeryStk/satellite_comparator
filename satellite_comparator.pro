@@ -22,6 +22,7 @@ SOURCES += \
     satellite_graphics_view.cpp \
     satellites_structs.cpp \
     sattelite_comparator.cpp \
+    slidersofparam.cpp \
     text_constants.cpp\
     bekas/BaseTools/DBJson.cpp \
     bekas/BaseTools/IniFileLoader.cpp \
@@ -50,6 +51,7 @@ HEADERS += \
     qcustomplot.h \
     satellite_graphics_view.h \
     sattelite_comparator.h \
+    slidersofparam.h \
     text_constants.h\
     bekas/BaseTools/DBJson.h \
     bekas/BaseTools/IniFileLoader.h \
@@ -68,7 +70,8 @@ FORMS += \
     main_window_satellite_comparator.ui \
     sattelite_comparator.ui\
     bekas\GuiModules/SpectrumWidgets/WavesRangeDialog.ui \
-    bekas\GuiModules/UasvViewWindow.ui
+    bekas\GuiModules/UasvViewWindow.ui \
+    slidersofparam.ui
 
 TRANSLATIONS += \
     satellite_comparator_en_US.ts

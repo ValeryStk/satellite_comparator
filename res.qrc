@@ -8,5 +8,7 @@
         <file>res/green.svg</file>
         <file>res/red.svg</file>
         <file>res/black.svg</file>
+        <file>res/light.svg</file>
+        <file>res/saturation.svg</file>
     </qresource>
 </RCC>

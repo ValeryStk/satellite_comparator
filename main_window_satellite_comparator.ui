@@ -26,6 +26,9 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
+         <widget class="SlidersOfParam" name="widget_image_saturation_light_corrector" native="true"/>
+        </item>
+        <item>
          <widget class="QLabel" name="label_bands">
           <property name="text">
            <string>Каналы спутника</string>
@@ -174,6 +177,12 @@
    <class>SatelliteGraphicsView</class>
    <extends>QGraphicsView</extends>
    <header location="global">satellite_graphics_view.h</header>
+  </customwidget>
+  <customwidget>
+   <class>SlidersOfParam</class>
+   <extends>QWidget</extends>
+   <header location="global">slidersofparam.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>
