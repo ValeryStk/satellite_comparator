@@ -19,14 +19,14 @@ public:
     double getCoef2() const;
     void setDefaultValues();
 
-
-
 signals:
     void slidersWereChanged();
 
 private slots:
     void onSatChanged();
     void onLightChanged();
+    void on_slider_light_actionTriggered(int action);
+    void on_slider_sat_actionTriggered(int action);
 
 private:
     Ui::SlidersOfParam *ui;
@@ -35,9 +35,6 @@ private:
     double coefSat;
     double coefLight;
 
-
 };
-
-
 
 #endif // SLIDERSOFPARAM_H
