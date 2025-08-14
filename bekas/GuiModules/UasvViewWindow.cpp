@@ -1,4 +1,4 @@
-#include "UasvViewWindow.h"
+﻿#include "UasvViewWindow.h"
 #include "ui_UasvViewWindow.h"
 #include <bekas/BaseTools/IniFileLoader.h>
 #include "bekas/version.h"
@@ -6,6 +6,105 @@
 #include <bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.h>
 #include <bekas/ProcessingModules/SpectrDataSaver.h>
 #include "text_constants.h"
+#include "MatFilesOperator.h"
+
+CustomStringListModel::CustomStringListModel(QObject *parent)
+    : QStringListModel(parent)
+{
+}
+
+CustomStringListModel::CustomStringListModel(const QStringList &strings, QObject *parent)
+    : QStringListModel(strings, parent)
+{
+}
+
+void CustomStringListModel::setColorForName(const QString& name, const QColor& color)
+{
+    m_colorMap[name] = color;
+    updateAllAppearances(name);
+}
+
+void CustomStringListModel::clearColorForName(const QString& name)
+{
+    m_colorMap.remove(name);
+    updateAllAppearances(name);
+}
+
+QColor CustomStringListModel::getColorForName(const QString& name) const
+{
+    return m_colorMap.value(name, QColor()); // Возвращает невалидный QColor если не найдено
+}
+
+void CustomStringListModel::setClusterForName(const QString& name, int cluster)
+{
+    m_clusterMap[name] = cluster;
+    updateAllAppearances(name);
+}
+
+void CustomStringListModel::clearClusterForName(const QString& name)
+{
+    m_clusterMap.remove(name);
+    updateAllAppearances(name);
+}
+
+int CustomStringListModel::getClusterForName(const QString& name) const
+{
+    return m_clusterMap.value(name, -1); // -1 = кластер не задан
+}
+
+void CustomStringListModel::resetAllHighlights()
+{
+    QStringList namesToUpdate;
+
+    // Собираем все имена с цветами или кластерами
+    namesToUpdate << m_colorMap.keys() << m_clusterMap.keys();
+    namesToUpdate.removeDuplicates();
+
+    // Очищаем все данные
+    m_colorMap.clear();
+    m_clusterMap.clear();
+
+    // Обновляем представление
+    for (const QString& name : namesToUpdate) {
+        updateAllAppearances(name);
+    }
+}
+
+QVariant CustomStringListModel::data(const QModelIndex &index, int role) const
+{
+    if (!index.isValid() || index.row() >= stringList().size())
+            return QVariant();
+
+        const QString baseName = stringList().at(index.row());
+
+        if (role == Qt::DisplayRole) {
+            // Добавляем номер кластера, если он есть
+            if (m_clusterMap.contains(baseName)) {
+                int cluster = m_clusterMap.value(baseName);
+                return baseName + " - cluster " + QString::number(cluster);
+            }
+            return baseName;
+        }
+
+        if (role == Qt::BackgroundRole) {
+            if (m_colorMap.contains(baseName)) {
+                return QBrush(m_colorMap[baseName]);
+            }
+        }
+
+        return QStringListModel::data(index, role);
+}
+
+void CustomStringListModel::updateAllAppearances(const QString& name)
+{
+    const QStringList list = stringList();
+    for (int i = 0; i < list.size(); ++i) {
+        if (list.at(i) == name) {
+            QModelIndex idx = index(i);
+            emit dataChanged(idx, idx, {Qt::DisplayRole, Qt::BackgroundRole});
+        }
+    }
+}
 
 UasvViewWindow::UasvViewWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -40,6 +139,93 @@ UasvViewWindow::UasvViewWindow(QWidget *parent)
     }
 }
 
+void UasvViewWindow::setUDPobj(UdpJsonRpc *rpc)
+{
+    m_rpc = rpc;
+}
+
+void UasvViewWindow::updateListWithClustNums(const QStringList &specNames,
+                                             const QVector<int> &clusters,
+                                             const QVector<QColor> &colorsOfEachSpectr)
+{
+    CustomStringListModel *model = m_slModel;
+    model->resetAllHighlights();
+    for (int i = 0; i < specNames.size(); ++i) {
+        const QString &name = specNames.at(i);
+        int cluster = clusters.at(i);
+        if (model->stringList().contains(name)) {
+            model->setClusterForName(name, cluster);
+            model->setColorForName(name, colorsOfEachSpectr.at(i));
+        }
+    }
+}
+
+void UasvViewWindow::applySpectraColorsWithClusterNumbers(
+        QStringListModel *model,
+        const QStringList &specNames,
+        const QVector<int>  &clusters,
+         const QVector<QColor> &colorsOfEachSpectr )
+{
+    // 1) Сохраняем исходные названия (до первого добавления «– №»)
+    //    Нужно, чтобы при повторных вызовах менять текст по оригиналу.
+
+    const QStringList &allNames = m_listOfOriginSpectraNames;
+
+    int totalRows = model->rowCount();
+
+    // 2) Сбрасываем все строки: цвет → дефолт, текст → оригинальный
+    for (int row = 0; row < totalRows; ++row) {
+        QModelIndex idx = model->index(row, 0);
+        // Сброс цвета
+        model->setData(idx, QVariant(), Qt::ForegroundRole);
+        // Сброс текста к оригиналу
+        if (row < allNames.size()) {
+            model->setData(idx, allNames.at(row), Qt::DisplayRole);
+        }
+    }
+
+    // 3) Построим быстрый мэппинг «имя → row»
+    QHash<QString,int> name2row;
+    for (int row = 0; row < allNames.size(); ++row) {
+        name2row.insert(allNames.at(row), row);
+    }
+
+    // 4) Генерируем случайные яркие цвета для каждого уникального кластера
+    QSet<int> uniqClusters = QSet<int>::fromList(
+                QList<int>::fromVector(clusters)
+                );
+    QHash<int,QColor> clusterColors;
+    auto *rnd = QRandomGenerator::global();
+    for (int cl : uniqClusters) {
+        int h = rnd->bounded(360);
+        int s = rnd->bounded(150, 256);
+        int v = rnd->bounded(150, 256);
+        clusterColors.insert(cl, QColor::fromHsv(h, s, v));
+    }
+
+    // 5) Для каждой пары (specName, cluster) красим и меняем текст
+    for (int i = 0; i < specNames.size(); ++i) {
+        const QString &name    = specNames.at(i);
+        int           cluster = clusters.value(i, -1);
+
+        if (!name2row.contains(name))
+            continue;
+
+        int row = name2row.value(name);
+        QModelIndex idx = model->index(row, 0);
+
+        // 5.1) Достраиваем DisplayRole: "OldName – cluster"
+        QString newText = QString("%1 - %2")
+                .arg(allNames.at(row))
+                .arg(cluster);
+        model->setData(idx, newText, Qt::DisplayRole);
+
+        // 5.2) Ставим цвет текста
+        QColor col = clusterColors.value(cluster, Qt::black);
+        model->setData(idx, QBrush(col), Qt::ForegroundRole);
+    }
+}
+
 UasvViewWindow::~UasvViewWindow()
 {
     delete ui;
@@ -57,7 +243,7 @@ void UasvViewWindow::setupProject()
 void UasvViewWindow::setupGui()
 {
     m_plotterWidget = new SpectrPlotterWidget(ui->widgetSpectra);
-    m_slModel = new QStringListModel(this);
+    m_slModel = new CustomStringListModel(this);
     ui->listViewSpectraNames->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
 
@@ -109,6 +295,8 @@ void UasvViewWindow::fillListOfSpectra()
 
     if(!m_slModel->stringList().isEmpty())
         ui->listViewSpectraNames->setCurrentIndex(ui->listViewSpectraNames->indexAt(QPoint(0,0)));
+
+    m_listOfOriginSpectraNames = listOfSpectrums;
 }
 
 void UasvViewWindow::drawSpectrum(QVector<double> &waves,
@@ -287,10 +475,10 @@ void UasvViewWindow::on_pushButtonPrevious_clicked()
         ui->listViewSpectraNames->setCurrentIndex(m_slModel->index(ui->listViewSpectraNames->currentIndex().row() - 1, 0));
         m_filesParser->setCurrentSpectrumIndex(ui->listViewSpectraNames->currentIndex().row());
         updateDataInGui();
-    }else{        
+    }else{
 
         QMessageBox::information(this, tr("БЕКАС"),
-                                tr("Переход к предыдущему спектру невозможен:\n"
+                                 tr("Переход к предыдущему спектру невозможен:\n"
                                    "Вы достигли начала списка!"));
     }
 }
@@ -304,7 +492,7 @@ void UasvViewWindow::on_pushButtonNext_clicked()
     }else{
 
         QMessageBox::information(this, tr("БЕКАС"),
-                                  tr("Переход к следующему спектру невозможен:\n"
+                                 tr("Переход к следующему спектру невозможен:\n"
                                      "Вы достигли конца списка!"));
     }
 }
@@ -359,4 +547,28 @@ void UasvViewWindow::on_pushButtonOpenSavingFolder_clicked()
         dir.setPath(m_settings->value("Pathes/InputPath").toString());
     }
     QDesktopServices::openUrl(QUrl::fromLocalFile(dir.absolutePath()));
+}
+
+void UasvViewWindow::on_pushButtonToMatlab_clicked()
+{
+    // 1. Получаем список файлов спектров m_filesParser->getSpectraPathesList()
+    // 2. Конвертируем его и сохраняем в виде mat файла (подумать, мб сократить размер если отдельльно путь к папке и отдельно имя)
+    // 3. создаем json для запроса
+    // 4. отправляем его по UDP (объект UDPJSON должен быть 1 и создан в главном окне с мультиспек.изображениями)
+
+    //1, 2 - поменять потом на относительный путь
+    MatFilesOperator matOper;
+    QString fullMatPath = "D://pathes.mat";
+
+    bool isReflectance = ui->pushButtonShowRfl->isChecked();
+
+    matOper.saveBecasData(m_filesParser->getSpectraNamesWithExtensionList(),
+                          m_filesParser->getInputDirPathWithSlash(),
+                          isReflectance,
+                          fullMatPath);
+    //3
+    QJsonObject params;
+    params["matFilePath"] = fullMatPath;
+    //4
+    m_rpc->call("processBecasSpectra", QJsonValue(params));
 }

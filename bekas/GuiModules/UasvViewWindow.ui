@@ -322,6 +322,19 @@
            </item>
           </layout>
          </item>
+         <item>
+          <widget class="QPushButton" name="pushButtonToMatlab">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>43</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Анализ спектров</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>
