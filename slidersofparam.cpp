@@ -101,6 +101,12 @@ double SlidersOfParam::getCoef2() const
     return coefLight;
 }
 
+void SlidersOfParam::setDefaultValues()
+{
+    ui->slider_sat->setValue(50);
+    ui->slider_light->setValue(50);
+}
+
 void SlidersOfParam::onSatChanged()
 {
     ui->label_sat->setText(QString::number(ui->slider_sat->value()));

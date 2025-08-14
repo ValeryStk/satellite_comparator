@@ -17,7 +17,7 @@ public:
     ~SlidersOfParam();
     double getCoef1() const;
     double getCoef2() const;
-
+    void setDefaultValues();
 
 
 

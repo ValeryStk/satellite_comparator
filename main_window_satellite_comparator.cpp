@@ -1054,6 +1054,7 @@ void MainWindowSatelliteComparator::resetColorsToDefaultRGB()
             change_bands_sentinel_and_show_image();
         }
     }
+    ui->widget_image_saturation_light_corrector->setDefaultValues();
 }
 
 
