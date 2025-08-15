@@ -34,15 +34,7 @@
 #include <QDomDocument>
 #include "cpl_conv.h"
 #include "QApplication"
-#include <algorithm>
-
 #include <QByteArray>
-#include <QDebug>
-
-#include <QByteArray>
-#include <QDebug>
-#include <QTextCodec>
-#include <algorithm> // для std::swap
 #include <matio.h>
 #include <MatFilesOperator.h>
 
