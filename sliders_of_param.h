@@ -1,5 +1,5 @@
-#ifndef SLIDERSOFPARAM_H
-#define SLIDERSOFPARAM_H
+#ifndef SLIDERS_OF_PARAM_H
+#define SLIDERS_OF_PARAM_H
 
 #include <QWidget>
 #include <QSlider>
@@ -37,4 +37,4 @@ private:
 
 };
 
-#endif // SLIDERSOFPARAM_H
+#endif // SLIDERS_OF_PARAM_H

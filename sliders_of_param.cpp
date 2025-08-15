@@ -1,5 +1,5 @@
-#include "slidersofparam.h"
-#include "ui_slidersofparam.h"
+#include "sliders_of_param.h"
+#include "ui_sliders_of_param.h"
 #include <QDebug>
 #include <QStyle>
 
@@ -10,7 +10,8 @@ constexpr int SLIDER_MAX_VALUE = 100;
 
 namespace {
 
-inline bool get_slider_value_from_position(const int action, QSlider* slider){
+inline bool get_slider_value_from_position(const int action,
+                                           QSlider* slider){
     using AS = QAbstractSlider;
     if (action == AS::SliderPageStepAdd || action == AS::SliderPageStepSub) {
         int value = slider->style()->sliderValueFromPosition(
@@ -23,7 +24,10 @@ inline bool get_slider_value_from_position(const int action, QSlider* slider){
     }
     return false;
 }
-inline void calculate_sliders_coef(QSlider* slider_saturation,QSlider* slider_light, double& calculate_coef_saturation, double& calculate_coef_light){
+inline void calculate_sliders_coef(QSlider* slider_saturation,
+                                   QSlider* slider_light,
+                                   double& calculate_coef_saturation,
+                                   double& calculate_coef_light){
     calculate_coef_saturation = 1.0 + (slider_saturation->value() - SLIDER_INITIAL_VALUE)
             / static_cast<double>(SLIDER_INITIAL_VALUE * (SATURATION_MAX_MULTIPLIER - 1.0));
     calculate_coef_light = 1.0 + (slider_light->value() - SLIDER_INITIAL_VALUE)
