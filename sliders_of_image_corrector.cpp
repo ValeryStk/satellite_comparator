@@ -6,8 +6,8 @@
 #include <QDebug>
 
 
-constexpr int MAX_MULTIPLIER = 6;
-constexpr int MIN_MULTIPLIER = 0;
+constexpr double MAX_MULTIPLIER = 4;
+constexpr double MIN_MULTIPLIER = 0.25;
 
 constexpr int SLIDER_MAX_VALUE = 100;
 constexpr int SLIDER_MIN_VALUE = 0;
@@ -32,20 +32,22 @@ inline bool get_slider_value_from_position(const int action,
     }
     return false;
 }
-inline double calculate_slider_coef(QSlider* slider){
-    Q_ASSERT(MIN_MULTIPLIER < 1);
-    Q_ASSERT(MAX_MULTIPLIER > 1);
-    auto sVal = slider->value();
-    if(sVal == SLIDER_INITIAL_VALUE) return 1;
-    if(sVal < SLIDER_INITIAL_VALUE){
-        return sVal * (1.0 - MIN_MULTIPLIER) / (SLIDER_INITIAL_VALUE - SLIDER_MIN_VALUE);
-    }
-    if(sVal > SLIDER_INITIAL_VALUE){
-        return sVal * (MAX_MULTIPLIER - 1.0) / (SLIDER_MAX_VALUE - SLIDER_INITIAL_VALUE);
-    }
-    return -1;
-}
 
+inline double calculate_slider_coef(QSlider* slider){
+    Q_ASSERT(MIN_MULTIPLIER < 1.0);
+    Q_ASSERT(MAX_MULTIPLIER > 1.0);
+    int sVal = slider->value();
+    if (sVal == SLIDER_INITIAL_VALUE) return 1.0;
+    if (sVal < SLIDER_INITIAL_VALUE) {
+        double t = static_cast<double>(SLIDER_INITIAL_VALUE - sVal) / (SLIDER_INITIAL_VALUE - SLIDER_MIN_VALUE);
+        return 1.0 - t * (1.0 - MIN_MULTIPLIER);
+    }
+    if (sVal > SLIDER_INITIAL_VALUE) {
+        double t = static_cast<double>(sVal - SLIDER_INITIAL_VALUE) / (SLIDER_MAX_VALUE - SLIDER_INITIAL_VALUE);
+        return 1.0 + t * (MAX_MULTIPLIER - 1.0);
+    }
+    return -1.0; // Невозможное значение, но на всякий случай
+}
 // end of namespace
 
 }
@@ -93,14 +95,12 @@ void SlidersOfImageCorrector::setDefaultValues()
 void SlidersOfImageCorrector::onSaturationChanged()
 {
     coefSaturation = calculate_slider_coef(ui->slider_saturation);
-    qDebug()<<"sat val: "<<coefSaturation;
     emit slidersWereChanged();
 }
 
 void SlidersOfImageCorrector::onLightChanged()
 {
     coefLight = calculate_slider_coef(ui->slider_light);
-     qDebug()<<"li val: "<<coefLight;
     emit slidersWereChanged();
 }
 
@@ -117,4 +117,3 @@ void SlidersOfImageCorrector::on_slider_saturation_actionTriggered(int action)
         onSaturationChanged();
     }
 }
-
