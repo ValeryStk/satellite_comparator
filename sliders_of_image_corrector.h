@@ -1,20 +1,19 @@
-#ifndef SLIDERS_OF_PARAM_H
-#define SLIDERS_OF_PARAM_H
+#ifndef SLIDERS_OF_IMAGE_CORRECTOR_H
+#define SLIDERS_OF_IMAGE_CORRECTOR_H
 
 #include <QWidget>
-#include <QSlider>
 
 namespace Ui {
-class SlidersOfParam;
+class SlidersOfImageCorrector;
 }
 
-class SlidersOfParam : public QWidget
+class SlidersOfImageCorrector : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit SlidersOfParam(QWidget *parent = nullptr);
-    ~SlidersOfParam();
+    explicit SlidersOfImageCorrector(QWidget *parent = nullptr);
+    ~SlidersOfImageCorrector();
     double getCoefSaturation() const;
     double getCoefLight() const;
     void setDefaultValues();
@@ -29,10 +28,10 @@ private slots:
     void on_slider_saturation_actionTriggered(int action);
 
 private:
-    Ui::SlidersOfParam *ui;
+    Ui::SlidersOfImageCorrector *ui;
     double coefSaturation;
     double coefLight;
 
 };
 
-#endif // SLIDERS_OF_PARAM_H
+#endif // SLIDERS_OF_IMAGE_CORRECTOR_H

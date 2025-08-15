@@ -1,6 +1,6 @@
-#include "sliders_of_param.h"
-#include "ui_sliders_of_param.h"
-#include <QDebug>
+#include "sliders_of_image_corrector.h"
+#include "ui_sliders_of_image_corrector.h"
+
 #include <QStyle>
 
 constexpr int SATURATION_MAX_MULTIPLIER = 2;
@@ -38,9 +38,9 @@ inline void calculate_sliders_coef(QSlider* slider_saturation,
 
 }
 
-SlidersOfParam::SlidersOfParam(QWidget *parent) :
+SlidersOfImageCorrector::SlidersOfImageCorrector(QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::SlidersOfParam)
+    ui(new Ui::SlidersOfImageCorrector)
 {
     ui->setupUi(this);
     ui->label_light->setVisible(false);
@@ -56,47 +56,47 @@ SlidersOfParam::SlidersOfParam(QWidget *parent) :
     connect(ui->slider_light, SIGNAL(sliderReleased()), this, SLOT(onLightChanged()));
 }
 
-SlidersOfParam::~SlidersOfParam()
+SlidersOfImageCorrector::~SlidersOfImageCorrector()
 {
     delete ui;
 }
 
-double SlidersOfParam::getCoefSaturation() const
+double SlidersOfImageCorrector::getCoefSaturation() const
 {
     return coefSaturation;
 }
 
-double SlidersOfParam::getCoefLight() const
+double SlidersOfImageCorrector::getCoefLight() const
 {
     return coefLight;
 }
 
-void SlidersOfParam::setDefaultValues()
+void SlidersOfImageCorrector::setDefaultValues()
 {
     ui->slider_saturation->setValue(SLIDER_INITIAL_VALUE);
     ui->slider_light->setValue(SLIDER_INITIAL_VALUE);
 }
 
-void SlidersOfParam::onSaturationChanged()
+void SlidersOfImageCorrector::onSaturationChanged()
 {
     calculate_sliders_coef(ui->slider_saturation, ui->slider_light, coefSaturation, coefLight);
     emit slidersWereChanged();
 }
 
-void SlidersOfParam::onLightChanged()
+void SlidersOfImageCorrector::onLightChanged()
 {
     calculate_sliders_coef(ui->slider_saturation, ui->slider_light, coefSaturation, coefLight);
     emit slidersWereChanged();
 }
 
-void SlidersOfParam::on_slider_light_actionTriggered(int action)
+void SlidersOfImageCorrector::on_slider_light_actionTriggered(int action)
 {
     if(get_slider_value_from_position(action,ui->slider_light)){
         onLightChanged();
     }
 }
 
-void SlidersOfParam::on_slider_saturation_actionTriggered(int action)
+void SlidersOfImageCorrector::on_slider_saturation_actionTriggered(int action)
 {
     if(get_slider_value_from_position(action, ui->slider_saturation)){
         onSaturationChanged();
