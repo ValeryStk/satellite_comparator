@@ -2,11 +2,19 @@
 #include "ui_sliders_of_image_corrector.h"
 
 #include <QStyle>
+#include <QtGlobal>
+#include <QDebug>
 
-constexpr int SATURATION_MAX_MULTIPLIER = 2;
-constexpr int LIGHT_MAX_MULTIPLIER = 2;
-constexpr int SLIDER_INITIAL_VALUE = 50;
+
+constexpr int MAX_MULTIPLIER = 6;
+constexpr int MIN_MULTIPLIER = 0;
+
 constexpr int SLIDER_MAX_VALUE = 100;
+constexpr int SLIDER_MIN_VALUE = 0;
+constexpr int SLIDER_INITIAL_VALUE = (SLIDER_MAX_VALUE + SLIDER_MIN_VALUE)/2;
+
+
+
 
 namespace {
 
@@ -24,14 +32,18 @@ inline bool get_slider_value_from_position(const int action,
     }
     return false;
 }
-inline void calculate_sliders_coef(QSlider* slider_saturation,
-                                   QSlider* slider_light,
-                                   double& calculate_coef_saturation,
-                                   double& calculate_coef_light){
-    calculate_coef_saturation = 1.0 + (slider_saturation->value() - SLIDER_INITIAL_VALUE)
-            / static_cast<double>(SLIDER_INITIAL_VALUE * (SATURATION_MAX_MULTIPLIER - 1.0));
-    calculate_coef_light = 1.0 + (slider_light->value() - SLIDER_INITIAL_VALUE)
-            / static_cast<double>(SLIDER_INITIAL_VALUE * (LIGHT_MAX_MULTIPLIER - 1.0));
+inline double calculate_slider_coef(QSlider* slider){
+    Q_ASSERT(MIN_MULTIPLIER < 1);
+    Q_ASSERT(MAX_MULTIPLIER > 1);
+    auto sVal = slider->value();
+    if(sVal == SLIDER_INITIAL_VALUE) return 1;
+    if(sVal < SLIDER_INITIAL_VALUE){
+        return sVal * (1.0 - MIN_MULTIPLIER) / (SLIDER_INITIAL_VALUE - SLIDER_MIN_VALUE);
+    }
+    if(sVal > SLIDER_INITIAL_VALUE){
+        return sVal * (MAX_MULTIPLIER - 1.0) / (SLIDER_MAX_VALUE - SLIDER_INITIAL_VALUE);
+    }
+    return -1;
 }
 
 // end of namespace
@@ -49,9 +61,10 @@ SlidersOfImageCorrector::SlidersOfImageCorrector(QWidget *parent) :
     ui->label_light_text->setPixmap(QPixmap::fromImage(QImage(":/res/light.svg")));
     ui->slider_saturation->setValue(SLIDER_INITIAL_VALUE);
     ui->slider_light->setValue(SLIDER_INITIAL_VALUE);
-    ui->slider_saturation->setRange(0, SLIDER_MAX_VALUE);
-    ui->slider_light->setRange(0, SLIDER_MAX_VALUE);
-    calculate_sliders_coef(ui->slider_saturation, ui->slider_light, coefSaturation, coefLight);
+    ui->slider_saturation->setRange(SLIDER_MIN_VALUE, SLIDER_MAX_VALUE);
+    ui->slider_light->setRange(SLIDER_MIN_VALUE, SLIDER_MAX_VALUE);
+    coefSaturation = 1;
+    coefLight = 1;
     connect(ui->slider_saturation, SIGNAL(sliderReleased()), this, SLOT(onSaturationChanged()));
     connect(ui->slider_light, SIGNAL(sliderReleased()), this, SLOT(onLightChanged()));
 }
@@ -79,13 +92,15 @@ void SlidersOfImageCorrector::setDefaultValues()
 
 void SlidersOfImageCorrector::onSaturationChanged()
 {
-    calculate_sliders_coef(ui->slider_saturation, ui->slider_light, coefSaturation, coefLight);
+    coefSaturation = calculate_slider_coef(ui->slider_saturation);
+    qDebug()<<"sat val: "<<coefSaturation;
     emit slidersWereChanged();
 }
 
 void SlidersOfImageCorrector::onLightChanged()
 {
-    calculate_sliders_coef(ui->slider_saturation, ui->slider_light, coefSaturation, coefLight);
+    coefLight = calculate_slider_coef(ui->slider_light);
+     qDebug()<<"li val: "<<coefLight;
     emit slidersWereChanged();
 }
 
