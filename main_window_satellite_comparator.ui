@@ -26,7 +26,7 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="SlidersOfParam" name="widget_image_saturation_light_corrector" native="true"/>
+         <widget class="SlidersOfImageCorrector" name="widget_image_saturation_light_corrector" native="true"/>
         </item>
         <item>
          <widget class="QLabel" name="label_bands">
@@ -179,9 +179,9 @@
    <header location="global">satellite_graphics_view.h</header>
   </customwidget>
   <customwidget>
-   <class>SlidersOfParam</class>
+   <class>SlidersOfImageCorrector</class>
    <extends>QWidget</extends>
-   <header location="global">slidersofparam.h</header>
+   <header location="global">sliders_of_image_corrector.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

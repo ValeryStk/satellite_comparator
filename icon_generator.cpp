@@ -8,7 +8,7 @@
 #include <QImage>
 #include <Qt>
 
-namespace iut{
+namespace iut{// POC
 QIcon createIcon(int r, int g, int b, QSize size)
 {
     QString svg = QString("<svg width='%1' height='%2'><rect x='10' y='10' width='80' height='80' fill='rgb(%3,%4,%5)'/></svg>"

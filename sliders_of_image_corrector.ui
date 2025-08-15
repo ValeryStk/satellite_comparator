@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SlidersOfParam</class>
- <widget class="QWidget" name="SlidersOfParam">
+ <class>SlidersOfImageCorrector</class>
+ <widget class="QWidget" name="SlidersOfImageCorrector">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -114,7 +114,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QSlider" name="slider_sat">
+        <widget class="QSlider" name="slider_saturation">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -154,7 +154,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_sat">
+        <widget class="QLabel" name="label_saturation">
          <property name="text">
           <string>100</string>
          </property>
