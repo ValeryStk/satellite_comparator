@@ -30,8 +30,6 @@ private slots:
 
 private:
     Ui::SlidersOfParam *ui;
-    QSlider *slider_saturation;
-    QSlider *slider_light;
     double coefSaturation;
     double coefLight;
 

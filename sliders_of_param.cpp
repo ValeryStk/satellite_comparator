@@ -49,13 +49,11 @@ SlidersOfParam::SlidersOfParam(QWidget *parent) :
     ui->label_light_text->setPixmap(QPixmap::fromImage(QImage(":/res/light.svg")));
     ui->slider_saturation->setValue(SLIDER_INITIAL_VALUE);
     ui->slider_light->setValue(SLIDER_INITIAL_VALUE);
-    slider_saturation = ui->slider_saturation;
-    slider_light = ui->slider_light;
-    slider_saturation->setRange(0, SLIDER_MAX_VALUE);
-    slider_light->setRange(0, SLIDER_MAX_VALUE);
-    calculate_sliders_coef(slider_saturation, slider_light, coefSaturation, coefLight);
-    connect(slider_saturation, SIGNAL(sliderReleased()), this, SLOT(onSaturationChanged()));
-    connect(slider_light, SIGNAL(sliderReleased()), this, SLOT(onLightChanged()));
+    ui->slider_saturation->setRange(0, SLIDER_MAX_VALUE);
+    ui->slider_light->setRange(0, SLIDER_MAX_VALUE);
+    calculate_sliders_coef(ui->slider_saturation, ui->slider_light, coefSaturation, coefLight);
+    connect(ui->slider_saturation, SIGNAL(sliderReleased()), this, SLOT(onSaturationChanged()));
+    connect(ui->slider_light, SIGNAL(sliderReleased()), this, SLOT(onLightChanged()));
 }
 
 SlidersOfParam::~SlidersOfParam()
@@ -81,26 +79,26 @@ void SlidersOfParam::setDefaultValues()
 
 void SlidersOfParam::onSaturationChanged()
 {
-    calculate_sliders_coef(slider_saturation, slider_light, coefSaturation, coefLight);
+    calculate_sliders_coef(ui->slider_saturation, ui->slider_light, coefSaturation, coefLight);
     emit slidersWereChanged();
 }
 
 void SlidersOfParam::onLightChanged()
 {
-    calculate_sliders_coef(slider_saturation, slider_light, coefSaturation, coefLight);
+    calculate_sliders_coef(ui->slider_saturation, ui->slider_light, coefSaturation, coefLight);
     emit slidersWereChanged();
 }
 
 void SlidersOfParam::on_slider_light_actionTriggered(int action)
 {
-    if(get_slider_value_from_position(action,slider_light)){
+    if(get_slider_value_from_position(action,ui->slider_light)){
         onLightChanged();
     }
 }
 
 void SlidersOfParam::on_slider_saturation_actionTriggered(int action)
 {
-    if(get_slider_value_from_position(action, slider_saturation)){
+    if(get_slider_value_from_position(action, ui->slider_saturation)){
         onSaturationChanged();
     }
 }
