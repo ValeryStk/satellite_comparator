@@ -20,9 +20,16 @@ inline bool get_slider_value_from_position(const int action, QSlider* slider){
                     slider->width());
         slider->setValue(value);
         return true;
-    };
+    }
     return false;
 }
+inline void calculate_sliders_coef(QSlider* slider_saturation,QSlider* slider_light, double& calculate_coef_saturation, double& calculate_coef_light){
+    calculate_coef_saturation = 1.0 + (slider_saturation->value() - SLIDER_INITIAL_VALUE)
+            / static_cast<double>(SLIDER_INITIAL_VALUE * (SATURATION_MAX_MULTIPLIER - 1.0));
+    calculate_coef_light = 1.0 + (slider_light->value() - SLIDER_INITIAL_VALUE)
+            / static_cast<double>(SLIDER_INITIAL_VALUE * (LIGHT_MAX_MULTIPLIER - 1.0));
+}
+
 // end of namespace
 
 }
@@ -33,20 +40,17 @@ SlidersOfParam::SlidersOfParam(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->label_light->setVisible(false);
-    ui->label_sat->setVisible(false);
+    ui->label_saturation->setVisible(false);
     ui->label_saturation_text->setPixmap(QPixmap::fromImage(QImage(":/res/saturation.svg")));
     ui->label_light_text->setPixmap(QPixmap::fromImage(QImage(":/res/light.svg")));
-    ui->slider_sat->setValue(SLIDER_INITIAL_VALUE);
+    ui->slider_saturation->setValue(SLIDER_INITIAL_VALUE);
     ui->slider_light->setValue(SLIDER_INITIAL_VALUE);
-    slider_sat = ui->slider_sat;
+    slider_saturation = ui->slider_saturation;
     slider_light = ui->slider_light;
-    slider_sat->setRange(0, SLIDER_MAX_VALUE);
+    slider_saturation->setRange(0, SLIDER_MAX_VALUE);
     slider_light->setRange(0, SLIDER_MAX_VALUE);
-    coefSat = 1.0 + (slider_light->value() - SLIDER_INITIAL_VALUE)
-            / static_cast<double>(SLIDER_INITIAL_VALUE * (SATURATION_MAX_MULTIPLIER - 1.0));
-    coefLight = 1.0 + (slider_light->value() - SLIDER_INITIAL_VALUE)
-            / static_cast<double>(SLIDER_INITIAL_VALUE * (LIGHT_MAX_MULTIPLIER - 1.0));
-    connect(slider_sat, SIGNAL(sliderReleased()), this, SLOT(onSatChanged()));
+    calculate_sliders_coef(slider_saturation, slider_light, coefSaturation, coefLight);
+    connect(slider_saturation, SIGNAL(sliderReleased()), this, SLOT(onSaturationChanged()));
     connect(slider_light, SIGNAL(sliderReleased()), this, SLOT(onLightChanged()));
 }
 
@@ -55,33 +59,31 @@ SlidersOfParam::~SlidersOfParam()
     delete ui;
 }
 
-double SlidersOfParam::getCoef1() const
+double SlidersOfParam::getCoefSaturation() const
 {
-    return coefSat;
+    return coefSaturation;
 }
 
-double SlidersOfParam::getCoef2() const
+double SlidersOfParam::getCoefLight() const
 {
     return coefLight;
 }
 
 void SlidersOfParam::setDefaultValues()
 {
-    ui->slider_sat->setValue(SLIDER_INITIAL_VALUE);
+    ui->slider_saturation->setValue(SLIDER_INITIAL_VALUE);
     ui->slider_light->setValue(SLIDER_INITIAL_VALUE);
 }
 
-void SlidersOfParam::onSatChanged()
+void SlidersOfParam::onSaturationChanged()
 {
-    coefSat = 1.0 + (slider_sat->value() - SLIDER_INITIAL_VALUE)
-            / static_cast<double>(SLIDER_INITIAL_VALUE * (SATURATION_MAX_MULTIPLIER - 1.0));
+    calculate_sliders_coef(slider_saturation, slider_light, coefSaturation, coefLight);
     emit slidersWereChanged();
 }
 
 void SlidersOfParam::onLightChanged()
 {
-    coefLight = 1.0 + (slider_light->value() - SLIDER_INITIAL_VALUE)
-            / static_cast<double>(SLIDER_INITIAL_VALUE * (LIGHT_MAX_MULTIPLIER - 1.0));
+    calculate_sliders_coef(slider_saturation, slider_light, coefSaturation, coefLight);
     emit slidersWereChanged();
 }
 
@@ -92,9 +94,10 @@ void SlidersOfParam::on_slider_light_actionTriggered(int action)
     }
 }
 
-void SlidersOfParam::on_slider_sat_actionTriggered(int action)
+void SlidersOfParam::on_slider_saturation_actionTriggered(int action)
 {
-    if(get_slider_value_from_position(action, slider_sat)){
-        onSatChanged();
+    if(get_slider_value_from_position(action, slider_saturation)){
+        onSaturationChanged();
     }
 }
+

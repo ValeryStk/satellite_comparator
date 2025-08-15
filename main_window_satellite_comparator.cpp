@@ -621,9 +621,9 @@ void MainWindowSatelliteComparator::processpClassifiedBecasSpectraMatlabRequest(
 void MainWindowSatelliteComparator::updateImage()
 {
     if(m_image_item){
-        double coef_sat = ui->widget_image_saturation_light_corrector->getCoef1();
-        double coef_light = ui->widget_image_saturation_light_corrector->getCoef2();
-        QImage imgNew = createModifiedImage(m_satellite_image, coef_sat, coef_light);
+        double coef_saturation = ui->widget_image_saturation_light_corrector->getCoefSaturation();
+        double coef_light = ui->widget_image_saturation_light_corrector->getCoefLight();
+        QImage imgNew = createModifiedImage(m_satellite_image, coef_saturation, coef_light);
         auto pixmap = QPixmap::fromImage(imgNew);
         m_scene->removeItem(m_image_item);
         delete m_image_item;

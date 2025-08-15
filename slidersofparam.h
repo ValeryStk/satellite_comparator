@@ -15,24 +15,24 @@ class SlidersOfParam : public QWidget
 public:
     explicit SlidersOfParam(QWidget *parent = nullptr);
     ~SlidersOfParam();
-    double getCoef1() const;
-    double getCoef2() const;
+    double getCoefSaturation() const;
+    double getCoefLight() const;
     void setDefaultValues();
 
 signals:
     void slidersWereChanged();
 
 private slots:
-    void onSatChanged();
+    void onSaturationChanged();
     void onLightChanged();
     void on_slider_light_actionTriggered(int action);
-    void on_slider_sat_actionTriggered(int action);
+    void on_slider_saturation_actionTriggered(int action);
 
 private:
     Ui::SlidersOfParam *ui;
-    QSlider *slider_sat;
+    QSlider *slider_saturation;
     QSlider *slider_light;
-    double coefSat;
+    double coefSaturation;
     double coefLight;
 
 };
