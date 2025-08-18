@@ -1038,6 +1038,7 @@ void MainWindowSatelliteComparator::showGoogleMap()
 
 void MainWindowSatelliteComparator::resetColorsToDefaultRGB()
 {
+    ui->widget_image_saturation_light_corrector->setDefaultValues();
     if(m_dynamic_checkboxes_widget){
         m_dynamic_checkboxes_widget->setRGBchannels();
         if(m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 || m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9){
@@ -1046,7 +1047,6 @@ void MainWindowSatelliteComparator::resetColorsToDefaultRGB()
             change_bands_sentinel_and_show_image();
         }
     }
-    ui->widget_image_saturation_light_corrector->setDefaultValues();
 }
 
 
@@ -1119,6 +1119,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     m_scene->addItem(m_image_item);
     m_scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(m_image_item);
+    updateImage();
 }
 
 void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
@@ -1190,6 +1191,7 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
     m_scene->addItem(m_image_item);
     m_scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(m_image_item);
+    updateImage();
 }
 
 void MainWindowSatelliteComparator::show_layer(const QString& id)
