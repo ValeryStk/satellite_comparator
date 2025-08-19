@@ -4,12 +4,9 @@
 #include <QMainWindow>
 #include <algorithm>
 #include <QJsonObject>
+#include "json_utils.h"
+#include "message_reporter.h"
 
-class QCustomPlot;
-
-namespace Ui {
-class SatteliteComparator;
-}
 //!
 //! \brief Структура для хранения типов графиков
 //!
@@ -40,7 +37,7 @@ struct satellites_data{
     QVector<QVector<double>> responses;
 };
 
-struct data_to_show{
+struct comparator_data{
     QVector<double> device_waves;
     QVector<double> device_values;
     QVector<double> satellite_waves;
@@ -57,6 +54,7 @@ struct data_to_show{
 class SatteliteComparator : public QMainWindow
 {
     Q_OBJECT
+    friend class UnitTests;
 
 public:
     explicit SatteliteComparator(QVector<double> device_waves = {},
@@ -67,22 +65,20 @@ public:
 
 
 private:
-    Ui::SatteliteComparator *ui;
-    QCustomPlot* m_plot;
     QJsonObject m_sdb;
     QStringList m_satellites_list;
     QHash<QString,satellites_data> m_all_satellites_data;
     QVector<double> m_common_wave_grid;
     satellites_data m_sat_data;
-    data_to_show m_data_to_show;
+    comparator_data m_comparator_data;
 
 
-    void addCharts();
     void loadJsonSatellitesCentralWaves();
 
-    BASE_CHECK_RESULT base_check_before_interpolation(
-            const QVector<double> &waves1,
-            const QVector<double> &waves2);
+
+
+
+
 
     inline double linearInterpolation(const QVector<double> &x,
                                       const QVector<double> &y,
@@ -109,17 +105,23 @@ public:
 
     QPair<QVector<double>,QVector<double>> interpolate(const QVector<double> &x,
                                                        const QVector<double> &y,
-                                                       const QVector<double> &new_x);
+                                                       const QVector<double> &new_x,
+                                                       BASE_CHECK_RESULT &result_status);
+
+
+    QVector<double> check_intersection(const QVector<double>&waves_1,
+                                       const QVector<double>&waves_2);
+
+    QVector<double> fold_spectr_to_satellite_responses();
 
     void initial_fill_data_to_show(const QVector<double>& device_waves,
                                    const QVector<double>& device_values,
                                    const QVector<double>& satellite_waves,
                                    const QVector<double>& satellite_values);
 
-    QVector<double> check_intersection(const QVector<double>&waves_1,
-                                       const QVector<double>&waves_2);
-
-    QVector<double> fold_spectr_to_satellite_responses();
+    BASE_CHECK_RESULT base_check_before_interpolation(
+            const QVector<double> &waves1,
+            const QVector<double> &waves2);
 };
 
 #endif // SATTELITE_COMPARATOR_H

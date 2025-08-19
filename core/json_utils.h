@@ -2,11 +2,10 @@
 #define JSON_UTILS_H
 
 #include "QVector"
+#include "QJsonArray"
+#include "QJsonObject"
 #include "QJsonDocument"
-
-class QString;
-class QJsonArray;
-class QJsonObject;
+#include "QString"
 
 
 namespace jsn {

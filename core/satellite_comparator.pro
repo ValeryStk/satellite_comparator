@@ -68,7 +68,6 @@ HEADERS += \
 
 FORMS += \
     main_window_satellite_comparator.ui \
-    sattelite_comparator.ui\
     bekas\GuiModules/SpectrumWidgets/WavesRangeDialog.ui \
     bekas\GuiModules/UasvViewWindow.ui \
     sliders_of_image_corrector.ui

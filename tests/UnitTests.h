@@ -20,6 +20,9 @@ private slots:
 
     void testSliderImageCorrector();
 
+    void testSatelliteComparatorBaseCheck();
+    void testSatelliteComparatorLinearInterpolation();
+
 
 };
 

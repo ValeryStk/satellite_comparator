@@ -1,9 +1,6 @@
 #include "sattelite_comparator.h"
-#include "ui_sattelite_comparator.h"
-#include "qcustomplot.h"
-#include "json_utils.h"
-#include "message_reporter.h"
-#include <QPen>
+
+
 
 namespace{
 
@@ -23,65 +20,20 @@ SatteliteComparator::SatteliteComparator(QVector<double> device_waves,
                                          QVector<double> device_values,
                                          QVector<double> satellite_waves,
                                          QVector<double> satellite_values):
-    ui(new Ui::SatteliteComparator),
     m_sdb(get_sdb()),
     m_all_satellites_data(get_satellites_data()),
     m_common_wave_grid(get_common_waves())
 
 {
-    ui->setupUi(this);
-    setAttribute(Qt::WA_DeleteOnClose);
-    setWindowTitle("Окно сопоставления спектральных данных со спутниковыми");
-    m_plot =  ui->widget_plot_comparator;
-    m_plot->xAxis->setLabel("длина волны, нм");
-    m_plot->legend->setVisible(true);
-    initial_fill_data_to_show(device_waves,
-                              device_values,
-                              satellite_waves,
-                              satellite_values);
-
-    addCharts();
-
+initial_fill_data_to_show(device_waves,
+                          device_values,
+                          satellite_waves,
+                          satellite_values);
 }
 
 SatteliteComparator::~SatteliteComparator()
 {
-    delete ui;
-}
 
-void SatteliteComparator::addCharts()
-{
-    for(int i=0;i<(int)plot_type::PLOT_TYPE_SIZE;++i){
-        QCPGraph *graph = m_plot->addGraph();
-        plot_type pt = (plot_type)i;
-        QPen pen;
-        switch(pt){
-        case plot_type::ORIGIN_DEVICE_SPECTR:
-            pen.setWidth(2);
-            pen.setColor(Qt::red);
-            m_plot->graph(i)->setPen(pen);
-            m_plot->graph(i)->setName("Спектр БЕКАС");
-            break;
-        case plot_type::INTERPOLATED_DEVICE_SPECTR:
-            graph->setLineStyle(QCPGraph::lsLine);
-            graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 10));
-            pen.setWidth(2);
-            pen.setColor(Qt::green);
-            m_plot->graph((int)pt)->setPen(pen);
-            m_plot->graph(i)->setName("Свёрнутый спектр БЕКАС");
-            break;
-        case plot_type::SATELLITE_SPECTR:
-            graph->setLineStyle(QCPGraph::lsLine);
-            graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 10));
-            pen.setWidth(2);
-            pen.setColor(Qt::blue);
-            m_plot->graph((int)pt)->setPen(pen);
-            m_plot->graph(i)->setName(m_sat_data.alias);
-            break;
-        case plot_type::PLOT_TYPE_SIZE:
-            break;
-        }
-    }
 }
 
 BASE_CHECK_RESULT SatteliteComparator::base_check_before_interpolation(
@@ -92,9 +44,8 @@ BASE_CHECK_RESULT SatteliteComparator::base_check_before_interpolation(
 
     if(waves2.empty()) return BASE_CHECK_RESULT::WAVES_2_IS_EMPTY;
 
-    if (waves1.size() != waves2.size() || waves1.empty()) {
-        return BASE_CHECK_RESULT::SIZES_ARE_NOT_THE_SAME;
-    }
+    if(waves1.size()!=waves2.size()) return BASE_CHECK_RESULT::SIZES_ARE_NOT_THE_SAME;
+
     if (!std::is_sorted(waves1.begin(), waves1.end())) {
         return BASE_CHECK_RESULT::WAVES_1_IS_NOT_SORTED;
     }
@@ -160,32 +111,21 @@ QHash<QString, satellites_data> SatteliteComparator::get_satellites_data()
 QPair<QVector<double>,QVector<double>> SatteliteComparator::interpolate(
         const QVector<double>& x,
         const QVector<double>& y,
-        const QVector<double>& new_x)
+        const QVector<double>& new_x,
+        BASE_CHECK_RESULT& result_status)
 {
     QVector<double> new_values;
     QVector<double> existed_waves;
-    switch(base_check_before_interpolation(x,y)){
-    case BASE_CHECK_RESULT::OK:
+    result_status = base_check_before_interpolation(x,y);
+
+    if( result_status == BASE_CHECK_RESULT::OK){
         for(int i=0;i<new_x.size();++i){
             if(-1==linearInterpolation(x,y,new_x[i]))continue;
             new_values.push_back(linearInterpolation(x,y,new_x[i]));
             existed_waves.push_back(new_x[i]);
         }
         return {existed_waves,new_values};
-        break;
-    case BASE_CHECK_RESULT::WAVES_1_IS_EMPTY:
-        break;
-    case BASE_CHECK_RESULT::WAVES_2_IS_EMPTY:
-        break;
-    case BASE_CHECK_RESULT::SIZES_ARE_NOT_THE_SAME:
-        break;
-    case BASE_CHECK_RESULT::WAVES_1_IS_NOT_SORTED:
-        break;
-    case BASE_CHECK_RESULT::WAVES_2_IS_NOT_SORTED:
-        break;
-    case BASE_CHECK_RESULT::NO_INTERSECTION:
-        break;
-    };
+    }
     return {};
 }
 
@@ -224,10 +164,7 @@ void SatteliteComparator::initial_fill_data_to_show(const QVector<double>& devic
                                                     const QVector<double>& satellite_waves,
                                                     const QVector<double>& satellite_values)
 {
-    m_data_to_show.device_waves = device_waves;
-    m_data_to_show.device_values = device_values;
-    m_data_to_show.satellite_waves = satellite_waves;
-    m_data_to_show.satellite_values = satellite_values;
+
 }
 
 bool SatteliteComparator::set_satellite_responses(const QString& satellite_name)
@@ -248,9 +185,11 @@ bool SatteliteComparator::set_satellite_responses(const QString& satellite_name)
 
 void SatteliteComparator::compare_spectrs()
 {
-    auto x_y = interpolate(m_data_to_show.device_waves,
-                           m_data_to_show.device_values,
-                           m_common_wave_grid);
+    BASE_CHECK_RESULT result;
+    auto x_y = interpolate(m_comparator_data.device_waves,
+                           m_comparator_data.device_values,
+                           m_common_wave_grid,
+                           result);
 
 }
 
@@ -260,9 +199,11 @@ QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses()
     QVector<double>folded_spectr(m_sat_data.bands.size());
     QVector<double>satellite_bands_sum(m_sat_data.bands.size());
     QVector<double>device_spectr_bands_sum(m_sat_data.bands.size());
-    auto x_y = interpolate(m_data_to_show.device_waves,
-                           m_data_to_show.device_values,
-                           m_common_wave_grid);
+    BASE_CHECK_RESULT status;
+    auto x_y = interpolate(m_comparator_data.device_waves,
+                           m_comparator_data.device_values,
+                           m_common_wave_grid,
+                           status);
 
     for(int i=0;i<m_sat_data.bands.size();++i){
         int start = m_sat_data.bands[i][0]-SATTELITE_WAVE_OFFSET;
