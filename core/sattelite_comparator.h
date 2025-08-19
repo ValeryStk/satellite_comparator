@@ -22,6 +22,16 @@ enum class plot_type{
     PLOT_TYPE_SIZE
 };
 
+enum class BASE_CHECK_RESULT{
+    OK,
+    WAVES_1_IS_EMPTY,
+    WAVES_2_IS_EMPTY,
+    SIZES_ARE_NOT_THE_SAME,
+    WAVES_1_IS_NOT_SORTED,
+    WAVES_2_IS_NOT_SORTED,
+    NO_INTERSECTION
+};
+
 struct satellites_data{
     QString alias = "";
     QString satellite_name;
@@ -39,9 +49,10 @@ struct data_to_show{
     QVector<double> device_interpolated_waves;
     QVector<double> folded_device_values;
 };
+
 //!
-//! \brief SatteliteComparator class предназначен для сравнения двух спектров,
-//! спектра спутникового сенсора и спектра какого-либо прибора
+//! \brief SatteliteComparator class предназначен для сравнения спектров с разным спектральным разрешением
+//!
 //!
 class SatteliteComparator : public QMainWindow
 {
@@ -68,8 +79,11 @@ private:
 
     void addCharts();
     void loadJsonSatellitesCentralWaves();
-    void base_check_before_interpolation(const QVector<double> &x,
-                                         const QVector<double> &y);
+
+    BASE_CHECK_RESULT base_check_before_interpolation(
+            const QVector<double> &waves1,
+            const QVector<double> &waves2);
+
     inline double linearInterpolation(const QVector<double> &x,
                                       const QVector<double> &y,
                                       const double target_x);
@@ -93,11 +107,10 @@ public:
 
 
 
-   QPair<QVector<double>,QVector<double>> interpolate(const QVector<double> &x,
-                                           const QVector<double> &y,
-                                           const QVector<double> &new_x);
+    QPair<QVector<double>,QVector<double>> interpolate(const QVector<double> &x,
+                                                       const QVector<double> &y,
+                                                       const QVector<double> &new_x);
 
-    void replot();
     void initial_fill_data_to_show(const QVector<double>& device_waves,
                                    const QVector<double>& device_values,
                                    const QVector<double>& satellite_waves,

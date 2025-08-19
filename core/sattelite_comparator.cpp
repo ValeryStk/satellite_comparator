@@ -39,17 +39,8 @@ SatteliteComparator::SatteliteComparator(QVector<double> device_waves,
                               device_values,
                               satellite_waves,
                               satellite_values);
-    /*if(auto_detect_satellite()==false){
-        uts::showErrorMessage("Ошибка загрузки данных","Данные для спутника не найдены.");
-        this->close();
-    };*/
+
     addCharts();
-
-
-    //fold_spectr_to_satellite_responses();
-
-    //check_intersection({400,500,600,700,900},{390,401,402,403,505,1000});
-    //show();
 
 }
 
@@ -69,7 +60,7 @@ void SatteliteComparator::addCharts()
             pen.setWidth(2);
             pen.setColor(Qt::red);
             m_plot->graph(i)->setPen(pen);
-            m_plot->graph(i)->setName("Спектр ГСС");
+            m_plot->graph(i)->setName("Спектр БЕКАС");
             break;
         case plot_type::INTERPOLATED_DEVICE_SPECTR:
             graph->setLineStyle(QCPGraph::lsLine);
@@ -77,7 +68,7 @@ void SatteliteComparator::addCharts()
             pen.setWidth(2);
             pen.setColor(Qt::green);
             m_plot->graph((int)pt)->setPen(pen);
-            m_plot->graph(i)->setName("Свёрнутый спектр ГСС");
+            m_plot->graph(i)->setName("Свёрнутый спектр БЕКАС");
             break;
         case plot_type::SATELLITE_SPECTR:
             graph->setLineStyle(QCPGraph::lsLine);
@@ -93,17 +84,27 @@ void SatteliteComparator::addCharts()
     }
 }
 
-void SatteliteComparator::base_check_before_interpolation(const QVector<double>& x,
-                                                          const QVector<double>& y)
+BASE_CHECK_RESULT SatteliteComparator::base_check_before_interpolation(
+        const QVector<double>& waves1,
+        const QVector<double>& waves2)
 {
-    if (x.size() != y.size() || x.empty()) {
-        //throw std::exception("Sizes must be the same");
-    }
+    if(waves1.empty()) return BASE_CHECK_RESULT::WAVES_1_IS_EMPTY;
 
-    // Проверка, что вектор x отсортирован по возрастанию
-    if (!std::is_sorted(x.begin(), x.end())) {
-        //throw std::exception("Вектор x должен быть отсортирован по возрастанию.");
+    if(waves2.empty()) return BASE_CHECK_RESULT::WAVES_2_IS_EMPTY;
+
+    if (waves1.size() != waves2.size() || waves1.empty()) {
+        return BASE_CHECK_RESULT::SIZES_ARE_NOT_THE_SAME;
     }
+    if (!std::is_sorted(waves1.begin(), waves1.end())) {
+        return BASE_CHECK_RESULT::WAVES_1_IS_NOT_SORTED;
+    }
+    if (!std::is_sorted(waves2.begin(), waves2.end())) {
+        return BASE_CHECK_RESULT::WAVES_2_IS_NOT_SORTED;
+    }
+    if(check_intersection(waves1, waves2).empty()){
+        return BASE_CHECK_RESULT::NO_INTERSECTION;
+    }
+    return BASE_CHECK_RESULT::OK;
 }
 
 
@@ -114,7 +115,6 @@ double SatteliteComparator::linearInterpolation(const QVector<double>& x,
 {
 
     if (target_x < x.front() || target_x > x.back()) {
-        //throw std::exception("Целевая точка вне диапазона.");
         return -1;
     }
 
@@ -142,11 +142,9 @@ double SatteliteComparator::linearInterpolation(const QVector<double>& x,
 
 QHash<QString, satellites_data> SatteliteComparator::get_satellites_data()
 {
-
     satellites_data sd;
     QJsonObject json_satellites = m_sdb["satellites"].toObject();
     m_satellites_list = json_satellites.keys();
-    //qDebug()<<"sat_list: "<<m_satellites_list;
     QHash<QString,satellites_data> all_responses;
     for(auto &sk:m_satellites_list){
         auto obj = json_satellites[sk].toObject();
@@ -164,27 +162,31 @@ QPair<QVector<double>,QVector<double>> SatteliteComparator::interpolate(
         const QVector<double>& y,
         const QVector<double>& new_x)
 {
-    base_check_before_interpolation(x,y);
     QVector<double> new_values;
     QVector<double> existed_waves;
-    for(int i=0;i<new_x.size();++i){
-        if(-1==linearInterpolation(x,y,new_x[i]))continue;
-        new_values.push_back(linearInterpolation(x,y,new_x[i]));
-        existed_waves.push_back(new_x[i]);
-    }
-    return {existed_waves,new_values};//{existed_waves,new_values};
-}
-
-void SatteliteComparator::replot()
-{
-    m_plot->graph((int)plot_type::ORIGIN_DEVICE_SPECTR)->setData(m_data_to_show.device_waves,
-                                                                 m_data_to_show.device_values);
-    m_plot->graph((int)plot_type::SATELLITE_SPECTR)->setData(m_data_to_show.satellite_waves,
-                                                             m_data_to_show.satellite_values);
-    m_plot->graph((int)plot_type::INTERPOLATED_DEVICE_SPECTR)->setData(m_data_to_show.satellite_waves,
-                                                                       m_data_to_show.folded_device_values);
-    m_plot->rescaleAxes();
-    m_plot->replot();
+    switch(base_check_before_interpolation(x,y)){
+    case BASE_CHECK_RESULT::OK:
+        for(int i=0;i<new_x.size();++i){
+            if(-1==linearInterpolation(x,y,new_x[i]))continue;
+            new_values.push_back(linearInterpolation(x,y,new_x[i]));
+            existed_waves.push_back(new_x[i]);
+        }
+        return {existed_waves,new_values};
+        break;
+    case BASE_CHECK_RESULT::WAVES_1_IS_EMPTY:
+        break;
+    case BASE_CHECK_RESULT::WAVES_2_IS_EMPTY:
+        break;
+    case BASE_CHECK_RESULT::SIZES_ARE_NOT_THE_SAME:
+        break;
+    case BASE_CHECK_RESULT::WAVES_1_IS_NOT_SORTED:
+        break;
+    case BASE_CHECK_RESULT::WAVES_2_IS_NOT_SORTED:
+        break;
+    case BASE_CHECK_RESULT::NO_INTERSECTION:
+        break;
+    };
+    return {};
 }
 
 int SatteliteComparator::tryToFindTheSameVector(const QVector<QVector<double>> &vectorOfVectors,
@@ -238,7 +240,6 @@ bool SatteliteComparator::set_satellite_responses(const QString& satellite_name)
             m_sat_data.bands = check.bands;
             m_sat_data.responses = check.responses;
             m_sat_data.central_waves = check.central_waves;
-            qDebug()<<"AUTO_DETECTED_SATELLITE_NAME: "<<sat_name;
             return true;
         };
     }
@@ -263,37 +264,18 @@ QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses()
                            m_data_to_show.device_values,
                            m_common_wave_grid);
 
-
-
     for(int i=0;i<m_sat_data.bands.size();++i){
         int start = m_sat_data.bands[i][0]-SATTELITE_WAVE_OFFSET;
         int end   = m_sat_data.bands[i][1]-SATTELITE_WAVE_OFFSET;
         for(int j=start;j<end;++j){
-            //qDebug()<<"---resp-->"<<i<<m_sat_data.responses[j][i]<<"\n";
             satellite_bands_sum[i]+=m_sat_data.responses[j][i];
             device_spectr_bands_sum[i]+=x_y.second[j]*m_sat_data.responses[j][i];
         }
     }
-    qDebug()<<"bands_sum-->"<<satellite_bands_sum;
-    qDebug()<<"device_spectr_bands_sum-->"<<device_spectr_bands_sum;
-
     for(int i=0;i<device_spectr_bands_sum.size();++i){
         folded_spectr[i]=device_spectr_bands_sum[i]/satellite_bands_sum[i];
     }
-    qDebug()<<"folded_spectr"<<folded_spectr;
-
-
     return folded_spectr;
-    //dv::show(m_data_to_show.device_waves,m_data_to_show.device_values);
-    /*m_plot->graph((int)plot_type::SATELLITE_SPECTR)->setData(m_data_to_show.satellite_waves,
-                                                             m_data_to_show.satellite_values);
-    m_plot->graph((int)plot_type::ORIGIN_DEVICE_SPECTR)->setData(m_data_to_show.device_waves,
-                                                                 m_data_to_show.device_values);
-
-    m_plot->graph((int)plot_type::INTERPOLATED_DEVICE_SPECTR)->setData(m_data_to_show.satellite_waves,
-                                                                       folded_spectr);
-    m_plot->rescaleAxes();
-    m_plot->replot();*/
 }
 
 
@@ -304,14 +286,12 @@ QVector<double> SatteliteComparator::check_intersection(
     QVector<double>intersection;
     double start = std::max(waves_1.first(), waves_2.first());
     double end = std::min(waves_1.last(), waves_2.last());
-    qDebug()<<"start-end-->"<<start<<end;
     if (start <= end){
         intersection = {start,end};
-        qDebug()<<"***INTERSECTION***--->"<<intersection;
-        return {start, end}; // Возвращаем пересечение
+        return {start, end};
     }
     else
-        return {}; // Нет пересечения
+        return {};
 }
 
 
