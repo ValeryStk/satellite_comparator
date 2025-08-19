@@ -232,7 +232,6 @@ bool SatteliteComparator::set_satellite_responses(const QString& satellite_name)
 {
     for(const auto &sat_name:qAsConst(m_satellites_list)){
         auto check = m_all_satellites_data[sat_name];
-        //qDebug()<<"--->"<<m_data_to_show.satellite_waves<<"----"<<check.central_waves;
         if(sat_name==satellite_name){
             m_sat_data.satellite_name = sat_name;
             m_sat_data.alias = check.alias;
@@ -252,7 +251,6 @@ void SatteliteComparator::compare_spectrs()
                            m_data_to_show.device_values,
                            m_common_wave_grid);
 
-    //dv::show(x_y.first,x_y.second);
 }
 
 QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses()
