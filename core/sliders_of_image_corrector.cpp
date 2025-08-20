@@ -5,7 +5,12 @@
 #include <QtGlobal>
 #include <QDebug>
 
+constexpr double MAX_MULTIPLIER = 4;
+constexpr double MIN_MULTIPLIER = 0.25;
 
+constexpr int SLIDER_MAX_VALUE = 100;
+constexpr int SLIDER_MIN_VALUE = 0;
+constexpr int SLIDER_INITIAL_VALUE = (SLIDER_MAX_VALUE + SLIDER_MIN_VALUE)/2;
 
 namespace {
 
