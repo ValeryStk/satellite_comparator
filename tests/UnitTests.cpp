@@ -41,8 +41,6 @@ void UnitTests::helper_for_test_coef(int slider_value,
                                      const char* name_test,
                                      SlidersOfImageCorrector* sic){
 
-    sic->setAttribute(Qt::WA_DeleteOnClose);
-
     auto slider_saturation = sic->getSaturationSlider();
     auto slider_light = sic->getLightSlider();
 
@@ -66,7 +64,6 @@ void UnitTests::testSliderImageCorrector()
 {
     qDebug()<<"----------TEST SLIDER IMAGE CORRECTOR---------\n";
     auto sic = std::make_unique<SlidersOfImageCorrector>();
-    sic->setAttribute(Qt::WA_DeleteOnClose);
     auto slider_saturation = sic->getSaturationSlider();
     auto slider_light = sic->getLightSlider();
 
@@ -78,13 +75,30 @@ void UnitTests::testSliderImageCorrector()
     QVERIFY2(slider_light->minimum()==SLIDER_MIN_VALUE,"MIN value for light slider");
 
 
-    helper_for_test_coef(SLIDER_MAX_VALUE,calculate_proportion_coefficient(SLIDER_MAX_VALUE,{},{}),"coef value for MAX MULTIPLIER",sic.get());
-    helper_for_test_coef(SLIDER_INITIAL_VALUE,calculate_proportion_coefficient(SLIDER_INITIAL_VALUE,{},{}),"coef value for INITIAL MULTIPLIER",sic.get());
-    helper_for_test_coef(SLIDER_MIN_VALUE,calculate_proportion_coefficient(SLIDER_MIN_VALUE,{},{}),"coef value for MIN MULTIPLIER",sic.get());
-    helper_for_test_coef(SLIDER_MAX_VALUE*3/4,calculate_proportion_coefficient(SLIDER_MAX_VALUE*3/4,{},{}),"coef value", sic.get());
-    helper_for_test_coef(SLIDER_MAX_VALUE*1/4,calculate_proportion_coefficient(SLIDER_MAX_VALUE*1/4,{},{}),"coef value",sic.get());
+    helper_for_test_coef(SLIDER_MAX_VALUE,
+                         calculate_proportion_coefficient(SLIDER_MAX_VALUE,{},{}),
+                         "coef value for MAX MULTIPLIER",
+                         sic.get());
 
+    helper_for_test_coef(SLIDER_INITIAL_VALUE,
+                         calculate_proportion_coefficient(SLIDER_INITIAL_VALUE,{},{}),
+                         "coef value for INITIAL MULTIPLIER",
+                         sic.get());
 
+    helper_for_test_coef(SLIDER_MIN_VALUE,
+                         calculate_proportion_coefficient(SLIDER_MIN_VALUE,{},{}),
+                         "coef value for MIN MULTIPLIER",
+                         sic.get());
+
+    helper_for_test_coef(SLIDER_MAX_VALUE*3/4,
+                         calculate_proportion_coefficient(SLIDER_MAX_VALUE*3/4,{},{}),
+                         "coef value",
+                         sic.get());
+
+    helper_for_test_coef(SLIDER_MAX_VALUE*1/4,
+                         calculate_proportion_coefficient(SLIDER_MAX_VALUE*1/4,{},{}),
+                         "coef value",
+                         sic.get());
 
 }
 
