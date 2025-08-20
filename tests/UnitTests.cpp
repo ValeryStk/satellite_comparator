@@ -74,29 +74,31 @@ void UnitTests::testSliderImageCorrector()
     QVERIFY2(slider_saturation->minimum()==SLIDER_MIN_VALUE,"MIN value for saturation slider" );
     QVERIFY2(slider_light->minimum()==SLIDER_MIN_VALUE,"MIN value for light slider");
 
+    std::pair<double,double> base_range = {SLIDER_MIN_VALUE,SLIDER_MAX_VALUE};
+    std::pair<double,double> mult_range = {MIN_MULTIPLIER,MAX_MULTIPLIER};
 
     helper_for_test_coef(SLIDER_MAX_VALUE,
-                         calculate_proportion_coefficient(SLIDER_MAX_VALUE,{},{}),
+                         calculate_proportion_coefficient(SLIDER_MAX_VALUE,base_range,mult_range),
                          "coef value for MAX MULTIPLIER",
                          sic.get());
 
     helper_for_test_coef(SLIDER_INITIAL_VALUE,
-                         calculate_proportion_coefficient(SLIDER_INITIAL_VALUE,{},{}),
+                         calculate_proportion_coefficient(SLIDER_INITIAL_VALUE,base_range,mult_range),
                          "coef value for INITIAL MULTIPLIER",
                          sic.get());
 
     helper_for_test_coef(SLIDER_MIN_VALUE,
-                         calculate_proportion_coefficient(SLIDER_MIN_VALUE,{},{}),
+                         calculate_proportion_coefficient(SLIDER_MIN_VALUE,base_range,mult_range),
                          "coef value for MIN MULTIPLIER",
                          sic.get());
 
-    helper_for_test_coef(SLIDER_MAX_VALUE*3/4,
-                         calculate_proportion_coefficient(SLIDER_MAX_VALUE*3/4,{},{}),
+    helper_for_test_coef(SLIDER_MAX_VALUE * 0.75,
+                         calculate_proportion_coefficient(SLIDER_MAX_VALUE*0.75,base_range,mult_range),
                          "coef value",
                          sic.get());
 
-    helper_for_test_coef(SLIDER_MAX_VALUE*1/4,
-                         calculate_proportion_coefficient(SLIDER_MAX_VALUE*1/4,{},{}),
+    helper_for_test_coef(SLIDER_MAX_VALUE * 0.25,
+                         calculate_proportion_coefficient(SLIDER_MAX_VALUE*0.25,base_range,mult_range),
                          "coef value",
                          sic.get());
 

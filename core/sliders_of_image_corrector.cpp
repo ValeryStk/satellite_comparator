@@ -32,29 +32,34 @@ inline bool get_slider_value_from_position(const int action,
 
 
 inline double calculate_proportion_coefficient(const int base_range_value,
-                                               std::pair<double,double> base_range,
-                                               std::pair<double,double> multiplier_range){
+                                               const std::pair<double,double> base_range,
+                                               const std::pair<double,double> multiplier_range){
 
-    Q_UNUSED(base_range)
-    Q_UNUSED(multiplier_range)
 
-    if (base_range_value == SLIDER_INITIAL_VALUE) return NEUTRAL_MULTIPLIER;
-    if (base_range_value < SLIDER_INITIAL_VALUE) {
-        double t = static_cast<double>(SLIDER_INITIAL_VALUE - base_range_value) /
-                (SLIDER_INITIAL_VALUE - SLIDER_MIN_VALUE);
-        return NEUTRAL_MULTIPLIER - t * (NEUTRAL_MULTIPLIER - MIN_MULTIPLIER);
+    auto brs = base_range.first;
+    auto bre = base_range.second;
+    auto mrs = multiplier_range.first;
+    auto mre = multiplier_range.second;
+    int  init_val = (bre + brs)/2;
+    static int neutral_multiplier = 1;
+    Q_ASSERT(mrs < neutral_multiplier);
+    Q_ASSERT(mre > neutral_multiplier);
+
+    if (base_range_value == init_val) return neutral_multiplier;
+    if (base_range_value < init_val) {
+        double t = static_cast<double>(init_val - base_range_value) /
+                (init_val - brs);
+        return neutral_multiplier - t * (neutral_multiplier - mrs);
     }
-    if (base_range_value > SLIDER_INITIAL_VALUE) {
-        double t = static_cast<double>(base_range_value - SLIDER_INITIAL_VALUE) /
-                (SLIDER_MAX_VALUE - SLIDER_INITIAL_VALUE);
-        return NEUTRAL_MULTIPLIER + t * (MAX_MULTIPLIER - NEUTRAL_MULTIPLIER);
+    if (base_range_value > init_val) {
+        double t = static_cast<double>(base_range_value - init_val) /
+                (bre - init_val);
+        return neutral_multiplier + t * (mre - neutral_multiplier);
     }
     return -1.0; //Unexpected result
 }
 
 inline double calculate_slider_coef(const QSlider* slider){
-    Q_ASSERT(MIN_MULTIPLIER < NEUTRAL_MULTIPLIER);
-    Q_ASSERT(MAX_MULTIPLIER > NEUTRAL_MULTIPLIER);
     return calculate_proportion_coefficient(slider->value(),
                                             {SLIDER_MIN_VALUE,SLIDER_MAX_VALUE},
                                             {MIN_MULTIPLIER,MAX_MULTIPLIER});

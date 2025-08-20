@@ -25,12 +25,12 @@ public:
     ~SlidersOfImageCorrector();
     double getCoefSaturation() const;                       //! Функция получения коэффициента насыщенности
     double getCoefLight() const;                            //! Функция получения коэффициента яркости
-    void setDefaultValues();                                //! Функция установки значений слайдеров и коэффициентов в нейтральными значениями
+    void setDefaultValues();                                //! Функция установки значений слайдеров и коэффициентов нейтральными значениями
     QSlider* getLightSlider();                              //! Функция получения текущего значения слайдера яркости
     QSlider* getSaturationSlider();                         //! Функция получения текущего значения слайдера насыщенности
 
 signals:
-    void slidersWereChanged();                              //! Сигнал об изменении положения слайдера
+    void slidersWereChanged();                              //! Сигнал об изменении положения слайдеров
 
 private slots:
     void onSaturationChanged();                             //! Слот изменения коэффициента насыщенности
