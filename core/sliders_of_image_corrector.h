@@ -18,27 +18,30 @@ class SlidersOfImageCorrector : public QWidget
     friend class UnitTests;
 
 public:
+    //! Конструктор
     explicit SlidersOfImageCorrector(QWidget *parent = nullptr);
+
+    //! Деструктор
     ~SlidersOfImageCorrector();
-    double getCoefSaturation() const;
-    double getCoefLight() const;
-    void setDefaultValues();
-    QSlider* getLightSlider();
-    QSlider* getSaturationSlider();
+    double getCoefSaturation() const; //! Функция для передачи коэффициента насыщенности другим классам
+    double getCoefLight() const; //! Функция для передачи коэффициента яркости другим классам
+    void setDefaultValues(); //! Функция для калибровки средних значений слайдеров и коэффициентов
+    QSlider* getLightSlider(); //! Функция для использования слайдера яркости другими классами
+    QSlider* getSaturationSlider(); //! Функция для использования слайдера насыщенности другими классами
 
 signals:
-    void slidersWereChanged();
+    void slidersWereChanged(); //! Сигнал об изменении положения слайдера
 
 private slots:
-    void onSaturationChanged();
-    void onLightChanged();
-    void on_slider_light_actionTriggered(int action);
-    void on_slider_saturation_actionTriggered(int action);
+    void onSaturationChanged(); //! Слот изменения коэффициента насыщенности
+    void onLightChanged(); //! Слот изменения коэффициента яркости
+    void on_slider_light_actionTriggered(int action); //! Слот обработки действия слайдера яркости при нажатии
+    void on_slider_saturation_actionTriggered(int action); //! Слот обработки действия слайдера насыщенности при нажатии
 
 private:
-    Ui::SlidersOfImageCorrector *ui;
-    double coefSaturation;
-    double coefLight;
+    Ui::SlidersOfImageCorrector *ui; //!< Пользовательский интерфейс
+    double coefSaturation; //!< Коэффициент насыщенности цвета изображения
+    double coefLight;   //!< Коэффициент яркости цвета изображения
 
 };
 
