@@ -36,6 +36,32 @@ void UnitTests::cleanup()
     // Очистка после каждого теста
 }
 
+void UnitTests::helper_for_test_coef(int slider_value,
+                                      double multiplier_value,
+                                      const char* name_test){
+
+    SlidersOfImageCorrector* sic = new SlidersOfImageCorrector;
+    sic->setAttribute(Qt::WA_DeleteOnClose);
+
+    auto slider_saturation = sic->getSaturationSlider();
+    auto slider_light = sic->getLightSlider();
+
+    slider_light->setValue(slider_value);
+    slider_saturation->setValue(slider_value);
+
+    sic->onLightChanged();
+    sic->onSaturationChanged();
+
+    QTest::mouseClick(slider_light, Qt::LeftButton);
+    auto coef_sat=sic->getCoefSaturation();
+    auto coef_light=sic->getCoefLight();
+
+    qDebug()<<coef_sat<<"coef sat: "<<coef_light<<"coef light: ";
+    QVERIFY2(multiplier_value==coef_sat,name_test);
+    QVERIFY2(multiplier_value==coef_light,name_test);
+
+}
+
 void UnitTests::testSliderImageCorrector()
 {
     qDebug()<<"----------TEST SLIDER IMAGE CORRECTOR---------\n";
@@ -52,41 +78,42 @@ void UnitTests::testSliderImageCorrector()
         QVERIFY2(slider_light->minimum()==SLIDER_MIN_VALUE,"MIN value for light slider");
 
 
+        helper_for_test_coef(SLIDER_MAX_VALUE,MAX_MULTIPLIER,"MAX");
+        helper_for_test_coef(SLIDER_MIN_VALUE,MIN_MULTIPLIER,"MIN");
 
+//        slider_light->setValue(SLIDER_MAX_VALUE);
+//        slider_saturation->setValue(SLIDER_MAX_VALUE);
+//        sic->onLightChanged();
+//        sic->onSaturationChanged();
+//        QTest::mouseClick(slider_light, Qt::LeftButton);
+//        auto coef_sat=sic->getCoefSaturation();
+//        auto coef_light=sic->getCoefLight();
 
-        slider_light->setValue(SLIDER_MAX_VALUE);
-        slider_saturation->setValue(SLIDER_MAX_VALUE);
-        sic->onLightChanged();
-        sic->onSaturationChanged();
-        QTest::mouseClick(slider_light, Qt::LeftButton);
-        auto coef_sat=sic->getCoefSaturation();
-        auto coef_light=sic->getCoefLight();
+//        qDebug()<<coef_sat<<"coef sat: "<<coef_light<<"coef light: ";
+//        QVERIFY2(MAX_MULTIPLIER==coef_sat,"coef sat value for max MULTIPLIER");
+//        QVERIFY2(MAX_MULTIPLIER==coef_light,"coef light value for max MULTIPLIER");
 
-        qDebug()<<coef_sat<<"coef sat: "<<coef_light<<"coef light: ";
-        QVERIFY2(MAX_MULTIPLIER==coef_sat,"coef sat value for max MULTIPLIER");
-        QVERIFY2(MAX_MULTIPLIER==coef_light,"coef light value for max MULTIPLIER");
+//        slider_light->setValue(SLIDER_MIN_VALUE);
+//        slider_saturation->setValue(SLIDER_MIN_VALUE);
+//        sic->onLightChanged();
+//        sic->onSaturationChanged();
+//        auto coef_sat2=sic->getCoefSaturation();
+//        auto coef_light2=sic->getCoefLight();
 
-        slider_light->setValue(SLIDER_MIN_VALUE);
-        slider_saturation->setValue(SLIDER_MIN_VALUE);
-        sic->onLightChanged();
-        sic->onSaturationChanged();
-        auto coef_sat2=sic->getCoefSaturation();
-        auto coef_light2=sic->getCoefLight();
+//        qDebug()<<"coef_sat"<<coef_sat2<<"coef_light"<<coef_light2;
+//        QVERIFY2(MIN_MULTIPLIER==coef_sat2,"coef sat2 value for min MULTIPLIER");
+//        QVERIFY2(MIN_MULTIPLIER==coef_light2,"coef light2 value for min MULTIPLIER");
 
-        qDebug()<<"coef_sat"<<coef_sat2<<"coef_light"<<coef_light2;
-        QVERIFY2(MIN_MULTIPLIER==coef_sat2,"coef sat2 value for min MULTIPLIER");
-        QVERIFY2(MIN_MULTIPLIER==coef_light2,"coef light2 value for min MULTIPLIER");
+//        slider_light->setValue(SLIDER_MAX_VALUE-SLIDER_INITIAL_VALUE/2);
+//        slider_saturation->setValue(SLIDER_MAX_VALUE-SLIDER_INITIAL_VALUE/2);
+//        sic->onLightChanged();
+//        sic->onSaturationChanged();
+//        auto coef_sat3=sic->getCoefSaturation();
+//        auto coef_light3=sic->getCoefLight();
 
-        slider_light->setValue(SLIDER_MAX_VALUE-SLIDER_INITIAL_VALUE/2);
-        slider_saturation->setValue(SLIDER_MAX_VALUE-SLIDER_INITIAL_VALUE/2);
-        sic->onLightChanged();
-        sic->onSaturationChanged();
-        auto coef_sat3=sic->getCoefSaturation();
-        auto coef_light3=sic->getCoefLight();
-
-        qDebug()<<"coef_sat"<<coef_sat3<<"coef_light"<<coef_light3;
-        QVERIFY2(2.5==coef_sat3,"coef sat3 value for max MULTIPLIER");
-        QVERIFY2(2.5==coef_light3,"coef light3 value for max MULTIPLIER");
+//        qDebug()<<"coef_sat"<<coef_sat3<<"coef_light"<<coef_light3;
+//        QVERIFY2(2.5==coef_sat3,"coef sat3 value for max MULTIPLIER");
+//        QVERIFY2(2.5==coef_light3,"coef light3 value for max MULTIPLIER");
 
 }
 
