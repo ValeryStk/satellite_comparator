@@ -25,10 +25,10 @@ SatteliteComparator::SatteliteComparator(QVector<double> device_waves,
     m_common_wave_grid(get_common_waves())
 
 {
-initial_fill_data_to_show(device_waves,
-                          device_values,
-                          satellite_waves,
-                          satellite_values);
+    initial_fill_data_to_show(device_waves,
+                              device_values,
+                              satellite_waves,
+                              satellite_values);
 }
 
 SatteliteComparator::~SatteliteComparator()
@@ -158,7 +158,10 @@ void SatteliteComparator::initial_fill_data_to_show(const QVector<double>& devic
                                                     const QVector<double>& satellite_waves,
                                                     const QVector<double>& satellite_values)
 {
-
+    m_comparator_data.device_waves = device_waves;
+    m_comparator_data.device_values = device_values;
+    m_comparator_data.satellite_waves = satellite_waves;
+    m_comparator_data.satellite_values = satellite_values;
 }
 
 bool SatteliteComparator::set_satellite_responses(const QString& satellite_name)
@@ -198,19 +201,21 @@ QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses()
                            m_comparator_data.device_values,
                            m_common_wave_grid,
                            status);
-
-    for(int i=0;i<m_sat_data.bands.size();++i){
-        int start = m_sat_data.bands[i][0]-SATTELITE_WAVE_OFFSET;
-        int end   = m_sat_data.bands[i][1]-SATTELITE_WAVE_OFFSET;
-        for(int j=start;j<end;++j){
-            satellite_bands_sum[i]+=m_sat_data.responses[j][i];
-            device_spectr_bands_sum[i]+=x_y.second[j]*m_sat_data.responses[j][i];
+    if(status==BASE_CHECK_RESULT::OK){
+        for(int i=0;i<m_sat_data.bands.size();++i){
+            int start = m_sat_data.bands[i][0]-SATTELITE_WAVE_OFFSET;
+            int end   = m_sat_data.bands[i][1]-SATTELITE_WAVE_OFFSET;
+            for(int j=start;j<end;++j){
+                satellite_bands_sum[i]+=m_sat_data.responses[j][i];
+                device_spectr_bands_sum[i]+=x_y.second[j]*m_sat_data.responses[j][i];
+            }
         }
+        for(int i=0;i<device_spectr_bands_sum.size();++i){
+            folded_spectr[i]=device_spectr_bands_sum[i]/satellite_bands_sum[i];
+        }
+        return folded_spectr;
     }
-    for(int i=0;i<device_spectr_bands_sum.size();++i){
-        folded_spectr[i]=device_spectr_bands_sum[i]/satellite_bands_sum[i];
-    }
-    return folded_spectr;
+    return {};
 }
 
 
