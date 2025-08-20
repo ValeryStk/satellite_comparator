@@ -2,7 +2,7 @@
 
 #include <QDebug>
 #include <QVector>
-#include "../core/sliders_of_image_corrector.h"
+#include "../core/sliders_of_image_corrector.cpp"
 #include "../core/sattelite_comparator.h"
 #include "../core/json_utils.cpp"
 
@@ -39,18 +39,54 @@ void UnitTests::cleanup()
 void UnitTests::testSliderImageCorrector()
 {
     qDebug()<<"----------TEST SLIDER IMAGE CORRECTOR---------\n";
-    SlidersOfImageCorrector* sic = new SlidersOfImageCorrector;
-    sic->setAttribute(Qt::WA_DeleteOnClose);
-    auto slider_saturation = sic->getSaturationSlider();
-    auto slider_light = sic->getLightSlider();
+        SlidersOfImageCorrector* sic = new SlidersOfImageCorrector;
+        sic->setAttribute(Qt::WA_DeleteOnClose);
+        auto slider_saturation = sic->getSaturationSlider();
+        auto slider_light = sic->getLightSlider();
 
-    QVERIFY2(sic->getCoefLight()==1,"Initial value for light slider");
-    QVERIFY2(sic->getCoefSaturation()==1,"Initial value for saturation slider");
-    QVERIFY2(slider_saturation->maximum()==SLIDER_MAX_VALUE,"MAX value for saturation slider");
-    QVERIFY2(slider_light->maximum()==SLIDER_MAX_VALUE,"MAX value for light slider");
-    //slider_saturation->maximum()
+        QVERIFY2(sic->getCoefLight()==1,"Initial value for light slider");
+        QVERIFY2(sic->getCoefSaturation()==1,"Initial value for saturation slider");
+        QVERIFY2(slider_saturation->maximum()==SLIDER_MAX_VALUE,"MAX value for saturation slider");
+        QVERIFY2(slider_light->maximum()==SLIDER_MAX_VALUE,"MAX value for light slider");
+        QVERIFY2(slider_saturation->minimum()==SLIDER_MIN_VALUE,"MIN value for saturation slider" );
+        QVERIFY2(slider_light->minimum()==SLIDER_MIN_VALUE,"MIN value for light slider");
 
-    slider_saturation->setValue(slider_saturation->maximum());
+
+
+
+        slider_light->setValue(SLIDER_MAX_VALUE);
+        slider_saturation->setValue(SLIDER_MAX_VALUE);
+        sic->onLightChanged();
+        sic->onSaturationChanged();
+        QTest::mouseClick(slider_light, Qt::LeftButton);
+        auto coef_sat=sic->getCoefSaturation();
+        auto coef_light=sic->getCoefLight();
+
+        qDebug()<<coef_sat<<"coef sat: "<<coef_light<<"coef light: ";
+        QVERIFY2(MAX_MULTIPLIER==coef_sat,"coef sat value for max MULTIPLIER");
+        QVERIFY2(MAX_MULTIPLIER==coef_light,"coef light value for max MULTIPLIER");
+
+        slider_light->setValue(SLIDER_MIN_VALUE);
+        slider_saturation->setValue(SLIDER_MIN_VALUE);
+        sic->onLightChanged();
+        sic->onSaturationChanged();
+        auto coef_sat2=sic->getCoefSaturation();
+        auto coef_light2=sic->getCoefLight();
+
+        qDebug()<<"coef_sat"<<coef_sat2<<"coef_light"<<coef_light2;
+        QVERIFY2(MIN_MULTIPLIER==coef_sat2,"coef sat2 value for min MULTIPLIER");
+        QVERIFY2(MIN_MULTIPLIER==coef_light2,"coef light2 value for min MULTIPLIER");
+
+        slider_light->setValue(SLIDER_MAX_VALUE-SLIDER_INITIAL_VALUE/2);
+        slider_saturation->setValue(SLIDER_MAX_VALUE-SLIDER_INITIAL_VALUE/2);
+        sic->onLightChanged();
+        sic->onSaturationChanged();
+        auto coef_sat3=sic->getCoefSaturation();
+        auto coef_light3=sic->getCoefLight();
+
+        qDebug()<<"coef_sat"<<coef_sat3<<"coef_light"<<coef_light3;
+        QVERIFY2(2.5==coef_sat3,"coef sat3 value for max MULTIPLIER");
+        QVERIFY2(2.5==coef_light3,"coef light3 value for max MULTIPLIER");
 
 }
 
