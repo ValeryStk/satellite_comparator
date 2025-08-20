@@ -49,9 +49,6 @@ BASE_CHECK_RESULT SatteliteComparator::base_check_before_interpolation(
     if (!std::is_sorted(waves1.begin(), waves1.end())) {
         return BASE_CHECK_RESULT::WAVES_IS_NOT_SORTED;
     }
-    if(check_intersection(waves1, waves2).empty()){
-        return BASE_CHECK_RESULT::NO_INTERSECTION;
-    }
     return BASE_CHECK_RESULT::OK;
 }
 
