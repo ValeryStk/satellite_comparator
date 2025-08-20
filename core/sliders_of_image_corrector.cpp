@@ -7,6 +7,7 @@
 
 constexpr double MAX_MULTIPLIER = 4;
 constexpr double MIN_MULTIPLIER = 0.25;
+constexpr double INITIAL_MULTIPLIER = 1;
 
 constexpr int SLIDER_MAX_VALUE = 100;
 constexpr int SLIDER_MIN_VALUE = 0;
