@@ -9,6 +9,9 @@ namespace Ui {
 class SlidersOfImageCorrector;
 }
 
+/**
+ * @brief Класс предназначен для расчёта коэффициентов которые используются при регулировки яркости и цветового баланса изображения
+ */
 class SlidersOfImageCorrector : public QWidget
 {
     Q_OBJECT
