@@ -40,17 +40,14 @@ BASE_CHECK_RESULT SatteliteComparator::base_check_before_interpolation(
         const QVector<double>& waves1,
         const QVector<double>& waves2)
 {
-    if(waves1.empty()) return BASE_CHECK_RESULT::WAVES_1_IS_EMPTY;
+    if(waves1.empty()) return BASE_CHECK_RESULT::WAVES_IS_EMPTY;
 
-    if(waves2.empty()) return BASE_CHECK_RESULT::WAVES_2_IS_EMPTY;
+    if(waves2.empty()) return BASE_CHECK_RESULT::VALUES_IS_EMPTY;
 
     if(waves1.size()!=waves2.size()) return BASE_CHECK_RESULT::SIZES_ARE_NOT_THE_SAME;
 
     if (!std::is_sorted(waves1.begin(), waves1.end())) {
-        return BASE_CHECK_RESULT::WAVES_1_IS_NOT_SORTED;
-    }
-    if (!std::is_sorted(waves2.begin(), waves2.end())) {
-        return BASE_CHECK_RESULT::WAVES_2_IS_NOT_SORTED;
+        return BASE_CHECK_RESULT::WAVES_IS_NOT_SORTED;
     }
     if(check_intersection(waves1, waves2).empty()){
         return BASE_CHECK_RESULT::NO_INTERSECTION;

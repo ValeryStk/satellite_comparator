@@ -61,10 +61,10 @@ void UnitTests::testSatelliteComparatorBaseCheck()
     QVERIFY2( BASE_CHECK_RESULT::OK==
               sc->base_check_before_interpolation({1,2,3},{1,2,3}),
               "Check OK result");
-    QVERIFY2(BASE_CHECK_RESULT::WAVES_1_IS_EMPTY ==
+    QVERIFY2(BASE_CHECK_RESULT::WAVES_IS_EMPTY ==
              sc->base_check_before_interpolation({},{1,2,3}),
              "Check empty wave1 result");
-    QVERIFY2(BASE_CHECK_RESULT::WAVES_2_IS_EMPTY ==
+    QVERIFY2(BASE_CHECK_RESULT::VALUES_IS_EMPTY ==
              sc->base_check_before_interpolation({1,2,3},{}),
              "Check empty wave2 result");
     QVERIFY2(BASE_CHECK_RESULT::SIZES_ARE_NOT_THE_SAME ==
@@ -73,12 +73,9 @@ void UnitTests::testSatelliteComparatorBaseCheck()
     QVERIFY2(BASE_CHECK_RESULT::SIZES_ARE_NOT_THE_SAME ==
              sc->base_check_before_interpolation({1,2,3,5,6,7},{1,2,3}),
              "Sizes are not the same");
-    QVERIFY2(BASE_CHECK_RESULT::WAVES_1_IS_NOT_SORTED ==
+    QVERIFY2(BASE_CHECK_RESULT::WAVES_IS_NOT_SORTED ==
              sc->base_check_before_interpolation({10,9,8,7},{1,2,3,4}),
              "Check not sorted wave1 result");
-    QVERIFY2(BASE_CHECK_RESULT::WAVES_2_IS_NOT_SORTED ==
-             sc->base_check_before_interpolation({1,2,3,4},{1,2,3,0}),
-             "Check not sorted wave2 result");
 }
 
 void UnitTests::testSatelliteComparatorLinearInterpolation()

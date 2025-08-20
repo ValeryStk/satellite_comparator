@@ -21,12 +21,11 @@ enum class plot_type{
 
 enum class BASE_CHECK_RESULT{
     OK,
-    WAVES_1_IS_EMPTY,
-    WAVES_2_IS_EMPTY,
+    WAVES_IS_EMPTY,
+    VALUES_IS_EMPTY,
     SIZES_ARE_NOT_THE_SAME,
-    WAVES_1_IS_NOT_SORTED,
-    WAVES_2_IS_NOT_SORTED,
-    NO_INTERSECTION
+    WAVES_IS_NOT_SORTED,
+    WAVES_2_IS_NOT_SORTED
 };
 
 struct satellites_data{
