@@ -7,7 +7,7 @@
 
 constexpr double MAX_MULTIPLIER = 4;
 constexpr double MIN_MULTIPLIER = 0.25;
-constexpr double INITIAL_MULTIPLIER = 1;
+constexpr double NEUTRAL_MULTIPLIER = 1.0;
 
 constexpr int SLIDER_MAX_VALUE = 100;
 constexpr int SLIDER_MIN_VALUE = 0;
@@ -30,20 +30,34 @@ inline bool get_slider_value_from_position(const int action,
     return false;
 }
 
-inline double calculate_slider_coef(QSlider* slider){
-    Q_ASSERT(MIN_MULTIPLIER < 1.0);
-    Q_ASSERT(MAX_MULTIPLIER > 1.0);
-    int sVal = slider->value();
-    if (sVal == SLIDER_INITIAL_VALUE) return 1.0;
-    if (sVal < SLIDER_INITIAL_VALUE) {
-        double t = static_cast<double>(SLIDER_INITIAL_VALUE - sVal) / (SLIDER_INITIAL_VALUE - SLIDER_MIN_VALUE);
-        return 1.0 - t * (1.0 - MIN_MULTIPLIER);
+
+inline double calculate_proportion_coefficient(const int base_range_value,
+                                               std::pair<double,double> base_range,
+                                               std::pair<double,double> multiplier_range){
+
+    Q_UNUSED(base_range)
+    Q_UNUSED(multiplier_range)
+
+    if (base_range_value == SLIDER_INITIAL_VALUE) return NEUTRAL_MULTIPLIER;
+    if (base_range_value < SLIDER_INITIAL_VALUE) {
+        double t = static_cast<double>(SLIDER_INITIAL_VALUE - base_range_value) /
+                (SLIDER_INITIAL_VALUE - SLIDER_MIN_VALUE);
+        return NEUTRAL_MULTIPLIER - t * (NEUTRAL_MULTIPLIER - MIN_MULTIPLIER);
     }
-    if (sVal > SLIDER_INITIAL_VALUE) {
-        double t = static_cast<double>(sVal - SLIDER_INITIAL_VALUE) / (SLIDER_MAX_VALUE - SLIDER_INITIAL_VALUE);
-        return 1.0 + t * (MAX_MULTIPLIER - 1.0);
+    if (base_range_value > SLIDER_INITIAL_VALUE) {
+        double t = static_cast<double>(base_range_value - SLIDER_INITIAL_VALUE) /
+                (SLIDER_MAX_VALUE - SLIDER_INITIAL_VALUE);
+        return NEUTRAL_MULTIPLIER + t * (MAX_MULTIPLIER - NEUTRAL_MULTIPLIER);
     }
-    return -1.0; // Невозможное значение, но на всякий случай
+    return -1.0; //Unexpected result
+}
+
+inline double calculate_slider_coef(const QSlider* slider){
+    Q_ASSERT(MIN_MULTIPLIER < NEUTRAL_MULTIPLIER);
+    Q_ASSERT(MAX_MULTIPLIER > NEUTRAL_MULTIPLIER);
+    return calculate_proportion_coefficient(slider->value(),
+                                            {SLIDER_MIN_VALUE,SLIDER_MAX_VALUE},
+                                            {MIN_MULTIPLIER,MAX_MULTIPLIER});
 }
 // end of namespace
 
@@ -62,8 +76,8 @@ SlidersOfImageCorrector::SlidersOfImageCorrector(QWidget *parent) :
     ui->slider_light->setValue(SLIDER_INITIAL_VALUE);
     ui->slider_saturation->setRange(SLIDER_MIN_VALUE, SLIDER_MAX_VALUE);
     ui->slider_light->setRange(SLIDER_MIN_VALUE, SLIDER_MAX_VALUE);
-    coefSaturation = 1;
-    coefLight = 1;
+    coefSaturation = NEUTRAL_MULTIPLIER;
+    coefLight = NEUTRAL_MULTIPLIER;
     connect(ui->slider_saturation, SIGNAL(sliderReleased()), this, SLOT(onSaturationChanged()));
     connect(ui->slider_light, SIGNAL(sliderReleased()), this, SLOT(onLightChanged()));
 }
@@ -87,8 +101,8 @@ void SlidersOfImageCorrector::setDefaultValues()
 {
     ui->slider_saturation->setValue(SLIDER_INITIAL_VALUE);
     ui->slider_light->setValue(SLIDER_INITIAL_VALUE);
-    coefSaturation = 1;
-    coefLight = 1;
+    coefSaturation = NEUTRAL_MULTIPLIER;
+    coefLight = NEUTRAL_MULTIPLIER;
 }
 
 QSlider *SlidersOfImageCorrector::getLightSlider()

@@ -35,29 +35,10 @@ void UnitTests::cleanup()
 {
     // Очистка после каждого теста
 }
-double calculate_coef_of_sliders(int slider_value){
-    if (slider_value == SLIDER_INITIAL_VALUE) return 1.0;
-
-    if (slider_value < SLIDER_INITIAL_VALUE) {
-
-        double t = static_cast<double>(SLIDER_INITIAL_VALUE - slider_value) /
-                  (SLIDER_INITIAL_VALUE - SLIDER_MIN_VALUE);
-        return 1.0 - t * (1.0 - MIN_MULTIPLIER);
-    }
-
-    if (slider_value > SLIDER_INITIAL_VALUE) {
-
-        double t = static_cast<double>(slider_value - SLIDER_INITIAL_VALUE) /
-                  (SLIDER_MAX_VALUE - SLIDER_INITIAL_VALUE);
-        return 1.0 + t * (MAX_MULTIPLIER - 1.0);
-    }
-
-    return -1.0;
-}
 
 void UnitTests::helper_for_test_coef(int slider_value,
                                      double multiplier_value,
-                                      const char* name_test,
+                                     const char* name_test,
                                      SlidersOfImageCorrector* sic){
 
     sic->setAttribute(Qt::WA_DeleteOnClose);
@@ -84,24 +65,24 @@ void UnitTests::helper_for_test_coef(int slider_value,
 void UnitTests::testSliderImageCorrector()
 {
     qDebug()<<"----------TEST SLIDER IMAGE CORRECTOR---------\n";
-        auto sic = std::make_unique<SlidersOfImageCorrector>();
-        sic->setAttribute(Qt::WA_DeleteOnClose);
-        auto slider_saturation = sic->getSaturationSlider();
-        auto slider_light = sic->getLightSlider();
+    auto sic = std::make_unique<SlidersOfImageCorrector>();
+    sic->setAttribute(Qt::WA_DeleteOnClose);
+    auto slider_saturation = sic->getSaturationSlider();
+    auto slider_light = sic->getLightSlider();
 
-        QVERIFY2(sic->getCoefLight()==1,"Initial value for light slider");
-        QVERIFY2(sic->getCoefSaturation()==1,"Initial value for saturation slider");
-        QVERIFY2(slider_saturation->maximum()==SLIDER_MAX_VALUE,"MAX value for saturation slider");
-        QVERIFY2(slider_light->maximum()==SLIDER_MAX_VALUE,"MAX value for light slider");
-        QVERIFY2(slider_saturation->minimum()==SLIDER_MIN_VALUE,"MIN value for saturation slider" );
-        QVERIFY2(slider_light->minimum()==SLIDER_MIN_VALUE,"MIN value for light slider");
+    QVERIFY2(sic->getCoefLight()==1,"Initial value for light slider");
+    QVERIFY2(sic->getCoefSaturation()==1,"Initial value for saturation slider");
+    QVERIFY2(slider_saturation->maximum()==SLIDER_MAX_VALUE,"MAX value for saturation slider");
+    QVERIFY2(slider_light->maximum()==SLIDER_MAX_VALUE,"MAX value for light slider");
+    QVERIFY2(slider_saturation->minimum()==SLIDER_MIN_VALUE,"MIN value for saturation slider" );
+    QVERIFY2(slider_light->minimum()==SLIDER_MIN_VALUE,"MIN value for light slider");
 
 
-        helper_for_test_coef(SLIDER_MAX_VALUE,calculate_coef_of_sliders(SLIDER_MAX_VALUE),"coef value for MAX MULTIPLIER",sic.get());
-        helper_for_test_coef(SLIDER_INITIAL_VALUE,calculate_coef_of_sliders(SLIDER_INITIAL_VALUE),"coef value for INITIAL MULTIPLIER",sic.get());
-        helper_for_test_coef(SLIDER_MIN_VALUE,calculate_coef_of_sliders(SLIDER_MIN_VALUE),"coef value for MIN MULTIPLIER",sic.get());
-        helper_for_test_coef(SLIDER_MAX_VALUE*3/4,calculate_coef_of_sliders(SLIDER_MAX_VALUE*3/4),"coef value", sic.get());
-        helper_for_test_coef(SLIDER_MAX_VALUE*1/4,calculate_coef_of_sliders(SLIDER_MAX_VALUE*1/4),"coef value",sic.get());
+    helper_for_test_coef(SLIDER_MAX_VALUE,calculate_proportion_coefficient(SLIDER_MAX_VALUE,{},{}),"coef value for MAX MULTIPLIER",sic.get());
+    helper_for_test_coef(SLIDER_INITIAL_VALUE,calculate_proportion_coefficient(SLIDER_INITIAL_VALUE,{},{}),"coef value for INITIAL MULTIPLIER",sic.get());
+    helper_for_test_coef(SLIDER_MIN_VALUE,calculate_proportion_coefficient(SLIDER_MIN_VALUE,{},{}),"coef value for MIN MULTIPLIER",sic.get());
+    helper_for_test_coef(SLIDER_MAX_VALUE*3/4,calculate_proportion_coefficient(SLIDER_MAX_VALUE*3/4,{},{}),"coef value", sic.get());
+    helper_for_test_coef(SLIDER_MAX_VALUE*1/4,calculate_proportion_coefficient(SLIDER_MAX_VALUE*1/4,{},{}),"coef value",sic.get());
 
 
 
