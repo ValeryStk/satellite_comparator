@@ -23,20 +23,38 @@ public:
 
     //! Деструктор
     ~SlidersOfImageCorrector();
-    double getCoefSaturation() const;                       //! Функция получения коэффициента насыщенности
-    double getCoefLight() const;                            //! Функция получения коэффициента яркости
-    void setDefaultValues();                                //! Функция установки значений слайдеров и коэффициентов нейтральными значениями
-    QSlider* getLightSlider();                              //! Функция получения текущего значения слайдера яркости
-    QSlider* getSaturationSlider();                         //! Функция получения текущего значения слайдера насыщенности
+
+    //! Функция получения коэффициента насыщенности
+    double getCoefSaturation() const;
+
+    //! Функция получения коэффициента яркости
+    double getCoefLight() const;
+
+    //! Функция установки значений слайдеров и коэффициентов нейтральными значениями
+    void setDefaultValues();
+
+    //! Функция получения текущего значения слайдера яркости
+    QSlider* getLightSlider();
+
+    //! Функция получения текущего значения слайдера насыщенности
+    QSlider* getSaturationSlider();
 
 signals:
-    void slidersWereChanged();                              //! Сигнал об изменении положения слайдеров
+    //! Сигнал об изменении положения слайдеров
+    void slidersWereChanged();
 
 private slots:
-    void onSaturationChanged();                             //! Слот изменения коэффициента насыщенности
-    void onLightChanged();                                  //! Слот изменения коэффициента яркости
-    void on_slider_light_actionTriggered(int action);       //! Слот обработки действия слайдера яркости при нажатии
-    void on_slider_saturation_actionTriggered(int action);  //! Слот обработки действия слайдера насыщенности при нажатии
+    //! Слот изменения коэффициента насыщенности
+    void onSaturationChanged();
+
+     //! Слот изменения коэффициента яркости
+    void onLightChanged();
+
+    //! Слот обработки действия слайдера яркости при нажатии
+    void on_slider_light_actionTriggered(int action);
+
+    //! Слот обработки действия слайдера насыщенности при нажатии
+    void on_slider_saturation_actionTriggered(int action);
 
 private:
     Ui::SlidersOfImageCorrector *ui;                        //!< Пользовательский интерфейс
