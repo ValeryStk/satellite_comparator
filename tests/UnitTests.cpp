@@ -8,6 +8,7 @@
 
 namespace{
 
+
 } // end namespace
 
 
@@ -36,58 +37,78 @@ void UnitTests::cleanup()
     // Очистка после каждого теста
 }
 
+void UnitTests::helper_for_test_coef(const int slider_value,
+                                     const double expected_multiplier_value,
+                                     const QString& name_test,
+                                     SlidersOfImageCorrector* sic,
+                                     const uint header_width){
+
+    auto slider_saturation = sic->getSaturationSlider();
+    auto slider_light = sic->getLightSlider();
+
+    slider_light->setValue(slider_value);
+    slider_saturation->setValue(slider_value);
+
+    sic->onLightChanged();
+    sic->onSaturationChanged();
+
+    auto coef_sat = sic->getCoefSaturation();
+    auto coef_light = sic->getCoefLight();
+
+
+    qDebug().nospace()          << qSetFieldWidth(header_width) <<slider_value
+                       << " | " << qSetFieldWidth(header_width) << coef_sat
+                       << " | " << qSetFieldWidth(header_width) << coef_light
+                       << " | " << qSetFieldWidth(header_width) << expected_multiplier_value;
+    qDebug().resetFormat();
+
+    QVERIFY2(expected_multiplier_value == coef_sat,   name_test.toLocal8Bit());
+    QVERIFY2(expected_multiplier_value == coef_light, name_test.toLocal8Bit());
+
+}
+
 void UnitTests::testSliderImageCorrector()
 {
     qDebug()<<"----------TEST SLIDER IMAGE CORRECTOR---------\n";
-        SlidersOfImageCorrector* sic = new SlidersOfImageCorrector;
-        sic->setAttribute(Qt::WA_DeleteOnClose);
-        auto slider_saturation = sic->getSaturationSlider();
-        auto slider_light = sic->getLightSlider();
+    auto sic = std::make_unique<SlidersOfImageCorrector>();
+    auto slider_saturation = sic->getSaturationSlider();
+    auto slider_light = sic->getLightSlider();
 
-        QVERIFY2(sic->getCoefLight()==1,"Initial value for light slider");
-        QVERIFY2(sic->getCoefSaturation()==1,"Initial value for saturation slider");
-        QVERIFY2(slider_saturation->maximum()==SLIDER_MAX_VALUE,"MAX value for saturation slider");
-        QVERIFY2(slider_light->maximum()==SLIDER_MAX_VALUE,"MAX value for light slider");
-        QVERIFY2(slider_saturation->minimum()==SLIDER_MIN_VALUE,"MIN value for saturation slider" );
-        QVERIFY2(slider_light->minimum()==SLIDER_MIN_VALUE,"MIN value for light slider");
+    QVERIFY2(sic->getCoefLight()          == NEUTRAL_MULTIPLIER,"Initial value for light slider");
+    QVERIFY2(sic->getCoefSaturation()     == NEUTRAL_MULTIPLIER,"Initial value for saturation slider");
+    QVERIFY2(slider_saturation->maximum() == SLIDER_MAX_VALUE,  "MAX value for saturation slider");
+    QVERIFY2(slider_light->maximum()      == SLIDER_MAX_VALUE,  "MAX value for light slider");
+    QVERIFY2(slider_saturation->minimum() == SLIDER_MIN_VALUE,  "MIN value for saturation slider" );
+    QVERIFY2(slider_light->minimum()      == SLIDER_MIN_VALUE,  "MIN value for light slider");
 
+    const uint width = 6;
+    qDebug().nospace()          << qSetFieldWidth(width) << "value"
+                       << " | " << qSetFieldWidth(width) << "sc"
+                       << " | " << qSetFieldWidth(width) << "lc"
+                       << " | " << qSetFieldWidth(width) << "er";
 
+    struct test_params{
+        double slider_value;
+        double expected_multiplier;
+        QString error_message;
+    };
 
+    QString wrong_message = "WRONG coef value for ";
+                                   // Slider value           // Expected result  // Error message
+    QVector<test_params> params = {{SLIDER_MAX_VALUE,        MAX_MULTIPLIER,     wrong_message + "MAX MULTIPLIER"},
+                                   {SLIDER_INITIAL_VALUE,    NEUTRAL_MULTIPLIER, wrong_message + "INITIAL MULTIPLIER"},
+                                   {SLIDER_MIN_VALUE,        MIN_MULTIPLIER,     wrong_message + "MIN MULTIPLIER"},
+                                   {SLIDER_MAX_VALUE * 0.75, 2.5,                wrong_message + "0.75"},
+                                   {SLIDER_MAX_VALUE * 0.25, 0.625,              wrong_message + "0.25"}
+                                  };
 
-        slider_light->setValue(SLIDER_MAX_VALUE);
-        slider_saturation->setValue(SLIDER_MAX_VALUE);
-        sic->onLightChanged();
-        sic->onSaturationChanged();
-        QTest::mouseClick(slider_light, Qt::LeftButton);
-        auto coef_sat=sic->getCoefSaturation();
-        auto coef_light=sic->getCoefLight();
-
-        qDebug()<<coef_sat<<"coef sat: "<<coef_light<<"coef light: ";
-        QVERIFY2(MAX_MULTIPLIER==coef_sat,"coef sat value for max MULTIPLIER");
-        QVERIFY2(MAX_MULTIPLIER==coef_light,"coef light value for max MULTIPLIER");
-
-        slider_light->setValue(SLIDER_MIN_VALUE);
-        slider_saturation->setValue(SLIDER_MIN_VALUE);
-        sic->onLightChanged();
-        sic->onSaturationChanged();
-        auto coef_sat2=sic->getCoefSaturation();
-        auto coef_light2=sic->getCoefLight();
-
-        qDebug()<<"coef_sat"<<coef_sat2<<"coef_light"<<coef_light2;
-        QVERIFY2(MIN_MULTIPLIER==coef_sat2,"coef sat2 value for min MULTIPLIER");
-        QVERIFY2(MIN_MULTIPLIER==coef_light2,"coef light2 value for min MULTIPLIER");
-
-        slider_light->setValue(SLIDER_MAX_VALUE-SLIDER_INITIAL_VALUE/2);
-        slider_saturation->setValue(SLIDER_MAX_VALUE-SLIDER_INITIAL_VALUE/2);
-        sic->onLightChanged();
-        sic->onSaturationChanged();
-        auto coef_sat3=sic->getCoefSaturation();
-        auto coef_light3=sic->getCoefLight();
-
-        qDebug()<<"coef_sat"<<coef_sat3<<"coef_light"<<coef_light3;
-        QVERIFY2(2.5==coef_sat3,"coef sat3 value for max MULTIPLIER");
-        QVERIFY2(2.5==coef_light3,"coef light3 value for max MULTIPLIER");
-
+    for(int i=0;i<params.size();++i){
+       auto p = params[i];
+        helper_for_test_coef(p.slider_value,
+                             p.expected_multiplier,
+                             p.error_message,sic.get(),
+                             width);
+    }
 }
 
 void UnitTests::testSatelliteComparatorBaseCheck()
