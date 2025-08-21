@@ -15,10 +15,11 @@ public:
     UnitTests();
 
 private:
-    void helper_for_test_coef(int slider_value,
-                              double multiplier_value,
-                              const char* name_test,
-                              SlidersOfImageCorrector* sic);
+    void helper_for_test_coef(const int slider_value,
+                              const double expected_multiplier_value,
+                              const QString& name_test,
+                              SlidersOfImageCorrector *sic,
+                              const uint header_width);
 
 private slots:
     void initTestCase();     // Вызывается перед выполнением первого тестового метода

@@ -8,6 +8,7 @@
 
 namespace{
 
+
 } // end namespace
 
 
@@ -36,10 +37,11 @@ void UnitTests::cleanup()
     // Очистка после каждого теста
 }
 
-void UnitTests::helper_for_test_coef(int slider_value,
-                                     double multiplier_value,
-                                     const char* name_test,
-                                     SlidersOfImageCorrector* sic){
+void UnitTests::helper_for_test_coef(const int slider_value,
+                                     const double expected_multiplier_value,
+                                     const QString& name_test,
+                                     SlidersOfImageCorrector* sic,
+                                     const uint header_width){
 
     auto slider_saturation = sic->getSaturationSlider();
     auto slider_light = sic->getLightSlider();
@@ -50,13 +52,18 @@ void UnitTests::helper_for_test_coef(int slider_value,
     sic->onLightChanged();
     sic->onSaturationChanged();
 
-    auto coef_sat=sic->getCoefSaturation();
-    auto coef_light=sic->getCoefLight();
+    auto coef_sat = sic->getCoefSaturation();
+    auto coef_light = sic->getCoefLight();
 
-    qDebug()<<coef_sat<<"coef sat: "<<coef_light<<"coef light: ";
-    qDebug()<<multiplier_value<<"MULTIPL";
-    QVERIFY2(multiplier_value==coef_sat,name_test);
-    QVERIFY2(multiplier_value==coef_light,name_test);
+
+    qDebug().nospace()          << qSetFieldWidth(header_width) <<slider_value
+                       << " | " << qSetFieldWidth(header_width) << coef_sat
+                       << " | " << qSetFieldWidth(header_width) << coef_light
+                       << " | " << qSetFieldWidth(header_width) << expected_multiplier_value;
+    qDebug().resetFormat();
+
+    QVERIFY2(expected_multiplier_value == coef_sat,   name_test.toLocal8Bit());
+    QVERIFY2(expected_multiplier_value == coef_light, name_test.toLocal8Bit());
 
 }
 
@@ -67,41 +74,41 @@ void UnitTests::testSliderImageCorrector()
     auto slider_saturation = sic->getSaturationSlider();
     auto slider_light = sic->getLightSlider();
 
-    QVERIFY2(sic->getCoefLight()==1,"Initial value for light slider");
-    QVERIFY2(sic->getCoefSaturation()==1,"Initial value for saturation slider");
-    QVERIFY2(slider_saturation->maximum()==SLIDER_MAX_VALUE,"MAX value for saturation slider");
-    QVERIFY2(slider_light->maximum()==SLIDER_MAX_VALUE,"MAX value for light slider");
-    QVERIFY2(slider_saturation->minimum()==SLIDER_MIN_VALUE,"MIN value for saturation slider" );
-    QVERIFY2(slider_light->minimum()==SLIDER_MIN_VALUE,"MIN value for light slider");
+    QVERIFY2(sic->getCoefLight()          == NEUTRAL_MULTIPLIER,"Initial value for light slider");
+    QVERIFY2(sic->getCoefSaturation()     == NEUTRAL_MULTIPLIER,"Initial value for saturation slider");
+    QVERIFY2(slider_saturation->maximum() == SLIDER_MAX_VALUE,  "MAX value for saturation slider");
+    QVERIFY2(slider_light->maximum()      == SLIDER_MAX_VALUE,  "MAX value for light slider");
+    QVERIFY2(slider_saturation->minimum() == SLIDER_MIN_VALUE,  "MIN value for saturation slider" );
+    QVERIFY2(slider_light->minimum()      == SLIDER_MIN_VALUE,  "MIN value for light slider");
 
-    std::pair<double,double> base_range = {SLIDER_MIN_VALUE,SLIDER_MAX_VALUE};
-    std::pair<double,double> mult_range = {MIN_MULTIPLIER,MAX_MULTIPLIER};
+    const uint width = 6;
+    qDebug().nospace()          << qSetFieldWidth(width) << "value"
+                       << " | " << qSetFieldWidth(width) << "sc"
+                       << " | " << qSetFieldWidth(width) << "lc"
+                       << " | " << qSetFieldWidth(width) << "er";
 
-    helper_for_test_coef(SLIDER_MAX_VALUE,
-                         calculate_proportion_coefficient(SLIDER_MAX_VALUE,base_range,mult_range),
-                         "coef value for MAX MULTIPLIER",
-                         sic.get());
+    struct test_params{
+        double slider_value;
+        double expected_multiplier;
+        QString error_message;
+    };
 
-    helper_for_test_coef(SLIDER_INITIAL_VALUE,
-                         calculate_proportion_coefficient(SLIDER_INITIAL_VALUE,base_range,mult_range),
-                         "coef value for INITIAL MULTIPLIER",
-                         sic.get());
+    QString wrong_message = "WRONG coef value for ";
+                                   // Slider value           // Expected result  // Error message
+    QVector<test_params> params = {{SLIDER_MAX_VALUE,        MAX_MULTIPLIER,     wrong_message + "MAX MULTIPLIER"},
+                                   {SLIDER_INITIAL_VALUE,    NEUTRAL_MULTIPLIER, wrong_message + "INITIAL MULTIPLIER"},
+                                   {SLIDER_MIN_VALUE,        MIN_MULTIPLIER,     wrong_message + "MIN MULTIPLIER"},
+                                   {SLIDER_MAX_VALUE * 0.75, 2.5,                wrong_message + "0.75"},
+                                   {SLIDER_MAX_VALUE * 0.25, 0.625,              wrong_message + "0.25"}
+                                  };
 
-    helper_for_test_coef(SLIDER_MIN_VALUE,
-                         calculate_proportion_coefficient(SLIDER_MIN_VALUE,base_range,mult_range),
-                         "coef value for MIN MULTIPLIER",
-                         sic.get());
-
-    helper_for_test_coef(SLIDER_MAX_VALUE * 0.75,
-                         calculate_proportion_coefficient(SLIDER_MAX_VALUE*0.75,base_range,mult_range),
-                         "coef value",
-                         sic.get());
-
-    helper_for_test_coef(SLIDER_MAX_VALUE * 0.25,
-                         calculate_proportion_coefficient(SLIDER_MAX_VALUE*0.25,base_range,mult_range),
-                         "coef value",
-                         sic.get());
-
+    for(int i=0;i<params.size();++i){
+       auto p = params[i];
+        helper_for_test_coef(p.slider_value,
+                             p.expected_multiplier,
+                             p.error_message,sic.get(),
+                             width);
+    }
 }
 
 void UnitTests::testSatelliteComparatorBaseCheck()

@@ -61,8 +61,8 @@ inline double calculate_proportion_coefficient(const int base_range_value,
 
 inline double calculate_slider_coef(const QSlider* slider){
     return calculate_proportion_coefficient(slider->value(),
-                                            {SLIDER_MIN_VALUE,SLIDER_MAX_VALUE},
-                                            {MIN_MULTIPLIER,MAX_MULTIPLIER});
+                                            {SLIDER_MIN_VALUE, SLIDER_MAX_VALUE},
+                                            {MIN_MULTIPLIER,   MAX_MULTIPLIER});
 }
 // end of namespace
 
