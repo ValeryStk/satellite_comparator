@@ -1,17 +1,7 @@
-QT += testlib core widgets printsupport
-TARGET = UnitTests
+TEMPLATE = subdirs
+CONFIG += ordered
 
-HEADERS += UnitTests.h\
-           ../core/sliders_of_image_corrector.h\
-           ../core/sattelite_comparator.h
+SUBDIRS += sliders_of_image_corrector satellite_comparator
 
-SOURCES += UnitTests.cpp\
-           ../core/sliders_of_image_corrector.cpp\
-           ../core/sattelite_comparator.cpp
-
-FORMS += ../core/sliders_of_image_corrector.ui
-
-
-
-
-
+sliders_of_image_corrector.file = sliders_of_image_corrector/sliders_of_image_corrector_Tests.pro
+satellite_comparator.file = satellite_comparator/satellite_comparator_Tests.pro
