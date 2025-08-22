@@ -64,7 +64,8 @@ HEADERS += \
     bekas/GuiModules/UasvViewWindow.h \
     satellite_xml_reader.h \
     satellites_structs.h \
-    udpjsonrpc.h
+    udpjsonrpc.h \
+    version.h
 
 FORMS += \
     main_window_satellite_comparator.ui \

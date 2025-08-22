@@ -37,6 +37,7 @@
 #include <QByteArray>
 #include <matio.h>
 #include <MatFilesOperator.h>
+#include "version.h"
 
 
 
@@ -109,7 +110,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     m_label_scene_coord = new QLabel;
     ui->statusbar->addPermanentWidget(m_label_scene_coord);
     initUdpRpcConnection();
-    setWindowTitle(satc::app_name);
+    QString app_title_version = "%1 %2 %3";
+    setWindowTitle(app_title_version.arg(satc::app_name).arg(" ").arg(QString(VER_PRODUCTVERSION_STR)));
     gdal_start_driver();
     initSentinelStructs();
     initLandsatStructs();
