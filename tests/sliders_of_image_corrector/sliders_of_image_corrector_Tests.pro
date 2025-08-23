@@ -1,5 +1,6 @@
 QT += testlib core widgets printsupport
-TARGET = UnitTests
+
+TARGET = SlidersOfImageCorrectorTest
 
 HEADERS += UnitTests.h\
            ../../core/sliders_of_image_corrector.h\

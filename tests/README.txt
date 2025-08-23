@@ -11,6 +11,6 @@ Make new test instruction:
 4. open your NEW_NAME dir
    - rename pro file to NEW_NAME_Tests.pro
    - open and edit NEW_NAME_Tests.pro
-     - edit TARGET to NewNameTests
-	 - add HEADERS you need
-	 - add SOURCES you need
+   - edit TARGET to NewNameTests
+   - add HEADERS you need
+   - add SOURCES you need

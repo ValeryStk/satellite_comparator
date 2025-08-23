@@ -1,11 +1,4 @@
-QT += testlib core widgets printsupport
+QT += testlib core
 TARGET = EmptyUnitTests
-
 HEADERS += UnitTests.h\
-
 SOURCES += UnitTests.cpp\
-
-
-
-
-
