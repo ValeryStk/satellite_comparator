@@ -3,6 +3,7 @@
 
 #include <QStyle>
 #include <QtGlobal>
+#include <QToolTip>
 #include <QDebug>
 
 constexpr double MAX_MULTIPLIER = 4;
@@ -61,8 +62,8 @@ inline double calculate_proportion_coefficient(const int base_range_value,
 
 inline double calculate_slider_coef(const QSlider* slider){
     return calculate_proportion_coefficient(slider->value(),
-                                            {SLIDER_MIN_VALUE, SLIDER_MAX_VALUE},
-                                            {MIN_MULTIPLIER,   MAX_MULTIPLIER});
+    {SLIDER_MIN_VALUE, SLIDER_MAX_VALUE},
+    {MIN_MULTIPLIER,   MAX_MULTIPLIER});
 }
 // end of namespace
 
@@ -144,4 +145,23 @@ void SlidersOfImageCorrector::on_slider_saturation_actionTriggered(int action)
     if(get_slider_value_from_position(action, ui->slider_saturation)){
         onSaturationChanged();
     }
+}
+
+void SlidersOfImageCorrector::on_slider_light_valueChanged(int value)
+{
+    showToolTip(ui->slider_light,value);
+}
+
+void SlidersOfImageCorrector::on_slider_saturation_valueChanged(int value)
+{
+    showToolTip(ui->slider_saturation,value);
+}
+
+void SlidersOfImageCorrector::showToolTip(QSlider *slider,
+                                          const int value)
+{
+    QPoint sliderPos = slider->mapToGlobal(QPoint(0, 0));
+    int x = sliderPos.x() + (slider->width() - 20) * value / 100;
+    int y = sliderPos.y() - 50; // немного выше
+    QToolTip::showText(QPoint(x, y), QString::number(value), slider);
 }

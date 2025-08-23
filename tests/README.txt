@@ -1,4 +1,4 @@
-Make new test instruction:
+Make new test instruction manualy:
 
 1. copy _empty_tets dir to this dir
 
@@ -14,3 +14,7 @@ Make new test instruction:
    - edit TARGET to NewNameTests
    - add HEADERS you need
    - add SOURCES you need
+   
+Make new test by running create_new_test.bat:
+just double click create_new_test.bat
+enjoy it

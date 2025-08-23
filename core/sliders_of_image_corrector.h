@@ -56,10 +56,17 @@ private slots:
     //! Слот обработки действия слайдера насыщенности при нажатии
     void on_slider_saturation_actionTriggered(int action);
 
+    void on_slider_light_valueChanged(int value);
+
+    void on_slider_saturation_valueChanged(int value);
+
+
 private:
     Ui::SlidersOfImageCorrector *ui;                        //!< Пользовательский интерфейс
     double coefSaturation;                                  //!< Коэффициент насыщенности цвета изображения
     double coefLight;                                       //!< Коэффициент яркости цвета изображения
+
+    void showToolTip(QSlider* slider, const int value);
 
 };
 

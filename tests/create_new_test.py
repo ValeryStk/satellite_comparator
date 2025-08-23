@@ -22,12 +22,10 @@ def create_new_test():
     with open(tests_pro_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
-    with open(tests_pro_path, "w", encoding="utf-8") as f:
-        for line in lines:
-            f.write(line)
-            if line.strip().startswith("SUBDIRS +="):
-                f.write(f"SUBDIRS += {new_name}\n")
-                f.write(f"{new_name}.file = {new_name}/{new_name}_Tests.pro\n")
+    with open(tests_pro_path, "a", encoding="utf-8") as f:
+        f.write(f"\nSUBDIRS += {new_name}\n")
+        f.write(f"{new_name}.file = {new_name}/{new_name}_Tests.pro\n")
+
 
     # Шаг 4: Редактируем .pro файл внутри новой директории
     old_pro_path = os.path.join(dst_dir, "empty_tests.pro")
