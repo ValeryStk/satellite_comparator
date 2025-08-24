@@ -1,6 +1,6 @@
 Make new test instruction manualy:
 
-1. copy _empty_tets dir to this dir
+1. copy _empty_tests dir to this dir
 
 2. rename it like you want to name future test (for example NEW_NAME)
 
