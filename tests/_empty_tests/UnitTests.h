@@ -11,14 +11,11 @@ class UnitTests : public QObject
 public:
     UnitTests();
 
-
 private slots:
-    void initTestCase();     // Вызывается перед выполнением первого тестового метода
-    void cleanupTestCase();  // Вызывается после выполнения последнего тестового метода
-    void init();             // Вызывается перед каждым тестовым методом
-    void cleanup();          // Вызывается после каждого тестового метода
-
-
+    void initTestCase();
+    void cleanupTestCase();
+    void init();
+    void cleanup();
 
 };
 
