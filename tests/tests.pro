@@ -6,3 +6,6 @@ sliders_of_image_corrector.file = sliders_of_image_corrector/sliders_of_image_co
 
 SUBDIRS += satellite_comparator
 satellite_comparator.file = satellite_comparator/satellite_comparator_Tests.pro
+
+SUBDIRS += sam
+sam.file = sam/sam_Tests.pro

@@ -1,4 +1,4 @@
-#include "UnitTests.h"
+#include "SlidersOfImageCorrectorUnitTests.h"
 
 #include <QDebug>
 #include <QVector>
@@ -11,32 +11,32 @@ namespace{
 } // end namespace
 
 
-UnitTests::UnitTests()
+SlidersOfImageCorrectorUnitTests::SlidersOfImageCorrectorUnitTests()
 {
 }
 
-void UnitTests::initTestCase()
+void SlidersOfImageCorrectorUnitTests::initTestCase()
 {
     // Инициализация перед запуском всех тестов
 }
 
-void UnitTests::cleanupTestCase()
+void SlidersOfImageCorrectorUnitTests::cleanupTestCase()
 {
     // Очистка после выполнения всех тестов
 }
 
-void UnitTests::init()
+void SlidersOfImageCorrectorUnitTests::init()
 {
     // Инициализация перед каждым тестом
 
 }
 
-void UnitTests::cleanup()
+void SlidersOfImageCorrectorUnitTests::cleanup()
 {
     // Очистка после каждого теста
 }
 
-void UnitTests::helper_for_test_coef(const int slider_value,
+void SlidersOfImageCorrectorUnitTests::helper_for_test_coef(const int slider_value,
                                      const double expected_multiplier_value,
                                      const QString& name_test,
                                      SlidersOfImageCorrector* sic,
@@ -66,7 +66,7 @@ void UnitTests::helper_for_test_coef(const int slider_value,
 
 }
 
-void UnitTests::testSliderImageCorrector()
+void SlidersOfImageCorrectorUnitTests::testSliderImageCorrector()
 {
     qDebug()<<"----------TEST SLIDER IMAGE CORRECTOR---------\n";
     auto sic = std::make_unique<SlidersOfImageCorrector>();
@@ -111,4 +111,4 @@ void UnitTests::testSliderImageCorrector()
 }
 
 
-QTEST_MAIN(UnitTests)
+QTEST_MAIN(SlidersOfImageCorrectorUnitTests)

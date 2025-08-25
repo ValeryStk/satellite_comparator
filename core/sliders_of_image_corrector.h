@@ -15,7 +15,7 @@ class SlidersOfImageCorrector;
 class SlidersOfImageCorrector : public QWidget
 {
     Q_OBJECT
-    friend class UnitTests;
+    friend class SlidersOfImageCorrectorUnitTests;
 
 public:
     //! Конструктор

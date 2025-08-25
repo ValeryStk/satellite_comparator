@@ -1,4 +1,4 @@
-#include "UnitTests.h"
+#include "SatelliteComparatorUnitTests.h"
 
 #include <QDebug>
 
@@ -12,32 +12,32 @@ namespace{
 } // end namespace
 
 
-UnitTests::UnitTests()
+SatelliteComparatorUnitTests::SatelliteComparatorUnitTests()
 {
 }
 
-void UnitTests::initTestCase()
+void SatelliteComparatorUnitTests::initTestCase()
 {
     // Инициализация перед запуском всех тестов
 }
 
-void UnitTests::cleanupTestCase()
+void SatelliteComparatorUnitTests::cleanupTestCase()
 {
     // Очистка после выполнения всех тестов
 }
 
-void UnitTests::init()
+void SatelliteComparatorUnitTests::init()
 {
     // Инициализация перед каждым тестом
 
 }
 
-void UnitTests::cleanup()
+void SatelliteComparatorUnitTests::cleanup()
 {
     // Очистка после каждого теста
 }
 
-void UnitTests::testSatelliteComparatorBaseCheck()
+void SatelliteComparatorUnitTests::testSatelliteComparatorBaseCheck()
 {
     qDebug()<<"----------TEST SATELLITE COMPARATOR BASE CHECK---------\n";
     auto sc = std::make_unique<SatteliteComparator>();
@@ -61,7 +61,7 @@ void UnitTests::testSatelliteComparatorBaseCheck()
              "Check not sorted wave1 result");
 }
 
-void UnitTests::testSatelliteComparatorLinearInterpolation()
+void SatelliteComparatorUnitTests::testSatelliteComparatorLinearInterpolation()
 {
     auto sc = std::make_unique<SatteliteComparator>();
     BASE_CHECK_RESULT status;
@@ -72,4 +72,4 @@ void UnitTests::testSatelliteComparatorLinearInterpolation()
     QVERIFY2(status == BASE_CHECK_RESULT::OK,"Correct interpolation params");
 }
 
-QTEST_MAIN(UnitTests)
+QTEST_MAIN(SatelliteComparatorUnitTests)
