@@ -43,10 +43,12 @@ void SamUnitTests::samMetricsTest()
     QVector<double> v2 = {};
     pr = sam::euclideanDistance(v1,v2,result);
     QString message = QString::fromStdString(pr.message);
+    QCOMPARE(pr.status,sam::STATUS_CODE::ONE_OF_THE_VECTORS_ARE_EMPTY);
     qDebug()<<message<<result;
     v1 = {0.8,0.6,0.2};
     v2 = {0.8,0.55,0.25};
     pr = sam::euclideanDistance(v1,v2,result);
+    QCOMPARE(pr.status,sam::STATUS_CODE::OK);
     qDebug()<<QString::fromStdString(pr.message)<<result;
 }
 
