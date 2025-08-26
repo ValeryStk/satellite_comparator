@@ -20,11 +20,11 @@ struct ProcessingResult {
   std::string message;
 };
 
-inline ProcessingResult euclideanDistance(const vector<double> &v1,
+inline ProcessingResult calculateEuclideanDistance(const vector<double> &v1,
                                 const vector<double> &v2,
                                 double& result);
 
-inline ProcessingResult euclideanDistance(const QVector<double> &v1,
+inline ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
                                 const QVector<double> &v2,
                                 double& result);
 
