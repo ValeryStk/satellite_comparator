@@ -4,6 +4,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 RC_FILE = resource.rc
 CONFIG += c++11
 
+include(bekas/bekas.pri)
 
 SOURCES += \
     cross_square.cpp \
@@ -24,15 +25,6 @@ SOURCES += \
     sattelite_comparator.cpp \
     sliders_of_image_corrector.cpp \
     text_constants.cpp\
-    bekas/BaseTools/DBJson.cpp \
-    bekas/BaseTools/IniFileLoader.cpp \
-    bekas/BaseTools/QrcFilesRestorer.cpp \
-    bekas/GuiModules/ImageWidgets/PhotospectralGraphicsView.cpp \
-    bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.cpp \
-    bekas/ProcessingModules/FilesParser.cpp \
-    bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.cpp \
-    bekas/ProcessingModules/SpectrDataSaver.cpp\
-    bekas/GuiModules/UasvViewWindow.cpp \
     satellite_xml_reader.cpp \
     udpjsonrpc.cpp
 
@@ -53,15 +45,6 @@ HEADERS += \
     sattelite_comparator.h \
     sliders_of_image_corrector.h \
     text_constants.h\
-    bekas/BaseTools/DBJson.h \
-    bekas/BaseTools/IniFileLoader.h \
-    bekas/BaseTools/QrcFilesRestorer.h \
-    bekas/GuiModules/ImageWidgets/PhotospectralGraphicsView.h \
-    bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.h \
-    bekas/ProcessingModules/FilesParser.h \
-    bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.h \
-    bekas/ProcessingModules/SpectrDataSaver.h \
-    bekas/GuiModules/UasvViewWindow.h \
     satellite_xml_reader.h \
     satellites_structs.h \
     udpjsonrpc.h \
