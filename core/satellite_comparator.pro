@@ -5,6 +5,7 @@ RC_FILE = resource.rc
 CONFIG += c++11
 
 include(bekas/bekas.pri)
+include(matio.pri)
 
 SOURCES += \
     cross_square.cpp \
@@ -72,13 +73,7 @@ LIBS += -L$$PWD/libs/gdal/x64/lib -lgdal_i
 INCLUDEPATH += $$PWD/libs/gdal/x64/include
 DEPENDPATH += $$PWD/libs/gdal/x64/include
 
-INCLUDEPATH += $$PWD/libs/matio/src
-win32:CONFIG(release, debug|release) {
-    LIBS += -L$$PWD/libs/matio/build/Release/ -llibmatio
-}
-win32:CONFIG(debug, debug|release) {
-    LIBS += -L$$PWD/libs/matio/build/Debug/ -llibmatio
-}
+
 
 
 

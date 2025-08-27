@@ -19,7 +19,6 @@ inline ProcessingResult euclideanDistanceImpl(const Container& v1,
     pr.message = "unexpected result";
     pr.status = STATUS_CODE::UNEXPECTED_RESULT;
 
-    qDebug()<<v1.size()<<v2.size();
     if(v1.size()==0||v2.size()==0){
         pr.message = "one of the vectors is empty";
         pr.status = STATUS_CODE::ONE_OF_THE_VECTORS_ARE_EMPTY;

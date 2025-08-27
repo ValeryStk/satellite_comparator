@@ -2,7 +2,7 @@
 #define WAVESRANGEDIALOG_H
 
 #include <QDialog>
-#include <bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.h>
+#include "SpectrPlotterWidget.h"
 
 namespace Ui {
 class WavesRangeDialog;

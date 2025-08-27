@@ -1,25 +1,30 @@
+QT += widgets printsupport core network
+
+BEKAS_ROOT = $$PWD
+INCLUDEPATH += BEKAS_ROOT $$PWD/../
+
 SOURCES += \
-    bekas/BaseTools/DBJson.cpp \
-    bekas/BaseTools/IniFileLoader.cpp \
-    bekas/BaseTools/QrcFilesRestorer.cpp \
-    bekas/GuiModules/ImageWidgets/PhotospectralGraphicsView.cpp \
-    bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.cpp \
-    bekas/ProcessingModules/FilesParser.cpp \
-    bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.cpp \
-    bekas/ProcessingModules/SpectrDataSaver.cpp\
-    bekas/GuiModules/UasvViewWindow.cpp \
+    $$BEKAS_ROOT/BaseTools/DBJson.cpp \
+    $$BEKAS_ROOT/BaseTools/IniFileLoader.cpp \
+    $$BEKAS_ROOT/BaseTools/QrcFilesRestorer.cpp \
+    $$BEKAS_ROOT/GuiModules/ImageWidgets/PhotospectralGraphicsView.cpp \
+    $$BEKAS_ROOT/GuiModules/SpectrumWidgets/WavesRangeDialog.cpp \
+    $$BEKAS_ROOT/ProcessingModules/FilesParser.cpp \
+    $$BEKAS_ROOT/GuiModules/SpectrumWidgets/SpectrPlotterWidget.cpp \
+    $$BEKAS_ROOT/ProcessingModules/SpectrDataSaver.cpp\
+    $$BEKAS_ROOT/GuiModules/UasvViewWindow.cpp \
 
 HEADERS += \
-    bekas/BaseTools/DBJson.h \
-    bekas/BaseTools/IniFileLoader.h \
-    bekas/BaseTools/QrcFilesRestorer.h \
-    bekas/GuiModules/ImageWidgets/PhotospectralGraphicsView.h \
-    bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.h \
-    bekas/ProcessingModules/FilesParser.h \
-    bekas/GuiModules/SpectrumWidgets/SpectrPlotterWidget.h \
-    bekas/ProcessingModules/SpectrDataSaver.h \
-    bekas/GuiModules/UasvViewWindow.h \
+    $$BEKAS_ROOT/BaseTools/DBJson.h \
+    $$BEKAS_ROOT/BaseTools/IniFileLoader.h \
+    $$BEKAS_ROOT/BaseTools/QrcFilesRestorer.h \
+    $$BEKAS_ROOT/GuiModules/ImageWidgets/PhotospectralGraphicsView.h \
+    $$BEKAS_ROOT/GuiModules/SpectrumWidgets/WavesRangeDialog.h \
+    $$BEKAS_ROOT/ProcessingModules/FilesParser.h \
+    $$BEKAS_ROOT/GuiModules/SpectrumWidgets/SpectrPlotterWidget.h \
+    $$BEKAS_ROOT/ProcessingModules/SpectrDataSaver.h \
+    $$BEKAS_ROOT/GuiModules/UasvViewWindow.h \
 
 FORMS += \
-    bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.ui \
-    bekas/GuiModules/UasvViewWindow.ui \
+    $$BEKAS_ROOT/GuiModules/SpectrumWidgets/WavesRangeDialog.ui \
+    $$BEKAS_ROOT/GuiModules/UasvViewWindow.ui \

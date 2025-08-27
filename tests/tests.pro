@@ -9,3 +9,6 @@ satellite_comparator.file = satellite_comparator/satellite_comparator_Tests.pro
 
 SUBDIRS += sam
 sam.file = sam/sam_Tests.pro
+
+SUBDIRS += bekas
+bekas.file = bekas/bekas_Tests.pro

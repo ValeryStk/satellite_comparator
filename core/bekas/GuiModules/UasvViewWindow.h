@@ -55,6 +55,7 @@ private:
 class UasvViewWindow : public QMainWindow
 {
     Q_OBJECT
+    friend class bekas_UnitTests;
 
 public:
     UasvViewWindow(QWidget *parent = nullptr);
@@ -146,7 +147,7 @@ private:
     QString m_wTitle = "";                  //!< Main window title
     QSettings *m_settings;                  //!< Settings
     FilesParser *m_filesParser;             //!< The object for files parsing
-    CustomStringListModel *m_slModel;            //!< String list model (for the list of spectra)
+    CustomStringListModel *m_slModel;       //!< String list model (for the list of spectra)
     UdpJsonRpc   *m_rpc;
     QStringList m_listOfOriginSpectraNames;
 };
