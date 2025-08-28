@@ -41,7 +41,7 @@ void bekas_UnitTests::bekasTest()
   QApplication app(argc, nullptr);
   UasvViewWindow *bekas_window = new UasvViewWindow;
   bekas_window->show();
-  QTest::qWait(300000);
+  //QTest::qWait(300000);
   app.exec();
 }
 
