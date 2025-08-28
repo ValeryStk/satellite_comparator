@@ -1,19 +1,23 @@
 QT += testlib core gui
+
+CORE_DIR  = $$PWD/../../core/
+BEKAS_DIR = $$PWD/../../core/bekas
+
 TARGET = bekas_Tests
 
-INCLUDEPATH += $$PWD/../../core/bekas $$PWD/../../core/
+INCLUDEPATH += $$BEKAS_DIR $$CORE_DIR
 
-include(../../core/bekas/bekas.pri)
-include(../../core/matio.pri)
+include($$BEKAS_DIR/bekas.pri)
+include($$CORE_DIR/matio.pri)
 
 HEADERS += bekas_UnitTests.h\
-           ../../core/udpjsonrpc.h\
-           ../../core/qcustomplot.h\
-           ../../core/text_constants.h\
-           ../../core/MatFilesOperator.h\
+           $$CORE_DIR/udpjsonrpc.h\
+           $$CORE_DIR/qcustomplot.h\
+           $$CORE_DIR/text_constants.h\
+           $$CORE_DIR/MatFilesOperator.h\
 
 SOURCES += bekas_UnitTests.cpp\
-           ../../core/udpjsonrpc.cpp\
-           ../../core/qcustomplot.cpp\
-           ../../core/text_constants.cpp\
-           ../../core/MatFilesOperator.cpp\
+           $$CORE_DIR/udpjsonrpc.cpp\
+           $$CORE_DIR/qcustomplot.cpp\
+           $$CORE_DIR/text_constants.cpp\
+           $$CORE_DIR/MatFilesOperator.cpp\
