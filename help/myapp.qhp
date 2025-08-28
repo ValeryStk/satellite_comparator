@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QtHelpProject version="1.0">
+  <namespace>com.example.myapp</namespace>
+  <virtualFolder>doc</virtualFolder>
+
+  <filterSection>
+    <toc>
+      <section title="Главная" ref="index.html"/>
+    </toc>
+    <keywords>
+      <keyword name="справка" ref="index.html"/>
+    </keywords>
+    <files>
+      <file>index.html</file>
+    </files>
+  </filterSection>
+</QtHelpProject>

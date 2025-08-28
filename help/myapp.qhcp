@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QHelpCollectionProject version="1.0">
+  <assistant>
+    <title>Моя Справка</title> <!-- Название окна -->
+    <applicationIcon>myicon.png</applicationIcon> <!-- Путь к иконке -->
+    <cacheDirectory>MyAppHelp</cacheDirectory>
+
+    <startPage>qthelp://org.mycompany.myapp/doc/index.html</startPage>
+
+    <aboutMenuText>
+      <text>О программе «Моя Справка»</text>
+    </aboutMenuText>
+    <aboutDialog>
+      <file>about.txt</file>
+      <icon>images/myicon.png</icon>
+    </aboutDialog>
+
+    <!-- Отключение лишнего -->
+    <enableDocumentationManager>false</enableDocumentationManager>
+    <enableAddressBar>false</enableAddressBar>
+    <enableFilterFunctionality>false</enableFilterFunctionality>
+  </assistant>
+
+  <docFiles>
+    <generate>
+      <file>
+        <input>myapp.qhp</input>
+        <output>myapp.qch</output>
+      </file>
+    </generate>
+    <register>
+      <file>myapp.qch</file>
+    </register>
+  </docFiles>
+</QHelpCollectionProject>
+
