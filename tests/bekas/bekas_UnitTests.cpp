@@ -57,8 +57,8 @@ void bekas_UnitTests::cleanup()
 
 void bekas_UnitTests::bekasTest()
 {
-    int argc = 0;
-    QApplication app(argc, nullptr);
+    //int argc = 0;
+    //QApplication app(argc, nullptr);
     QPixmap pixmap(32, 32);
     pixmap.fill(Qt::red); // простой красный квадрат
     QCursor customCursor(pixmap);
@@ -67,10 +67,10 @@ void bekas_UnitTests::bekasTest()
     bekas_window->move(0, 0);
     bekas_window->show();
 
-    QTimer::singleShot(1000, [=]() {
+    /*QTimer::singleShot(1000, [=]() {
         moveCursorAroundWindow(bekas_window);
     });
-    app.exec();
+    app.exec();*/
 }
 
 
