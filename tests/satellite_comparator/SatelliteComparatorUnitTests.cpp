@@ -1,8 +1,8 @@
 #include "SatelliteComparatorUnitTests.h"
 
 #include <QDebug>
-
-#include "../../core/sattelite_comparator.h"
+#include "davis.h"
+#include "sattelite_comparator.h"
 
 
 
@@ -70,6 +70,40 @@ void SatelliteComparatorUnitTests::testSatelliteComparatorLinearInterpolation()
                                   {1.2,2.2,3.4,4.5,4.6},
                                   status);
     QVERIFY2(status == BASE_CHECK_RESULT::OK,"Correct interpolation params");
+}
+
+void SatelliteComparatorUnitTests::testLoadSatelliteDataJson()
+{
+    auto sc = std::make_unique<SatteliteComparator>();
+    //sc->loadJsonSatellitesCentralWaves();
+    auto sd = sc->get_satellites_data();
+    qDebug()<<"sd size: "<<sd.size();
+    auto json_object = sc->get_sdb();
+    qDebug()<<json_object;
+    QVector<double>common_waves =
+            jsn::getVectorDoubleFromJsonArray(json_object.value("_common_wave_grid").toArray());
+    QJsonObject satellites = json_object.value("satellites").toObject();
+    QJsonArray responses = satellites.value("landsat8").toObject().value("responses").toArray();
+    auto landsat8_responses = jsn::getMatrixFromJsonArray(responses);
+    QVector<double>respose1;
+    QVector<double>respose2;
+    QVector<double>respose3;
+    QVector<double>respose4;
+    QVector<double>respose5;
+    for(int i=0;i<landsat8_responses.size();++i){
+    respose1.append(landsat8_responses[i][0]);
+    respose2.append(landsat8_responses[i][1]);
+    respose3.append(landsat8_responses[i][2]);
+    respose4.append(landsat8_responses[i][3]);
+    respose5.append(landsat8_responses[i][4]);
+    }
+    dv::holdOn();
+    dv::show(common_waves,respose1);
+    dv::show(common_waves,respose2);
+    dv::show(common_waves,respose3);
+    dv::show(common_waves,respose4);
+    dv::show(common_waves,respose5);
+    dv::holdOff();
 }
 
 QTEST_MAIN(SatelliteComparatorUnitTests)

@@ -4,8 +4,10 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 RC_FILE = resource.rc
 CONFIG += c++11
 
+include(gdal.pri)
 include(bekas/bekas.pri)
 include(matio.pri)
+include(resources.pri)
 
 SOURCES += \
     cross_square.cpp \
@@ -57,19 +59,6 @@ FORMS += \
 
 TRANSLATIONS += \
     satellite_comparator_en_US.ts
-
-# Default rules for deployment.
-qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
-!isEmpty(target.path): INSTALLS += target
-
-
-RESOURCES += \
-    res.qrc\
-
-LIBS += -L$$PWD/libs/gdal/x64/lib -lgdal_i
-INCLUDEPATH += $$PWD/libs/gdal/x64/include
-DEPENDPATH += $$PWD/libs/gdal/x64/include
 
 
 

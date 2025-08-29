@@ -53,7 +53,7 @@ struct comparator_data{
 class SatteliteComparator : public QMainWindow
 {
     Q_OBJECT
-    friend class UnitTests;
+    friend class SatelliteComparatorUnitTests;
 
 public:
     explicit SatteliteComparator(QVector<double> device_waves = {},
@@ -71,27 +71,16 @@ private:
     satellites_data m_sat_data;
     comparator_data m_comparator_data;
 
-
-    void loadJsonSatellitesCentralWaves();
-
-
-
-
-
-
     inline double linearInterpolation(const QVector<double> &x,
                                       const QVector<double> &y,
                                       const double target_x);
-
 
     QJsonObject get_sdb();
     QVector<double> get_common_waves();
     QVector<QVector<double>> get_bands(const QString &satellite_name);
 
-
     void compare_spectrs();
     void setSetSatelliteResponses(const QString& satellite_name);
-
 
 public:
     QHash<QString,satellites_data> get_satellites_data();

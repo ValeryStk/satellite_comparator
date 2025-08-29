@@ -21,6 +21,7 @@ private slots:
 
     void testSatelliteComparatorBaseCheck();
     void testSatelliteComparatorLinearInterpolation();
+    void testLoadSatelliteDataJson();
 
 };
 

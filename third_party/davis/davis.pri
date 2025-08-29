@@ -1,0 +1,8 @@
+DAVIS_DIR = $$PWD
+INCLUDEPATH += $$DAVIS_DIR
+
+SOURCES += \
+$$DAVIS_DIR\davis.cpp\
+
+HEADERS += \
+$$DAVIS_DIR\davis.h\
