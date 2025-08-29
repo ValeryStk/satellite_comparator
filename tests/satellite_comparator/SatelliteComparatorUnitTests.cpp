@@ -79,7 +79,7 @@ void SatelliteComparatorUnitTests::testLoadSatelliteDataJson()
     auto sd = sc->get_satellites_data();
     qDebug()<<"sd size: "<<sd.size();
     auto json_object = sc->get_sdb();
-    qDebug()<<json_object;
+    //qDebug()<<json_object;
     QVector<double>common_waves =
             jsn::getVectorDoubleFromJsonArray(json_object.value("_common_wave_grid").toArray());
     QJsonObject satellites = json_object.value("satellites").toObject();

@@ -1,30 +1,32 @@
 QT += widgets printsupport core network
 
-BEKAS_ROOT = $$PWD
-INCLUDEPATH += BEKAS_ROOT $$PWD/../
+include(../../pathes.pri)
+
+INCLUDEPATH += $$BEKAS_DIR $$CORE_DIR
 
 SOURCES += \
-    $$BEKAS_ROOT/BaseTools/DBJson.cpp \
-    $$BEKAS_ROOT/BaseTools/IniFileLoader.cpp \
-    $$BEKAS_ROOT/BaseTools/QrcFilesRestorer.cpp \
-    $$BEKAS_ROOT/GuiModules/ImageWidgets/PhotospectralGraphicsView.cpp \
-    $$BEKAS_ROOT/GuiModules/SpectrumWidgets/WavesRangeDialog.cpp \
-    $$BEKAS_ROOT/ProcessingModules/FilesParser.cpp \
-    $$BEKAS_ROOT/GuiModules/SpectrumWidgets/SpectrPlotterWidget.cpp \
-    $$BEKAS_ROOT/ProcessingModules/SpectrDataSaver.cpp\
-    $$BEKAS_ROOT/GuiModules/UasvViewWindow.cpp \
+    $$BEKAS_DIR/BaseTools/DBJson.cpp\
+    $$BEKAS_DIR/BaseTools/IniFileLoader.cpp\
+    $$BEKAS_DIR/BaseTools/QrcFilesRestorer.cpp\
+    $$BEKAS_DIR/GuiModules/ImageWidgets/PhotospectralGraphicsView.cpp\
+    $$BEKAS_DIR/GuiModules/SpectrumWidgets/WavesRangeDialog.cpp\
+    $$BEKAS_DIR/GuiModules/SpectrumWidgets/SpectrPlotterWidget.cpp\
+    $$BEKAS_DIR/GuiModules/UasvViewWindow.cpp \
+    $$BEKAS_DIR/ProcessingModules/FilesParser.cpp\
+    $$BEKAS_DIR/ProcessingModules/SpectrDataSaver.cpp\
+
 
 HEADERS += \
-    $$BEKAS_ROOT/BaseTools/DBJson.h \
-    $$BEKAS_ROOT/BaseTools/IniFileLoader.h \
-    $$BEKAS_ROOT/BaseTools/QrcFilesRestorer.h \
-    $$BEKAS_ROOT/GuiModules/ImageWidgets/PhotospectralGraphicsView.h \
-    $$BEKAS_ROOT/GuiModules/SpectrumWidgets/WavesRangeDialog.h \
-    $$BEKAS_ROOT/ProcessingModules/FilesParser.h \
-    $$BEKAS_ROOT/GuiModules/SpectrumWidgets/SpectrPlotterWidget.h \
-    $$BEKAS_ROOT/ProcessingModules/SpectrDataSaver.h \
-    $$BEKAS_ROOT/GuiModules/UasvViewWindow.h \
+    $$BEKAS_DIR/BaseTools/DBJson.h\
+    $$BEKAS_DIR/BaseTools/IniFileLoader.h\
+    $$BEKAS_DIR/BaseTools/QrcFilesRestorer.h\
+    $$BEKAS_DIR/GuiModules/ImageWidgets/PhotospectralGraphicsView.h\
+    $$BEKAS_DIR/GuiModules/SpectrumWidgets/WavesRangeDialog.h\
+    $$BEKAS_DIR/GuiModules/SpectrumWidgets/SpectrPlotterWidget.h\
+    $$BEKAS_DIR/GuiModules/UasvViewWindow.h\
+    $$BEKAS_DIR/ProcessingModules/SpectrDataSaver.h\
+    $$BEKAS_DIR/ProcessingModules/FilesParser.h\
 
 FORMS += \
-    $$BEKAS_ROOT/GuiModules/SpectrumWidgets/WavesRangeDialog.ui \
-    $$BEKAS_ROOT/GuiModules/UasvViewWindow.ui \
+    $$BEKAS_DIR/GuiModules/SpectrumWidgets/WavesRangeDialog.ui\
+    $$BEKAS_DIR/GuiModules/UasvViewWindow.ui\

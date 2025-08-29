@@ -1,11 +1,16 @@
 QT += testlib core
+
+include(../../pathes.pri)
+
+INCLUDEPATH = $$SAM_DIR
+
 TARGET = samTests
 
 HEADERS +=\
-../../base/sam/sam.h\
+    $$SAM_DIR/sam.h\
     SamUnitTests.h
 
 
 SOURCES +=\
-../../base/sam/sam.cpp\
+    $$SAM_DIR/sam.cpp\
     SamUnitTests.cpp

@@ -1,7 +1,6 @@
 QT += testlib core gui
 
-CORE_DIR  = $$PWD/../../core/
-BEKAS_DIR = $$PWD/../../core/bekas
+include(../../pathes.pri)
 
 TARGET = bekas_Tests
 

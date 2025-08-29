@@ -1,7 +1,6 @@
 QT += testlib core widgets printsupport
 
-CORE_DIR  = $$PWD/../../core
-DAVIS_DIR = $$PWD/../../third_party/davis
+include(../../pathes.pri)
 
 INCLUDEPATH = $$CORE_DIR $$DAVIS_DIR
 

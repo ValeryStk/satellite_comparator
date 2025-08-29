@@ -8,6 +8,7 @@ include(gdal.pri)
 include(bekas/bekas.pri)
 include(matio.pri)
 include(resources.pri)
+include(../translations/translations.pri)
 
 SOURCES += \
     cross_square.cpp \
@@ -56,14 +57,4 @@ HEADERS += \
 FORMS += \
     main_window_satellite_comparator.ui \
     sliders_of_image_corrector.ui
-
-TRANSLATIONS += \
-    satellite_comparator_en_US.ts
-
-
-
-
-
-
-
 
