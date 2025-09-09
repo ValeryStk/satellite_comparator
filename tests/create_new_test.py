@@ -1,81 +1,143 @@
 import os
-import shutil
-
-def rename_file(old_path, new_path):
-    try:
-        os.rename(old_path, new_path)
-        print(f"✅ Файл успешно переименован:\n{old_path} → {new_path}")
-    except FileNotFoundError:
-        print(f"❌ Файл не найден: {old_path}")
-    except FileExistsError:
-        print(f"⚠️ Файл с именем {new_path} уже существует.")
-    except Exception as e:
-        print(f"⚠️ Произошла ошибка: {e}")
-
-
-def rename_class_in_file(file_path, old_name, new_name):
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            content = file.read()
-
-        # Заменяем все вхождения старого имени на новое
-        updated_content = content.replace(old_name, new_name)
-
-        with open(file_path, 'w', encoding='utf-8') as file:
-            file.write(updated_content)
-
-        print(f"✅ Класс '{old_name}' успешно переименован в '{new_name}' в файле {file_path}")
-    except FileNotFoundError:
-        print(f"❌ Файл {file_path} не найден.")
-    except Exception as e:
-        print(f"⚠️ Произошла ошибка: {e}")
-
 
 def create_new_test():
-    # Ввод имени нового теста
-    new_name = input("Введите имя нового теста: ").strip()
-
-    # Шаг 1: Копируем _empty_tests
-    src_dir = "_empty_tests"
+    
+    # проверка на допустимое имя для класса
+    while True:
+        
+        # вводим имя нового теста
+        new_name = input("Введите имя нового теста: ").strip()
+        
+        if not new_name:
+            print("❌ Имя не может быть пустым")
+            continue
+            
+        if new_name[0].isdigit():
+            print("❌ Имя не может начинаться с цифры")
+            continue
+            
+        if not new_name.replace('_', '').isalnum():
+            print("❌ Имя может содержать только буквы, цифры и подчеркивания")
+            continue
+        
+        if any(char in 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя' for char in new_name.lower()):
+            print("❌ Имя не может содержать русские буквы")
+            continue
+              
+        break
+    
+    
+    # директория для нового теста
     dst_dir = new_name
-    if not os.path.exists(src_dir):
-        print(f"❌ Папка '{src_dir}' не найдена.")
-        return
-    shutil.copytree(src_dir, dst_dir)
+    os.makedirs(dst_dir, exist_ok=True)
+    
+    # шаблоны для файлов
+    pro_file_template = f"""QT += testlib core
+TARGET = {new_name}UnitTests
+HEADERS += {new_name}UnitTests.h
+SOURCES += {new_name}UnitTests.cpp
+"""
 
-    # Шаг 2 и 3: Редактируем tests.pro
+    header_file_template = f"""#ifndef {new_name.upper()}UNITTESTS_H
+#define {new_name.upper()}UNITTESTS_H
+
+#include <QObject>
+#include <QtTest>
+
+class {new_name}UnitTests : public QObject
+{{
+    Q_OBJECT
+
+public:
+    {new_name}UnitTests();
+
+private slots:
+    void initTestCase();
+    void cleanupTestCase();
+    void init();
+    void cleanup();
+
+}};
+
+#endif // {new_name.upper()}UNITTESTS_H
+"""
+
+    cpp_file_template = f"""#include "{new_name}UnitTests.h"
+
+#include <QDebug>
+
+
+namespace{{
+
+
+}} // end namespace
+
+
+{new_name}UnitTests::{new_name}UnitTests()
+{{
+}}
+
+void {new_name}UnitTests::initTestCase()
+{{
+    // Инициализация перед запуском всех тестов
+}}
+
+void {new_name}UnitTests::cleanupTestCase()
+{{
+    // Очистка после выполнения всех тестов
+}}
+
+void {new_name}UnitTests::init()
+{{
+    // Инициализация перед каждым тестом
+
+}}
+
+void {new_name}UnitTests::cleanup()
+{{
+    // Очистка после каждого теста
+}}
+
+
+
+QTEST_MAIN({new_name}UnitTests)
+"""
+
+    # Создаем файлы из шаблонов
+    with open(os.path.join(dst_dir, f"{new_name}_Tests.pro"), "w", encoding="utf-8") as f:
+        f.write(pro_file_template)
+    
+    with open(os.path.join(dst_dir, f"{new_name}UnitTests.h"), "w", encoding="utf-8") as f:
+        f.write(header_file_template)
+    
+    with open(os.path.join(dst_dir, f"{new_name}UnitTests.cpp"), "w", encoding="utf-8") as f:
+        f.write(cpp_file_template)
+
+    # Обновляем tests.pro
     tests_pro_path = "tests.pro"
-    if not os.path.exists(tests_pro_path):
+    if os.path.exists(tests_pro_path):
+        with open(tests_pro_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        # Проверяем, не добавлен ли уже этот тест
+        if f"SUBDIRS += {new_name}" not in content:
+            with open(tests_pro_path, "a", encoding="utf-8") as f:
+                f.write(f"\nSUBDIRS += {new_name}\n")
+                f.write(f"{new_name}.file = {new_name}/{new_name}_Tests.pro\n")
+            print(f"✅ Добавлена запись в tests.pro")
+        else:
+            print(f"⚠️ Тест '{new_name}' уже добавлен в tests.pro")
+    else:
         print("❌ Файл 'tests.pro' не найден.")
-        return
+        with open(tests_pro_path, "w", encoding="utf-8") as f:
+            f.write(f"TEMPLATE = subdirs\n\nSUBDIRS += {new_name}\n")
+            f.write(f"{new_name}.file = {new_name}/{new_name}_Tests.pro\n")
 
-    with open(tests_pro_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-
-    with open(tests_pro_path, "a", encoding="utf-8") as f:
-        f.write(f"\nSUBDIRS += {new_name}\n")
-        f.write(f"{new_name}.file = {new_name}/{new_name}_Tests.pro\n")
-
-
-    # Шаг 4: Редактируем .pro файл внутри новой директории
-    old_pro_path = os.path.join(dst_dir, "empty_tests.pro")
-    new_pro_path = os.path.join(dst_dir, f"{new_name}_Tests.pro")
-    print(f"Переименование: {old_pro_path} → {new_pro_path}")
-    print(f"Существует ли исходный файл? {os.path.exists(old_pro_path)}")
-    print(f"Существует ли целевой файл? {os.path.exists(new_pro_path)}")
-
-    os.rename(old_pro_path, new_pro_path)
-
-    with open(new_pro_path, "w", encoding="utf-8") as f:
-        f.write("QT += testlib core\n")
-        f.write(f"TARGET = {new_name}_Tests\n")
-        f.write(f"HEADERS += {new_name}_UnitTests.h\\\n")
-        f.write(f"\nSOURCES += {new_name}_UnitTests.cpp\\\n")
-    rename_class_in_file(f"{dst_dir}/UnitTests.h",'UnitTests',f"{new_name}_UnitTests")
-    rename_class_in_file(f"{dst_dir}/UnitTests.cpp",'UnitTests',f"{new_name}_UnitTests")
-    rename_file(f"{dst_dir}/UnitTests.cpp",f"{dst_dir}/{new_name}_UnitTests.cpp")
-    rename_file(f"{dst_dir}/UnitTests.h",f"{dst_dir}/{new_name}_UnitTests.h")
     print(f"✅ Тест '{new_name}' успешно создан.")
+    print(f"📁 Файлы созданы в папке: {dst_dir}/")
+    print(f"   - {new_name}_Tests.pro")
+    print(f"   - {new_name}UnitTests.h")
+    print(f"   - {new_name}UnitTests.cpp")
 
 if __name__ == "__main__":
     create_new_test()
