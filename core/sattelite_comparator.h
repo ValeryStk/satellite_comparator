@@ -107,9 +107,8 @@ public:
                                    const QVector<double>& satellite_waves,
                                    const QVector<double>& satellite_values);
 
-    BASE_CHECK_RESULT base_check_before_interpolation(
-            const QVector<double> &waves1,
-            const QVector<double> &waves2);
+    BASE_CHECK_RESULT base_check_before_interpolation(const QVector<double> &waves,
+            const QVector<double>& values);
 };
 
 #endif // SATTELITE_COMPARATOR_H
