@@ -86,19 +86,19 @@ def test_name_checker():
         name = input("Введите имя нового теста: ").strip()
         
         if not name:
-            print("❌ Имя не может быть пустым")
+            print("Имя не может быть пустым")
             continue
             
         if name[0].isdigit():
-            print("❌ Имя не может начинаться с цифры")
+            print("Имя не может начинаться с цифры")
             continue
             
         if not name.replace('_', '').isalnum():
-            print("❌ Имя может содержать только буквы, цифры и подчеркивания")
+            print("Имя может содержать только буквы, цифры и подчеркивания")
             continue
         
         if any(char in 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя' for char in name.lower()):
-            print("❌ Имя не может содержать русские буквы")
+            print("Имя не может содержать русские буквы")
             continue
               
         return name
@@ -136,17 +136,17 @@ def create_new_test():
             with open(tests_pro_path, "a", encoding="utf-8") as f:
                 f.write(f"\nSUBDIRS += {new_name}\n")
                 f.write(f"{new_name}.file = {new_name}/{new_name}{TESTS_PRO}\n")
-            print(f"✅ Добавлена запись в tests.pro")
+            print(f"Добавлена запись в tests.pro")
         else:
-            print(f"⚠️ Тест '{new_name}' уже добавлен в tests.pro")
+            print(f"Тест '{new_name}' уже добавлен в tests.pro")
     else:
-        print("❌ Файл 'tests.pro' не найден.")
+        print("Файл 'tests.pro' не найден.")
         with open(tests_pro_path, "w", encoding="utf-8") as f:
             f.write(f"TEMPLATE = subdirs\n\nSUBDIRS += {new_name}\n")
             f.write(f"{new_name}.file = {new_name}/{new_name}{TESTS_PRO}\n")
 
-    print(f"✅ Тест '{new_name}' успешно создан.")
-    print(f"📁 Файлы созданы в папке: {dst_dir}/")
+    print(f"Тест '{new_name}' успешно создан.")
+    print(f"Файлы созданы в папке: {dst_dir}/")
     print(f"   - {new_name}{TESTS_PRO}")
     print(f"   - {new_name}{UNITTESTS_H}")
     print(f"   - {new_name}{UNITTESTS_CPP}")
