@@ -1148,13 +1148,13 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
             for(int j=0;j<bands.size();++j){
                 int choosedColor = -1;
                 if(bands[j].second==BLUE){
-                    B = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0)*2;
+                    B = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0);
                     choosedColor = BLUE;
                 }else if(bands[j].second==GREEN){
-                    G = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0)*2;
+                    G = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0);
                     choosedColor = GREEN;
                 }else if(bands[j].second==RED){
-                    R = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0)*2;
+                    R = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0);
                     choosedColor = RED;
                 }
                 if(bands.size() == 1){
