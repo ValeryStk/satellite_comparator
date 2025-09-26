@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>808</width>
+    <width>811</width>
     <height>600</height>
    </rect>
   </property>
@@ -123,7 +123,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>808</width>
+     <width>811</width>
      <height>26</height>
     </rect>
    </property>
@@ -142,6 +142,7 @@
     </widget>
     <addaction name="menu_2"/>
     <addaction name="actionBekas"/>
+    <addaction name="action_LoadTimeRow"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -169,6 +170,11 @@
   <action name="actionSentinel_2B">
    <property name="text">
     <string>Sentinel 2B</string>
+   </property>
+  </action>
+  <action name="action_LoadTimeRow">
+   <property name="text">
+    <string>Загрузка временных рядов</string>
    </property>
   </action>
  </widget>

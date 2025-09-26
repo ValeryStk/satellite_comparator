@@ -42,6 +42,7 @@ private slots:
     void openSentinel2AHeaderData();
     void openSentinel2BHeaderData();
     void openBekasSpectraData();
+    void openTimeRowData();
     void findAreasUsingSelectedMetric();
     void centerSceneOnCrossSquare();
 

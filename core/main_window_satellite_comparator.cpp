@@ -169,6 +169,15 @@ void MainWindowSatelliteComparator::openBekasSpectraData()
     bekas_window->show();
 }
 
+void MainWindowSatelliteComparator::openTimeRowData()
+{
+    qDebug()<<"check time row connection....";
+    QString dir = QFileDialog::getExistingDirectory(this, "Выберите папку c временными рядами", QDir::homePath());
+    QDir directory(dir);  // dir — путь, полученный из QFileDialog
+    QStringList subdirs = directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    qDebug()<<subdirs;
+}
+
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric()
 {
     QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
@@ -1408,6 +1417,7 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions()
     connect(ui->actionOpenLandsat8Header,SIGNAL(triggered()),this,SLOT(openLandsat8HeaderData()));
     connect(ui->actionSentinel_2A,SIGNAL(triggered()),this,SLOT(openSentinel2AHeaderData()));
     connect(ui->actionSentinel_2B,SIGNAL(triggered()),this,SLOT(openSentinel2BHeaderData()));
+    connect(ui->action_LoadTimeRow,SIGNAL(triggered()),this,SLOT(openTimeRowData()));
 }
 
 void MainWindowSatelliteComparator::addBaseItemsToScene()
