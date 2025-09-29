@@ -89,6 +89,7 @@ struct SENTINEL_METADATA {
 };
 
 struct BAND_DATA{
+    QDateTime date_time;
     double central_wave_length;
     QString gui_name;
     QString resolution_in_pixel_meters;

@@ -174,7 +174,7 @@
   </action>
   <action name="action_LoadTimeRow">
    <property name="text">
-    <string>Загрузка временных рядов</string>
+    <string>Загрузка временного ряда</string>
    </property>
   </action>
  </widget>

@@ -182,5 +182,8 @@ private:
     UdpJsonRpc   *m_rpc;
 
 
+    sad::BAND_DATA getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName);
+
+
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

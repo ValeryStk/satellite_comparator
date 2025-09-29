@@ -1659,3 +1659,60 @@ void MainWindowSatelliteComparator::initUdpRpcConnection()
             this,
             &MainWindowSatelliteComparator::handleJsonRpcResult);
 }
+
+sad::BAND_DATA MainWindowSatelliteComparator::getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName)
+{
+    QJsonObject jo;
+    sad::BAND_DATA band_data;
+    QList<QString> landsat_gui_available_bands;
+
+    jsn::getJsonObjectFromFile(headerName,jo);
+
+    QFileInfo fi(headerName);
+    m_root_path = fi.path();
+    const QString extension = fi.completeSuffix();
+
+    if(extension == "json"){
+
+        if(jo.contains("LANDSAT_METADATA_FILE")){
+            QJsonObject image_attributes = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","IMAGE_ATTRIBUTES"}).toObject();
+            QString satellite_name = image_attributes.value("SPACECRAFT_ID").toString();
+            qDebug()<<image_attributes.value("DATE_ACQUIRED").toString();
+            qDebug()<<image_attributes.value("SCENE_CENTER_TIME").toString();
+            QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
+            QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"});
+            QJsonObject check_bands = value.toObject();
+            QJsonObject radiance = radiance_value.toObject();
+            QJsonObject projection = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PROJECTION_ATTRIBUTES"}).toObject();
+            m_geo.utmZone = projection["UTM_ZONE"].toString().toDouble();
+            m_geo.ulX = projection["CORNER_UL_PROJECTION_X_PRODUCT"].toString().toDouble();
+            m_geo.ulY = projection["CORNER_UL_PROJECTION_Y_PRODUCT"].toString().toDouble();
+            m_geo.resX = projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
+            m_geo.resY = - m_geo.resX;
+
+            for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+                if(check_bands.value(sad::landsat9_bands_keys[i]).isUndefined()){
+                    qDebug()<<"missed band: "<<sad::landsat9_bands_keys[i];
+                    m_landsat9_missed_channels[i] = true;
+                    continue;
+                }
+                m_landsat9_missed_channels[i] = false;
+                landsat_gui_available_bands.append(sad::landsat_bands_gui_names[i]);
+                auto band_file_name = check_bands[sad::landsat9_bands_keys[i]].toString();
+                int xS;
+                int yS;
+                m_landsat9_data_bands[i] = readTiff(fi.path()+"/"+band_file_name,xS,yS);
+                m_landsat9_bands_image_sizes[i] = {xS,yS};
+
+                if(i<7){//TODO TEST Есть только до 9 канала TEST REFLECTANCE_MULT_BAND_9  REFLECTANCE_ADD_BAND_9
+                    double mult_refl = radiance[sad::landsat9_mult_reflectence_keys[i]].toString().toDouble();
+                    double add_refl = radiance[sad::landsat9_add_reflectence_keys[i]].toString().toDouble();
+                    m_reflectance_mult_add_arrays[i][0] = mult_refl;
+                    m_reflectance_mult_add_arrays[i][1] = add_refl;
+                }
+            }
+        }
+    }
+
+    return band_data;
+}
