@@ -3,6 +3,7 @@
 
 #include "QString"
 #include <QHash>
+#include <QDateTime>
 
 constexpr int LANDSAT_BANDS_NUMBER = 11;
 constexpr int  SENTINEL_BANDS_NUMBER = 13;
@@ -36,6 +37,7 @@ extern const int sorted_landsat_bands_order_by_wavelength[LANDSAT_BANDS_NUMBER];
 
 struct PRODUCT_CONTENTS{
     QString landsat_product_id;
+    QDateTime date_time;
     QString processing_level;
     QString file_name_bands[LANDSAT_BANDS_NUMBER];
 };

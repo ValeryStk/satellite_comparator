@@ -329,6 +329,8 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
         if(jo.contains("LANDSAT_METADATA_FILE")){
             QJsonObject image_attributes = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","IMAGE_ATTRIBUTES"}).toObject();
             title_satellite_name->setText(image_attributes.value("SPACECRAFT_ID").toString());
+            qDebug()<<image_attributes.value("DATE_ACQUIRED").toString();
+            qDebug()<<image_attributes.value("SCENE_CENTER_TIME").toString();
             QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
             QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"});
             QJsonObject check_bands = value.toObject();
