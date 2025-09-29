@@ -182,7 +182,7 @@ private:
     UdpJsonRpc   *m_rpc;
 
 
-    sad::BAND_DATA getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName);
+    QVector<sad::BAND_DATA> getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName);
 
 
 };

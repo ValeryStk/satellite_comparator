@@ -176,6 +176,9 @@ void MainWindowSatelliteComparator::openTimeRowData()
     QDir directory(dir);  // dir — путь, полученный из QFileDialog
     QStringList subdirs = directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
     qDebug()<<subdirs;
+    if(subdirs.empty())return;
+    qDebug()<<subdirs[0];
+    getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[0]+"/" +  subdirs[0] + "_MTL.json");
 }
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric()
@@ -1660,10 +1663,11 @@ void MainWindowSatelliteComparator::initUdpRpcConnection()
             &MainWindowSatelliteComparator::handleJsonRpcResult);
 }
 
-sad::BAND_DATA MainWindowSatelliteComparator::getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName)
+QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName)
 {
+    sad::LANDSAT_METADATA_FILE landsat_metadata;
     QJsonObject jo;
-    sad::BAND_DATA band_data;
+    QVector<sad::BAND_DATA> bands_data;
     QList<QString> landsat_gui_available_bands;
 
     jsn::getJsonObjectFromFile(headerName,jo);
@@ -1676,9 +1680,10 @@ sad::BAND_DATA MainWindowSatelliteComparator::getDataFromJsonForLandsat8_9_TimeR
 
         if(jo.contains("LANDSAT_METADATA_FILE")){
             QJsonObject image_attributes = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","IMAGE_ATTRIBUTES"}).toObject();
-            QString satellite_name = image_attributes.value("SPACECRAFT_ID").toString();
-            qDebug()<<image_attributes.value("DATE_ACQUIRED").toString();
-            qDebug()<<image_attributes.value("SCENE_CENTER_TIME").toString();
+            landsat_metadata.image_attributes.spacecraft_id = image_attributes.value("SPACECRAFT_ID").toString();
+            QString date_acquired = image_attributes.value("DATE_ACQUIRED").toString();
+            QDate date {QDate::fromString(date_acquired,"yyyy-MM-dd")};
+            qDebug()<<image_attributes.value("SCENE_CENTER_TIME").toString()<<date.toString("--->    yyyy_MM_dd");
             QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
             QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"});
             QJsonObject check_bands = value.toObject();
@@ -1714,5 +1719,5 @@ sad::BAND_DATA MainWindowSatelliteComparator::getDataFromJsonForLandsat8_9_TimeR
         }
     }
 
-    return band_data;
+    return bands_data;
 }
