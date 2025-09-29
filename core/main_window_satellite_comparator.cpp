@@ -171,14 +171,15 @@ void MainWindowSatelliteComparator::openBekasSpectraData()
 
 void MainWindowSatelliteComparator::openTimeRowData()
 {
-    qDebug()<<"check time row connection....";
-    QString dir = QFileDialog::getExistingDirectory(this, "Выберите папку c временными рядами", QDir::homePath());
-    QDir directory(dir);  // dir — путь, полученный из QFileDialog
+    QString dir = QFileDialog::getExistingDirectory(this, "Выберите папку c временным рядом", QDir::homePath());
+    QDir directory(dir);
     QStringList subdirs = directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
     qDebug()<<subdirs;
     if(subdirs.empty())return;
-    qDebug()<<subdirs[0];
-    getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[0]+"/" +  subdirs[0] + "_MTL.json");
+    m_time_row.resize(subdirs.size());
+    for(int i=0;i<m_time_row.size();++i){
+    m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json");
+    }
 }
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric()
@@ -1683,33 +1684,39 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
             landsat_metadata.image_attributes.spacecraft_id = image_attributes.value("SPACECRAFT_ID").toString();
             QString date_acquired = image_attributes.value("DATE_ACQUIRED").toString();
             QDate date {QDate::fromString(date_acquired,"yyyy-MM-dd")};
-            qDebug()<<image_attributes.value("SCENE_CENTER_TIME").toString()<<date.toString("--->    yyyy_MM_dd");
+            QString timeStr = image_attributes.value("SCENE_CENTER_TIME").toString().remove('Z');
+
+
+            int dotIndex = timeStr.indexOf('.');
+            if (dotIndex != -1 && timeStr.length() > dotIndex + 4) {
+                timeStr = timeStr.left(dotIndex + 4); // "09:06:41.414"
+            }
+
+            QTime time = {QTime::fromString(timeStr,"hh:mm:ss.zzz")};
+            qDebug()<<date.toString("yyyy-MM-dd")<<time.toString("----> hh:mm:ss.zzz");
             QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
             QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"});
             QJsonObject check_bands = value.toObject();
             QJsonObject radiance = radiance_value.toObject();
             QJsonObject projection = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PROJECTION_ATTRIBUTES"}).toObject();
-            m_geo.utmZone = projection["UTM_ZONE"].toString().toDouble();
-            m_geo.ulX = projection["CORNER_UL_PROJECTION_X_PRODUCT"].toString().toDouble();
-            m_geo.ulY = projection["CORNER_UL_PROJECTION_Y_PRODUCT"].toString().toDouble();
-            m_geo.resX = projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
-            m_geo.resY = - m_geo.resX;
+            landsat_metadata.projection_attributes.utm_zone = projection["UTM_ZONE"].toString().toDouble();
+            landsat_metadata.projection_attributes.corner_ul_projection_x_product = projection["CORNER_UL_PROJECTION_X_PRODUCT"].toString().toDouble();
+            landsat_metadata.projection_attributes.corner_ul_projection_y_product = projection["CORNER_UL_PROJECTION_Y_PRODUCT"].toString().toDouble();
+            landsat_metadata.projection_attributes.grid_cell_size_reflective = projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
 
             for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
                 if(check_bands.value(sad::landsat9_bands_keys[i]).isUndefined()){
-                    qDebug()<<"missed band: "<<sad::landsat9_bands_keys[i];
                     m_landsat9_missed_channels[i] = true;
                     continue;
                 }
                 m_landsat9_missed_channels[i] = false;
-                landsat_gui_available_bands.append(sad::landsat_bands_gui_names[i]);
                 auto band_file_name = check_bands[sad::landsat9_bands_keys[i]].toString();
                 int xS;
                 int yS;
                 m_landsat9_data_bands[i] = readTiff(fi.path()+"/"+band_file_name,xS,yS);
                 m_landsat9_bands_image_sizes[i] = {xS,yS};
 
-                if(i<7){//TODO TEST Есть только до 9 канала TEST REFLECTANCE_MULT_BAND_9  REFLECTANCE_ADD_BAND_9
+                if(i<7){
                     double mult_refl = radiance[sad::landsat9_mult_reflectence_keys[i]].toString().toDouble();
                     double add_refl = radiance[sad::landsat9_add_reflectence_keys[i]].toString().toDouble();
                     m_reflectance_mult_add_arrays[i][0] = mult_refl;

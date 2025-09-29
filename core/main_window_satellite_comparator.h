@@ -183,6 +183,7 @@ private:
 
 
     QVector<sad::BAND_DATA> getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName);
+    QVector<QVector<sad::BAND_DATA>> m_time_row;
 
 
 };
