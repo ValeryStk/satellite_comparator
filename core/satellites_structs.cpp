@@ -88,7 +88,7 @@ const QString landsat_bands_gui_names[LANDSAT_BANDS_NUMBER] = {
     "B11 - 12000 nm (LWIR) 100 m"
 };
 
-const double landsat_central_wave_lengths[LANDSAT_BANDS_NUMBER] = {
+const double landsat_central_wavelengths[LANDSAT_BANDS_NUMBER] = {
     443,//0
     482,//1
     562,//2

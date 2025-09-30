@@ -89,6 +89,18 @@ void copyQStringArray(const QString source[], QString destination[], int size) {
     }
 }
 
+// Сортировка списка файлов Landsat по дате съёмки (4-й блок в имени файла)
+QStringList sortLandsatFilesByDateTime(const QStringList &unsortedFiles) {
+    QStringList sortedScenes = unsortedFiles;
+    std::sort(sortedScenes.begin(), sortedScenes.end(), [](const QString &a, const QString &b) {
+        QString dateStrA = a.split('_').value(3);
+        QString dateStrB = b.split('_').value(3);
+        QDate dateA = QDate::fromString(dateStrA, "yyyyMMdd");
+        QDate dateB = QDate::fromString(dateStrB, "yyyyMMdd");
+        return dateA < dateB;
+    });
+    return sortedScenes;
+}
 }
 
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
@@ -174,11 +186,16 @@ void MainWindowSatelliteComparator::openTimeRowData()
     QString dir = QFileDialog::getExistingDirectory(this, "Выберите папку c временным рядом", QDir::homePath());
     QDir directory(dir);
     QStringList subdirs = directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-    qDebug()<<subdirs;
+    qDebug()<<"before sorting by date time"<<subdirs;
     if(subdirs.empty())return;
+    subdirs = sortLandsatFilesByDateTime(subdirs);
+    qDebug()<<"after sorting by date time"<<subdirs;
     m_time_row.resize(subdirs.size());
     for(int i=0;i<m_time_row.size();++i){
-    m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json");
+        m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json");
+        for(int j=0;j<m_time_row[i].size();++j){
+        qDebug()<<"gui name: -->"<<m_time_row[i][j].gui_name;
+        };
     }
 }
 
@@ -1669,8 +1686,6 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
     sad::LANDSAT_METADATA_FILE landsat_metadata;
     QJsonObject jo;
     QVector<sad::BAND_DATA> bands_data;
-    QList<QString> landsat_gui_available_bands;
-
     jsn::getJsonObjectFromFile(headerName,jo);
 
     QFileInfo fi(headerName);
@@ -1689,7 +1704,7 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
 
             int dotIndex = timeStr.indexOf('.');
             if (dotIndex != -1 && timeStr.length() > dotIndex + 4) {
-                timeStr = timeStr.left(dotIndex + 4); // "09:06:41.414"
+                timeStr = timeStr.left(dotIndex + 4);
             }
 
             QTime time = {QTime::fromString(timeStr,"hh:mm:ss.zzz")};
@@ -1705,23 +1720,25 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
             landsat_metadata.projection_attributes.grid_cell_size_reflective = projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
 
             for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
-                if(check_bands.value(sad::landsat9_bands_keys[i]).isUndefined()){
-                    m_landsat9_missed_channels[i] = true;
+
+                auto sorted_order_index = sad::sorted_landsat_bands_order_by_wavelength[i];
+                if(check_bands.value(sad::landsat9_bands_keys[sorted_order_index]).isUndefined()){
                     continue;
                 }
-                m_landsat9_missed_channels[i] = false;
-                auto band_file_name = check_bands[sad::landsat9_bands_keys[i]].toString();
-                int xS;
-                int yS;
-                m_landsat9_data_bands[i] = readTiff(fi.path()+"/"+band_file_name,xS,yS);
-                m_landsat9_bands_image_sizes[i] = {xS,yS};
-
-                if(i<7){
-                    double mult_refl = radiance[sad::landsat9_mult_reflectence_keys[i]].toString().toDouble();
-                    double add_refl = radiance[sad::landsat9_add_reflectence_keys[i]].toString().toDouble();
-                    m_reflectance_mult_add_arrays[i][0] = mult_refl;
-                    m_reflectance_mult_add_arrays[i][1] = add_refl;
-                }
+                sad::BAND_DATA bd;
+                auto band_file_name = check_bands[sad::landsat9_bands_keys[sorted_order_index]].toString();
+                int xS = 0;
+                int yS = 0;
+                bd.gui_name = sad::landsat_bands_gui_names[sorted_order_index];
+                bd.data = readTiff(fi.path()+"/"+band_file_name,xS,yS);
+                bd.width = xS;
+                bd.height = yS;
+                double mult_refl = radiance[sad::landsat9_mult_reflectence_keys[i]].toString().toDouble();
+                double add_refl = radiance[sad::landsat9_add_reflectence_keys[i]].toString().toDouble();
+                bd.reflectance_mult = mult_refl;
+                bd.reflectance_add = add_refl;
+                bd.central_wave_length = sad::landsat_central_wavelengths[sorted_order_index];
+                bands_data.append(bd);
             }
         }
     }
