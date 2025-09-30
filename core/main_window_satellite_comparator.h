@@ -25,7 +25,7 @@ class MainWindowSatelliteComparator : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindowSatelliteComparator(QWidget *parent = nullptr);
+    explicit MainWindowSatelliteComparator(QWidget *parent = nullptr);
     ~MainWindowSatelliteComparator();
 
 private slots:
