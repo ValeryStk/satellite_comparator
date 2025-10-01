@@ -1159,11 +1159,10 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
 
 void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
 {
-    // DUBLICATED CODE REFACTORING !!!!!!
+    if(m_sentinel_data.empty())return;
+    const int nXSize = m_sentinel_data[0].width;
+    const int nYSize =  m_sentinel_data[0].height;
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
-    auto best_resolution = QPair<int,int>(5490,5490);//HARDCODED MAKE IT FLEXIBLE
-    const int nXSize = best_resolution.first;
-    const int nYSize = best_resolution.second;
 
     ProgressInformator progress_info(ui->graphicsView_satellite_image,
                                      satc::message_changing_bands);
