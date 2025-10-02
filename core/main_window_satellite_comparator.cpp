@@ -188,17 +188,22 @@ void MainWindowSatelliteComparator::openTimeRowData()
     QStringList subdirs = directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
     qDebug()<<"before sorting by date time"<<subdirs;
     if(subdirs.empty())return;
+    m_satelite_type = sad::TIME_ROW_COMBINATION;
     subdirs = sortLandsatFilesByDateTime(subdirs);
     qDebug()<<"after sorting by date time"<<subdirs;
     m_time_row.resize(subdirs.size());
     for(int i=0;i<m_time_row.size();++i){
         m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json");
-
     }
+    // Будем добавлять график, если его не хватает для новых временных точек
+    while(m_time_row.size() > m_preview_plot->graphCount()){
+        m_preview_plot->addGraph();
+    };//
     QStringList gui_available_bands;
     for(int j=0;j<m_time_row[0].size();++j){
-    gui_available_bands<<m_time_row[0][j].gui_name;
+        gui_available_bands<<m_time_row[0][j].gui_name;
     };
+    if(m_dynamic_checkboxes_widget)m_dynamic_checkboxes_widget->clear();
     m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(gui_available_bands,
                                                             ui->verticalLayout_satellite_bands);
     m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
