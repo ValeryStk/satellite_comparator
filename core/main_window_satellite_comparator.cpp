@@ -193,10 +193,16 @@ void MainWindowSatelliteComparator::openTimeRowData()
     m_time_row.resize(subdirs.size());
     for(int i=0;i<m_time_row.size();++i){
         m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json");
-        for(int j=0;j<m_time_row[i].size();++j){
-        qDebug()<<"gui name: -->"<<m_time_row[i][j].gui_name;
-        };
+
     }
+    QStringList landsat_gui_available_bands;
+    for(int j=0;j<m_time_row[0].size();++j){
+    landsat_gui_available_bands<<m_time_row[0][j].gui_name;
+    };
+    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(landsat_gui_available_bands,
+                                                            ui->verticalLayout_satellite_bands);
+    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
+    change_bands_sentinel_and_show_image(m_time_row[0]);//NEED REFACTORING
 }
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric()
@@ -576,10 +582,10 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
 
     connect(m_dynamic_checkboxes_widget,
             SIGNAL(choosed_bands_changed()),
-            this,SLOT(change_bands_sentinel_and_show_image()));
+            this,SLOT(change_bands()));
 
     read_sentinel2_bands_data();
-    change_bands_sentinel_and_show_image();
+    change_bands_sentinel_and_show_image(m_sentinel_data);
 
     ui->statusbar->showMessage("");
     m_is_image_created = true;
@@ -1079,7 +1085,7 @@ void MainWindowSatelliteComparator::resetColorsToDefaultRGB()
         if(m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 || m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9){
             change_bands_and_show_image();
         }else if(m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A || m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B){
-            change_bands_sentinel_and_show_image();
+            change_bands_sentinel_and_show_image(m_sentinel_data);
         }
     }
 }
@@ -1106,13 +1112,13 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
 
                 int choosedColor = -1;
                 if(bands[j].second==BLUE){
-                    B = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
+                    B = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0);
                     choosedColor = BLUE;
                 }else if(bands[j].second==GREEN){
-                    G = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
+                    G = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0);
                     choosedColor = GREEN;
                 }else if(bands[j].second==RED){
-                    R = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0)*1;
+                    R = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0);
                     choosedColor = RED;
                 }
                 if(bands.size() == 1){
@@ -1157,13 +1163,13 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     updateImage();
 }
 
-void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
+void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image(const QVector<sad::BAND_DATA>& band_data)
 {
-    if(m_sentinel_data.empty())return;
-    const int nXSize = m_sentinel_data[0].width;
-    const int nYSize =  m_sentinel_data[0].height;
+    if(band_data.empty())return;
+    const int nXSize = band_data[0].width;
+    const int nYSize =  band_data[0].height;
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
-
+    if(bands.empty())return;
     ProgressInformator progress_info(ui->graphicsView_satellite_image,
                                      satc::message_changing_bands);
     progress_info.show();
@@ -1178,13 +1184,13 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
             for(int j=0;j<bands.size();++j){
                 int choosedColor = -1;
                 if(bands[j].second==BLUE){
-                    B = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0)*2;
+                    B = static_cast<int>(band_data[bands[j].first].data[y * nXSize + x] / 255.0);
                     choosedColor = BLUE;
                 }else if(bands[j].second==GREEN){
-                    G = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0)*2;
+                    G = static_cast<int>(band_data[bands[j].first].data[y * nXSize + x] / 255.0);
                     choosedColor = GREEN;
                 }else if(bands[j].second==RED){
-                    R = static_cast<int>(m_sentinel_data[bands[j].first].data[y * nXSize + x] / 255.0)*2;
+                    R = static_cast<int>(band_data[bands[j].first].data[y * nXSize + x] / 255.0);
                     choosedColor = RED;
                 }
                 if(bands.size() == 1){
@@ -1226,6 +1232,11 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image()
     m_scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(m_image_item);
     updateImage();
+}
+
+void MainWindowSatelliteComparator::change_bands()
+{
+    change_bands_sentinel_and_show_image(m_sentinel_data);
 }
 
 void MainWindowSatelliteComparator::show_layer(const QString& id)
