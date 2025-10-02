@@ -195,13 +195,17 @@ void MainWindowSatelliteComparator::openTimeRowData()
         m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json");
 
     }
-    QStringList landsat_gui_available_bands;
+    QStringList gui_available_bands;
     for(int j=0;j<m_time_row[0].size();++j){
-    landsat_gui_available_bands<<m_time_row[0][j].gui_name;
+    gui_available_bands<<m_time_row[0][j].gui_name;
     };
-    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(landsat_gui_available_bands,
+    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(gui_available_bands,
                                                             ui->verticalLayout_satellite_bands);
     m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
+    ui->statusbar->showMessage("");
+    m_is_image_created = true;
+    m_scene_cross_square_item->setVisible(true);
+    ui->graphicsView_satellite_image->setIsSignal(true);
     change_bands_sentinel_and_show_image(m_time_row[0]);//NEED REFACTORING
 }
 
