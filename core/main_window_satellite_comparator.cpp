@@ -195,10 +195,28 @@ void MainWindowSatelliteComparator::openTimeRowData()
     for(int i=0;i<m_time_row.size();++i){
         m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json");
     }
+
+    QList<QColor> distinctColors = {
+        QColor(255, 0, 0),      // Красный
+        QColor(0, 255, 0),      // Зеленый
+        QColor(0, 0, 255),      // Синий
+        QColor(255, 255, 0),    // Желтый
+        QColor(255, 0, 255),    // Пурпурный
+        QColor(0, 255, 255),    // Бирюзовый
+        QColor(255, 165, 0),    // Оранжевый
+        QColor(128, 0, 128),    // Фиолетовый
+        QColor(0, 128, 128),    // Темно-бирюзовый
+        QColor(128, 128, 0)     // Оливковый
+    };
     // Будем добавлять график, если его не хватает для новых временных точек
     while(m_time_row.size() > m_preview_plot->graphCount()){
         m_preview_plot->addGraph();
     };//
+    for(int i=0;i<m_preview_plot->graphCount();i++){
+        if(i<distinctColors.size()){
+        m_preview_plot->graph(i)->setPen(QColor(distinctColors[i]));
+        }
+    }
     m_preview_plot->legend->setVisible(false);
     QStringList gui_available_bands;
     for(int j=0;j<m_time_row[0].size();++j){
