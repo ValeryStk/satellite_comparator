@@ -30,7 +30,7 @@ public:
 
 private slots:
     void change_bands_and_show_image();
-    void change_bands_sentinel_and_show_image(const QVector<sad::BAND_DATA>& band_data);
+    void change_bands_and_show_image(const QVector<sad::BAND_DATA>& band_data);
     void change_bands();
     void show_layer(const QString& id);
     void hide_layer(const QString& id);
@@ -83,6 +83,7 @@ private:
     void fillLandSat9ReflectanceMultAdd(const QString& path);
     void fillLandSat9GeoData(const QString& path);
     void clearLandsat9DataBands();
+    inline void cursorPointOnSceneChangedEventTimeRow(const QPointF& pos);
     uchar* m_image_data;
     uint16_t* readTiff(const QString& path,
                        int& xSize,

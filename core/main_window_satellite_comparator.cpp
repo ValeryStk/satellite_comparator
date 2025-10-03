@@ -199,6 +199,7 @@ void MainWindowSatelliteComparator::openTimeRowData()
     while(m_time_row.size() > m_preview_plot->graphCount()){
         m_preview_plot->addGraph();
     };//
+    m_preview_plot->legend->setVisible(false);
     QStringList gui_available_bands;
     for(int j=0;j<m_time_row[0].size();++j){
         gui_available_bands<<m_time_row[0][j].gui_name;
@@ -211,7 +212,7 @@ void MainWindowSatelliteComparator::openTimeRowData()
     m_is_image_created = true;
     m_scene_cross_square_item->setVisible(true);
     ui->graphicsView_satellite_image->setIsSignal(true);
-    change_bands_sentinel_and_show_image(m_time_row[0]);//NEED REFACTORING
+    change_bands_and_show_image(m_time_row[0]);//NEED REFACTORING
 }
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric()
@@ -234,6 +235,11 @@ void MainWindowSatelliteComparator::centerSceneOnCrossSquare()
 
 void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
 {
+
+    if(m_satelite_type==sad::TIME_ROW_COMBINATION){
+        cursorPointOnSceneChangedEventTimeRow(pos);
+        return;
+    }
     QVector<double> data;
     QVector<double> waves;
     QVector<double> sample;
@@ -297,6 +303,9 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
 
 void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
 {
+
+    if(m_satelite_type == sad::TIME_ROW_COMBINATION)return;
+
     m_is_bekas = false;
     m_scene_cross_square_item->setPos(pos);
     m_scene_cross_square_item->update();
@@ -594,7 +603,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
             this,SLOT(change_bands()));
 
     read_sentinel2_bands_data();
-    change_bands_sentinel_and_show_image(m_sentinel_data);
+    change_bands_and_show_image(m_sentinel_data);
 
     ui->statusbar->showMessage("");
     m_is_image_created = true;
@@ -856,6 +865,42 @@ void MainWindowSatelliteComparator::clearLandsat9DataBands()
     }
 }
 
+void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const QPointF &pos)
+{
+
+    if(m_time_row.empty())return;
+
+    const QString x_y = "x: %1   y:%2";
+    QString x_y_message = x_y.arg(QString::number(pos.x()),QString::number(pos.y()));
+    m_label_scene_coord->setText(x_y_message);
+
+
+
+    int xSize = m_time_row[0][0].width;
+    int ySize = m_time_row[0][0].height;
+    if(pos.x()>xSize || pos.x()<0) return;
+    if(pos.y()>ySize || pos.y()<0) return;
+
+    for(int i=0;i<m_time_row.size();++i){
+        QVector<double>one_ksy;
+        QVector<double>waves;
+        for(int j=0;j<m_time_row[i].size();++j){
+        uint16_t value = m_time_row[i][j].data[((int)pos.y()*xSize) + (int)pos.x()];
+        double one_ksy_value = m_time_row[i][j].reflectance_mult*value+m_time_row[i][j].reflectance_add;
+        if(one_ksy_value==0)continue;
+        one_ksy.push_back(one_ksy_value);
+        waves.push_back(m_time_row[i][j].central_wave_length);
+        }
+        //qDebug()<<"ksy -->"<<one_ksy;
+        //qDebug()<<"wave-->"<<wave;
+        m_preview_plot->graph(i)->data().clear();
+        m_preview_plot->graph(i)->setData(waves, one_ksy);
+    }
+
+    m_preview_plot->rescaleAxes(true);
+    m_preview_plot->replot();
+}
+
 uint16_t* MainWindowSatelliteComparator::readTiff(const QString& path,
                                                   int& xSize,
                                                   int& ySize)
@@ -1094,7 +1139,7 @@ void MainWindowSatelliteComparator::resetColorsToDefaultRGB()
         if(m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 || m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9){
             change_bands_and_show_image();
         }else if(m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A || m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B){
-            change_bands_sentinel_and_show_image(m_sentinel_data);
+            change_bands_and_show_image(m_sentinel_data);
         }
     }
 }
@@ -1172,7 +1217,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     updateImage();
 }
 
-void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image(const QVector<sad::BAND_DATA>& band_data)
+void MainWindowSatelliteComparator::change_bands_and_show_image(const QVector<sad::BAND_DATA>& band_data)
 {
     if(band_data.empty())return;
     const int nXSize = band_data[0].width;
@@ -1245,7 +1290,7 @@ void MainWindowSatelliteComparator::change_bands_sentinel_and_show_image(const Q
 
 void MainWindowSatelliteComparator::change_bands()
 {
-    change_bands_sentinel_and_show_image(m_sentinel_data);
+    change_bands_and_show_image(m_sentinel_data);
 }
 
 void MainWindowSatelliteComparator::show_layer(const QString& id)
