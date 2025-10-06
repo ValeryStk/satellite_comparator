@@ -200,7 +200,7 @@ void MainWindowSatelliteComparator::openTimeRowData()
         QColor(255, 0, 0),      // Красный
         QColor(0, 255, 0),      // Зеленый
         QColor(0, 0, 255),      // Синий
-        QColor(255, 255, 0),    // Желтый
+        QColor(0, 0, 0),        // Чёрный
         QColor(255, 0, 255),    // Пурпурный
         QColor(0, 255, 255),    // Бирюзовый
         QColor(255, 165, 0),    // Оранжевый
@@ -887,17 +887,15 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
 {
 
     if(m_time_row.empty())return;
+    int xSize = m_time_row[0][0].width;
+    int ySize = m_time_row[0][0].height;
+    if(pos.x()>xSize || pos.x()<0) return;
+    if(pos.y()>ySize || pos.y()<0) return;
 
     const QString x_y = "x: %1   y:%2";
     QString x_y_message = x_y.arg(QString::number(pos.x()),QString::number(pos.y()));
     m_label_scene_coord->setText(x_y_message);
 
-
-
-    int xSize = m_time_row[0][0].width;
-    int ySize = m_time_row[0][0].height;
-    if(pos.x()>xSize || pos.x()<0) return;
-    if(pos.y()>ySize || pos.y()<0) return;
 
     for(int i=0;i<m_time_row.size();++i){
         QVector<double>one_ksy;
