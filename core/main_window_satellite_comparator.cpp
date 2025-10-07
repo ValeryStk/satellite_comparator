@@ -214,7 +214,7 @@ void MainWindowSatelliteComparator::openTimeRowData()
     };//
     for(int i=0;i<m_preview_plot->graphCount();i++){
         if(i<distinctColors.size()){
-        m_preview_plot->graph(i)->setPen(QColor(distinctColors[i]));
+            m_preview_plot->graph(i)->setPen(QColor(distinctColors[i]));
         }
     }
     m_preview_plot->legend->setVisible(false);
@@ -887,10 +887,15 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
 {
 
     if(m_time_row.empty())return;
-    int xSize = m_time_row[0][0].width;
-    int ySize = m_time_row[0][0].height;
-    if(pos.x()>xSize || pos.x()<0) return;
-    if(pos.y()>ySize || pos.y()<0) return;
+    int xSize = INT_MAX;
+    int ySize = INT_MAX;
+    for(int i=0;i<m_time_row.size();++i){
+        if(xSize > m_time_row[i][0].width)xSize = m_time_row[i][0].width;
+        if(ySize > m_time_row[i][0].height)ySize = m_time_row[i][0].height;
+    }
+
+    if(pos.x() > xSize || pos.x() < 0) return;
+    if(pos.y() > ySize || pos.y() < 0) return;
 
     const QString x_y = "x: %1   y:%2";
     QString x_y_message = x_y.arg(QString::number(pos.x()),QString::number(pos.y()));
@@ -901,11 +906,11 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         QVector<double>one_ksy;
         QVector<double>waves;
         for(int j=0;j<m_time_row[i].size();++j){
-        uint16_t value = m_time_row[i][j].data[((int)pos.y()*xSize) + (int)pos.x()];
-        double one_ksy_value = m_time_row[i][j].reflectance_mult*value+m_time_row[i][j].reflectance_add;
-        if(one_ksy_value==0)continue;
-        one_ksy.push_back(one_ksy_value);
-        waves.push_back(m_time_row[i][j].central_wave_length);
+            uint16_t value = m_time_row[i][j].data[((int)pos.y()*xSize) + (int)pos.x()];
+            double one_ksy_value = m_time_row[i][j].reflectance_mult*value+m_time_row[i][j].reflectance_add;
+            if(one_ksy_value==0)continue;
+            one_ksy.push_back(one_ksy_value);
+            waves.push_back(m_time_row[i][j].central_wave_length);
         }
         //qDebug()<<"ksy -->"<<one_ksy;
         //qDebug()<<"wave-->"<<wave;
