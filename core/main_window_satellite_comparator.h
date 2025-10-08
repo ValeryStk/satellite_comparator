@@ -18,8 +18,6 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowSatelliteComparator; }
 QT_END_NAMESPACE
 
-
-
 class MainWindowSatelliteComparator : public QMainWindow
 {
     Q_OBJECT
@@ -122,7 +120,7 @@ private:
     QGraphicsTextItem* m_scene_text_item_metric_value;
     UasvViewWindow* bekas_window;
     void paintSamplePoints(const QColor &color);
-    QString getGeoCoordinates(const int x, const int y);
+    QString getGeoCoordinates(const int x, const int y, const sad::geoTransform &geo);
 
 
 
@@ -133,15 +131,7 @@ private:
                                          const QVector<double>& S2);
 
 
-    struct geoTransform {
-        double ulX = 0;           // Верхний левый X (восточное направление)
-        double resX = 0;          // Разрешение по X
-        double rotateX = 0;       // Поворот X (обычно 0 для Landsat)
-        double ulY = 0;           // Верхний левый Y (северное направление)
-        double rotateY = 0;       // Поворот Y (обычно 0 для Landsat)
-        double resY = 0;          // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
-        double utmZone = 0;
-    } m_geo;
+    sad::geoTransform m_geo;
 
     void processLayer(uchar* layer,
                       int xSize,
@@ -175,8 +165,8 @@ private:
     void clear_satellite_data();
     void clear_all_layers();
 
-    QHash <QString,geoTransform> sentinel_geo;
-    QHash<QString, geoTransform> extractGeoPositions(const QString& xmlFilePath);
+    QHash <QString,sad::geoTransform> sentinel_geo;
+    QHash<QString, sad::geoTransform> extractGeoPositions(const QString& xmlFilePath);
     int extractUTMZoneFromXML(const QString& xmlFilePath);
     void getKSY(const QPointF& pos, QVector<double>& waves, QVector<double>& ksy);
     QImage createModifiedImage(const QImage &img, double coefSat, double coefLight);
@@ -184,8 +174,12 @@ private:
     UdpJsonRpc   *m_rpc;
 
 
-    QVector<sad::BAND_DATA> getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName);
+    QVector<sad::BAND_DATA> getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName,
+                                                                 sad::LANDSAT_METADATA_FILE& landsat_metadata,
+                                                                 sad::geoTransform& gt);
     QVector<QVector<sad::BAND_DATA>> m_time_row;
+    QVector<sad::geoTransform> m_time_row_geo;
+    sad::geoTransform getGeo(const QJsonObject& jo);
 
 
 };

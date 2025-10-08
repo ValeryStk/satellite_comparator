@@ -191,9 +191,18 @@ void MainWindowSatelliteComparator::openTimeRowData()
     m_satelite_type = sad::TIME_ROW_COMBINATION;
     subdirs = sortLandsatFilesByDateTime(subdirs);
     qDebug()<<"after sorting by date time"<<subdirs;
+
+    //!!!!! FILTER SUBDIRS
+
     m_time_row.resize(subdirs.size());
+    m_time_row_geo.resize(subdirs.size());
     for(int i=0;i<m_time_row.size();++i){
-        m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json");
+        sad::LANDSAT_METADATA_FILE landsat_metadata;
+        sad::geoTransform gt;
+        m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json",
+                                                             landsat_metadata,
+                                                             gt);
+        m_time_row_geo[i] = gt;
     }
 
     QList<QColor> distinctColors = {
@@ -360,7 +369,7 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
     m_preview_plot->rescaleAxes(true);
     m_preview_plot->replot();
 
-    getGeoCoordinates(pos.x(),pos.y());
+    getGeoCoordinates(pos.x(),pos.y(),m_geo);
 
 }
 
@@ -1054,17 +1063,18 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 }
 
 QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
-                                                         const int y)
+                                                         const int y,
+                                                         const sad::geoTransform& geo)
 {
 
     // Строим геотрансформацию (предполагается, что изображение не имеет поворота)
     double geoTransform[6] = {
-        m_geo.ulX,            // Верхний левый X (восточное направление)
-        m_geo.resX,           // Разрешение по X
+        geo.ulX,            // Верхний левый X (восточное направление)
+        geo.resX,           // Разрешение по X
         0,                    // Поворот (обычно 0 для Landsat)
-        m_geo.ulY,            // Верхний левый Y (северное направление)
+        geo.ulY,            // Верхний левый Y (северное направление)
         0,                    // Поворот
-        m_geo.resY                 // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
+        geo.resY                 // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
     };
 
     // Создаем проекцию UTM
@@ -1628,10 +1638,10 @@ void MainWindowSatelliteComparator::clear_all_layers()
     m_layers_search_result_items.clear();
 }
 
-QHash<QString, MainWindowSatelliteComparator::geoTransform> MainWindowSatelliteComparator::extractGeoPositions
+QHash<QString, sad::geoTransform> MainWindowSatelliteComparator::extractGeoPositions
 (const QString &xmlFilePath)
 {
-    QHash<QString, geoTransform> positions;
+    QHash<QString, sad::geoTransform> positions;
 
     QFile file(xmlFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -1652,7 +1662,7 @@ QHash<QString, MainWindowSatelliteComparator::geoTransform> MainWindowSatelliteC
         QDomElement geoElem = geoNodes.at(i).toElement();
         QString resolution = geoElem.attribute("resolution");
 
-        geoTransform pos;
+        sad::geoTransform pos;
         pos.ulX = geoElem.firstChildElement("ULX").text().toDouble();
         pos.ulY = geoElem.firstChildElement("ULY").text().toDouble();
         positions.insert(resolution, pos);
@@ -1766,9 +1776,10 @@ void MainWindowSatelliteComparator::initUdpRpcConnection()
             &MainWindowSatelliteComparator::handleJsonRpcResult);
 }
 
-QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName)
+QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName,
+                                                                                            sad::LANDSAT_METADATA_FILE& landsat_metadata,
+                                                                                            sad::geoTransform& gt)
 {
-    sad::LANDSAT_METADATA_FILE landsat_metadata;
     QJsonObject jo;
     QVector<sad::BAND_DATA> bands_data;
     jsn::getJsonObjectFromFile(headerName,jo);
@@ -1799,6 +1810,7 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
             QJsonObject check_bands = value.toObject();
             QJsonObject radiance = radiance_value.toObject();
             QJsonObject projection = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PROJECTION_ATTRIBUTES"}).toObject();
+            gt = getGeo(projection);
             landsat_metadata.projection_attributes.utm_zone = projection["UTM_ZONE"].toString().toDouble();
             landsat_metadata.projection_attributes.corner_ul_projection_x_product = projection["CORNER_UL_PROJECTION_X_PRODUCT"].toString().toDouble();
             landsat_metadata.projection_attributes.corner_ul_projection_y_product = projection["CORNER_UL_PROJECTION_Y_PRODUCT"].toString().toDouble();
@@ -1829,4 +1841,16 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
     }
 
     return bands_data;
+}
+
+sad::geoTransform MainWindowSatelliteComparator::getGeo(const QJsonObject& jo)
+{
+    sad::geoTransform gt;
+    QJsonObject projection = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PROJECTION_ATTRIBUTES"}).toObject();
+    gt.utmZone = projection["UTM_ZONE"].toString().toDouble();
+    gt.ulX = projection["CORNER_UL_PROJECTION_X_PRODUCT"].toString().toDouble();
+    gt.ulY = projection["CORNER_UL_PROJECTION_Y_PRODUCT"].toString().toDouble();
+    gt.resX = projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
+    gt.resY = - m_geo.resX;
+    return gt;
 }

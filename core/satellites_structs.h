@@ -36,6 +36,16 @@ extern const double landsat_central_wavelengths[LANDSAT_BANDS_NUMBER];
 extern const int sorted_landsat_bands_order_by_wavelength[LANDSAT_BANDS_NUMBER];
 
 
+struct geoTransform {
+    double ulX = 0;           // Верхний левый X (восточное направление)
+    double resX = 0;          // Разрешение по X
+    double rotateX = 0;       // Поворот X (обычно 0 для Landsat)
+    double ulY = 0;           // Верхний левый Y (северное направление)
+    double rotateY = 0;       // Поворот Y (обычно 0 для Landsat)
+    double resY = 0;          // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
+    double utmZone = 0;
+};
+
 struct PRODUCT_CONTENTS{
     QString landsat_product_id;
     QDateTime date_time;
