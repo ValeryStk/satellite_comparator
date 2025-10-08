@@ -925,6 +925,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         //qDebug()<<"wave-->"<<wave;
         m_preview_plot->graph(i)->data().clear();
         m_preview_plot->graph(i)->setData(waves, one_ksy);
+        qDebug()<<"----"<<getGeoCoordinates(pos.x(),pos.y(),m_time_row_geo[i]);
     }
 
     m_preview_plot->rescaleAxes(true);
@@ -1081,7 +1082,7 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
     OGRSpatialReference utmSrs;
     utmSrs.SetProjCS("UTM");
     utmSrs.SetWellKnownGeogCS("WGS84"); // DATUM из MTL.json
-    utmSrs.SetUTM(m_geo.utmZone, true);   // Северное - true или южное - false полушарие
+    utmSrs.SetUTM(geo.utmZone, true);   // Северное - true или южное - false полушарие
 
     // Создаем целевую проекцию (WGS84)
     OGRSpatialReference wgs84Srs;
@@ -1810,7 +1811,7 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
             QJsonObject check_bands = value.toObject();
             QJsonObject radiance = radiance_value.toObject();
             QJsonObject projection = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PROJECTION_ATTRIBUTES"}).toObject();
-            gt = getGeo(projection);
+            gt = getGeo(jo);
             landsat_metadata.projection_attributes.utm_zone = projection["UTM_ZONE"].toString().toDouble();
             landsat_metadata.projection_attributes.corner_ul_projection_x_product = projection["CORNER_UL_PROJECTION_X_PRODUCT"].toString().toDouble();
             landsat_metadata.projection_attributes.corner_ul_projection_y_product = projection["CORNER_UL_PROJECTION_Y_PRODUCT"].toString().toDouble();
@@ -1851,6 +1852,6 @@ sad::geoTransform MainWindowSatelliteComparator::getGeo(const QJsonObject& jo)
     gt.ulX = projection["CORNER_UL_PROJECTION_X_PRODUCT"].toString().toDouble();
     gt.ulY = projection["CORNER_UL_PROJECTION_Y_PRODUCT"].toString().toDouble();
     gt.resX = projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
-    gt.resY = - m_geo.resX;
+    gt.resY = -gt.resX;
     return gt;
 }
