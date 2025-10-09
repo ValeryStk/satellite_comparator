@@ -368,8 +368,8 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
     m_preview_plot->graph(1)->setData(waves, sample);
     m_preview_plot->rescaleAxes(true);
     m_preview_plot->replot();
-
-    getGeoCoordinates(pos.x(),pos.y(),m_geo);
+    double lat, longitude;
+    getGeoCoordinates(pos.x(),pos.y(),m_geo,lat,longitude);
 
 }
 
@@ -909,7 +909,12 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
     const QString x_y = "x: %1   y:%2";
     QString x_y_message = x_y.arg(QString::number(pos.x()),QString::number(pos.y()));
     m_label_scene_coord->setText(x_y_message);
-
+    double lat, longitude;
+    qDebug()<<"----"<<getGeoCoordinates(pos.x(),
+                                        pos.y(),
+                                        m_time_row_geo[0],
+                                        lat,
+                                        longitude);
 
     for(int i=0;i<m_time_row.size();++i){
         QVector<double>one_ksy;
@@ -925,7 +930,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         //qDebug()<<"wave-->"<<wave;
         m_preview_plot->graph(i)->data().clear();
         m_preview_plot->graph(i)->setData(waves, one_ksy);
-        qDebug()<<"----"<<getGeoCoordinates(pos.x(),pos.y(),m_time_row_geo[i]);
+
+        qDebug()<<"geo to pixel: --> "<<geoToPixel(lat,longitude,m_time_row_geo[i]);
     }
 
     m_preview_plot->rescaleAxes(true);
@@ -1065,7 +1071,9 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 
 QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
                                                          const int y,
-                                                         const sad::geoTransform& geo)
+                                                         const sad::geoTransform& geo,
+                                                         double& latitude,
+                                                         double& longitude)
 {
 
     // Строим геотрансформацию (предполагается, что изображение не имеет поворота)
@@ -1108,11 +1116,33 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
     //qDebug()<< "Широта: " << lat;
     m_lattitude = lat;
     m_longitude = lon;
+    latitude = lat;
+    longitude = lon;
     QString lat_lon = QString("Широта: %1 Долгота: %2").arg(lat).arg(lon);
     OCTDestroyCoordinateTransformation(transformer);
     ui->statusbar->showMessage(lat_lon);
     return lat_lon;
 
+}
+
+QPointF MainWindowSatelliteComparator::geoToPixel(double latitude,
+                                                  double longitude,
+                                                  const sad::geoTransform &gt)
+{
+    OGRSpatialReference srcSRS, dstSRS;
+    srcSRS.SetWellKnownGeogCS("WGS84");
+    dstSRS.SetUTM(gt.utmZone, gt.ulY > 0);
+    dstSRS.SetWellKnownGeogCS("WGS84");
+
+    OGRCoordinateTransformation* coordTransform = OGRCreateCoordinateTransformation(&srcSRS, &dstSRS);
+    double x = longitude;
+    double y = latitude;
+    coordTransform->Transform(1, &x, &y);
+
+    int pixelX = static_cast<int>((x - gt.ulX) / gt.resX);
+    int pixelY = static_cast<int>((y - gt.ulY) / gt.resY);
+
+    return QPointF(pixelX, pixelY);
 }
 
 inline double MainWindowSatelliteComparator::euclideanDistance(const QVector<double> &v1,

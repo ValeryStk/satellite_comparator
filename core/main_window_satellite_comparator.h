@@ -120,8 +120,12 @@ private:
     QGraphicsTextItem* m_scene_text_item_metric_value;
     UasvViewWindow* bekas_window;
     void paintSamplePoints(const QColor &color);
-    QString getGeoCoordinates(const int x, const int y, const sad::geoTransform &geo);
-
+    QString getGeoCoordinates(const int x,
+                              const int y,
+                              const sad::geoTransform &geo,
+                              double &latitude,
+                              double &longitude);
+    QPointF geoToPixel(double latitude, double longitude, const sad::geoTransform& gt);
 
 
     inline double euclideanDistance(const QVector<double>& v1,
