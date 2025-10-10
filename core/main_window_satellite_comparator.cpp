@@ -909,11 +909,12 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
     const QString x_y = "x: %1   y:%2";
     QString x_y_message = x_y.arg(QString::number(pos.x()),QString::number(pos.y()));
     m_label_scene_coord->setText(x_y_message);
-    double lat, longitude;
+    double latitude = 0.0;
+    double longitude = 0.0;
     qDebug()<<"----"<<getGeoCoordinates(pos.x(),
                                         pos.y(),
                                         m_time_row_geo[0],
-                                        lat,
+                                        latitude,
                                         longitude);
 
     for(int i=0;i<m_time_row.size();++i){
@@ -922,7 +923,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         for(int j=0;j<m_time_row[i].size();++j){
             uint16_t value = m_time_row[i][j].data[((int)pos.y()*xSize) + (int)pos.x()];
             double one_ksy_value = m_time_row[i][j].reflectance_mult*value+m_time_row[i][j].reflectance_add;
-            if(one_ksy_value==0)continue;
+            if(one_ksy_value==0) continue;
             one_ksy.push_back(one_ksy_value);
             waves.push_back(m_time_row[i][j].central_wave_length);
         }
@@ -931,7 +932,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         m_preview_plot->graph(i)->data().clear();
         m_preview_plot->graph(i)->setData(waves, one_ksy);
 
-        qDebug()<<"geo to pixel: --> "<<geoToPixel(lat,longitude,m_time_row_geo[i]);
+        qDebug()<<i<<" -- "<<"geo to pixel: --> "<<geoToPixel(latitude,longitude,m_time_row_geo[i]);
     }
 
     m_preview_plot->rescaleAxes(true);
