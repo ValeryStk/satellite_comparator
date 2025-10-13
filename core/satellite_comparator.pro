@@ -9,6 +9,7 @@ include(bekas/bekas.pri)
 include(matio.pri)
 include(resources.pri)
 include(../translations/translations.pri)
+include(../gui/image_viewer.pri)
 
 SOURCES += \
     cross_square.cpp \

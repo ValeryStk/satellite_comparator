@@ -186,5 +186,8 @@ private:
     sad::geoTransform getGeo(const QJsonObject& jo);
 
 
+
+    QVector<QImage> get_cropedImages_for_time_row(const QVector<QVector<sad::BAND_DATA>>& m_time_row);
+
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

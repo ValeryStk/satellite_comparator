@@ -38,7 +38,7 @@
 #include <matio.h>
 #include <MatFilesOperator.h>
 #include "version.h"
-
+#include "image_viewer.h"
 
 
 
@@ -240,6 +240,14 @@ void MainWindowSatelliteComparator::openTimeRowData()
     m_scene_cross_square_item->setVisible(true);
     ui->graphicsView_satellite_image->setIsSignal(true);
     change_bands_and_show_image(m_time_row[0]);//NEED REFACTORING
+
+    auto imgs = get_cropedImages_for_time_row(m_time_row);
+    for(int i=0;i<imgs.size();++i){
+        ImageViewer* viewer = new ImageViewer(imgs[i], QString::number(i));
+        viewer->setAttribute(Qt::WA_DeleteOnClose);
+        viewer->show();
+    }
+
 }
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric()
@@ -914,8 +922,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
     qDebug()<<"----"<<getGeoCoordinates(pos.x(),
                                         pos.y(),
                                         m_time_row_geo[0],
-                                        latitude,
-                                        longitude);
+            latitude,
+            longitude);
 
     for(int i=0;i<m_time_row.size();++i){
         QVector<double>one_ksy;
@@ -1885,4 +1893,37 @@ sad::geoTransform MainWindowSatelliteComparator::getGeo(const QJsonObject& jo)
     gt.resX = projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
     gt.resY = -gt.resX;
     return gt;
+}
+
+QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(const QVector<QVector<sad::BAND_DATA> > &m_time_row)
+{
+    if(m_time_row.empty())return {QImage()};
+
+    QVector<QImage> images;
+
+    for(int i=0; i<m_time_row.size(); ++i){
+        int offset = 0;
+        const int nXSize = m_time_row[i][0].width;
+        const int nYSize = m_time_row[i][0].height;
+        uchar* data = new uchar[nXSize * nYSize * 3];//std::unique_ptr<uchar[]> data(new uchar[nXSize * nYSize * 3]);
+        for (int y = 0; y < nYSize; ++y) {
+            for (int x = 0; x < nXSize; ++x) {
+                int B = 0;
+                int G = 0;
+                int R = 0;
+                B = static_cast<int>(m_time_row[i][1].data[y * nXSize + x] / 255.0);
+                G = static_cast<int>(m_time_row[i][2].data[y * nXSize + x] / 255.0);
+                R = static_cast<int>(m_time_row[i][3].data[y * nXSize + x] / 255.0);
+                data[offset]   = R;
+                data[offset+1] = G;
+                data[offset+2] = B;
+                offset = offset+3;
+            }
+        }
+        QImage img = QImage(data,nXSize,nYSize,nXSize*3,QImage::Format_RGB888).copy();
+        images.push_back(img);
+        delete[] data;
+    }
+
+    return images;
 }
