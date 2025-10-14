@@ -56,6 +56,23 @@ QVector<double> waves_landsat9_5 = {443,482,562,655,865};
 constexpr int LOCAL_PORT = 5001;
 constexpr int MATLAB_PORT = 5000;
 
+
+QList<QColor> distinctColors = {
+    QColor(255, 0, 0),      // Красный
+    QColor(0, 255, 0),      // Зеленый
+    QColor(0, 0, 255),      // Синий
+    QColor(0, 0, 0),        // Чёрный
+    QColor(255, 0, 255),    // Пурпурный
+    QColor(0, 255, 255),    // Бирюзовый
+    QColor(255, 165, 0),    // Оранжевый
+    QColor(128, 0, 128),    // Фиолетовый
+    QColor(0, 128, 128),    // Темно-бирюзовый
+    QColor(128, 128, 0)     // Оливковый
+};
+
+
+
+
 namespace {
 
 void downsample_uint16(const uint16_t* input,
@@ -205,18 +222,7 @@ void MainWindowSatelliteComparator::openTimeRowData()
         m_time_row_geo[i] = gt;
     }
 
-    QList<QColor> distinctColors = {
-        QColor(255, 0, 0),      // Красный
-        QColor(0, 255, 0),      // Зеленый
-        QColor(0, 0, 255),      // Синий
-        QColor(0, 0, 0),        // Чёрный
-        QColor(255, 0, 255),    // Пурпурный
-        QColor(0, 255, 255),    // Бирюзовый
-        QColor(255, 165, 0),    // Оранжевый
-        QColor(128, 0, 128),    // Фиолетовый
-        QColor(0, 128, 128),    // Темно-бирюзовый
-        QColor(128, 128, 0)     // Оливковый
-    };
+
     // Будем добавлять график, если его не хватает для новых временных точек
     while(m_time_row.size() > m_preview_plot->graphCount()){
         m_preview_plot->addGraph();
@@ -241,9 +247,15 @@ void MainWindowSatelliteComparator::openTimeRowData()
     ui->graphicsView_satellite_image->setIsSignal(true);
     change_bands_and_show_image(m_time_row[0]);//NEED REFACTORING
 
+
+    QVector<QPoint> points = {{5310,3634},{5290,3624},{5370,3624},{5420,3634},{5290,3634},{5300,3634}};
     auto imgs = get_cropedImages_for_time_row(m_time_row);
     for(int i=0;i<imgs.size();++i){
-        ImageViewer* viewer = new ImageViewer(imgs[i], QString::number(i));
+        ImageViewer* viewer = new ImageViewer;//(imgs[i], QString::number(i));
+        QPixmap pixmap = QPixmap::fromImage(imgs[i]);
+        viewer->setImage(pixmap);
+        viewer->centerOnPixel(points[i].x(), points[i].y()); // Центрирование на пиксель (100,150)
+        viewer->resize(400, 400);
         viewer->setAttribute(Qt::WA_DeleteOnClose);
         viewer->show();
     }
@@ -1897,7 +1909,7 @@ sad::geoTransform MainWindowSatelliteComparator::getGeo(const QJsonObject& jo)
 
 QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(const QVector<QVector<sad::BAND_DATA> > &m_time_row)
 {
-    if(m_time_row.empty())return {QImage()};
+    if(m_time_row.empty()) return {QImage()};
 
     QVector<QImage> images;
 
@@ -1905,7 +1917,7 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(con
         int offset = 0;
         const int nXSize = m_time_row[i][0].width;
         const int nYSize = m_time_row[i][0].height;
-        uchar* data = new uchar[nXSize * nYSize * 3];//std::unique_ptr<uchar[]> data(new uchar[nXSize * nYSize * 3]);
+        auto data = std::unique_ptr<uchar[]>(new uchar[nXSize * nYSize * 3]);
         for (int y = 0; y < nYSize; ++y) {
             for (int x = 0; x < nXSize; ++x) {
                 int B = 0;
@@ -1920,9 +1932,8 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(con
                 offset = offset+3;
             }
         }
-        QImage img = QImage(data,nXSize,nYSize,nXSize*3,QImage::Format_RGB888).copy();
+        QImage img = QImage(data.get(),nXSize,nYSize,nXSize*3,QImage::Format_RGB888).copy();
         images.push_back(img);
-        delete[] data;
     }
 
     return images;

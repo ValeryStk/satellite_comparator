@@ -1,27 +1,29 @@
 #ifndef IMAGE_VIEWER_H
 #define IMAGE_VIEWER_H
 
-#include <QWidget>
-#include <QImage>
-#include <QString>
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QGraphicsPixmapItem>
+#include <QGraphicsLineItem>
 
-class QLabel;
-class QScrollArea;
-class QVBoxLayout;
-
-class ImageViewer : public QWidget {
+class ImageViewer : public QGraphicsView {
     Q_OBJECT
 
 public:
-    explicit ImageViewer(QImage &image,
-                         const QString& windowTitle,
-                         QWidget* parent = nullptr);
-    ~ImageViewer();
+    explicit ImageViewer(QWidget* parent = nullptr);
+    void setImage(const QPixmap& pixmap);
+    void centerOnPixel(int x, int y);
+
+protected:
+    void wheelEvent(QWheelEvent* event) override;
 
 private:
-    QLabel* imageLabel;
-    QScrollArea* scrollArea;
-    QVBoxLayout* layout;
+    QGraphicsScene* scene;
+    QGraphicsPixmapItem* imageItem;
+    QGraphicsLineItem* crosshairH;
+    QGraphicsLineItem* crosshairV;
+
+    void updateCrosshair(int x, int y);
 };
 
 #endif // IMAGEVIEWER_H
