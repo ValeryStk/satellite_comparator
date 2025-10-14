@@ -39,6 +39,7 @@
 #include <MatFilesOperator.h>
 #include "version.h"
 #include "image_viewer.h"
+#include "view_sync_manager.h"
 
 
 
@@ -247,7 +248,7 @@ void MainWindowSatelliteComparator::openTimeRowData()
     ui->graphicsView_satellite_image->setIsSignal(true);
     change_bands_and_show_image(m_time_row[0]);//NEED REFACTORING
 
-
+    auto* syncManager = new ViewSyncManager;
     QVector<QPoint> points = {{5310,3634},{5290,3624},{5370,3624},{5420,3634},{5290,3634},{5300,3634}};
     auto imgs = get_cropedImages_for_time_row(m_time_row);
     for(int i=0;i<imgs.size();++i){
@@ -256,10 +257,11 @@ void MainWindowSatelliteComparator::openTimeRowData()
         viewer->setImage(pixmap);
         viewer->centerOnPixel(points[i].x(), points[i].y()); // Центрирование на пиксель (100,150)
         viewer->resize(400, 400);
+        viewer->connectSync(syncManager);
         viewer->setAttribute(Qt::WA_DeleteOnClose);
         viewer->show();
     }
-
+   //syncManager->deleteLater();
 }
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric()
