@@ -945,7 +945,13 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         QVector<double>one_ksy;
         QVector<double>waves;
         for(int j=0;j<m_time_row[i].size();++j){
-            uint16_t value = m_time_row[i][j].data[((int)pos.y()*xSize) + (int)pos.x()];
+            auto corrected_point = geoToPixel(latitude,longitude,m_time_row_geo[i]);
+            uint16_t value = 0;
+            if(j==0){
+            value = m_time_row[i][j].data[((int)pos.y()*xSize) + (int)pos.x()];
+            }else{
+            value = m_time_row[i][j].data[((int)corrected_point.y()*xSize) + (int)corrected_point.x()];
+            }
             double one_ksy_value = m_time_row[i][j].reflectance_mult*value+m_time_row[i][j].reflectance_add;
             if(one_ksy_value==0) continue;
             one_ksy.push_back(one_ksy_value);
