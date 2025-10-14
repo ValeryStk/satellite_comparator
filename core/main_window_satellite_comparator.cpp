@@ -71,8 +71,8 @@ QList<QColor> distinctColors = {
     QColor(128, 128, 0)     // Оливковый
 };
 
-
-
+ViewSyncManager* syncManager;
+QVector<ImageViewer*> m_viewers;
 
 namespace {
 
@@ -248,14 +248,16 @@ void MainWindowSatelliteComparator::openTimeRowData()
     ui->graphicsView_satellite_image->setIsSignal(true);
     change_bands_and_show_image(m_time_row[0]);//NEED REFACTORING
 
-    auto* syncManager = new ViewSyncManager;
+    syncManager = new ViewSyncManager;
+
     QVector<QPoint> points = {{5310,3634},{5290,3624},{5370,3624},{5420,3634},{5290,3634},{5300,3634}};
     auto imgs = get_cropedImages_for_time_row(m_time_row);
     for(int i=0;i<imgs.size();++i){
-        ImageViewer* viewer = new ImageViewer;//(imgs[i], QString::number(i));
+        ImageViewer* viewer = new ImageViewer;
+        m_viewers.push_back(viewer);
         QPixmap pixmap = QPixmap::fromImage(imgs[i]);
         viewer->setImage(pixmap);
-        viewer->centerOnPixel(points[i].x(), points[i].y()); // Центрирование на пиксель (100,150)
+        viewer->centerOnPixel(points[i].x(), points[i].y());
         viewer->resize(400, 400);
         viewer->connectSync(syncManager);
         viewer->setAttribute(Qt::WA_DeleteOnClose);
@@ -938,7 +940,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
                                         m_time_row_geo[0],
             latitude,
             longitude);
-
+    QVector<QPointF> m_points;
     for(int i=0;i<m_time_row.size();++i){
         QVector<double>one_ksy;
         QVector<double>waves;
@@ -954,9 +956,11 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         m_preview_plot->graph(i)->data().clear();
         m_preview_plot->graph(i)->setData(waves, one_ksy);
 
-        qDebug()<<i<<" -- "<<"geo to pixel: --> "<<geoToPixel(latitude,longitude,m_time_row_geo[i]);
+        m_points.push_back(geoToPixel(latitude,longitude,m_time_row_geo[i]));
     }
-
+    for(int i=0;i<m_points.size();++i){
+       m_viewers[i]->centerOnPoint(m_points[i]);
+    }
     m_preview_plot->rescaleAxes(true);
     m_preview_plot->replot();
 }

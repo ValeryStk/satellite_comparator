@@ -38,7 +38,7 @@ void ImageViewer::mouseDoubleClickEvent(QMouseEvent *event)
 void ImageViewer::centerOnPixel(int x, int y) {
     centerOn(x, y);
     updateCrosshair(x, y);
-    emit localCenterChanged(QPointF(x, y));
+    //emit localCenterChanged(QPointF(x, y));
 }
 
 void ImageViewer::updateCrosshair(int x, int y) {
