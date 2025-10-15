@@ -211,15 +211,16 @@ void MainWindowSatelliteComparator::openTimeRowData()
     qDebug()<<"after sorting by date time"<<subdirs;
 
     //!!!!! FILTER SUBDIRS
-
+    QVector<sad::LANDSAT_METADATA_FILE> meta_datas;
     m_time_row.resize(subdirs.size());
-    m_time_row_geo.resize(subdirs.size());
+    m_time_row_geo.resize(m_time_row.size());
     for(int i=0;i<m_time_row.size();++i){
         sad::LANDSAT_METADATA_FILE landsat_metadata;
         sad::geoTransform gt;
         m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json",
                                                              landsat_metadata,
                                                              gt);
+        meta_datas.push_back(landsat_metadata);
         m_time_row_geo[i] = gt;
     }
 
@@ -250,20 +251,24 @@ void MainWindowSatelliteComparator::openTimeRowData()
 
     syncManager = new ViewSyncManager;
 
-    QVector<QPoint> points = {{5310,3634},{5290,3624},{5370,3624},{5420,3634},{5290,3634},{5300,3634}};
     auto imgs = get_cropedImages_for_time_row(m_time_row);
     for(int i=0;i<imgs.size();++i){
         ImageViewer* viewer = new ImageViewer;
         m_viewers.push_back(viewer);
         QPixmap pixmap = QPixmap::fromImage(imgs[i]);
         viewer->setImage(pixmap);
-        viewer->centerOnPixel(points[i].x(), points[i].y());
         viewer->resize(400, 400);
         viewer->connectSync(syncManager);
         viewer->setAttribute(Qt::WA_DeleteOnClose);
+        viewer->setWindowTitle(meta_datas[i].image_attributes.date_acquired);
+        int r = distinctColors[i].red();
+        int g = distinctColors[i].green();
+        int b = distinctColors[i].blue();
+        QIcon icon = iut::createIcon(r,g,b,QSize(50,50));
+        viewer->setWindowIcon(icon);
         viewer->show();
     }
-   //syncManager->deleteLater();
+    //syncManager->deleteLater();
 }
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric()
@@ -942,34 +947,30 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
             longitude);
     QVector<QPointF> m_points;
     for(int i=0;i<m_time_row.size();++i){
+        m_points.push_back(geoToPixel(latitude,longitude,m_time_row_geo[i]));
+    }
+
+    for(int i=0;i<m_points.size();++i){
+        m_viewers[i]->centerOnPoint(m_points[i]);
+        uint16_t value = 0;
         QVector<double>one_ksy;
         QVector<double>waves;
         for(int j=0;j<m_time_row[i].size();++j){
-            auto corrected_point = geoToPixel(latitude,longitude,m_time_row_geo[i]);
-            uint16_t value = 0;
-            if(j==0){
-            value = m_time_row[i][j].data[((int)pos.y()*xSize) + (int)pos.x()];
-            }else{
-            value = m_time_row[i][j].data[((int)corrected_point.y()*xSize) + (int)corrected_point.x()];
-            }
-            double one_ksy_value = m_time_row[i][j].reflectance_mult*value+m_time_row[i][j].reflectance_add;
+            value = m_time_row[i][j].data[((int)m_points[i].y()*m_time_row[i][j].width) + (int)m_points[i].x()];
+            double one_ksy_value = m_time_row[i][j].reflectance_mult * value + m_time_row[i][j].reflectance_add;
             if(one_ksy_value==0) continue;
             one_ksy.push_back(one_ksy_value);
             waves.push_back(m_time_row[i][j].central_wave_length);
         }
-        //qDebug()<<"ksy -->"<<one_ksy;
-        //qDebug()<<"wave-->"<<wave;
         m_preview_plot->graph(i)->data().clear();
         m_preview_plot->graph(i)->setData(waves, one_ksy);
+        m_preview_plot->rescaleAxes(true);
+        m_preview_plot->replot();
 
-        m_points.push_back(geoToPixel(latitude,longitude,m_time_row_geo[i]));
     }
-    for(int i=0;i<m_points.size();++i){
-       m_viewers[i]->centerOnPoint(m_points[i]);
-    }
-    m_preview_plot->rescaleAxes(true);
-    m_preview_plot->replot();
+
 }
+
 
 uint16_t* MainWindowSatelliteComparator::readTiff(const QString& path,
                                                   int& xSize,
@@ -1858,6 +1859,7 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
             QJsonObject image_attributes = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","IMAGE_ATTRIBUTES"}).toObject();
             landsat_metadata.image_attributes.spacecraft_id = image_attributes.value("SPACECRAFT_ID").toString();
             QString date_acquired = image_attributes.value("DATE_ACQUIRED").toString();
+            landsat_metadata.image_attributes.date_acquired = date_acquired;
             QDate date {QDate::fromString(date_acquired,"yyyy-MM-dd")};
             QString timeStr = image_attributes.value("SCENE_CENTER_TIME").toString().remove('Z');
 
@@ -1894,8 +1896,8 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
                 bd.data = readTiff(fi.path()+"/"+band_file_name,xS,yS);
                 bd.width = xS;
                 bd.height = yS;
-                double mult_refl = radiance[sad::landsat9_mult_reflectence_keys[i]].toString().toDouble();
-                double add_refl = radiance[sad::landsat9_add_reflectence_keys[i]].toString().toDouble();
+                double mult_refl = radiance[sad::landsat9_mult_reflectence_keys[sorted_order_index]].toString().toDouble();
+                double add_refl = radiance[sad::landsat9_add_reflectence_keys[sorted_order_index]].toString().toDouble();
                 bd.reflectance_mult = mult_refl;
                 bd.reflectance_add = add_refl;
                 bd.central_wave_length = sad::landsat_central_wavelengths[sorted_order_index];
@@ -1935,9 +1937,9 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(con
                 int B = 0;
                 int G = 0;
                 int R = 0;
-                B = static_cast<int>(m_time_row[i][1].data[y * nXSize + x] / 255.0);
-                G = static_cast<int>(m_time_row[i][2].data[y * nXSize + x] / 255.0);
-                R = static_cast<int>(m_time_row[i][3].data[y * nXSize + x] / 255.0);
+                B = static_cast<int>(m_time_row[i][1].data[y * nXSize + x] / 255.0)*2;
+                G = static_cast<int>(m_time_row[i][2].data[y * nXSize + x] / 255.0)*2;
+                R = static_cast<int>(m_time_row[i][3].data[y * nXSize + x] / 255.0)*2;
                 data[offset]   = R;
                 data[offset+1] = G;
                 data[offset+2] = B;
