@@ -2025,20 +2025,27 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(QVector<double
                                                                   QVector<double> ndwis)
 {
     if(!time_row_indexes_plot) return;
-    time_row_indexes_plot->clearItems();
-    for (int i = 0; i < ndvis.size(); ++i) {
-        double x = i;
-        double y = ndvis[i];
-        const int r=1;
-        QColor color = distinctColors[i]; // индивидуальный цвет
-
-        QCPItemEllipse* ellipse = new QCPItemEllipse(time_row_indexes_plot);
-        ellipse->topLeft->setCoords(x - r, y + r);
-        ellipse->bottomRight->setCoords(x + r, y - r);
-        ellipse->setBrush(QBrush(color));
-        ellipse->setPen(Qt::NoPen);
-        ellipse->setClipToAxisRect(true);
-        //time_row_indexes_plot->addItem(ellipse);
+    QCPGraph* qcpg_ndvi;
+    QCPGraph* qcpg_ndwi;
+    if(time_row_indexes_plot->graphCount()==0){
+        qcpg_ndvi = time_row_indexes_plot->addGraph();
+        qcpg_ndwi = time_row_indexes_plot->addGraph();
+        qcpg_ndvi->setPen(QPen(QColor(Qt::red)));
+        qcpg_ndwi->setPen(QPen(QColor(Qt::blue)));
+        qcpg_ndvi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
+        qcpg_ndwi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
+        time_row_indexes_plot->setFixedSize(QSize(600,400));
+        time_row_indexes_plot->setWindowTitle("Индексы NDVI, NDWI");
+        time_row_indexes_plot->legend->setVisible(true);
+        qcpg_ndwi->setName("NDVI");
+        qcpg_ndvi->setName("NDWI");
     }
+    time_row_indexes_plot->graph(0)->data().clear();
+    time_row_indexes_plot->graph(1)->data().clear();
+    time_row_indexes_plot->graph(0)->setData({1,2,3,4,5,6},ndvis);
+    time_row_indexes_plot->graph(1)->setData({1,2,3,4,5,6},ndwis);
+    time_row_indexes_plot->rescaleAxes(true);
+    time_row_indexes_plot->replot();
+
     if(time_row_indexes_plot->isHidden())time_row_indexes_plot->show();
 }
