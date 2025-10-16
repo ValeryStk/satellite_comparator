@@ -74,6 +74,7 @@ QList<QColor> distinctColors = {
 ViewSyncManager* syncManager;
 QVector<ImageViewer*> m_viewers;
 
+
 namespace {
 
 void downsample_uint16(const uint16_t* input,
@@ -259,15 +260,31 @@ void MainWindowSatelliteComparator::openTimeRowData()
         viewer->setImage(pixmap);
         viewer->resize(400, 400);
         viewer->connectSync(syncManager);
-        viewer->setAttribute(Qt::WA_DeleteOnClose);
+        //viewer->setAttribute(Qt::WA_DeleteOnClose);
         viewer->setWindowTitle(meta_datas[i].image_attributes.date_acquired);
         int r = distinctColors[i].red();
         int g = distinctColors[i].green();
         int b = distinctColors[i].blue();
         QIcon icon = iut::createIcon(r,g,b,QSize(50,50));
         viewer->setWindowIcon(icon);
-        viewer->show();
+        //viewer->show();
     }
+
+
+
+    QGridLayout* layout = new QGridLayout;
+    int row = 0, col = 0;
+    for (int i = 0; i < m_viewers.size(); ++i) {
+        layout->addWidget(m_viewers[i], row, col);
+        col++;
+        if (col == 3) {
+            col = 0;
+            row++;
+        }
+    }
+    m_time_row_widget.setLayout(layout);
+    m_time_row_widget.show();
+
     //syncManager->deleteLater();
 }
 

@@ -63,6 +63,7 @@ private slots:
 
 private:
     Ui::MainWindowSatelliteComparator* ui;
+    QWidget m_time_row_widget;
     QLabel* m_label_scene_coord;
     QGraphicsScene* m_scene;
     QGraphicsPixmapItem* m_image_item = nullptr;
