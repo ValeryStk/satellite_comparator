@@ -40,6 +40,9 @@
 #include "version.h"
 #include "image_viewer.h"
 #include "view_sync_manager.h"
+#include "sam.cpp"
+#include "davis.h"
+
 
 
 
@@ -134,6 +137,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     , m_is_bekas(false)
     , m_scene_text_item_metric_value(new QGraphicsTextItem)
     , bekas_window(nullptr)
+    , time_row_indexes_plot(new QCustomPlot)
 
 
 {
@@ -260,14 +264,35 @@ void MainWindowSatelliteComparator::openTimeRowData()
         viewer->setImage(pixmap);
         viewer->resize(400, 400);
         viewer->connectSync(syncManager);
-        //viewer->setAttribute(Qt::WA_DeleteOnClose);
-        viewer->setWindowTitle(meta_datas[i].image_attributes.date_acquired);
+
+        QString date = meta_datas[i].image_attributes.date_acquired;
         int r = distinctColors[i].red();
         int g = distinctColors[i].green();
         int b = distinctColors[i].blue();
         QIcon icon = iut::createIcon(r,g,b,QSize(50,50));
-        viewer->setWindowIcon(icon);
-        //viewer->show();
+
+
+        QWidget* container = new QWidget(viewer);
+
+        QHBoxLayout* layout = new QHBoxLayout(container);
+
+        // Иконка
+        QLabel* iconLabel = new QLabel;
+        iconLabel->setPixmap(icon.pixmap(50, 50));
+        layout->addWidget(iconLabel);
+
+        // Текст
+        QLabel* textLabel = new QLabel(date);
+        QFont font("Arial", 16);
+        textLabel->setFont(font);
+        textLabel->setStyleSheet("color: white;");
+        layout->addWidget(textLabel);
+
+        // Стиль контейнера: полупрозрачный тёмный фон
+        container->setStyleSheet("background-color: rgba(0, 0, 0, 150); border-radius: 5px;");
+        container->setLayout(layout);
+        container->show();
+
     }
 
 
@@ -960,32 +985,58 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
     qDebug()<<"----"<<getGeoCoordinates(pos.x(),
                                         pos.y(),
                                         m_time_row_geo[0],
-            latitude,
-            longitude);
+                                        latitude,
+                                        longitude);
     QVector<QPointF> m_points;
     for(int i=0;i<m_time_row.size();++i){
         m_points.push_back(geoToPixel(latitude,longitude,m_time_row_geo[i]));
     }
+
+    struct BANDS_FOR_CALCULATING_INDEXES{
+        double RED_BAND;
+        double NIR_BAND;
+        double SWIR1_BAND;
+    };
+    QVector<BANDS_FOR_CALCULATING_INDEXES> data_indexes;
 
     for(int i=0;i<m_points.size();++i){
         m_viewers[i]->centerOnPoint(m_points[i]);
         uint16_t value = 0;
         QVector<double>one_ksy;
         QVector<double>waves;
+
+
+        BANDS_FOR_CALCULATING_INDEXES values;
         for(int j=0;j<m_time_row[i].size();++j){
             value = m_time_row[i][j].data[((int)m_points[i].y()*m_time_row[i][j].width) + (int)m_points[i].x()];
             double one_ksy_value = m_time_row[i][j].reflectance_mult * value + m_time_row[i][j].reflectance_add;
             if(one_ksy_value==0) continue;
+            if(j==3){values.RED_BAND = one_ksy_value;}  //red value
+            if(j==4){values.NIR_BAND = one_ksy_value;}  //nir value
+            if(j==5){values.SWIR1_BAND = one_ksy_value;}//swir1 value
             one_ksy.push_back(one_ksy_value);
             waves.push_back(m_time_row[i][j].central_wave_length);
         }
+        data_indexes.push_back(values);
         m_preview_plot->graph(i)->data().clear();
         m_preview_plot->graph(i)->setData(waves, one_ksy);
         m_preview_plot->rescaleAxes(true);
         m_preview_plot->replot();
 
     }
-
+    QVector<double> ndvi_time_row;
+    QVector<double> ndwi_time_row;
+    for(int i=0;i<data_indexes.size();++i){
+    qDebug()<<"RED BAND-->"<<data_indexes[i].RED_BAND;
+    qDebug()<<"NIR BAND-->"<<data_indexes[i].NIR_BAND;
+    qDebug()<<"SWIR1 BAND-->"<<data_indexes[i].SWIR1_BAND;
+    double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND,data_indexes[i].RED_BAND);
+    double ndwi = sam::calculateNDWI(data_indexes[i].NIR_BAND,data_indexes[i].SWIR1_BAND);
+    //qDebug()<<"____________________________________________"<<ndvi<<"___"<<ndwi;
+    ndvi_time_row.push_back(ndvi);
+    ndwi_time_row.push_back(ndwi);
+    }
+    showTimeRowIndexesDataViaPlot(ndvi_time_row,ndwi_time_row);
 }
 
 
@@ -1968,4 +2019,26 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(con
     }
 
     return images;
+}
+
+void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(QVector<double> ndvis,
+                                                                  QVector<double> ndwis)
+{
+    if(!time_row_indexes_plot) return;
+    time_row_indexes_plot->clearItems();
+    for (int i = 0; i < ndvis.size(); ++i) {
+        double x = i;
+        double y = ndvis[i];
+        const int r=1;
+        QColor color = distinctColors[i]; // индивидуальный цвет
+
+        QCPItemEllipse* ellipse = new QCPItemEllipse(time_row_indexes_plot);
+        ellipse->topLeft->setCoords(x - r, y + r);
+        ellipse->bottomRight->setCoords(x + r, y - r);
+        ellipse->setBrush(QBrush(color));
+        ellipse->setPen(Qt::NoPen);
+        ellipse->setClipToAxisRect(true);
+        //time_row_indexes_plot->addItem(ellipse);
+    }
+    if(time_row_indexes_plot->isHidden())time_row_indexes_plot->show();
 }

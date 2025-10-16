@@ -4,12 +4,15 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 RC_FILE = resource.rc
 CONFIG += c++11
 
+include(../pathes.pri)
 include(gdal.pri)
 include(bekas/bekas.pri)
 include(matio.pri)
 include(resources.pri)
 include(../translations/translations.pri)
 include(../gui/image_viewer.pri)
+include(../base/sam/sam.pri)
+include($$DAVIS_DIR/davis.pri)
 
 SOURCES += \
     cross_square.cpp \

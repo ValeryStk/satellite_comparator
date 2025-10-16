@@ -189,6 +189,9 @@ private:
 
 
     QVector<QImage> get_cropedImages_for_time_row(const QVector<QVector<sad::BAND_DATA>>& m_time_row);
+    QCustomPlot* time_row_indexes_plot;
+    void showTimeRowIndexesDataViaPlot(QVector<double> ndvis,
+                                       QVector<double> ndwis);
 
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

@@ -70,13 +70,15 @@ inline ProcessingResult calculateEuclideanDistance(const vector<double> &v1,
 double calculateNDVI(const double NIR_value,
                      const double Red_value)
 {
-    return detail::calculate_normolized_difference(NIR_value, Red_value);
+    double result = detail::calculate_normolized_difference(NIR_value, Red_value);
+    return result;
 }
 
 double calculateNDWI(const double NIR_value,
                      const double SWIR1_value)
 {
-    return detail::calculate_normolized_difference(NIR_value, SWIR1_value);
+    double result = detail::calculate_normolized_difference(NIR_value, SWIR1_value);
+    return result;
 }
 
 } //end namespace sam
