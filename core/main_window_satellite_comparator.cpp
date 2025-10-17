@@ -1036,7 +1036,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
     ndvi_time_row.push_back(ndvi);
     ndwi_time_row.push_back(ndwi);
     }
-    showTimeRowIndexesDataViaPlot(ndvi_time_row,ndwi_time_row);
+    showTimeRowIndexesDataViaPlot(std::move(ndvi_time_row), std::move(ndwi_time_row));
 }
 
 
@@ -2021,8 +2021,8 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(con
     return images;
 }
 
-void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(QVector<double> ndvis,
-                                                                  QVector<double> ndwis)
+void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(QVector<double>&& ndvis,
+                                                                  QVector<double>&& ndwis)
 {
     if(!time_row_indexes_plot) return;
     QCPGraph* qcpg_ndvi;
