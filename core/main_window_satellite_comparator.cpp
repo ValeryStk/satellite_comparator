@@ -2042,8 +2042,8 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(QVector<double
     }
     time_row_indexes_plot->graph(0)->data().clear();
     time_row_indexes_plot->graph(1)->data().clear();
-    time_row_indexes_plot->graph(0)->setData({1,2,3,4,5,6},ndvis);
-    time_row_indexes_plot->graph(1)->setData({1,2,3,4,5,6},ndwis);
+    time_row_indexes_plot->graph(0)->setData({1,2,3,4,5,6},ndvis,true);
+    time_row_indexes_plot->graph(1)->setData({1,2,3,4,5,6},ndwis,true);
     time_row_indexes_plot->rescaleAxes(true);
     time_row_indexes_plot->replot();
 
