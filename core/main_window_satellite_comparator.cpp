@@ -1949,7 +1949,9 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
             landsat_metadata.projection_attributes.corner_ul_projection_x_product = projection["CORNER_UL_PROJECTION_X_PRODUCT"].toString().toDouble();
             landsat_metadata.projection_attributes.corner_ul_projection_y_product = projection["CORNER_UL_PROJECTION_Y_PRODUCT"].toString().toDouble();
             landsat_metadata.projection_attributes.grid_cell_size_reflective = projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
-
+            QDateTime dt(date,time);
+            m_time_row_dates_unix_time.first.push_back(dt.toSecsSinceEpoch());
+            m_time_row_dates_unix_time.second.push_back(date.toString("yyyy_MM_dd"));
             for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
 
                 auto sorted_order_index = sad::sorted_landsat_bands_order_by_wavelength[i];
@@ -2030,21 +2032,30 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(QVector<double
     if(time_row_indexes_plot->graphCount()==0){
         qcpg_ndvi = time_row_indexes_plot->addGraph();
         qcpg_ndwi = time_row_indexes_plot->addGraph();
-        qcpg_ndvi->setPen(QPen(QColor(Qt::red)));
-        qcpg_ndwi->setPen(QPen(QColor(Qt::blue)));
-        qcpg_ndvi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
-        qcpg_ndwi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
-        time_row_indexes_plot->setFixedSize(QSize(600,400));
+        QColor ndvi_color(Qt::red);
+        QColor ndwi_color(Qt::blue);
+        qcpg_ndvi->setPen(QPen(ndvi_color));
+        qcpg_ndwi->setPen(QPen(ndwi_color));
+        qcpg_ndvi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(ndvi_color), QBrush(ndvi_color), 10));
+        qcpg_ndwi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(ndwi_color), QBrush(ndwi_color), 10));
+        time_row_indexes_plot->setMinimumSize(QSize(600,400));
         time_row_indexes_plot->setWindowTitle("Индексы NDVI, NDWI");
         time_row_indexes_plot->legend->setVisible(true);
+        time_row_indexes_plot->yAxis->setLabel("Значение индексов");
+        time_row_indexes_plot->xAxis->setLabel("Дата съёмки");
+        time_row_indexes_plot->plotLayout()->setMargins(QMargins(0, 10, 50, 10)); //left, top, right, bottom
+        time_row_indexes_plot->yAxis->setRange(-1,1);
         qcpg_ndwi->setName("NDVI");
         qcpg_ndvi->setName("NDWI");
+        QSharedPointer<QCPAxisTickerText> dateTicker(new QCPAxisTickerText);
+        dateTicker->addTicks(m_time_row_dates_unix_time.first, m_time_row_dates_unix_time.second);
+        time_row_indexes_plot->xAxis->setTicker(dateTicker);
     }
     time_row_indexes_plot->graph(0)->data().clear();
     time_row_indexes_plot->graph(1)->data().clear();
-    time_row_indexes_plot->graph(0)->setData({1,2,3,4,5,6},ndvis,true);
-    time_row_indexes_plot->graph(1)->setData({1,2,3,4,5,6},ndwis,true);
-    time_row_indexes_plot->rescaleAxes(true);
+    time_row_indexes_plot->graph(0)->setData(m_time_row_dates_unix_time.first, ndvis);
+    time_row_indexes_plot->graph(1)->setData(m_time_row_dates_unix_time.first, ndwis);
+    time_row_indexes_plot->xAxis->rescale(true);
     time_row_indexes_plot->replot();
 
     if(time_row_indexes_plot->isHidden())time_row_indexes_plot->show();

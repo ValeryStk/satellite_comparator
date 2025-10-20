@@ -190,6 +190,7 @@ private:
 
     QVector<QImage> get_cropedImages_for_time_row(const QVector<QVector<sad::BAND_DATA>>& m_time_row);
     QCustomPlot* time_row_indexes_plot;
+    QPair<QVector<double>, QVector<QString>> m_time_row_dates_unix_time;
     void showTimeRowIndexesDataViaPlot(QVector<double>&& ndvis,
                                        QVector<double>&& ndwis);
 
