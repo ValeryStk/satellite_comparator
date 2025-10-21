@@ -6,7 +6,10 @@
 
 ImageViewer::ImageViewer(QWidget* parent)
     : QGraphicsView(parent), scene(new QGraphicsScene(this)),
-      imageItem(nullptr), crosshairH(nullptr), crosshairV(nullptr) {
+      imageItem(nullptr),
+      crosshairH(nullptr),
+      crosshairV(nullptr),
+      centerRect(nullptr) {
     setScene(scene);
     setRenderHint(QPainter::Antialiasing);
     setDragMode(QGraphicsView::ScrollHandDrag);
@@ -49,6 +52,7 @@ void ImageViewer::updateCrosshair(int x, int y) {
 
     if (crosshairH) scene->removeItem(crosshairH);
     if (crosshairV) scene->removeItem(crosshairV);
+    if (centerRect) scene->removeItem(centerRect);
 
     crosshairH = scene->addLine(scene->sceneRect().left(), y,
                                 scene->sceneRect().right(), y, pen);
@@ -57,6 +61,15 @@ void ImageViewer::updateCrosshair(int x, int y) {
 
     crosshairH->setOpacity(0.5);
     crosshairV->setOpacity(0.5);
+
+    // Размер квадрата
+    const int rectSize = 20;
+    QRectF rect(x - rectSize / 2, y - rectSize / 2, rectSize, rectSize);
+
+    // Создаем белый полупрозрачный квадрат
+
+    centerRect = scene->addRect(rect, QPen(Qt::white,3), Qt::NoBrush);
+    centerRect->setOpacity(0.3); // полупрозрачность
 }
 
 void ImageViewer::connectSync(ViewSyncManager* sync) {

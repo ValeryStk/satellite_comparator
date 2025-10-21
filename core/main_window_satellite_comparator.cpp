@@ -65,13 +65,13 @@ QList<QColor> distinctColors = {
     QColor(255, 0, 0),      // Красный
     QColor(0, 255, 0),      // Зеленый
     QColor(0, 0, 255),      // Синий
-    QColor(0, 0, 0),        // Чёрный
     QColor(255, 0, 255),    // Пурпурный
     QColor(0, 255, 255),    // Бирюзовый
     QColor(255, 165, 0),    // Оранжевый
     QColor(128, 0, 128),    // Фиолетовый
     QColor(0, 128, 128),    // Темно-бирюзовый
-    QColor(128, 128, 0)     // Оливковый
+    QColor(128, 128, 0),    // Оливковый
+    QColor(0, 0, 0),        // Чёрный
 };
 
 ViewSyncManager* syncManager;

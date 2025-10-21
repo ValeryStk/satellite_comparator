@@ -34,6 +34,7 @@ private:
     QGraphicsPixmapItem* imageItem;
     QGraphicsLineItem* crosshairH;
     QGraphicsLineItem* crosshairV;
+    QGraphicsRectItem* centerRect;
 
     void updateCrosshair(int x, int y);
 };
