@@ -1,15 +1,22 @@
 #include "least_square_solver.h"
 #include "mpfit.h"
 #include <cstring>
+#include <QDebug>
 
 LeastSquareSolver* LeastSquareSolver::activeSolver = nullptr;
 
-int mpfit_model(int m, int n, double* p, double* dy, double** dvec, void* /*vars*/) {
+int mpfit_model(int m,
+                int n,
+                double* p,
+                double* dy,
+                double** dvec,
+                void* /*vars*/) {
     auto* solver = LeastSquareSolver::activeSolver;
-    if (!solver || !dvec || !dvec[0]) return -1;
+    //if (!solver || !dvec || !dvec[0]) return -1;
 
     for (int i = 0; i < m; ++i) {
-        dy[i] = p[0]*solver->xData[i] + p[1];
+        dy[i] = solver->yData[i] - (p[0]*solver->xData[i] + p[1]);
+        qDebug()<<dy[i]<<"----"<<solver->xData[i]<<"----"<<solver->yData[i]<<"-----"<<p[0]<<"------"<<p[1];
     }
 
     return 0;
