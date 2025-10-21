@@ -13,3 +13,6 @@ sam.file = sam/sam_Tests.pro
 
 SUBDIRS += bekas
 bekas.file = bekas/bekas_Tests.pro
+
+SUBDIRS += MPFIT_wrapper
+MPFIT_wrapper.file = MPFIT_wrapper/MPFIT_wrapper_Tests.pro

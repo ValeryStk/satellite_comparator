@@ -13,6 +13,7 @@ include(../translations/translations.pri)
 include(../gui/image_viewer.pri)
 include(../base/sam/sam.pri)
 include($$DAVIS_DIR/davis.pri)
+include($$MPFIT_DIR/mpfit_wrapper.pri)
 
 SOURCES += \
     cross_square.cpp \

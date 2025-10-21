@@ -1,0 +1,10 @@
+MPFIT_WRAPPER_DIR = $$PWD
+INCLUDEPATH += $$MPFIT_WRAPPER_DIR
+
+SOURCES += \
+$$MPFIT_WRAPPER_DIR\mpfit.c\
+$$MPFIT_WRAPPER_DIR\least_square_solver.cpp\
+
+HEADERS += \
+$$MPFIT_WRAPPER_DIR\mpfit.h\
+$$MPFIT_WRAPPER_DIR\least_square_solver.h\

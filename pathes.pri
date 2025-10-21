@@ -23,3 +23,4 @@ SAM_TEST_DIR    = $$TESTS_DIR/sam
 
 ### THIRD_PARTY_DIR ###
 DAVIS_DIR       = $$THIRD_PARTY_DIR/davis
+MPFIT_DIR       = $$THIRD_PARTY_DIR/mpfit

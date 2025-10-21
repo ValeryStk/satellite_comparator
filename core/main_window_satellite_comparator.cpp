@@ -42,6 +42,7 @@
 #include "view_sync_manager.h"
 #include "sam.cpp"
 #include "davis.h"
+#include "least_square_solver.h"
 
 
 
