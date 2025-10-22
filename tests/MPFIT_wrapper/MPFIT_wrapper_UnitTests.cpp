@@ -18,8 +18,8 @@ MPFIT_wrapper_UnitTests::MPFIT_wrapper_UnitTests()
             return p[0] * x + p[1]; // линейная модель
         }, 2);
 
-        solver.setData({1, 2, 3}, {6.1, 4.1, 2.0});
-        solver.setInitialGuess({1.0, 1.0});
+        solver.setData({1, 2, 3}, {1, 2, 3});
+        solver.setInitialGuess({1.0, 1.0, 9.0});
 
         if (solver.solve()) {
             auto params = solver.getParameters();
