@@ -111,6 +111,19 @@ struct BAND_DATA{
     uint16_t* data = nullptr;
 };
 
+struct QA_MASK_DATA {
+    int height;
+    int width;
+    QString file_name;
+    uint16_t* data = nullptr;
+};
+
+struct DATA_CLOUD_SHADOW_MASK{
+bool is_data;
+bool is_cloud;
+bool is_shadow;
+bool is_common_valid;
+};
 
 }
 

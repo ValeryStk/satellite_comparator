@@ -220,12 +220,20 @@ void MainWindowSatelliteComparator::openTimeRowData()
     QVector<sad::LANDSAT_METADATA_FILE> meta_datas;
     m_time_row.resize(subdirs.size());
     m_time_row_geo.resize(m_time_row.size());
+    m_time_row_qa_mask.resize(m_time_row.size());
     for(int i=0;i<m_time_row.size();++i){
         sad::LANDSAT_METADATA_FILE landsat_metadata;
         sad::geoTransform gt;
         m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json",
                                                              landsat_metadata,
                                                              gt);
+        sad::QA_MASK_DATA qa_mask;
+        qa_mask.file_name = directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_QA_PIXEL.TIF";
+        qa_mask.data = readTiff(qa_mask.file_name,qa_mask.width,qa_mask.height);
+        qDebug()<<"mask_widht -- mask_height: "<<qa_mask.width<<qa_mask.height;
+        m_time_row_qa_mask[i] = qa_mask;
+
+
         meta_datas.push_back(landsat_metadata);
         m_time_row_geo[i] = gt;
     }
@@ -993,19 +1001,35 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         m_points.push_back(geoToPixel(latitude,longitude,m_time_row_geo[i]));
     }
 
+
+    /*uint16_t mask_value = m_time_row_qa_mask[i].data[((int)m_points[i].y()*m_time_row_qa_mask[i].width) + (int)m_points[i].x()];
+    bool isFill = mask_value & (1 << 0);
+    bool isCloud = mask_value & (1 << 3);
+    bool isShadow = mask_value & (1 << 4);
+    if(isCloud || isShadow || isFill){
+        //qDebug()<<"NoDAta Cloud Sahdow"<<isFill<<isCloud<<isShadow;
+        return;
+    }*/
+
+    bool qa_result = isDataCloudShadow_OK(m_points);
+
+    if(!qa_result) {
+        qDebug()<<"Data QA result: "<<qa_result;
+        return;
+    }
+
+
     struct BANDS_FOR_CALCULATING_INDEXES{
         double RED_BAND;
         double NIR_BAND;
         double SWIR1_BAND;
     };
     QVector<BANDS_FOR_CALCULATING_INDEXES> data_indexes;
-
     for(int i=0;i<m_points.size();++i){
         m_viewers[i]->centerOnPoint(m_points[i]);
         uint16_t value = 0;
         QVector<double>one_ksy;
         QVector<double>waves;
-
 
         BANDS_FOR_CALCULATING_INDEXES values;
         for(int j=0;j<m_time_row[i].size();++j){
@@ -1025,12 +1049,14 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         m_preview_plot->replot();
 
     }
+
     QVector<double> ndvi_time_row;
     QVector<double> ndwi_time_row;
     for(int i=0;i<data_indexes.size();++i){
     qDebug()<<"RED BAND-->"<<data_indexes[i].RED_BAND;
     qDebug()<<"NIR BAND-->"<<data_indexes[i].NIR_BAND;
     qDebug()<<"SWIR1 BAND-->"<<data_indexes[i].SWIR1_BAND;
+
     double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND,data_indexes[i].RED_BAND);
     double ndwi = sam::calculateNDWI(data_indexes[i].NIR_BAND,data_indexes[i].SWIR1_BAND);
     //qDebug()<<"____________________________________________"<<ndvi<<"___"<<ndwi;
@@ -2060,4 +2086,22 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(QVector<double
     time_row_indexes_plot->replot();
 
     if(time_row_indexes_plot->isHidden())time_row_indexes_plot->show();
+}
+
+bool MainWindowSatelliteComparator::isDataCloudShadow_OK(QVector<QPointF> &points)
+{
+    if(m_time_row_qa_mask.empty())return false;
+    if(points.empty())return false;
+    //if(points.size() != m_time_row_qa_mask.size())return false;
+
+    for(int i=0;i<points.size();++i){
+    uint16_t mask_value = m_time_row_qa_mask[i].data[((int)points[i].y()*m_time_row_qa_mask[i].width) + (int)points[i].x()];
+    bool isFill = mask_value & (1 << 0);
+    if(isFill) return false;
+    bool isCloud = mask_value & (1 << 3);
+    if(isCloud) return false;
+    bool isShadow = mask_value & (1 << 4);
+    if(isShadow) return false;
+    }
+    return true;
 }

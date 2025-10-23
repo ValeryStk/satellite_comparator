@@ -183,6 +183,7 @@ private:
                                                                  sad::LANDSAT_METADATA_FILE& landsat_metadata,
                                                                  sad::geoTransform& gt);
     QVector<QVector<sad::BAND_DATA>> m_time_row;
+    QVector<sad::QA_MASK_DATA> m_time_row_qa_mask;
     QVector<sad::geoTransform> m_time_row_geo;
     sad::geoTransform getGeo(const QJsonObject& jo);
 
@@ -193,6 +194,7 @@ private:
     QPair<QVector<double>, QVector<QString>> m_time_row_dates_unix_time;
     void showTimeRowIndexesDataViaPlot(QVector<double>&& ndvis,
                                        QVector<double>&& ndwis);
+    bool isDataCloudShadow_OK(QVector<QPointF>& points);
 
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H
