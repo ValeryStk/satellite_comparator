@@ -1007,8 +1007,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
             longitude);
     QVector<QPointF> m_points;
     for(int i=0;i<m_time_row.size();++i){
-        //m_points.push_back(geoToPixel(latitude,longitude,m_time_row_geo[i]));
-        m_points.push_back(QPointF(pos.x()+m_geo_shifts[i].x(),pos.y() + m_geo_shifts[i].y()));
+        m_points.push_back(geoToPixel(latitude,longitude,m_time_row_geo[i]));
+        //m_points.push_back(QPointF(pos.x()+m_geo_shifts[i].x(),pos.y() + m_geo_shifts[i].y()));
     }
 
     bool qa_result = isDataCloudShadow_OK(m_points);
