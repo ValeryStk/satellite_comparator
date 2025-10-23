@@ -195,6 +195,8 @@ private:
     void showTimeRowIndexesDataViaPlot(QVector<double>&& ndvis,
                                        QVector<double>&& ndwis);
     bool isDataCloudShadow_OK(QVector<QPointF>& points);
+    void paintTimeRowBadForest(const QColor &color);
+    QVector<QPointF> m_geo_shifts;
 
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H
