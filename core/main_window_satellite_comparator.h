@@ -125,7 +125,8 @@ private:
                               const int y,
                               const sad::geoTransform &geo,
                               double &latitude,
-                              double &longitude);
+                              double &longitude,
+                              bool isStringReturn);
     QPointF geoToPixel(double latitude, double longitude, const sad::geoTransform& gt);
 
 

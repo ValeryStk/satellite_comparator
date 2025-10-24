@@ -407,7 +407,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
     m_preview_plot->replot();
 
     double lat,lon;
-    auto geo_coord_str = getGeoCoordinates(pos.x(),pos.y(),m_geo,lat,lon);
+    auto geo_coord_str = getGeoCoordinates(pos.x(),pos.y(),m_geo,lat,lon,true);
     ui->statusbar->showMessage(geo_coord_str);
 }
 
@@ -452,7 +452,7 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
     m_preview_plot->rescaleAxes(true);
     m_preview_plot->replot();
     double lat, longitude;
-    getGeoCoordinates(pos.x(),pos.y(),m_geo,lat,longitude);
+    getGeoCoordinates(pos.x(),pos.y(),m_geo,lat,longitude,false);
 
 }
 
@@ -994,7 +994,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
     m_label_scene_coord->setText(x_y_message);
     double latitude = 0.0;
     double longitude = 0.0;
-    auto geo_coord_str = getGeoCoordinates(pos.x(),pos.y(),m_time_row_geo[0],latitude,longitude);
+    auto geo_coord_str = getGeoCoordinates(pos.x(),pos.y(),m_time_row_geo[0],latitude,longitude,true);
     ui->statusbar->showMessage(geo_coord_str);
     QVector<QPointF> m_points(m_time_row.size());
     for(int i=0;i<m_time_row.size();++i){
@@ -1195,17 +1195,18 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
                                                          const int y,
                                                          const sad::geoTransform& geo,
                                                          double& latitude,
-                                                         double& longitude)
+                                                         double& longitude,
+                                                         bool isStringReturn)
 {
 
     // Строим геотрансформацию (предполагается, что изображение не имеет поворота)
     double geoTransform[6] = {
         geo.ulX,            // Верхний левый X (восточное направление)
         geo.resX,           // Разрешение по X
-        0,                    // Поворот (обычно 0 для Landsat)
+        0,                  // Поворот (обычно 0 для Landsat)
         geo.ulY,            // Верхний левый Y (северное направление)
-        0,                    // Поворот
-        geo.resY                 // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
+        0,                  // Поворот
+        geo.resY            // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
     };
 
     // Создаем проекцию UTM
@@ -1237,10 +1238,15 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
     m_longitude = lon;
     latitude = lat;
     longitude = lon;
+
+
+    if(isStringReturn){
     QString lat_lon = QString("Широта: %1 Долгота: %2").arg(lat).arg(lon);
     OCTDestroyCoordinateTransformation(transformer);
-    //ui->statusbar->showMessage(lat_lon);
     return lat_lon;
+    }
+
+    return "";
 
 }
 
@@ -2106,6 +2112,8 @@ bool MainWindowSatelliteComparator::isDataCloudShadow_OK(QVector<QPointF> &point
 
 void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
 {
+    QTime time;
+    time.start();
     qDebug()<<"time row paint image foo";
 
     if(m_time_row.empty())return;
@@ -2125,20 +2133,23 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
     for(int y=0;y<ySize;++y){
         for(int x=0;x<xSize;++x){
             for(int i=0;i<m_time_row.size();++i){
-            getGeoCoordinates(x, y, m_time_row_geo[i], latitude, longitude);
+            getGeoCoordinates(x, y, m_time_row_geo[i], latitude, longitude,false);
             m_points[i] = geoToPixel(latitude,longitude,m_time_row_geo[i]);
             }
         }
     }
 
-
-   /*
-
-
-    QVector<QPointF> m_points(m_time_row.size());
-    for(int i=0;i<m_time_row.size();++i){
-        m_points[i] = (geoToPixel(latitude,longitude,m_time_row_geo[i]));
-    }*/
+   auto elapsedMs = time.elapsed();
 
 
+   int hours = elapsedMs / (1000 * 60 * 60);
+   int minutes = (elapsedMs / (1000 * 60)) % 60;
+   int seconds = (elapsedMs / 1000) % 60;
+   int milliseconds = elapsedMs % 1000;
+
+   qDebug() << QString("Время выполнения: %1 ч %2 мин %3 сек %4 мс")
+               .arg(hours)
+               .arg(minutes)
+               .arg(seconds)
+               .arg(milliseconds);
 }
