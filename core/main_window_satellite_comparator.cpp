@@ -1049,8 +1049,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         if(ySize > m_time_row[i][0].height)ySize = m_time_row[i][0].height;
     }
 
-    if(pos.x() > xSize || pos.x() < 0) return;
-    if(pos.y() > ySize || pos.y() < 0) return;
+    if(pos.x() >= xSize || pos.x() < 0) return;
+    if(pos.y() >= ySize || pos.y() < 0) return;
 
     const QString x_y = "x: %1   y:%2";
     QString x_y_message = x_y.arg(QString::number(pos.x()),QString::number(pos.y()));
@@ -1062,6 +1062,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
     QVector<QPointF> m_points(m_time_row.size());
     for(int i=0;i<m_time_row.size();++i){
         m_points[i] = (geoToPixel(latitude,longitude,m_time_row_geo[i]));
+        if(m_points[i].x() >= xSize || m_points[i].x() < 0) return;
+        if(m_points[i].y() >= ySize || m_points[i].y() < 0) return;
     }
 
     bool qa_result = isDataCloudShadow_OK(m_points);
@@ -2152,13 +2154,16 @@ bool MainWindowSatelliteComparator::isDataCloudShadow_OK(QVector<QPointF> &point
     //if(points.size() != m_time_row_qa_mask.size())return false;
 
     for(int i=0;i<points.size();++i){
-        uint16_t mask_value = m_time_row_qa_mask[i].data[((int)points[i].y()*m_time_row_qa_mask[i].width) + (int)points[i].x()];
+        auto index = ((int)points[i].y()*m_time_row_qa_mask[i].width) + (int)points[i].x();
+        auto max_size = m_time_row_qa_mask[i].height * m_time_row_qa_mask[i].width;
+        if(max_size < index) return false;
+        uint16_t mask_value = m_time_row_qa_mask[i].data[index];
         bool isFill = mask_value & (1 << 0);
         if(isFill) return false;
         bool isCloud = mask_value & (1 << 3);
         if(isCloud) return false;
-        bool isShadow = mask_value & (1 << 4);
-        if(isShadow) return false;
+        //bool isShadow = mask_value & (1 << 4);
+        //if(isShadow) return false;
     }
     return true;
 }
@@ -2184,6 +2189,9 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
     double latitude = 0.0;
     double longitude = 0.0;
 
+    auto new_layer = new uchar[xSize*ySize*4];
+    int offset = 0;
+
     for(int y=0;y<ySize;++y){
         for(int x=0;x<xSize;++x){
             base_pixel_geo->getGeoCoordinates(x,y,latitude,longitude);
@@ -2191,8 +2199,36 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
             for(int i=1;i<m_time_row.size();++i){
                 m_points[i] = geoToPixel(latitude,longitude,m_time_row_geo[i]);
             }
+            if(!isDataCloudShadow_OK(m_points)){
+                new_layer[offset]     = color.red();
+                new_layer[offset + 1] = color.green();
+                new_layer[offset + 2] = color.blue();
+                new_layer[offset + 3] = 255;
+            }else{
+                new_layer[offset]     = color.red();
+                new_layer[offset + 1] = color.green();
+                new_layer[offset + 2] = color.blue();
+                new_layer[offset + 3] = 0;
+            };
+            offset += 4;
         }
     }
+
+    auto cleanup = [](void* info) {
+        delete[] static_cast<uchar*>(info);
+    };
+    auto img = QImage(new_layer,xSize,ySize,xSize*4,QImage::Format_RGBA8888,cleanup,new_layer);
+    auto pixmap = QPixmap::fromImage(img);
+    auto new_image_item = new QGraphicsPixmapItem(pixmap);
+    new_image_item->setZValue(ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+    m_scene->addItem(new_image_item);
+
+
+
+
+
+
+
 
     auto elapsedMs = time.elapsed();
 
