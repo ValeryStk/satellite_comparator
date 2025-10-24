@@ -49,6 +49,68 @@
 
 
 
+class PixelGeo{
+public:
+    PixelGeo(sad::geoTransform geo){
+
+        m_geo = geo;
+        // Создаем проекцию UTM
+        utmSrs.SetProjCS("UTM");
+        utmSrs.SetWellKnownGeogCS("WGS84"); // DATUM из MTL.json
+        utmSrs.SetUTM(m_geo.utmZone, true);   // Северное - true или южное - false полушарие
+
+        // Создаем целевую проекцию (WGS84)
+        wgs84Srs.SetWellKnownGeogCS("WGS84");
+
+        // Создаем преобразователь координат
+        transformer = OGRCreateCoordinateTransformation(&utmSrs, &wgs84Srs);
+
+    }
+
+
+   ~PixelGeo(){
+        OCTDestroyCoordinateTransformation(transformer);
+    }
+
+
+    void getGeoCoordinates(const int x,
+                           const int y,
+                           double& latitude,
+                           double& longitude)
+    {
+
+        // Вычисляем координаты в проекции UTM
+        double utmX = m_geo.ulX + x * m_geo.resX + y * 0;
+        double utmY = m_geo.ulY + x * 0 + y * m_geo.resY;
+
+        // Преобразуем UTM -> WGS84 (широта/долгота)
+        double lon = utmX;
+        double lat = utmY;
+        if (!transformer->Transform(1, &lon, &lat)) {
+            latitude = 0;
+            longitude = 0;
+            return;
+        }
+
+        latitude = lat;
+        longitude = lon;
+    }
+
+
+private:
+    sad::geoTransform m_geo;
+    OGRSpatialReference utmSrs;
+    OGRSpatialReference wgs84Srs;
+    OGRCoordinateTransformation* transformer;
+
+};
+
+
+PixelGeo* base_pixel_geo;
+
+
+
+
 constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER  = 11000 * 11000 * 3;
 
 
@@ -236,8 +298,9 @@ void MainWindowSatelliteComparator::openTimeRowData()
 
         meta_datas.push_back(landsat_metadata);
         m_time_row_geo[i] = gt;
-    }
 
+    }
+    base_pixel_geo = new PixelGeo (m_time_row_geo[0]);
 
     // Будем добавлять график, если его не хватает для новых временных точек
     while(m_time_row.size() > m_preview_plot->graphCount()){
@@ -1232,8 +1295,8 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
 
 
     if(isStringReturn){
-    QString lat_lon = QString("Широта: %1 Долгота: %2").arg(lat).arg(lon);
-    return lat_lon;
+        QString lat_lon = QString("Широта: %1 Долгота: %2").arg(lat).arg(lon);
+        return lat_lon;
     }
 
     return "";
@@ -1249,18 +1312,18 @@ QPointF MainWindowSatelliteComparator::geoToPixel(double latitude,
     static OGRCoordinateTransformation* coordTransform = nullptr;
 
     if (!coordTransform) {
-    srcSRS.SetWellKnownGeogCS("WGS84");
-    dstSRS.SetUTM(gt.utmZone, gt.ulY > 0);
-    dstSRS.SetWellKnownGeogCS("WGS84");
-    coordTransform = OGRCreateCoordinateTransformation(&srcSRS, &dstSRS);
+        srcSRS.SetWellKnownGeogCS("WGS84");
+        dstSRS.SetUTM(gt.utmZone, gt.ulY > 0);
+        dstSRS.SetWellKnownGeogCS("WGS84");
+        coordTransform = OGRCreateCoordinateTransformation(&srcSRS, &dstSRS);
     }
 
     double x = longitude;
     double y = latitude;
 
     if (!coordTransform || !coordTransform->Transform(1, &x, &y)) {
-          return QPointF(-1, -1);
-      }
+        return QPointF(-1, -1);
+    }
 
     int pixelX = static_cast<int>((x - gt.ulX) / gt.resX);
     int pixelY = static_cast<int>((y - gt.ulY) / gt.resY);
@@ -2123,26 +2186,25 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
 
     for(int y=0;y<ySize;++y){
         for(int x=0;x<xSize;++x){
-            getGeoCoordinates(x, y, m_time_row_geo[0], latitude, longitude,false);
+            base_pixel_geo->getGeoCoordinates(x,y,latitude,longitude);
             m_points[0] = QPoint(x,y);
             for(int i=1;i<m_time_row.size();++i){
-
-            //m_points[i] = geoToPixel(latitude,longitude,m_time_row_geo[i]);
+                m_points[i] = geoToPixel(latitude,longitude,m_time_row_geo[i]);
             }
         }
     }
 
-   auto elapsedMs = time.elapsed();
+    auto elapsedMs = time.elapsed();
 
 
-   int hours = elapsedMs / (1000 * 60 * 60);
-   int minutes = (elapsedMs / (1000 * 60)) % 60;
-   int seconds = (elapsedMs / 1000) % 60;
-   int milliseconds = elapsedMs % 1000;
+    int hours = elapsedMs / (1000 * 60 * 60);
+    int minutes = (elapsedMs / (1000 * 60)) % 60;
+    int seconds = (elapsedMs / 1000) % 60;
+    int milliseconds = elapsedMs % 1000;
 
-   qDebug() << QString("Время выполнения: %1 ч %2 мин %3 сек %4 мс")
-               .arg(hours)
-               .arg(minutes)
-               .arg(seconds)
-               .arg(milliseconds);
+    qDebug() << QString("Время выполнения: %1 ч %2 мин %3 сек %4 мс")
+                .arg(hours)
+                .arg(minutes)
+                .arg(seconds)
+                .arg(milliseconds);
 }
