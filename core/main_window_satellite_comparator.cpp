@@ -319,16 +319,6 @@ void MainWindowSatelliteComparator::openTimeRowData()
     m_time_row_widget.setLayout(layout);
     m_time_row_widget.show();
 
-    m_geo_shifts.resize(m_time_row.size());
-    double latitude = 0.0;
-    double longitude = 0.0;
-    getGeoCoordinates(0,0,m_time_row_geo[0],latitude,longitude);
-    m_geo_shifts[0] = QPointF(0,0);
-    for(int i=1;i<m_time_row.size();++i){
-        auto point = geoToPixel(latitude,longitude,m_time_row_geo[i]);
-        m_geo_shifts[i] = QPointF(point.x(),point.y());
-    }
-
 }
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric()
@@ -1005,10 +995,9 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
                                         m_time_row_geo[0],
             latitude,
             longitude);
-    QVector<QPointF> m_points;
+    QVector<QPointF> m_points(m_time_row.size());
     for(int i=0;i<m_time_row.size();++i){
-        m_points.push_back(geoToPixel(latitude,longitude,m_time_row_geo[i]));
-        //m_points.push_back(QPointF(pos.x()+m_geo_shifts[i].x(),pos.y() + m_geo_shifts[i].y()));
+        m_points[i] = (geoToPixel(latitude,longitude,m_time_row_geo[i]));
     }
 
     bool qa_result = isDataCloudShadow_OK(m_points);
@@ -1243,9 +1232,6 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
         return "";
     }
 
-    //qDebug()<< "Географические координаты (WGS84):";
-    //qDebug()<< "Долгота: " << lon;
-    //qDebug()<< "Широта: " << lat;
     m_lattitude = lat;
     m_longitude = lon;
     latitude = lat;
@@ -1261,15 +1247,23 @@ QPointF MainWindowSatelliteComparator::geoToPixel(double latitude,
                                                   double longitude,
                                                   const sad::geoTransform &gt)
 {
-    OGRSpatialReference srcSRS, dstSRS;
+    static OGRSpatialReference srcSRS;
+    static OGRSpatialReference dstSRS;
+    static OGRCoordinateTransformation* coordTransform = nullptr;
+
+    if (!coordTransform) {
     srcSRS.SetWellKnownGeogCS("WGS84");
     dstSRS.SetUTM(gt.utmZone, gt.ulY > 0);
     dstSRS.SetWellKnownGeogCS("WGS84");
+    coordTransform = OGRCreateCoordinateTransformation(&srcSRS, &dstSRS);
+    }
 
-    OGRCoordinateTransformation* coordTransform = OGRCreateCoordinateTransformation(&srcSRS, &dstSRS);
     double x = longitude;
     double y = latitude;
-    coordTransform->Transform(1, &x, &y);
+
+    if (!coordTransform || !coordTransform->Transform(1, &x, &y)) {
+          return QPointF(-1, -1);
+      }
 
     int pixelX = static_cast<int>((x - gt.ulX) / gt.resX);
     int pixelY = static_cast<int>((y - gt.ulY) / gt.resY);
@@ -2129,9 +2123,21 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
 
     for(int y=0;y<ySize;++y){
         for(int x=0;x<xSize;++x){
-            //bool qa_result = isDataCloudShadow_OK(m_points);
+            for(int i=0;i<m_time_row.size();++i){
+            getGeoCoordinates(x, y, m_time_row_geo[i], latitude, longitude);
+            m_points[i] = geoToPixel(latitude,longitude,m_time_row_geo[i]);
+            }
         }
     }
+
+
+   /*
+
+
+    QVector<QPointF> m_points(m_time_row.size());
+    for(int i=0;i<m_time_row.size();++i){
+        m_points[i] = (geoToPixel(latitude,longitude,m_time_row_geo[i]));
+    }*/
 
 
 }
