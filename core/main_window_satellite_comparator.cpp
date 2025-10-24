@@ -405,6 +405,10 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
     m_scene_text_item_metric_value->setPlainText(QString::number(result));
     m_preview_plot->rescaleAxes(true);
     m_preview_plot->replot();
+
+    double lat,lon;
+    auto geo_coord_str = getGeoCoordinates(pos.x(),pos.y(),m_geo,lat,lon);
+    ui->statusbar->showMessage(geo_coord_str);
 }
 
 void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
@@ -990,11 +994,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
     m_label_scene_coord->setText(x_y_message);
     double latitude = 0.0;
     double longitude = 0.0;
-    qDebug()<<"----"<<getGeoCoordinates(pos.x(),
-                                        pos.y(),
-                                        m_time_row_geo[0],
-            latitude,
-            longitude);
+    auto geo_coord_str = getGeoCoordinates(pos.x(),pos.y(),m_time_row_geo[0],latitude,longitude);
+    ui->statusbar->showMessage(geo_coord_str);
     QVector<QPointF> m_points(m_time_row.size());
     for(int i=0;i<m_time_row.size();++i){
         m_points[i] = (geoToPixel(latitude,longitude,m_time_row_geo[i]));
