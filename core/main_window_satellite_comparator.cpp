@@ -1199,16 +1199,6 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
                                                          bool isStringReturn)
 {
 
-    // Строим геотрансформацию (предполагается, что изображение не имеет поворота)
-    double geoTransform[6] = {
-        geo.ulX,            // Верхний левый X (восточное направление)
-        geo.resX,           // Разрешение по X
-        0,                  // Поворот (обычно 0 для Landsat)
-        geo.ulY,            // Верхний левый Y (северное направление)
-        0,                  // Поворот
-        geo.resY            // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
-    };
-
     // Создаем проекцию UTM
     OGRSpatialReference utmSrs;
     utmSrs.SetProjCS("UTM");
@@ -1224,16 +1214,17 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
             OGRCreateCoordinateTransformation(&utmSrs, &wgs84Srs);
 
     // Вычисляем координаты в проекции UTM
-    double utmX = geoTransform[0] + x * geoTransform[1] + y * geoTransform[2];
-    double utmY = geoTransform[3] + x * geoTransform[4] + y * geoTransform[5];
+    double utmX = geo.ulX + x * geo.resX + y * 0;
+    double utmY = geo.ulY + x * 0 + y * geo.resY;
 
     // Преобразуем UTM -> WGS84 (широта/долгота)
     double lon = utmX;
     double lat = utmY;
     if (!transformer->Transform(1, &lon, &lat)) {
+        OCTDestroyCoordinateTransformation(transformer);
         return "";
     }
-
+    OCTDestroyCoordinateTransformation(transformer);
     m_lattitude = lat;
     m_longitude = lon;
     latitude = lat;
@@ -1242,7 +1233,6 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
 
     if(isStringReturn){
     QString lat_lon = QString("Широта: %1 Долгота: %2").arg(lat).arg(lon);
-    OCTDestroyCoordinateTransformation(transformer);
     return lat_lon;
     }
 
@@ -2112,6 +2102,7 @@ bool MainWindowSatelliteComparator::isDataCloudShadow_OK(QVector<QPointF> &point
 
 void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
 {
+    Q_UNUSED(color)
     QTime time;
     time.start();
     qDebug()<<"time row paint image foo";
@@ -2132,9 +2123,11 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
 
     for(int y=0;y<ySize;++y){
         for(int x=0;x<xSize;++x){
-            for(int i=0;i<m_time_row.size();++i){
-            getGeoCoordinates(x, y, m_time_row_geo[i], latitude, longitude,false);
-            m_points[i] = geoToPixel(latitude,longitude,m_time_row_geo[i]);
+            getGeoCoordinates(x, y, m_time_row_geo[0], latitude, longitude,false);
+            m_points[0] = QPoint(x,y);
+            for(int i=1;i<m_time_row.size();++i){
+
+            //m_points[i] = geoToPixel(latitude,longitude,m_time_row_geo[i]);
             }
         }
     }
