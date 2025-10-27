@@ -2162,8 +2162,8 @@ bool MainWindowSatelliteComparator::isDataCloudShadow_OK(QVector<QPointF> &point
         if(isFill) return false;
         bool isCloud = mask_value & (1 << 3);
         if(isCloud) return false;
-        //bool isShadow = mask_value & (1 << 4);
-        //if(isShadow) return false;
+        bool isShadow = mask_value & (1 << 4);
+        if(isShadow) return false;
     }
     return true;
 }
