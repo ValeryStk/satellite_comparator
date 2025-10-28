@@ -481,9 +481,20 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
     m_is_bekas = false;
     m_scene_cross_square_item->setPos(pos);
     m_scene_cross_square_item->update();
-    double lat, longitude;
+    double lat = 0.0;
+    double longitude = 0.0;
+
+
+    if(m_satelite_type == sad::TIME_ROW_COMBINATION){
+    getGeoCoordinates(pos.x(),pos.y(),m_time_row_geo[0],lat,longitude,false);
+    m_lattitude = lat;
+    m_longitude = longitude;
+    return;
+    }
     getGeoCoordinates(pos.x(),pos.y(),m_geo,lat,longitude,false);
-    if(m_satelite_type == sad::TIME_ROW_COMBINATION)return;
+    m_lattitude = lat;
+    m_longitude = longitude;
+
 
     QVector<double> data;
     QVector<double> sample;
@@ -1291,8 +1302,8 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
         return "";
     }
     OCTDestroyCoordinateTransformation(transformer);
-    m_lattitude = lat;
-    m_longitude = lon;
+    //m_lattitude = lat;
+    //m_longitude = lon;
     latitude = lat;
     longitude = lon;
 
