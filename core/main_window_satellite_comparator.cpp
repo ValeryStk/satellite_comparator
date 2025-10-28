@@ -477,11 +477,14 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
 void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
 {
 
-    if(m_satelite_type == sad::TIME_ROW_COMBINATION)return;
 
     m_is_bekas = false;
     m_scene_cross_square_item->setPos(pos);
     m_scene_cross_square_item->update();
+    double lat, longitude;
+    getGeoCoordinates(pos.x(),pos.y(),m_geo,lat,longitude,false);
+    if(m_satelite_type == sad::TIME_ROW_COMBINATION)return;
+
     QVector<double> data;
     QVector<double> sample;
     QVector<double> waves;
@@ -514,8 +517,6 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
     m_preview_plot->graph(1)->setData(waves, sample);
     m_preview_plot->rescaleAxes(true);
     m_preview_plot->replot();
-    double lat, longitude;
-    getGeoCoordinates(pos.x(),pos.y(),m_geo,lat,longitude,false);
 
 }
 
