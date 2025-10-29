@@ -199,6 +199,7 @@ private:
     void paintTimeRowBadForest(const QColor &color);
 
     sad::NDWI_NDVI_TIME_ROW getIndexesForTimeRow(const QVector<QPointF>& points);
+    QVector<double> calculate_slope(const QVector<double>& values);
 
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H

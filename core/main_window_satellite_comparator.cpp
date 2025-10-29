@@ -2261,17 +2261,38 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(cons
         }
         data_indexes.push_back(values);
     }
-    size_t common_size = data_indexes.size();
+    int common_size = data_indexes.size();
     QVector<double> ndvi_time_row(common_size);
     QVector<double> ndwi_time_row(common_size);
-    for(size_t i=0;i<common_size;++i){
+    for(int i=0;i<common_size;++i){
         double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND, data_indexes[i].RED_BAND);
         double ndwi = sam::calculateNDWI(data_indexes[i].NIR_BAND, data_indexes[i].SWIR1_BAND);
         ndvi_time_row[i] = ndvi;
         ndwi_time_row[i] = ndwi;
     }
+
     sad::NDWI_NDVI_TIME_ROW result;
+    calculate_slope(ndvi_time_row);
     result.ndvi_time_row = std::move(ndvi_time_row);
     result.ndwi_time_row = std::move(ndwi_time_row);
+
+    return result;
+}
+
+QVector<double> MainWindowSatelliteComparator::calculate_slope(const QVector<double> &values)
+{
+    LeastSquareSolver solver;
+    QVector<double> result;
+    std::vector<double> x_values(values.size());
+    std::iota(x_values.begin(), x_values.end(),1.0);
+    solver.setModel([](double x, const std::vector<double>& p) {return p[0] * x + p[1];}, 2);
+    solver.setData(x_values, values.toStdVector());
+    solver.setInitialGuess({1.0, 1.0, 9.0});
+    if (solver.solve()) {
+        auto params = solver.getParameters();
+        qDebug() << "Slope:" << params[0] << "Intercept:" << params[1];
+    } else {
+        return{};
+    }
     return result;
 }
