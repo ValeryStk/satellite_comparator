@@ -1078,23 +1078,14 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         if(m_points[i].y() >= ySize || m_points[i].y() < 0) return;
     }
 
-    bool qa_result = isDataCloudShadow_OK(m_points);
-
-
-    struct BANDS_FOR_CALCULATING_INDEXES{
-        double RED_BAND;
-        double NIR_BAND;
-        double SWIR1_BAND;
-    };
-    QVector<BANDS_FOR_CALCULATING_INDEXES> data_indexes;
+    QVector<sad::BANDS_FOR_CALCULATING_INDEXES> data_indexes;
     for(int i=0;i<m_points.size();++i){
         m_viewers[i]->centerOnPoint(m_points[i]);
-        //qDebug()<<"Point shifting: -->"<<m_points[0].x() - m_points[i].x()<<m_points[0].y() - m_points[i].y();
         uint16_t value = 0;
         QVector<double>one_ksy;
         QVector<double>waves;
 
-        BANDS_FOR_CALCULATING_INDEXES values;
+        sad::BANDS_FOR_CALCULATING_INDEXES values;
         for(int j=0;j<m_time_row[i].size();++j){
             value = m_time_row[i][j].data[((int)m_points[i].y()*m_time_row[i][j].width) + (int)m_points[i].x()];
             double one_ksy_value = m_time_row[i][j].reflectance_mult * value + m_time_row[i][j].reflectance_add;
@@ -1116,20 +1107,18 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
     QVector<double> ndvi_time_row;
     QVector<double> ndwi_time_row;
     for(int i=0;i<data_indexes.size();++i){
-        qDebug()<<"RED BAND-->"<<data_indexes[i].RED_BAND;
-        qDebug()<<"NIR BAND-->"<<data_indexes[i].NIR_BAND;
-        qDebug()<<"SWIR1 BAND-->"<<data_indexes[i].SWIR1_BAND;
-
         double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND,data_indexes[i].RED_BAND);
         double ndwi = sam::calculateNDWI(data_indexes[i].NIR_BAND,data_indexes[i].SWIR1_BAND);
-        //qDebug()<<"____________________________________________"<<ndvi<<"___"<<ndwi;
         ndvi_time_row.push_back(ndvi);
         ndwi_time_row.push_back(ndwi);
     }
     showTimeRowIndexesDataViaPlot(std::move(ndvi_time_row), std::move(ndwi_time_row));
-    if(!qa_result) {
-        qDebug()<<"Data QA result: "<<qa_result;
-    }
+
+
+    auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
+    qDebug()<<"ndvi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
+    qDebug()<<"ndwi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
+
 }
 
 
@@ -2255,4 +2244,34 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
                 .arg(minutes)
                 .arg(seconds)
                 .arg(milliseconds);
+}
+
+sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(const QVector<QPointF> &points)
+{
+    QVector<sad::BANDS_FOR_CALCULATING_INDEXES> data_indexes;
+    for(int i=0;i<points.size();++i){
+        sad::BANDS_FOR_CALCULATING_INDEXES values;
+        for(int j=0;j<m_time_row[i].size();++j){
+            double value = m_time_row[i][j].data[((int)points[i].y()*m_time_row[i][j].width) + (int)points[i].x()];
+            double one_ksy_value = m_time_row[i][j].reflectance_mult * value + m_time_row[i][j].reflectance_add;
+            if(one_ksy_value==0) continue;
+            if(j==3){values.RED_BAND = one_ksy_value;}
+            if(j==4){values.NIR_BAND = one_ksy_value;}
+            if(j==5){values.SWIR1_BAND = one_ksy_value;}
+        }
+        data_indexes.push_back(values);
+    }
+    size_t common_size = data_indexes.size();
+    QVector<double> ndvi_time_row(common_size);
+    QVector<double> ndwi_time_row(common_size);
+    for(size_t i=0;i<common_size;++i){
+        double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND, data_indexes[i].RED_BAND);
+        double ndwi = sam::calculateNDWI(data_indexes[i].NIR_BAND, data_indexes[i].SWIR1_BAND);
+        ndvi_time_row[i] = ndvi;
+        ndwi_time_row[i] = ndwi;
+    }
+    sad::NDWI_NDVI_TIME_ROW result;
+    result.ndvi_time_row = std::move(ndvi_time_row);
+    result.ndwi_time_row = std::move(ndwi_time_row);
+    return result;
 }

@@ -4,6 +4,7 @@
 #include "QString"
 #include <QHash>
 #include <QDateTime>
+#include <QVector>
 
 constexpr int LANDSAT_BANDS_NUMBER = 11;
 constexpr int  SENTINEL_BANDS_NUMBER = 13;
@@ -123,6 +124,18 @@ bool is_data;
 bool is_cloud;
 bool is_shadow;
 bool is_common_valid;
+};
+
+
+struct BANDS_FOR_CALCULATING_INDEXES{
+    double RED_BAND;
+    double NIR_BAND;
+    double SWIR1_BAND;
+};
+
+struct NDWI_NDVI_TIME_ROW{
+   QVector<double> ndvi_time_row;
+   QVector<double> ndwi_time_row;
 };
 
 }

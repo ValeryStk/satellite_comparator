@@ -198,5 +198,7 @@ private:
     bool isDataCloudShadow_OK(QVector<QPointF>& points);
     void paintTimeRowBadForest(const QColor &color);
 
+    sad::NDWI_NDVI_TIME_ROW getIndexesForTimeRow(const QVector<QPointF>& points);
+
 };
 #endif // MAIN_WINDOW_SATELLITE_COMPARATOR_H
