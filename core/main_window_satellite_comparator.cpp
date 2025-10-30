@@ -2120,7 +2120,7 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(QVector<double
     if(time_row_indexes_plot->graphCount()==0){
         qcpg_ndvi = time_row_indexes_plot->addGraph();
         qcpg_ndwi = time_row_indexes_plot->addGraph();
-        QColor ndvi_color(Qt::green);
+        QColor ndvi_color(QColor("#228B22"));
         QColor ndwi_color(Qt::blue);
         qcpg_ndvi->setPen(QPen(ndvi_color));
         qcpg_ndwi->setPen(QPen(ndwi_color));
@@ -2138,6 +2138,12 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(QVector<double
         QSharedPointer<QCPAxisTickerText> dateTicker(new QCPAxisTickerText);
         dateTicker->addTicks(m_time_row_dates_unix_time.first, m_time_row_dates_unix_time.second);
         time_row_indexes_plot->xAxis->setTicker(dateTicker);
+
+        auto *yTicker = new QCPAxisTickerFixed;
+        yTicker->setTickStep(0.1);
+        yTicker->setTickOrigin(0.0);
+        time_row_indexes_plot->yAxis->setTicker(QSharedPointer<QCPAxisTickerFixed>(yTicker));
+
     }
     time_row_indexes_plot->graph(0)->data().clear();
     time_row_indexes_plot->graph(1)->data().clear();

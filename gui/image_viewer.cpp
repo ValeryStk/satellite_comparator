@@ -10,6 +10,7 @@ ImageViewer::ImageViewer(QWidget* parent)
       crosshairH(nullptr),
       crosshairV(nullptr),
       centerRect(nullptr) {
+    setWindowTitle("Изображения временных рядов");
     setScene(scene);
     setRenderHint(QPainter::Antialiasing);
     setDragMode(QGraphicsView::ScrollHandDrag);
