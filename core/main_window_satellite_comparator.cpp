@@ -873,6 +873,7 @@ void MainWindowSatelliteComparator::updateImage()
         delete m_image_item;
         m_image_item = new QGraphicsPixmapItem(pixmap);
         m_image_item->setZValue(0);
+        m_image_item->setCursor(Qt::CrossCursor);
         m_scene->addItem(m_image_item);
         m_scene->update();
     }
@@ -2119,21 +2120,21 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(QVector<double
     if(time_row_indexes_plot->graphCount()==0){
         qcpg_ndvi = time_row_indexes_plot->addGraph();
         qcpg_ndwi = time_row_indexes_plot->addGraph();
-        QColor ndvi_color(Qt::red);
+        QColor ndvi_color(Qt::green);
         QColor ndwi_color(Qt::blue);
         qcpg_ndvi->setPen(QPen(ndvi_color));
         qcpg_ndwi->setPen(QPen(ndwi_color));
         qcpg_ndvi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(ndvi_color), QBrush(ndvi_color), 10));
         qcpg_ndwi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(ndwi_color), QBrush(ndwi_color), 10));
-        time_row_indexes_plot->setMinimumSize(QSize(600,400));
+        time_row_indexes_plot->setMinimumSize(QSize(400,100));
         time_row_indexes_plot->setWindowTitle("Индексы NDVI, NDWI");
         time_row_indexes_plot->legend->setVisible(true);
         time_row_indexes_plot->yAxis->setLabel("Значение индексов");
         time_row_indexes_plot->xAxis->setLabel("Дата съёмки");
         time_row_indexes_plot->plotLayout()->setMargins(QMargins(0, 10, 50, 10)); //left, top, right, bottom
         time_row_indexes_plot->yAxis->setRange(-1,1);
-        qcpg_ndwi->setName("NDVI");
-        qcpg_ndvi->setName("NDWI");
+        qcpg_ndwi->setName("NDWI");
+        qcpg_ndvi->setName("NDVI");
         QSharedPointer<QCPAxisTickerText> dateTicker(new QCPAxisTickerText);
         dateTicker->addTicks(m_time_row_dates_unix_time.first, m_time_row_dates_unix_time.second);
         time_row_indexes_plot->xAxis->setTicker(dateTicker);
