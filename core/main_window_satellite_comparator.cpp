@@ -346,6 +346,7 @@ void MainWindowSatelliteComparator::openTimeRowData()
 
         QWidget* container = new QWidget(viewer);
 
+
         QHBoxLayout* layout = new QHBoxLayout(container);
 
         // Иконка
@@ -380,6 +381,7 @@ void MainWindowSatelliteComparator::openTimeRowData()
         }
     }
     m_time_row_widget.setLayout(layout);
+    m_time_row_widget.setWindowTitle("Временной ряд");
     m_time_row_widget.show();
 
 }
