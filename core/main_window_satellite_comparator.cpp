@@ -2233,7 +2233,8 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
     new_image_item->setZValue(ui->graphicsView_satellite_image->getMaxZValue(m_scene));
     m_scene->addItem(new_image_item);
 
-
+    m_layers_search_result_items.insert("COMMON_TIME_ROW_MASK",new_image_item);
+    m_layer_gui_list->addItemToList("COMMON_TIME_ROW_MASK","",color);
 
 
 

@@ -7,6 +7,7 @@ extern const char action_show_text[];
 extern const char action_hide_text[];
 extern const char action_rename_text[];
 extern const char action_delete_text[];
+extern const char action_create_time_row_heat_map[];
 
 
 class LayerList:public QListWidget
