@@ -16,7 +16,7 @@ int mpfit_model(int m,
 
     for (int i = 0; i < m; ++i) {
         dy[i] = solver->yData[i] - (p[0]*solver->xData[i] + p[1]);
-        qDebug()<<dy[i]<<"----"<<solver->xData[i]<<"----"<<solver->yData[i]<<"-----"<<p[0]<<"------"<<p[1];
+        //qDebug()<<dy[i]<<"----"<<solver->xData[i]<<"----"<<solver->yData[i]<<"-----"<<p[0]<<"------"<<p[1];
     }
 
     return 0;

@@ -68,7 +68,7 @@ public:
     }
 
 
-   ~PixelGeo(){
+    ~PixelGeo(){
         OCTDestroyCoordinateTransformation(transformer);
     }
 
@@ -488,10 +488,10 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
 
 
     if(m_satelite_type == sad::TIME_ROW_COMBINATION){
-    getGeoCoordinates(pos.x(),pos.y(),m_time_row_geo[0],lat,longitude,false);
-    m_lattitude = lat;
-    m_longitude = longitude;
-    return;
+        getGeoCoordinates(pos.x(),pos.y(),m_time_row_geo[0],lat,longitude,false);
+        m_lattitude = lat;
+        m_longitude = longitude;
+        return;
     }
     getGeoCoordinates(pos.x(),pos.y(),m_geo,lat,longitude,false);
     m_lattitude = lat;
@@ -1119,8 +1119,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
 
 
     auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
-    qDebug()<<"ndvi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
-    qDebug()<<"ndwi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
+    //qDebug()<<"ndvi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
+    //qDebug()<<"ndwi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
 
 }
 
@@ -1584,6 +1584,49 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id)
     }
 }
 
+void MainWindowSatelliteComparator::calculate_time_row_gradient(const QString& id)
+{
+    if(m_time_row.empty())return;
+    qDebug()<<"Time row gradient connection check....."<<id;
+    auto roi_item =  ui->graphicsView_satellite_image->getPolygonById(id);
+    if(!roi_item)return;
+    QVector<QPointF>insidePoints;
+    // Получаем ограничивающий прямоугольник в координатах сцены
+    QRectF boundingRect = roi_item->mapToScene(roi_item->boundingRect()).boundingRect();
+    QPolygonF polygon = roi_item->mapToScene(roi_item->polygon());
+    qDebug()<<"Bounding rect..."<<boundingRect.left()<<boundingRect.right();
+    for (int x = boundingRect.left(); x <= boundingRect.right(); x += 1) {
+        for (int y = boundingRect.top(); y <= boundingRect.bottom(); y += 1) {
+            QPointF scenePoint(x, y);
+            if (polygon.containsPoint(scenePoint, Qt::OddEvenFill)) {
+                insidePoints.append(scenePoint);
+            }
+        }
+    }
+
+    int xSize = INT_MAX;
+    int ySize = INT_MAX;
+    for(int i=0;i<m_time_row.size();++i){
+        if(xSize > m_time_row[i][0].width)xSize = m_time_row[i][0].width;
+        if(ySize > m_time_row[i][0].height)ySize = m_time_row[i][0].height;
+    }
+
+    for(int pi=0;pi<insidePoints.size();++pi){
+        if(insidePoints[pi].x() >= xSize || insidePoints[pi].x() < 0) continue;
+        if(insidePoints[pi].y() >= ySize || insidePoints[pi].y() < 0) continue;
+        double latitude = 0.0;
+        double longitude = 0.0;
+        getGeoCoordinates(insidePoints[pi].x(),insidePoints[pi].y(),m_time_row_geo[0],latitude,longitude,false);
+        QVector<QPointF> m_points(m_time_row.size());
+        for(int i=0;i<m_time_row.size();++i){
+            m_points[i] = (geoToPixel(latitude,longitude,m_time_row_geo[i]));
+            if(m_points[i].x() >= xSize || m_points[i].x() < 0) continue;
+            if(m_points[i].y() >= ySize || m_points[i].y() < 0) continue;
+        }
+        auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
+    };
+}
+
 void MainWindowSatelliteComparator::processLayer(uchar* layer,
                                                  int xSize,
                                                  int yStart,
@@ -1686,6 +1729,9 @@ void MainWindowSatelliteComparator::setUpToolWidget()
             ui->graphicsView_satellite_image,SLOT(setRoiSelectEffect(const QString)));
     connect(m_layer_roi_list,SIGNAL(roiPolygonAverage(const QString)),
             this,SLOT(show_roi_average(const QString)));
+    connect(m_layer_roi_list,SIGNAL(createTimeRowGradient(const QString)),
+            this, SLOT(calculate_time_row_gradient(const QString)));
+
 
 
     QHBoxLayout* tool_root_layout = new QHBoxLayout;
@@ -2282,17 +2328,20 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(cons
     }
 
     sad::NDWI_NDVI_TIME_ROW result;
-    calculate_slope(ndvi_time_row);
+    double slope = calculate_slope(ndvi_time_row);
+    if(slope < 0){
+        //qDebug()<<" - slope **********************";
+    };
     result.ndvi_time_row = std::move(ndvi_time_row);
     result.ndwi_time_row = std::move(ndwi_time_row);
 
     return result;
 }
 
-QVector<double> MainWindowSatelliteComparator::calculate_slope(const QVector<double> &values)
+double MainWindowSatelliteComparator::calculate_slope(const QVector<double> &values)
 {
     LeastSquareSolver solver;
-    QVector<double> result;
+    double result = 0.0;
     std::vector<double> x_values(values.size());
     std::iota(x_values.begin(), x_values.end(),1.0);
     solver.setModel([](double x, const std::vector<double>& p) {return p[0] * x + p[1];}, 2);
@@ -2300,9 +2349,8 @@ QVector<double> MainWindowSatelliteComparator::calculate_slope(const QVector<dou
     solver.setInitialGuess({1.0, 1.0, 9.0});
     if (solver.solve()) {
         auto params = solver.getParameters();
-        qDebug() << "Slope:" << params[0] << "Intercept:" << params[1];
-    } else {
-        return{};
+        result = params[0] ;
+        //qDebug() << "Slope:" << params[0] << "Intercept:" << params[1];
     }
     return result;
 }

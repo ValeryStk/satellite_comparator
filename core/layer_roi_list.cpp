@@ -15,6 +15,7 @@ QMenu *LayerRoiList::createContextMenu()
     auto base_menu = LayerList::createContextMenu();
     base_menu->addAction("Изменить цвет");
     base_menu->addAction("Среднее арифметическое");
+    base_menu->addAction("Построить градиент усыхания");
     return base_menu;
 }
 
@@ -28,10 +29,11 @@ void LayerRoiList::handle_other_contextAction(const QString &actionId,
         QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
         item->setIcon(iut::createIcon(color.red(),color.green(),color.blue()));
         emit roi_color_changed(id,color);
-    }
-    if(actionId == "Среднее арифметическое"){
+    }else if(actionId == "Среднее арифметическое"){
         qDebug()<<"average...";
         emit roiPolygonAverage(id);
+    }else if(actionId == "Построить градиент усыхания"){
+        emit createTimeRowGradient(id);
     }
 }
 
