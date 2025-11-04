@@ -1120,7 +1120,13 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
     showTimeRowIndexesDataViaPlot(std::move(ndvi_time_row), std::move(ndwi_time_row));
 
 
-    auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
+   /* auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
+    auto ndvi_vector = ndvi_ndwi_indexes.ndvi_time_row;
+    qDebug()<<"----------------------------------";
+    for(const auto &value: ndvi_vector){
+        qDebug()<<"ndvi: "<<value;
+    }
+    qDebug()<<"----------------------------------";*/
     //qDebug()<<"ndvi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
     //qDebug()<<"ndwi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
 
@@ -1621,29 +1627,6 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient(const QString& i
     auto new_layer = new uchar[xSize*ySize*4];
     std::memset(new_layer, 0, xSize * ySize * 4);
 
-    /*for(int y=0;y<ySize;++y){
-        for(int x=0;x<xSize;++x){
-            base_pixel_geo->getGeoCoordinates(x,y,latitude,longitude);
-            m_points[0] = QPoint(x,y);
-            for(int i=1;i<m_time_row.size();++i){
-                m_points[i] = geoToPixel(latitude,longitude,m_time_row_geo[i]);
-            }
-            if(!isDataCloudShadow_OK(m_points)){
-                new_layer[offset]     = color.red();
-                new_layer[offset + 1] = color.green();
-                new_layer[offset + 2] = color.blue();
-                new_layer[offset + 3] = 255;
-            }else{
-                new_layer[offset]     = color.red();
-                new_layer[offset + 1] = color.green();
-                new_layer[offset + 2] = color.blue();
-                new_layer[offset + 3] = 0;
-            };
-            offset += 4;
-        }
-    }*/
-
-
 
     for(int pi=0;pi<insidePoints.size();++pi){
         if(insidePoints[pi].x() >= xSize || insidePoints[pi].x() < 0) continue;
@@ -1655,15 +1638,21 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient(const QString& i
         m_points[0] = {insidePoints[pi].x(),insidePoints[pi].y()};
         for(int i=1;i<m_time_row.size();++i){
             m_points[i] = (geoToPixel(latitude,longitude,m_time_row_geo[i]));
-            //if(m_points[i].x() >= xSize || m_points[i].x() < 0) continue; //NEED SMART CHECK
-            //if(m_points[i].y() >= ySize || m_points[i].y() < 0) continue;
+            if(m_points[i].x() >= xSize || m_points[i].x() < 0) continue; //NEED SMART CHECK
+            if(m_points[i].y() >= ySize || m_points[i].y() < 0) continue;
         }
         auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
 
         int start_color = m_time_row[0][0].width * 4 * m_points[0].y() + m_points[0].x()*4;
-        new_layer[start_color] = 255;
-        new_layer[start_color+1] = gradient_colors[0].green();
-        new_layer[start_color+2] = gradient_colors[0].blue();
+        QColor color;
+        if(ndvi_ndwi_indexes.dp_ndvi == 0){color = QColor(Qt::green);};
+        if(ndvi_ndwi_indexes.dp_ndvi == 1){color = QColor(Qt::yellow);};
+        if(ndvi_ndwi_indexes.dp_ndvi == 2){color = QColor(255,165,0);};
+        if(ndvi_ndwi_indexes.dp_ndvi == 3){color = QColor(Qt::red);};
+
+        new_layer[start_color] = color.red();
+        new_layer[start_color+1] = color.green();
+        new_layer[start_color+2] = color.blue();
         new_layer[start_color+3] = 255;
     }
 
@@ -2380,13 +2369,18 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(cons
     sad::NDWI_NDVI_TIME_ROW result;
     int dp_ndvi = 0;
     QVector<double> slopes;
-    for(int i=0;i<ndvi_time_row.size();++i){
-       QVector<double> time_frame = ndvi_time_row.mid(0,i);
-       double slope = calculate_slope(ndvi_time_row);
+    for(int i=1;i<ndvi_time_row.size();++i){
+       QVector<double> time_frame = ndvi_time_row.mid(0,i+1);
+       qDebug()<<"-------time frame-------";
+       for(int j=0;j<time_frame.size();++j){
+           qDebug()<<time_frame[j];
+       }
+       qDebug()<<"----end time frame----------";
+       double slope = calculate_slope(time_frame);
        if(slope<0)++dp_ndvi;
        slopes.push_back(slope);
     }
-
+    if(dp_ndvi == 3)qDebug()<<"---------- DP = 3-------------------------------";
     result.slopes = std::move(slopes);
     result.dp_ndvi = dp_ndvi;
     result.ndvi_time_row = std::move(ndvi_time_row);
