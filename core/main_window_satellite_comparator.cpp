@@ -316,7 +316,10 @@ void MainWindowSatelliteComparator::openTimeRowData()
     for(int j=0;j<m_time_row[0].size();++j){
         gui_available_bands<<m_time_row[0][j].gui_name;
     };
-    if(m_dynamic_checkboxes_widget)m_dynamic_checkboxes_widget->clear();
+    if(m_dynamic_checkboxes_widget){
+        m_dynamic_checkboxes_widget->clear();
+        delete m_dynamic_checkboxes_widget;
+    }
     m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(gui_available_bands,
                                                             ui->verticalLayout_satellite_bands);
     m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
@@ -364,8 +367,6 @@ void MainWindowSatelliteComparator::openTimeRowData()
         // Стиль контейнера: полупрозрачный тёмный фон
         container->setStyleSheet("background-color: rgba(0, 0, 0, 150); border-radius: 5px;");
         container->setLayout(layout);
-        container->show();
-
     }
 
 
@@ -383,6 +384,7 @@ void MainWindowSatelliteComparator::openTimeRowData()
     m_time_row_widget.setLayout(layout);
     m_time_row_widget.setWindowTitle("Временной ряд");
     m_time_row_widget.show();
+   // paintTimeRowBadForest(Qt::black);
 
 }
 
@@ -1207,7 +1209,6 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 {
 
     if(m_satelite_type == sad::SATELLITE_TYPE::TIME_ROW_COMBINATION){
-        paintTimeRowBadForest(color);
         return;
     }
     int xSize = 0;
@@ -1587,6 +1588,7 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id)
 void MainWindowSatelliteComparator::calculate_time_row_gradient(const QString& id)
 {
     if(m_time_row.empty())return;
+    auto gradient_colors = iut::generateOrangeShades(m_time_row.size());
     qDebug()<<"Time row gradient connection check....."<<id;
     auto roi_item =  ui->graphicsView_satellite_image->getPolygonById(id);
     if(!roi_item)return;
@@ -1611,6 +1613,38 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient(const QString& i
         if(ySize > m_time_row[i][0].height)ySize = m_time_row[i][0].height;
     }
 
+
+
+
+
+
+    auto new_layer = new uchar[xSize*ySize*4];
+    std::memset(new_layer, 0, xSize * ySize * 4);
+
+    /*for(int y=0;y<ySize;++y){
+        for(int x=0;x<xSize;++x){
+            base_pixel_geo->getGeoCoordinates(x,y,latitude,longitude);
+            m_points[0] = QPoint(x,y);
+            for(int i=1;i<m_time_row.size();++i){
+                m_points[i] = geoToPixel(latitude,longitude,m_time_row_geo[i]);
+            }
+            if(!isDataCloudShadow_OK(m_points)){
+                new_layer[offset]     = color.red();
+                new_layer[offset + 1] = color.green();
+                new_layer[offset + 2] = color.blue();
+                new_layer[offset + 3] = 255;
+            }else{
+                new_layer[offset]     = color.red();
+                new_layer[offset + 1] = color.green();
+                new_layer[offset + 2] = color.blue();
+                new_layer[offset + 3] = 0;
+            };
+            offset += 4;
+        }
+    }*/
+
+
+
     for(int pi=0;pi<insidePoints.size();++pi){
         if(insidePoints[pi].x() >= xSize || insidePoints[pi].x() < 0) continue;
         if(insidePoints[pi].y() >= ySize || insidePoints[pi].y() < 0) continue;
@@ -1618,13 +1652,34 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient(const QString& i
         double longitude = 0.0;
         getGeoCoordinates(insidePoints[pi].x(),insidePoints[pi].y(),m_time_row_geo[0],latitude,longitude,false);
         QVector<QPointF> m_points(m_time_row.size());
-        for(int i=0;i<m_time_row.size();++i){
+        m_points[0] = {insidePoints[pi].x(),insidePoints[pi].y()};
+        for(int i=1;i<m_time_row.size();++i){
             m_points[i] = (geoToPixel(latitude,longitude,m_time_row_geo[i]));
-            if(m_points[i].x() >= xSize || m_points[i].x() < 0) continue;
-            if(m_points[i].y() >= ySize || m_points[i].y() < 0) continue;
+            //if(m_points[i].x() >= xSize || m_points[i].x() < 0) continue; //NEED SMART CHECK
+            //if(m_points[i].y() >= ySize || m_points[i].y() < 0) continue;
         }
         auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
+
+        int start_color = m_time_row[0][0].width * 4 * m_points[0].y() + m_points[0].x()*4;
+        new_layer[start_color] = 255;
+        new_layer[start_color+1] = gradient_colors[0].green();
+        new_layer[start_color+2] = gradient_colors[0].blue();
+        new_layer[start_color+3] = 255;
+    }
+
+
+    auto cleanup = [](void* info) {
+        delete[] static_cast<uchar*>(info);
     };
+    auto img = QImage(new_layer,xSize,ySize,xSize*4,QImage::Format_RGBA8888,cleanup,new_layer);
+    auto pixmap = QPixmap::fromImage(img);
+    auto new_image_item = new QGraphicsPixmapItem(pixmap);
+    new_image_item->setZValue(ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+    m_scene->addItem(new_image_item);
+
+    m_layers_search_result_items.insert("DP_HEAT_MAP",new_image_item);
+    m_layer_gui_list->addItemToList("DP_HEAT_MAP","",QColor(Qt::red));
+
 }
 
 void MainWindowSatelliteComparator::processLayer(uchar* layer,
@@ -2282,11 +2337,6 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
     m_layers_search_result_items.insert("COMMON_TIME_ROW_MASK",new_image_item);
     m_layer_gui_list->addItemToList("COMMON_TIME_ROW_MASK","",color);
 
-
-
-
-
-
     auto elapsedMs = time.elapsed();
 
 
@@ -2328,10 +2378,17 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(cons
     }
 
     sad::NDWI_NDVI_TIME_ROW result;
-    double slope = calculate_slope(ndvi_time_row);
-    if(slope < 0){
-        //qDebug()<<" - slope **********************";
-    };
+    int dp_ndvi = 0;
+    QVector<double> slopes;
+    for(int i=0;i<ndvi_time_row.size();++i){
+       QVector<double> time_frame = ndvi_time_row.mid(0,i);
+       double slope = calculate_slope(ndvi_time_row);
+       if(slope<0)++dp_ndvi;
+       slopes.push_back(slope);
+    }
+
+    result.slopes = std::move(slopes);
+    result.dp_ndvi = dp_ndvi;
     result.ndvi_time_row = std::move(ndvi_time_row);
     result.ndwi_time_row = std::move(ndwi_time_row);
 

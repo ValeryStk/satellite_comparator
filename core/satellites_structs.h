@@ -137,6 +137,7 @@ struct NDWI_NDVI_TIME_ROW{
    QVector<double> ndvi_time_row;
    QVector<double> ndwi_time_row;
    QVector<double> slopes;
+   int dp_ndvi = 0;
 };
 
 }

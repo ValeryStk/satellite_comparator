@@ -3,10 +3,17 @@
 
 #include <QIcon>
 #include <QSize>
+#include <QColor>
+#include <QVector>
 
 namespace iut{
 
-   QIcon createIcon(int r, int g, int b, QSize size = QSize(100, 100));
+QIcon createIcon(int r, int g, int b, QSize size = QSize(100, 100));
+
+
+
+QVector<QColor> generateOrangeShades(int N);
+
 
 }
 
