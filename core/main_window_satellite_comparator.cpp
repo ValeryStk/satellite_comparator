@@ -1643,12 +1643,12 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient(const QString& i
         }
         auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
 
-        int start_color = m_time_row[0][0].width * 4 * m_points[0].y() + m_points[0].x()*4;
+        int start_color = m_time_row[0][0].width * 4 * m_points[0].y() + m_points[0].x() * 4;
         QColor color;
-        if(ndvi_ndwi_indexes.dp_ndvi == 0){color = QColor(Qt::green);};
-        if(ndvi_ndwi_indexes.dp_ndvi == 1){color = QColor(Qt::yellow);};
-        if(ndvi_ndwi_indexes.dp_ndvi == 2){color = QColor(255,165,0);};
-        if(ndvi_ndwi_indexes.dp_ndvi == 3){color = QColor(Qt::red);};
+        if(ndvi_ndwi_indexes.dp_ndvi == 0){color = gradient_colors[0];}
+        if(ndvi_ndwi_indexes.dp_ndvi == 1){color = gradient_colors[1];}
+        if(ndvi_ndwi_indexes.dp_ndvi == 2){color = gradient_colors[2];}
+        if(ndvi_ndwi_indexes.dp_ndvi == 3){color = gradient_colors[3];}
 
         new_layer[start_color] = color.red();
         new_layer[start_color+1] = color.green();
@@ -2369,8 +2369,9 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(cons
     sad::NDWI_NDVI_TIME_ROW result;
     int dp_ndvi = 0;
     QVector<double> slopes;
-    for(int i=1;i<ndvi_time_row.size();++i){
-       QVector<double> time_frame = ndvi_time_row.mid(0,i+1);
+    for(int i=ndvi_time_row.size() - 1;i>0;--i){
+       QVector<double> time_frame = ndvi_time_row.mid(i-1,ndvi_time_row.size() - i+1);
+      // std::reverse(time_frame.begin(), time_frame.end());
        qDebug()<<"-------time frame-------";
        for(int j=0;j<time_frame.size();++j){
            qDebug()<<time_frame[j];
