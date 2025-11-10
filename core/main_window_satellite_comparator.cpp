@@ -384,7 +384,7 @@ void MainWindowSatelliteComparator::openTimeRowData()
     m_time_row_widget.setLayout(layout);
     m_time_row_widget.setWindowTitle("Временной ряд");
     m_time_row_widget.show();
-   // paintTimeRowBadForest(Qt::black);
+    // paintTimeRowBadForest(Qt::black);
 
 }
 
@@ -1120,7 +1120,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
     showTimeRowIndexesDataViaPlot(std::move(ndvi_time_row), std::move(ndwi_time_row));
 
 
-   /* auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
+    /* auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
     auto ndvi_vector = ndvi_ndwi_indexes.ndvi_time_row;
     qDebug()<<"----------------------------------";
     for(const auto &value: ndvi_vector){
@@ -2370,18 +2370,18 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(cons
     int dp_ndvi = 0;
     QVector<double> slopes;
     for(int i=ndvi_time_row.size() - 1;i>0;--i){
-       QVector<double> time_frame = ndvi_time_row.mid(i-1,ndvi_time_row.size() - i+1);
-      // std::reverse(time_frame.begin(), time_frame.end());
-       qDebug()<<"-------time frame-------";
-       for(int j=0;j<time_frame.size();++j){
+        QVector<double> time_frame = ndvi_time_row.mid(i-1,ndvi_time_row.size() - i+1);
+        // std::reverse(time_frame.begin(), time_frame.end());
+        //qDebug()<<"-------time frame-------";
+        /*for(int j=0;j<time_frame.size();++j){
            qDebug()<<time_frame[j];
        }
-       qDebug()<<"----end time frame----------";
-       double slope = calculate_slope(time_frame);
-       if(slope<0)++dp_ndvi;
-       slopes.push_back(slope);
+       qDebug()<<"----end time frame----------";*/
+        double slope = calculate_slope(time_frame);
+        if(slope<0)++dp_ndvi;
+        slopes.push_back(slope);
     }
-    if(dp_ndvi == 3)qDebug()<<"---------- DP = 3-------------------------------";
+
     result.slopes = std::move(slopes);
     result.dp_ndvi = dp_ndvi;
     result.ndvi_time_row = std::move(ndvi_time_row);
