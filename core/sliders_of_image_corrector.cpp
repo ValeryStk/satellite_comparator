@@ -6,7 +6,7 @@
 #include <QToolTip>
 #include <QDebug>
 
-constexpr double MAX_MULTIPLIER = 4;
+constexpr double MAX_MULTIPLIER = 8;
 constexpr double MIN_MULTIPLIER = 0.25;
 constexpr double NEUTRAL_MULTIPLIER = 1.0;
 
