@@ -297,12 +297,13 @@ void MainWindowSatelliteComparator::openTimeRowData()
 
 
     m_satelite_type = sad::TIME_ROW_COMBINATION;
+    QVector<sad::LANDSAT_METADATA_FILE> meta_datas;
 
     if(!landsat_subdirs.empty()){
         subdirs = sortLandsatFilesByDateTime(landsat_subdirs);
         //qDebug()<<"after sorting by date time"<<subdirs;
         //!!!!! FILTER SUBDIRS
-        QVector<sad::LANDSAT_METADATA_FILE> meta_datas;
+
         m_time_row.resize(subdirs.size());
         m_time_row_geo.resize(m_time_row.size());
         m_time_row_qa_mask.resize(m_time_row.size());
