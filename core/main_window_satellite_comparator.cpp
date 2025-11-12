@@ -2221,6 +2221,13 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
     return bands_data;
 }
 
+QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDatanForSentinel_TimeRow(const QString &headerName,
+                                                                                   sad::SENTINEL_METADATA &sentinel_metadata,
+                                                                                   sad::geoTransform &gt)
+{
+    return {};
+}
+
 sad::geoTransform MainWindowSatelliteComparator::getGeo(const QJsonObject& jo)
 {
     sad::geoTransform gt;

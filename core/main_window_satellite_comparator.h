@@ -184,6 +184,11 @@ private:
     QVector<sad::BAND_DATA> getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName,
                                                                  sad::LANDSAT_METADATA_FILE& landsat_metadata,
                                                                  sad::geoTransform& gt);
+
+    QVector<sad::BAND_DATA> getDatanForSentinel_TimeRow(const QString& headerName,
+                                                        sad::SENTINEL_METADATA& sentinel_metadata,
+                                                        sad::geoTransform& gt);
+
     QVector<QVector<sad::BAND_DATA>> m_time_row;
     QVector<sad::QA_MASK_DATA> m_time_row_qa_mask;
     QVector<sad::geoTransform> m_time_row_geo;
