@@ -274,32 +274,63 @@ void MainWindowSatelliteComparator::openTimeRowData()
     QStringList subdirs = directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
     qDebug()<<"before sorting by date time"<<subdirs;
     if(subdirs.empty())return;
+
+    QStringList landsat_subdirs;
+    QStringList sentinel_subdirs;
+
+    for(const auto &subdir:qAsConst(subdirs)){
+        if(subdir.contains("S2B")||subdir.contains("S2A")){
+            sentinel_subdirs.append(subdir);
+        }else if(subdir.contains("LC09")||subdir.contains("LC08")){
+            landsat_subdirs.append(subdir);
+        }
+    };
+
+    if(!landsat_subdirs.empty()&&!sentinel_subdirs.empty()){
+        uts::showWarnigMessage("Данные с разных спутников","В папке могут быть изображения только для одного типа спутника.");
+        return;
+    }
+    if(landsat_subdirs.empty()&&sentinel_subdirs.empty()){
+        uts::showWarnigMessage("Нет данных", "Данные отсутсвуют");
+        return;
+    }
+
+
     m_satelite_type = sad::TIME_ROW_COMBINATION;
-    subdirs = sortLandsatFilesByDateTime(subdirs);
-    qDebug()<<"after sorting by date time"<<subdirs;
 
-    //!!!!! FILTER SUBDIRS
-    QVector<sad::LANDSAT_METADATA_FILE> meta_datas;
-    m_time_row.resize(subdirs.size());
-    m_time_row_geo.resize(m_time_row.size());
-    m_time_row_qa_mask.resize(m_time_row.size());
-    for(int i=0;i<m_time_row.size();++i){
-        sad::LANDSAT_METADATA_FILE landsat_metadata;
-        sad::geoTransform gt;
-        m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json",
-                                                             landsat_metadata,
-                                                             gt);
-        sad::QA_MASK_DATA qa_mask;
-        qa_mask.file_name = directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_QA_PIXEL.TIF";
-        qa_mask.data = readTiff(qa_mask.file_name,qa_mask.width,qa_mask.height);
-        qDebug()<<"mask_widht -- mask_height: "<<qa_mask.width<<qa_mask.height;
-        m_time_row_qa_mask[i] = qa_mask;
+    if(!landsat_subdirs.empty()){
+        subdirs = sortLandsatFilesByDateTime(landsat_subdirs);
+        //qDebug()<<"after sorting by date time"<<subdirs;
+        //!!!!! FILTER SUBDIRS
+        QVector<sad::LANDSAT_METADATA_FILE> meta_datas;
+        m_time_row.resize(subdirs.size());
+        m_time_row_geo.resize(m_time_row.size());
+        m_time_row_qa_mask.resize(m_time_row.size());
+        for(int i=0;i<m_time_row.size();++i){
+            sad::LANDSAT_METADATA_FILE landsat_metadata;
+            sad::geoTransform gt;
+            m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json",
+                                                                 landsat_metadata,
+                                                                 gt);
+            sad::QA_MASK_DATA qa_mask;
+            qa_mask.file_name = directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_QA_PIXEL.TIF";
+            qa_mask.data = readTiff(qa_mask.file_name,qa_mask.width,qa_mask.height);
+            //qDebug()<<"mask_widht -- mask_height: "<<qa_mask.width<<qa_mask.height;
+            m_time_row_qa_mask[i] = qa_mask;
 
 
-        meta_datas.push_back(landsat_metadata);
-        m_time_row_geo[i] = gt;
+            meta_datas.push_back(landsat_metadata);
+            m_time_row_geo[i] = gt;
+
+        }
 
     }
+
+
+
+
+
+
     base_pixel_geo = new PixelGeo (m_time_row_geo[0]);
 
     // Будем добавлять график, если его не хватает для новых временных точек
