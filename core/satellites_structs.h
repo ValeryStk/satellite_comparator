@@ -93,11 +93,18 @@ extern const double sentinel_2B_central_wave_lengths[SENTINEL_BANDS_NUMBER];
 extern const QHash<const QString,QPair<int,int>> sentinel_resolutions;
 extern const QString sentinel_bands_keys[SENTINEL_BANDS_NUMBER];
 
+struct SENTINEL_KSY_ADD_MULT{
+    QVector<double> add  [SENTINEL_BANDS_NUMBER];
+    QVector<double> mult [SENTINEL_BANDS_NUMBER];
+};
 
 struct SENTINEL_METADATA {
     bool isHeaderValid = false;
     bool sentinel_missed_channels[SENTINEL_BANDS_NUMBER];
     QString files[SENTINEL_BANDS_NUMBER];
+    IMAGE_ATTRIBUTES image_attributes;
+    PROJECTION_ATTRIBUTES projection_attributes;
+    SENTINEL_KSY_ADD_MULT reflectence_params;
 };
 
 struct BAND_DATA{

@@ -174,19 +174,35 @@ void copyQStringArray(const QString source[], QString destination[], int size) {
     }
 }
 
-// Сортировка списка файлов Landsat по дате съёмки (4-й блок в имени файла)
-QStringList sortLandsatFilesByDateTime(const QStringList &unsortedFiles) {
+
+QStringList commonSortFilesByDateTime(const QStringList& unsortedFiles,
+                                      const char splitter,
+                                      const int index){
     QStringList sortedScenes = unsortedFiles;
-    std::sort(sortedScenes.begin(), sortedScenes.end(), [](const QString &a, const QString &b) {
-        QString dateStrA = a.split('_').value(3);
-        QString dateStrB = b.split('_').value(3);
+
+    std::sort(sortedScenes.begin(), sortedScenes.end(), [=](const QString &a, const QString &b) {
+        QString dateStrA = a.split(splitter).value(index);
+        QString dateStrB = b.split(splitter).value(index);
         QDate dateA = QDate::fromString(dateStrA, "yyyyMMdd");
         QDate dateB = QDate::fromString(dateStrB, "yyyyMMdd");
         return dateA < dateB;
     });
     return sortedScenes;
 }
+
+// Сортировка списка файлов Landsat по дате съёмки (4-й блок в имени файла)
+QStringList sortLandsatFilesByDateTime(const QStringList &unsortedFiles) {
+    return commonSortFilesByDateTime(unsortedFiles,'_',3);
 }
+
+// Сортировка списка файлов Landsat по дате съёмки (4-й блок в имени файла)
+QStringList sortSentinelFilesByDateTime(const QStringList &unsortedFiles) {
+    return commonSortFilesByDateTime(unsortedFiles,'_',2);
+}
+
+}// end of namespace
+
+
 
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     : QMainWindow(parent)
@@ -298,10 +314,11 @@ void MainWindowSatelliteComparator::openTimeRowData()
 
     m_satelite_type = sad::TIME_ROW_COMBINATION;
     QVector<sad::LANDSAT_METADATA_FILE> meta_datas;
+    QVector<QString> date_time_row_stamps;
 
     if(!landsat_subdirs.empty()){
         subdirs = sortLandsatFilesByDateTime(landsat_subdirs);
-        //qDebug()<<"after sorting by date time"<<subdirs;
+        qDebug()<<"landsat after sorting by date time"<<subdirs;
         //!!!!! FILTER SUBDIRS
 
         m_time_row.resize(subdirs.size());
@@ -321,9 +338,22 @@ void MainWindowSatelliteComparator::openTimeRowData()
 
 
             meta_datas.push_back(landsat_metadata);
+            date_time_row_stamps.push_back(landsat_metadata.image_attributes.date_acquired);
             m_time_row_geo[i] = gt;
 
         }
+
+    }else{
+
+      subdirs = sortSentinelFilesByDateTime(sentinel_subdirs);
+      qDebug()<<"sentinel time row after sorting by date time"<<subdirs;
+
+      //WORK IN PROGRESS (WIP)
+      m_time_row.resize(subdirs.size());
+      m_time_row_geo.resize(m_time_row.size());
+      m_time_row_qa_mask.resize(m_time_row.size());
+
+      return;
 
     }
 
@@ -372,7 +402,7 @@ void MainWindowSatelliteComparator::openTimeRowData()
         viewer->resize(400, 400);
         viewer->connectSync(syncManager);
 
-        QString date = meta_datas[i].image_attributes.date_acquired;
+        QString date = date_time_row_stamps[i];
         int r = distinctColors[i].red();
         int g = distinctColors[i].green();
         int b = distinctColors[i].blue();
@@ -2150,7 +2180,7 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
             }
 
             QTime time = {QTime::fromString(timeStr,"hh:mm:ss.zzz")};
-            qDebug()<<date.toString("yyyy-MM-dd")<<time.toString("----> hh:mm:ss.zzz");
+            //qDebug()<<date.toString("yyyy-MM-dd")<<time.toString("----> hh:mm:ss.zzz");
             QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
             QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"});
             QJsonObject check_bands = value.toObject();
