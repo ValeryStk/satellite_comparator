@@ -312,11 +312,12 @@ void MainWindowSatelliteComparator::openTimeRowData()
     }
 
 
-    m_satelite_type = sad::TIME_ROW_COMBINATION;
+
     QVector<sad::LANDSAT_METADATA_FILE> meta_datas;
     QVector<QString> date_time_row_stamps;
 
     if(!landsat_subdirs.empty()){
+        m_satelite_type = sad::TIME_ROW_LANDSAT_COMBINATION;
         subdirs = sortLandsatFilesByDateTime(landsat_subdirs);
         qDebug()<<"landsat after sorting by date time"<<subdirs;
         //!!!!! FILTER SUBDIRS
@@ -344,7 +345,7 @@ void MainWindowSatelliteComparator::openTimeRowData()
         }
 
     }else{
-
+      m_satelite_type = sad::TIME_ROW_SENTINEL_COMBINATION;
       subdirs = sortSentinelFilesByDateTime(sentinel_subdirs);
       qDebug()<<"sentinel time row after sorting by date time"<<subdirs;
 
@@ -495,8 +496,11 @@ void MainWindowSatelliteComparator::centerSceneOnCrossSquare()
 void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
 {
 
-    if(m_satelite_type==sad::TIME_ROW_COMBINATION){
-        cursorPointOnSceneChangedEventTimeRow(pos);
+    if(m_satelite_type==sad::TIME_ROW_LANDSAT_COMBINATION){
+        cursorPointOnSceneChangedEventTimeRow(pos,true);
+        return;
+    }else if(m_satelite_type==sad::TIME_ROW_SENTINEL_COMBINATION){
+        cursorPointOnSceneChangedEventTimeRow(pos,false);
         return;
     }
     QVector<double> data;
@@ -575,7 +579,7 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
     double longitude = 0.0;
 
 
-    if(m_satelite_type == sad::TIME_ROW_COMBINATION){
+    if(m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION){
         getGeoCoordinates(pos.x(),pos.y(),m_time_row_geo[0],lat,longitude,false);
         m_lattitude = lat;
         m_longitude = longitude;
@@ -1141,7 +1145,7 @@ void MainWindowSatelliteComparator::clearLandsat9DataBands()
     }
 }
 
-void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const QPointF &pos)
+void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const QPointF &pos, const bool is_landsat)
 {
 
     if(m_time_row.empty())return;
@@ -1179,7 +1183,13 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         sad::BANDS_FOR_CALCULATING_INDEXES values;
         for(int j=0;j<m_time_row[i].size();++j){
             value = m_time_row[i][j].data[((int)m_points[i].y()*m_time_row[i][j].width) + (int)m_points[i].x()];
-            double one_ksy_value = m_time_row[i][j].reflectance_mult * value + m_time_row[i][j].reflectance_add;
+            double one_ksy_value;
+            if(is_landsat){
+            one_ksy_value = m_time_row[i][j].reflectance_mult * value + m_time_row[i][j].reflectance_add;
+            }else{
+            one_ksy_value = value/10000.0;
+            }
+
             if(one_ksy_value==0) continue;
             if(j==3){values.RED_BAND = one_ksy_value;}  //red value
             if(j==4){values.NIR_BAND = one_ksy_value;}  //nir value
@@ -1300,7 +1310,7 @@ inline QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x
 void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
 {
 
-    if(m_satelite_type == sad::SATELLITE_TYPE::TIME_ROW_COMBINATION){
+    if(m_satelite_type == sad::SATELLITE_TYPE::TIME_ROW_LANDSAT_COMBINATION){
         return;
     }
     int xSize = 0;

@@ -83,7 +83,8 @@ private:
     void fillLandSat9ReflectanceMultAdd(const QString& path);
     void fillLandSat9GeoData(const QString& path);
     void clearLandsat9DataBands();
-    inline void cursorPointOnSceneChangedEventTimeRow(const QPointF& pos);
+    inline void cursorPointOnSceneChangedEventTimeRow(const QPointF& pos,
+                                                      const bool is_landsat);
     uchar* m_image_data;
     uint16_t* readTiff(const QString& path,
                        int& xSize,
