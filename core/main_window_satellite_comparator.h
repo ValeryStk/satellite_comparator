@@ -162,7 +162,7 @@ private:
 
     QVector<sad::BAND_DATA> m_sentinel_data;
     QVector<sad::BAND_DATA> m_landsat_data;
-    void read_sentinel2_bands_data();
+    void read_sentinel2_bands_data(QVector<sad::BAND_DATA> &data);
 
     void gdal_start_driver();
     void gdal_close_driver();

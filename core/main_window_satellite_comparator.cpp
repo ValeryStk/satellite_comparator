@@ -853,7 +853,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
             SIGNAL(choosed_bands_changed()),
             this,SLOT(change_bands()));
 
-    read_sentinel2_bands_data();
+    read_sentinel2_bands_data(m_sentinel_data);
     change_bands_and_show_image(m_sentinel_data);
 
     ui->statusbar->showMessage("");
@@ -1925,30 +1925,30 @@ void MainWindowSatelliteComparator::addBaseItemsToScene()
     m_scene->addItem(m_scene_cross_square_item);
 }
 
-void MainWindowSatelliteComparator::read_sentinel2_bands_data()
+void MainWindowSatelliteComparator::read_sentinel2_bands_data(QVector<sad::BAND_DATA>& data)
 {
 
-    for (int i = 0; i < m_sentinel_data.size(); ++i) {
-        const QString& band_file_name = m_sentinel_data[i].file_name;
+    for (int i = 0; i < data.size(); ++i) {
+        const QString& band_file_name = data[i].file_name;
         int xS = 0;
         int yS = 0;
 
-        m_sentinel_data[i].data  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
+        data[i].data  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
 
-        if(m_sentinel_data[i].resolution_in_pixel_meters=="R10m"){
-            qDebug()<<"RESOLUTION 10 TO 20";
+        if(data[i].resolution_in_pixel_meters=="R10m"){
+            //qDebug()<<"RESOLUTION 10 TO 20";
             int outX = xS/2;
             int outY = yS/2;
             // Выделяем буфер вручную
             uint16_t* buffer = new uint16_t[(sizeof(uint16_t) * outX * outY)];
-            downsample_uint16(m_sentinel_data[i].data,buffer,xS,yS);
-            delete []m_sentinel_data[i].data;
-            m_sentinel_data[i].data = buffer;
+            downsample_uint16(data[i].data,buffer,xS,yS);
+            delete []data[i].data;
+            data[i].data = buffer;
 
         }
-        qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
-        if(m_sentinel_data[i].width != xS)qDebug()<<"WRONG X";
-        if(m_sentinel_data[i].height != yS)qDebug()<<"WRONG Y";
+        //qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
+        if(data[i].width != xS)qDebug()<<"WRONG X";
+        if(data[i].height != yS)qDebug()<<"WRONG Y";
 
     }
 
