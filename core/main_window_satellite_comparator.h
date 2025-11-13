@@ -172,7 +172,7 @@ private:
     void clear_satellite_data();
     void clear_all_layers();
 
-    QHash <QString,sad::geoTransform> sentinel_geo;
+
     QHash<QString, sad::geoTransform> extractGeoPositions(const QString& xmlFilePath);
     int extractUTMZoneFromXML(const QString& xmlFilePath);
     void getKSY(const QPointF& pos, QVector<double>& waves, QVector<double>& ksy);
@@ -185,8 +185,9 @@ private:
                                                                  sad::LANDSAT_METADATA_FILE& landsat_metadata,
                                                                  sad::geoTransform& gt);
 
-    QVector<sad::BAND_DATA> getDatanForSentinel_TimeRow(const QString& headerName,
-                                                        sad::SENTINEL_METADATA& sentinel_metadata,
+    QVector<sad::BAND_DATA> getDataForSentinel_TimeRow( const QString& headerName,
+                                                        sad::SATELLITE_TYPE st,
+                                                        sad::SENTINEL_METADATA& metadata,
                                                         sad::geoTransform& gt);
 
     QVector<QVector<sad::BAND_DATA>> m_time_row;

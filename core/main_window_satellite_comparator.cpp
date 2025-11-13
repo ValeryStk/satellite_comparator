@@ -353,7 +353,31 @@ void MainWindowSatelliteComparator::openTimeRowData()
       m_time_row_geo.resize(m_time_row.size());
       m_time_row_qa_mask.resize(m_time_row.size());
 
-      return;
+
+
+
+      for(int i=0;i<m_time_row.size();++i){
+          sad::SENTINEL_METADATA sentinel_metadata;
+          sad::geoTransform gt;
+          m_time_row[i] = getDataForSentinel_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/MTD_MSIL2A.xml",
+                                                     sad::SENTINEL_2A,
+                                                     sentinel_metadata,
+                                                     gt);
+          /*sad::QA_MASK_DATA qa_mask;
+          qa_mask.file_name = directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_QA_PIXEL.TIF";
+          qa_mask.data = readTiff(qa_mask.file_name,qa_mask.width,qa_mask.height);
+          //qDebug()<<"mask_widht -- mask_height: "<<qa_mask.width<<qa_mask.height;
+          m_time_row_qa_mask[i] = qa_mask;*/
+
+
+          date_time_row_stamps.push_back(sentinel_metadata.image_attributes.date_acquired);
+          qDebug()<<"Date time row stamp: "<<sentinel_metadata.image_attributes.date_acquired;
+          m_time_row_geo[i] = gt;
+
+      }
+
+
+
 
     }
 
@@ -790,7 +814,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
 
     // Собираем финальный список
     finalFiles = bestResolutionForBand.values();
-    qDebug()<<finalFiles;
+    //qDebug()<<finalFiles;
     title_satellite_name->setText(satellite_name);
 
     for (const QString& file : qAsConst(finalFiles)) {
@@ -860,7 +884,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
     m_is_image_created = true;
     m_scene_cross_square_item->setVisible(true);
     ui->graphicsView_satellite_image->setIsSignal(true);
-
+    QHash <QString,sad::geoTransform> sentinel_geo;
     if(finalFiles.empty()==false){
         QFileInfo finfo(m_root_path + "/" + finalFiles[0]+".jp2");
         QDir dir(finfo.absolutePath());
@@ -2221,11 +2245,147 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
     return bands_data;
 }
 
-QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDatanForSentinel_TimeRow(const QString &headerName,
-                                                                                   sad::SENTINEL_METADATA &sentinel_metadata,
-                                                                                   sad::geoTransform &gt)
+QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataForSentinel_TimeRow(const QString& headerName,
+                                                                                  sad::SATELLITE_TYPE st,
+                                                                                  sad::SENTINEL_METADATA& metadata,
+                                                                                  sad::geoTransform& gt)
 {
-    return {};
+
+    QVector<sad::BAND_DATA> bands_data;
+    QFile file(headerName);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Не удалось открыть файл Sentinel XML";
+        return{};
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "Ошибка разбора XML";
+        file.close();
+        return{};
+    }
+    file.close();
+    QFileInfo fi(headerName);
+    m_root_path = fi.path();
+
+    qDebug()<<"sentinel time row rooth path: --->"<<m_root_path;
+
+    QStringList imageFiles;
+    QDomNodeList imageNodes = doc.elementsByTagName("IMAGE_FILE");
+    for (int i = 0; i < imageNodes.count(); ++i) {
+        QDomNode node = imageNodes.at(i);
+        imageFiles << node.toElement().text();
+    }
+    QStringList filteredFiles;
+
+    for (const QString& file : qAsConst(imageFiles)) {
+        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
+            // Ищем точное вхождение ключа как часть имени файла
+            if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
+                filteredFiles << file;
+                break; // нашли — переходим к следующему файлу
+            }
+        }
+    }
+    QStringList finalFiles;
+    QMap<QString, QString> bestResolutionForBand;
+    const QStringList priorityOrder = { "R20m","R10m","R60m" };
+
+    // Для каждого band ищем путь с наивысшим приоритетом по разрешению
+    for (const QString& bandKey : sad::sentinel_bands_keys) {
+        for (const QString& resolution : priorityOrder) {
+            for (const QString& file : qAsConst(filteredFiles)) {
+                if (file.contains(resolution) && file.contains("_" + bandKey + "_")) {
+                    bestResolutionForBand[bandKey] = file;
+                    break; // нашли лучший — переходим к следующему band
+                }
+            }
+            if (bestResolutionForBand.contains(bandKey)) break; // если уже найден — не ищем в меньших разрешениях
+        }
+    }
+
+    // Собираем финальный список
+    finalFiles = bestResolutionForBand.values();
+
+
+    qDebug()<<finalFiles;
+
+
+    for (const QString& file : qAsConst(finalFiles)) {
+        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
+            if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
+                metadata.sentinel_missed_channels[i] = false; // Канал найден — не пропущен
+                metadata.files[i] = file;
+                break;
+            }
+        }
+    }
+
+    QList<QString> availableBandNames;
+    QString gui_channels[SENTINEL_BANDS_NUMBER];
+    double central_waves[SENTINEL_BANDS_NUMBER];
+    if(st == sad::SENTINEL_2A){
+        copyQStringArray(sad::sentinel_2A_gui_band_names,gui_channels,SENTINEL_BANDS_NUMBER);
+        std::copy(sad::sentinel_2A_central_wave_lengths,sad::sentinel_2A_central_wave_lengths+SENTINEL_BANDS_NUMBER,central_waves);
+    }else if(st == sad::SENTINEL_2B){
+        copyQStringArray(sad::sentinel_2B_gui_band_names,gui_channels,SENTINEL_BANDS_NUMBER);
+        std::copy(sad::sentinel_2B_central_wave_lengths,sad::sentinel_2B_central_wave_lengths+SENTINEL_BANDS_NUMBER,central_waves);
+    }
+
+    for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
+        if (!metadata.sentinel_missed_channels[i]) {
+            availableBandNames << gui_channels[i];
+            sad::BAND_DATA data;
+            data.gui_name = gui_channels[i];
+            data.central_wave_length = central_waves[i];
+            data.file_name = metadata.files[i];
+
+            bool isResolutionMissed = true;
+            for (const QString& resolution : priorityOrder) {
+                if (data.file_name.contains(resolution)){
+                    data.resolution_in_pixel_meters = resolution;
+                    data.width = sad::sentinel_resolutions.value(resolution).first;
+                    data.height = sad::sentinel_resolutions.value(resolution).second;
+                    isResolutionMissed = false;
+                    qDebug()<<"r, w, h: "<<data.resolution_in_pixel_meters<<data.width<<data.height;
+                    break;
+                };
+            }
+            if(isResolutionMissed){
+
+                //TODO EXCEPTION
+                //Мы обязательно должны знать разрешение
+                // Выбросить исключение
+                qDebug()<<"<--------------------- NO RESOLUTION EXCEPTION !!!------------------>";
+                continue;
+
+            }
+            bands_data.append(data);
+        }
+    }
+
+
+    read_sentinel2_bands_data(bands_data);
+
+    QHash <QString,sad::geoTransform> sentinel_geo;
+    if(finalFiles.empty()==false){
+        QFileInfo finfo(m_root_path + "/" + finalFiles[0]+".jp2");
+        QDir dir(finfo.absolutePath());
+        dir.cdUp();
+        dir.cdUp();
+        const QString geo_file = dir.path()+"/MTD_TL.xml";
+        fi.setFile(geo_file);
+        auto xml_doc = fi.absoluteFilePath();
+        //qDebug()<<xml_doc<<"--->"<<fi.exists();
+        gt.utmZone = extractUTMZoneFromXML(xml_doc);
+        sentinel_geo = extractGeoPositions(xml_doc);
+        gt.ulX = sentinel_geo["20"].ulX;
+        gt.ulY = sentinel_geo["20"].ulY;
+        gt.resX = 20;
+        gt.resY = -20;
+    }
+
+    return bands_data;
 }
 
 sad::geoTransform MainWindowSatelliteComparator::getGeo(const QJsonObject& jo)
