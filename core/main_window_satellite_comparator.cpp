@@ -1188,9 +1188,10 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
             one_ksy_value = m_time_row[i][j].reflectance_mult * value + m_time_row[i][j].reflectance_add;
             }else{
             one_ksy_value = value/10000.0;
+            qDebug()<<"------ Sentinel ksy -------->";
             }
 
-            if(one_ksy_value==0) continue;
+            if(one_ksy_value==0||one_ksy_value>1) continue;
             if(j==3){values.RED_BAND = one_ksy_value;}  //red value
             if(j==4){values.NIR_BAND = one_ksy_value;}  //nir value
             if(j==5){values.SWIR1_BAND = one_ksy_value;}//swir1 value
@@ -2114,6 +2115,26 @@ int MainWindowSatelliteComparator::extractUTMZoneFromXML(const QString &xmlFileP
     return -1;
 }
 
+QString MainWindowSatelliteComparator::getDateTimeFromXML(const QString& xmlFilePath)
+{
+    QFile file(xmlFilePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Не удалось открыть файл:" << xmlFilePath;
+        return -1;
+    }
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "Ошибка парсинга XML";
+        file.close();
+        return -1;
+    }
+    file.close();
+
+    QDomNodeList nodes = doc.elementsByTagName("SENSING_TIME");
+    QString date_time = nodes.at(0).toElement().text();
+    return date_time;
+}
+
 void MainWindowSatelliteComparator::getKSY(const QPointF &pos,
                                            QVector<double> &waves,
                                            QVector<double> &ksy)
@@ -2389,6 +2410,15 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataForSentinel_TimeRo
         //qDebug()<<xml_doc<<"--->"<<fi.exists();
         gt.utmZone = extractUTMZoneFromXML(xml_doc);
         sentinel_geo = extractGeoPositions(xml_doc);
+        QString date_time = getDateTimeFromXML(xml_doc);
+        metadata.image_attributes.date_acquired = date_time;
+        QDate date = QDate::fromString(date_time,"yyyy-MM-dd");
+        QString timePart = date_time.mid(11, 12); // "09:25:54.344"
+        QTime time = QTime::fromString(timePart, "HH:mm:ss.zzz");
+        QDateTime dt(date, time);
+        m_time_row_dates_unix_time.first.push_back(dt.toSecsSinceEpoch());
+        m_time_row_dates_unix_time.second.push_back(date.toString("yyyy_MM_dd"));
+
         gt.ulX = sentinel_geo["20"].ulX;
         gt.ulY = sentinel_geo["20"].ulY;
         gt.resX = 20;
