@@ -1191,9 +1191,9 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
             }
 
             if(one_ksy_value==0||one_ksy_value>1) continue;
-            if(j==3){values.RED_BAND = one_ksy_value;}  //red value
-            if(j==4){values.NIR_BAND = one_ksy_value;}  //nir value
-            if(j==5){values.SWIR1_BAND = one_ksy_value;}//swir1 value
+            if(j==3){values.RED_BAND = one_ksy_value;}  //red value    3 sentinel
+            if(j==4){values.NIR_BAND = one_ksy_value;}  //nir value    6 sentinel
+            if(j==5){values.SWIR1_BAND = one_ksy_value;}//swir1 value  9 sentinel
             one_ksy.push_back(one_ksy_value);
             waves.push_back(m_time_row[i][j].central_wave_length);
         }
