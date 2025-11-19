@@ -1188,7 +1188,6 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
             one_ksy_value = m_time_row[i][j].reflectance_mult * value + m_time_row[i][j].reflectance_add;
             }else{
             one_ksy_value = value/10000.0;
-            qDebug()<<"------ Sentinel ksy -------->";
             }
 
             if(one_ksy_value==0||one_ksy_value>1) continue;
@@ -2411,11 +2410,15 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataForSentinel_TimeRo
         gt.utmZone = extractUTMZoneFromXML(xml_doc);
         sentinel_geo = extractGeoPositions(xml_doc);
         QString date_time = getDateTimeFromXML(xml_doc);
-        metadata.image_attributes.date_acquired = date_time;
-        QDate date = QDate::fromString(date_time,"yyyy-MM-dd");
+
+        QDate date = QDate::fromString(date_time.mid(0,10),"yyyy-MM-dd");
+        qDebug()<<"date: "<<date.toString("yyyy-MM-dd");
         QString timePart = date_time.mid(11, 12); // "09:25:54.344"
+        qDebug()<<"time_part -->"<<timePart;
         QTime time = QTime::fromString(timePart, "HH:mm:ss.zzz");
+
         QDateTime dt(date, time);
+        metadata.image_attributes.date_acquired = date_time;
         m_time_row_dates_unix_time.first.push_back(dt.toSecsSinceEpoch());
         m_time_row_dates_unix_time.second.push_back(date.toString("yyyy_MM_dd"));
 
