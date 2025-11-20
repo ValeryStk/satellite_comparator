@@ -2628,6 +2628,22 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
 
 sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(const QVector<QPointF> &points)
 {
+
+    int red_band_index = 0;
+    int nir_band_index = 0;
+    int swir1_index =0;
+
+    if(m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION){
+        red_band_index = 3;
+        nir_band_index = 4;
+        swir1_index =5;
+    }else if(sad::TIME_ROW_SENTINEL_COMBINATION){
+        red_band_index = 3;
+        nir_band_index = 6;
+        swir1_index =9;
+    }
+
+
     QVector<sad::BANDS_FOR_CALCULATING_INDEXES> data_indexes;
     for(int i=0;i<points.size();++i){
         sad::BANDS_FOR_CALCULATING_INDEXES values;
@@ -2635,9 +2651,9 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(cons
             double value = m_time_row[i][j].data[((int)points[i].y()*m_time_row[i][j].width) + (int)points[i].x()];
             double one_ksy_value = m_time_row[i][j].reflectance_mult * value + m_time_row[i][j].reflectance_add;
             if(one_ksy_value==0) continue;
-            if(j==3){values.RED_BAND = one_ksy_value;}
-            if(j==4){values.NIR_BAND = one_ksy_value;}
-            if(j==5){values.SWIR1_BAND = one_ksy_value;}
+            if(j==red_band_index){values.RED_BAND = one_ksy_value;}
+            if(j==nir_band_index){values.NIR_BAND = one_ksy_value;}
+            if(j==swir1_index){values.SWIR1_BAND = one_ksy_value;}
         }
         data_indexes.push_back(values);
     }
