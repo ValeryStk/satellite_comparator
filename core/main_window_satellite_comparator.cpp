@@ -183,8 +183,8 @@ QStringList commonSortFilesByDateTime(const QStringList& unsortedFiles,
     std::sort(sortedScenes.begin(), sortedScenes.end(), [=](const QString &a, const QString &b) {
         QString dateStrA = a.split(splitter).value(index);
         QString dateStrB = b.split(splitter).value(index);
-        QDate dateA = QDate::fromString(dateStrA, "yyyyMMdd");
-        QDate dateB = QDate::fromString(dateStrB, "yyyyMMdd");
+        QDate dateA = QDate::fromString(dateStrA.mid(0,8), "yyyyMMdd");
+        QDate dateB = QDate::fromString(dateStrB.mid(0,8), "yyyyMMdd");
         return dateA < dateB;
     });
     return sortedScenes;
