@@ -1179,6 +1179,19 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         uint16_t value = 0;
         QVector<double>one_ksy;
         QVector<double>waves;
+        int red_band_index = 0;
+        int nir_band_index = 0;
+        int swir1_index =0;
+
+        if(is_landsat){
+            red_band_index = 3;
+            nir_band_index = 4;
+            swir1_index =5;
+        }else{
+            red_band_index = 3;
+            nir_band_index = 6;
+            swir1_index =9;
+        }
 
         sad::BANDS_FOR_CALCULATING_INDEXES values;
         for(int j=0;j<m_time_row[i].size();++j){
@@ -1191,9 +1204,9 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
             }
 
             if(one_ksy_value==0||one_ksy_value>1) continue;
-            if(j==3){values.RED_BAND = one_ksy_value;}  //red value    3 sentinel
-            if(j==4){values.NIR_BAND = one_ksy_value;}  //nir value    6 sentinel
-            if(j==5){values.SWIR1_BAND = one_ksy_value;}//swir1 value  9 sentinel
+            if(j==red_band_index){values.RED_BAND = one_ksy_value;}  //red value    3 sentinel
+            if(j==nir_band_index){values.NIR_BAND = one_ksy_value;}  //nir value    6 sentinel
+            if(j==swir1_index){values.SWIR1_BAND = one_ksy_value;}   //swir1 value  9 sentinel
             one_ksy.push_back(one_ksy_value);
             waves.push_back(m_time_row[i][j].central_wave_length);
         }
