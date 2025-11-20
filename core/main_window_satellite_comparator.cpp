@@ -418,7 +418,8 @@ void MainWindowSatelliteComparator::openTimeRowData()
 
     syncManager = new ViewSyncManager;
 
-    auto imgs = get_cropedImages_for_time_row(m_time_row);
+    auto imgs = get_cropedImages_for_time_row(m_time_row, m_satelite_type);
+
     for(int i=0;i<imgs.size();++i){
         ImageViewer* viewer = new ImageViewer;
         m_viewers.push_back(viewer);
@@ -2456,11 +2457,19 @@ sad::geoTransform MainWindowSatelliteComparator::getGeo(const QJsonObject& jo)
     return gt;
 }
 
-QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(const QVector<QVector<sad::BAND_DATA> > &m_time_row)
+QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(const QVector<QVector<sad::BAND_DATA> > &m_time_row,
+                                                                             sad::SATELLITE_TYPE st)
 {
     if(m_time_row.empty()) return {QImage()};
 
     QVector<QImage> images;
+
+    int mult = 1;
+    if(m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION){
+       mult = 2;
+    }else if(m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION){
+      mult = 6;
+    }
 
     for(int i=0; i<m_time_row.size(); ++i){
         int offset = 0;
@@ -2472,9 +2481,9 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(con
                 int B = 0;
                 int G = 0;
                 int R = 0;
-                B = static_cast<int>(m_time_row[i][1].data[y * nXSize + x] / 255.0)*2;
-                G = static_cast<int>(m_time_row[i][2].data[y * nXSize + x] / 255.0)*2;
-                R = static_cast<int>(m_time_row[i][3].data[y * nXSize + x] / 255.0)*2;
+                B = static_cast<int>(m_time_row[i][1].data[y * nXSize + x] / 255.0)*mult;
+                G = static_cast<int>(m_time_row[i][2].data[y * nXSize + x] / 255.0)*mult;
+                R = static_cast<int>(m_time_row[i][3].data[y * nXSize + x] / 255.0)*mult;
                 data[offset]   = R;
                 data[offset+1] = G;
                 data[offset+2] = B;
