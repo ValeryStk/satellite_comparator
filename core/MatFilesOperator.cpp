@@ -237,7 +237,7 @@ MatFilesOperator::MatFilesOperator()
 
 }
 
-void MatFilesOperator::saveBecasData(const QList<QString>& specNames,
+void MatFilesOperator::saveBecasDataToMatFile(const QList<QString>& specNames,
                                      const QString& pathFolderName,
                                      bool isReflectance,
                                      const QString& fullMatPath)

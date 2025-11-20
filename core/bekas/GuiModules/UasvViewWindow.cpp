@@ -558,11 +558,14 @@ void UasvViewWindow::on_pushButtonToMatlab_clicked()
 
     //1, 2 - поменять потом на относительный путь
     MatFilesOperator matOper;
-    QString fullMatPath = "D://pathes.mat";
+    QString exeDir = QCoreApplication::applicationDirPath();
+    QString matlabAppDirName = "SpectraClassifier/application";
+    QString matFileName = "pathes.mat";
+    QString fullMatPath = exeDir + "/" + matlabAppDirName + "/" + matFileName;
 
     bool isReflectance = ui->pushButtonShowRfl->isChecked();
 
-    matOper.saveBecasData(m_filesParser->getSpectraNamesWithExtensionList(),
+    matOper.saveBecasDataToMatFile(m_filesParser->getSpectraNamesWithExtensionList(),
                           m_filesParser->getInputDirPathWithSlash(),
                           isReflectance,
                           fullMatPath);
