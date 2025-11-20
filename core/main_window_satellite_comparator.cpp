@@ -579,7 +579,7 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
     double longitude = 0.0;
 
 
-    if(m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION){
+    if(m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION || m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION){
         getGeoCoordinates(pos.x(),pos.y(),m_time_row_geo[0],lat,longitude,false);
         m_lattitude = lat;
         m_longitude = longitude;
