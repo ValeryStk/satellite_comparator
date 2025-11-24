@@ -2,6 +2,7 @@ QT       += core gui xml multimedia multimediawidgets svg testlib
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 RC_FILE = resource.rc
+TARGET = ForestGuard
 CONFIG += c++11
 
 include(../pathes.pri)
