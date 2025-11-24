@@ -3,10 +3,17 @@
 #include <bekas/BaseTools/IniFileLoader.h>
 #include "bekas/version.h"
 #include <QMessageBox>
+#include <QProcess>
+#include <windows.h>
+#include <tlhelp32.h>
 #include <bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.h>
 #include <bekas/ProcessingModules/SpectrDataSaver.h>
 #include "text_constants.h"
 #include "MatFilesOperator.h"
+
+QString matlabAppDirRelativeName = "SpectraClassifier/application";
+QString matlabAppExeFile = "SpectraClassifier.exe";
+QString matFileName = "pathes.mat";
 
 CustomStringListModel::CustomStringListModel(QObject *parent)
     : QStringListModel(parent)
@@ -559,9 +566,7 @@ void UasvViewWindow::on_pushButtonToMatlab_clicked()
     //1, 2 - поменять потом на относительный путь
     MatFilesOperator matOper;
     QString exeDir = QCoreApplication::applicationDirPath();
-    QString matlabAppDirName = "SpectraClassifier/application";
-    QString matFileName = "pathes.mat";
-    QString fullMatPath = exeDir + "/" + matlabAppDirName + "/" + matFileName;
+    QString fullMatPath = exeDir + "/" + matlabAppDirRelativeName + "/" + matFileName;
 
     bool isReflectance = ui->pushButtonShowRfl->isChecked();
 
@@ -574,4 +579,36 @@ void UasvViewWindow::on_pushButtonToMatlab_clicked()
     params["matFilePath"] = fullMatPath;
     //4
     m_rpc->call("processBecasSpectra", QJsonValue(params));
+}
+
+bool UasvViewWindow::isProcessRunning(const QString &processName) {
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapshot == INVALID_HANDLE_VALUE) return false;
+
+    PROCESSENTRY32 pe;
+    pe.dwSize = sizeof(PROCESSENTRY32);
+
+    if (Process32First(hSnapshot, &pe)) {
+        do {
+            QString exe = QString::fromWCharArray(pe.szExeFile);
+            if (exe.compare(processName, Qt::CaseInsensitive) == 0) {
+                CloseHandle(hSnapshot);
+                return true;
+            }
+        } while (Process32Next(hSnapshot, &pe));
+    }
+    CloseHandle(hSnapshot);
+    return false;
+}
+
+void UasvViewWindow::on_pushButtonRunMatlabApp_clicked()
+{
+    QString exeDir = QCoreApplication::applicationDirPath();
+    QString fullExePath = exeDir + "/" + matlabAppDirRelativeName + "/" + matlabAppExeFile;
+
+    if (!isProcessRunning(matlabAppExeFile)) {
+        QProcess::startDetached(fullExePath);
+    } else {
+        QMessageBox::information(nullptr, "Info", "Application is already running");
+    }
 }
