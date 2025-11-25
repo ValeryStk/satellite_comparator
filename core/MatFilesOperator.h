@@ -18,7 +18,7 @@ class MatFilesOperator
 {
 public:
     MatFilesOperator();
-    void saveBecasData(const QList<QString> &specNames,
+    void saveBecasDataToMatFile(const QList<QString> &specNames,
                        const QString &pathFolderName, bool isReflectance,
                        const QString &fullMatPath);
     BecasDataFromMatlab readBecasDataFromMatlab(const QString &fullMatPath);

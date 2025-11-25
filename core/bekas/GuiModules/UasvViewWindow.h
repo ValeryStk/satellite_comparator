@@ -98,6 +98,10 @@ private slots:
 
     void on_pushButtonToMatlab_clicked();
 
+    void on_pushButtonRunMatlabApp_clicked();
+
+    bool isProcessRunning(const QString &processName);
+
 signals:
     void sendSampleForSatelliteComparator(QVector<double> x, QVector<double> y);
 
@@ -135,12 +139,6 @@ private:
     QString getSpecFileNameSuffix(int &currSpecIndex);
 
     void checkClassifAndSetupCBox(QString spClassification, QComboBox *settingCBox, QString textForEmpty);
-
-    void applySpectraColorsWithClusterNumbers(QStringListModel *model,
-                                              const QStringList &specNames,
-                                              const QVector<int>  &clusters,
-                                              const QVector<QColor> &colorsOfEachSpectr);
-
 
     Ui::UasvViewWindow *ui;                 //!< User interface
     SpectrPlotterWidget *m_plotterWidget;   //!< Plotter widget

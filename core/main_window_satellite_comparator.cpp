@@ -2188,21 +2188,13 @@ QImage MainWindowSatelliteComparator::createModifiedImage(const QImage &img,
     for (auto& f : futures) f.wait();
     return adjusted;
 }
+
 void MainWindowSatelliteComparator::initUdpRpcConnection()
 {
     m_rpc = new UdpJsonRpc(LOCAL_PORT,
                            QHostAddress::LocalHost, MATLAB_PORT, this);
 
     // Регистрируем методы, которые может вызывать Matlab app.
-
-    m_rpc->registerMethod("cppTestFunc",
-                          [this](const QJsonValue &params) -> QJsonValue {
-        qDebug()<<"cppTestFunc";
-        QVariantMap map = params.toVariant().toMap();
-        processTestMatlabRequest(map);
-        return NULL;
-    });
-
     m_rpc->registerMethod("processClassifiedBecasSpectra",
                           [this](const QJsonValue &params) -> QJsonValue {
         qDebug()<<"processClassifiedBecasSpectra";

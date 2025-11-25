@@ -3,10 +3,17 @@
 #include <bekas/BaseTools/IniFileLoader.h>
 #include "bekas/version.h"
 #include <QMessageBox>
+#include <QProcess>
+#include <windows.h>
+#include <tlhelp32.h>
 #include <bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.h>
 #include <bekas/ProcessingModules/SpectrDataSaver.h>
 #include "text_constants.h"
 #include "MatFilesOperator.h"
+
+QString matlabAppDirRelativeName = "SpectraClassifier/application";
+QString matlabAppExeFile = "SpectraClassifier.exe";
+QString matFileName = "pathes.mat";
 
 CustomStringListModel::CustomStringListModel(QObject *parent)
     : QStringListModel(parent)
@@ -157,72 +164,6 @@ void UasvViewWindow::updateListWithClustNums(const QStringList &specNames,
             model->setClusterForName(name, cluster);
             model->setColorForName(name, colorsOfEachSpectr.at(i));
         }
-    }
-}
-
-void UasvViewWindow::applySpectraColorsWithClusterNumbers(
-        QStringListModel *model,
-        const QStringList &specNames,
-        const QVector<int>  &clusters,
-         const QVector<QColor> &colorsOfEachSpectr )
-{
-    // 1) Сохраняем исходные названия (до первого добавления «– №»)
-    //    Нужно, чтобы при повторных вызовах менять текст по оригиналу.
-
-    const QStringList &allNames = m_listOfOriginSpectraNames;
-
-    int totalRows = model->rowCount();
-
-    // 2) Сбрасываем все строки: цвет → дефолт, текст → оригинальный
-    for (int row = 0; row < totalRows; ++row) {
-        QModelIndex idx = model->index(row, 0);
-        // Сброс цвета
-        model->setData(idx, QVariant(), Qt::ForegroundRole);
-        // Сброс текста к оригиналу
-        if (row < allNames.size()) {
-            model->setData(idx, allNames.at(row), Qt::DisplayRole);
-        }
-    }
-
-    // 3) Построим быстрый мэппинг «имя → row»
-    QHash<QString,int> name2row;
-    for (int row = 0; row < allNames.size(); ++row) {
-        name2row.insert(allNames.at(row), row);
-    }
-
-    // 4) Генерируем случайные яркие цвета для каждого уникального кластера
-    QSet<int> uniqClusters = QSet<int>::fromList(
-                QList<int>::fromVector(clusters)
-                );
-    QHash<int,QColor> clusterColors;
-    auto *rnd = QRandomGenerator::global();
-    for (int cl : uniqClusters) {
-        int h = rnd->bounded(360);
-        int s = rnd->bounded(150, 256);
-        int v = rnd->bounded(150, 256);
-        clusterColors.insert(cl, QColor::fromHsv(h, s, v));
-    }
-
-    // 5) Для каждой пары (specName, cluster) красим и меняем текст
-    for (int i = 0; i < specNames.size(); ++i) {
-        const QString &name    = specNames.at(i);
-        int           cluster = clusters.value(i, -1);
-
-        if (!name2row.contains(name))
-            continue;
-
-        int row = name2row.value(name);
-        QModelIndex idx = model->index(row, 0);
-
-        // 5.1) Достраиваем DisplayRole: "OldName – cluster"
-        QString newText = QString("%1 - %2")
-                .arg(allNames.at(row))
-                .arg(cluster);
-        model->setData(idx, newText, Qt::DisplayRole);
-
-        // 5.2) Ставим цвет текста
-        QColor col = clusterColors.value(cluster, Qt::black);
-        model->setData(idx, QBrush(col), Qt::ForegroundRole);
     }
 }
 
@@ -558,11 +499,12 @@ void UasvViewWindow::on_pushButtonToMatlab_clicked()
 
     //1, 2 - поменять потом на относительный путь
     MatFilesOperator matOper;
-    QString fullMatPath = "D://pathes.mat";
+    QString exeDir = QCoreApplication::applicationDirPath();
+    QString fullMatPath = exeDir + "/" + matlabAppDirRelativeName + "/" + matFileName;
 
     bool isReflectance = ui->pushButtonShowRfl->isChecked();
 
-    matOper.saveBecasData(m_filesParser->getSpectraNamesWithExtensionList(),
+    matOper.saveBecasDataToMatFile(m_filesParser->getSpectraNamesWithExtensionList(),
                           m_filesParser->getInputDirPathWithSlash(),
                           isReflectance,
                           fullMatPath);
@@ -571,4 +513,36 @@ void UasvViewWindow::on_pushButtonToMatlab_clicked()
     params["matFilePath"] = fullMatPath;
     //4
     m_rpc->call("processBecasSpectra", QJsonValue(params));
+}
+
+bool UasvViewWindow::isProcessRunning(const QString &processName) {
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapshot == INVALID_HANDLE_VALUE) return false;
+
+    PROCESSENTRY32 pe;
+    pe.dwSize = sizeof(PROCESSENTRY32);
+
+    if (Process32First(hSnapshot, &pe)) {
+        do {
+            QString exe = QString::fromWCharArray(pe.szExeFile);
+            if (exe.compare(processName, Qt::CaseInsensitive) == 0) {
+                CloseHandle(hSnapshot);
+                return true;
+            }
+        } while (Process32Next(hSnapshot, &pe));
+    }
+    CloseHandle(hSnapshot);
+    return false;
+}
+
+void UasvViewWindow::on_pushButtonRunMatlabApp_clicked()
+{
+    QString exeDir = QCoreApplication::applicationDirPath();
+    QString fullExePath = exeDir + "/" + matlabAppDirRelativeName + "/" + matlabAppExeFile;
+
+    if (!isProcessRunning(matlabAppExeFile)) {
+        QProcess::startDetached(fullExePath);
+    } else {
+        QMessageBox::information(nullptr, "Info", "Application is already running");
+    }
 }
