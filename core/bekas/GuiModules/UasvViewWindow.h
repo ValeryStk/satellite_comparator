@@ -140,12 +140,6 @@ private:
 
     void checkClassifAndSetupCBox(QString spClassification, QComboBox *settingCBox, QString textForEmpty);
 
-    void applySpectraColorsWithClusterNumbers(QStringListModel *model,
-                                              const QStringList &specNames,
-                                              const QVector<int>  &clusters,
-                                              const QVector<QColor> &colorsOfEachSpectr);
-
-
     Ui::UasvViewWindow *ui;                 //!< User interface
     SpectrPlotterWidget *m_plotterWidget;   //!< Plotter widget
     QString m_wTitle = "";                  //!< Main window title

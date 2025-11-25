@@ -295,6 +295,7 @@ BecasDataFromMatlab MatFilesOperator::readBecasDataFromMatlab(const QString &ful
         answerStruct.isSomeErrors = true;
         return answerStruct;
     }
+    qDebug()<<"Matlab app отправил сообщение с файлом по адресу: "<<fullMatPath;
     QString folderPath = readUtf8StringFromMat(matfp, "folderPath");
     QStringList specNamesList = readSpecNames(matfp, "specNames");
     QVector<int> classIndexes =  readSelectedClustIndxs(matfp, "selectedClustIndxs");
