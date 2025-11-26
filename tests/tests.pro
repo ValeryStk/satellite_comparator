@@ -16,3 +16,6 @@ bekas.file = bekas/bekas_Tests.pro
 
 SUBDIRS += MPFIT_wrapper
 MPFIT_wrapper.file = MPFIT_wrapper/MPFIT_wrapper_Tests.pro
+
+SUBDIRS += message_reporter
+message_reporter.file = message_reporter/message_reporter_Tests.pro
