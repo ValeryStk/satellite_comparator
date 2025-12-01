@@ -18,104 +18,283 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowSatelliteComparator; }
 QT_END_NAMESPACE
 
+/*!
+ * \brief Класс главного окна программы
+ * Предназначен для отображения загруженных спутниковых данных,
+ * управления поиском, визуализации градиентов усыхания для временного ряда,
+ * отображения спектральных данных для текущего пикселя
+ */
+
 class MainWindowSatelliteComparator : public QMainWindow
 {
     Q_OBJECT
 
 public:
+    //! Конмтруктор
     explicit MainWindowSatelliteComparator(QWidget *parent = nullptr);
+
+    //! Деструктор
     ~MainWindowSatelliteComparator();
 
 private slots:
+    //! Слот для изменения отображения каналов одиночного изображения
     void change_bands_and_show_image();
+
+    //! Слот для изменения каналов для временного ряда (загружается базовое изображение - самый поздний момент времени)
     void change_bands_and_show_image(const QVector<sad::BAND_DATA>& band_data);
+
+    //! Слот изменения каналов
     void change_bands();
+
+    //! Слот отображения слоя
+    //! \param id - идентификатор слоя
     void show_layer(const QString& id);
+
+    //!
+    //! \brief Слот сокрытия слоя
+    //! \param id - идентификатор слоя
+    //!
     void hide_layer(const QString& id);
+
+    //!
+    //! \brief Слот для удаления слоя со сцены
+    //! \param id - идентификатор слоя
+    //!
     void remove_scene_layer(const QString& id);
+
+    //!
+    //! \brief Слот для добавления региона интереса в список
+    //! \param id - идентификатор региона интереса
+    //!
     void add_roi_to_gui_list(const QString& id);
+
+    //!
+    //! \brief  Слот для расчёта среднего КСЯ по области
+    //! \param id - идентификатор региона интереса
+    //!
     void show_roi_average(const QString& id);
+
+    //!
+    //! \brief Слот расчёта градиента усыхания
+    //! \param id - идентификатор региона интереса
+    //!
     void calculate_time_row_gradient(const QString& id);
 
+    //! Слот для открытия данных Landsat 9
     void openLandsat9HeaderData();
+
+    //! Слот для открытия данных Landsat 8
     void openLandsat8HeaderData();
+
+    //! Слот для открытия данных Sentinel 2A
     void openSentinel2AHeaderData();
+
+    //! Слот для открытия данных Sentinel 2B
     void openSentinel2BHeaderData();
+
+    //! Слот для открытия данных Bekas
     void openBekasSpectraData();
+
+    //! Слот для открытия временного ряда
     void openTimeRowData();
+
+    //! Слот для нахождения области. Используется метрика выбранная пользователем.
     void findAreasUsingSelectedMetric();
+
+    //! Центрирование сцены на пикселе, который находится в центре перекрестия выбора образца для поиска
     void centerSceneOnCrossSquare();
 
+    //! \brief  Слот обработки события изменения положения курсора мыши на сцене
+    //! \param pos - текущая точка под курсором
     void cursorPointOnSceneChangedEvent(QPointF pos);
+
+    //! \brief Слот обработки события выбора образца для поиска
+    //! \param pos - выбранная точка изображения
     void samplePointOnSceneChangedEvent(QPointF pos);
 
+    //! \brief openCommonLandsatHeaderData
+    //! \param satellite_name - имя спутника
     void openCommonLandsatHeaderData(const QString& satellite_name);
+
+    //! \brief openCommonSentinelHeaderData
+    //! \param satellite_name
     void openCommonSentinelHeaderData(const QString& satellite_name);
+
+    //! \brief processBekasDataForComparing
+    //! \param x
+    //! \param y
     void processBekasDataForComparing(const QVector<double>& x,
                                       const QVector<double>& y);
+    //!
+    //! \brief showGoogleMap
+    //!
     void showGoogleMap();
+
+    //!
+    //! \brief resetColorsToDefaultRGB
+    //!
     void resetColorsToDefaultRGB();
+
+    //!
+    //! \brief handleJsonRpcResult
+    //! \param result
+    //!
     void handleJsonRpcResult(const QJsonValue &result);
 
+    //!
+    //! \brief processTestMatlabRequest
+    //! \param params
+    //!
     void processTestMatlabRequest(const QVariantMap &params);
+
+
+    //!
+    //! \brief processpClassifiedBecasSpectraMatlabRequest
+    //! \param params
+    //!
     void processpClassifiedBecasSpectraMatlabRequest(const QVariantMap &params);
+
+    //!
+    //! \brief updateImage
+    //!
     void updateImage();
 
 
 private:
+    //! \brief Указатель на графический интерфейс пользователя главного окна программы
     Ui::MainWindowSatelliteComparator* ui;
+
+    //! \brief Виджет временного ряда
     QWidget m_time_row_widget;
+
+    //! \brief Текстовое поле для оотображения географических координат
     QLabel* m_label_scene_coord;
+
+    //! \brief Графическая сцена
     QGraphicsScene* m_scene;
+
+    //! \brief Объект изображения графической сцены
     QGraphicsPixmapItem* m_image_item = nullptr;
+
+    //!
+    //! \brief m_layers_search_result_items
+    //!
     QHash<const QString,QGraphicsPixmapItem*>  m_layers_search_result_items;
+
+    //!
+    //! \brief m_layers_roi_items
+    //!
     QHash<const QString,QGraphicsPolygonItem*> m_layers_roi_items;
+
+    //!
+    //! \brief m_scene_cross_square_item
+    //!
     CrossSquare* m_scene_cross_square_item;
 
-
+    //!
+    //! \brief m_satelite_type
+    //!
     sad::SATELLITE_TYPE m_satelite_type = sad::UNKNOWN_SATELLITE;
+
+    //!
+    //! \brief m_dynamic_checkboxes_widget
+    //!
     DynamicCheckboxWidget* m_dynamic_checkboxes_widget;
+
+    //!
+    //! \brief m_sat_comparator
+    //!
     SatteliteComparator* m_sat_comparator;
 
+    //!
+    //! \brief getLandSat9BandsFromTxtFormat
+    //! \param path
+    //! \param available_gui_bands
+    //! \return
+    //!
     QStringList getLandSat9BandsFromTxtFormat(const QString& path,
                                               QList<QString> &available_gui_bands);
+
+    //!
+    //! \brief getLandSatSpaceCraftIDFromTxtFormat
+    //! \param path
+    //! \return
+    //!
     QString getLandSatSpaceCraftIDFromTxtFormat(const QString& path);
+
+    //!
+    //! \brief fillLandSat9ReflectanceMultAdd
+    //! \param path
+    //!
     void fillLandSat9ReflectanceMultAdd(const QString& path);
+
+    //!
+    //! \brief fillLandSat9GeoData
+    //! \param path
+    //!
     void fillLandSat9GeoData(const QString& path);
+
+    //!
+    //! \brief clearLandsat9DataBands
+    //!
     void clearLandsat9DataBands();
+
+    //!
+    //! \brief cursorPointOnSceneChangedEventTimeRow
+    //! \param pos
+    //! \param is_landsat
+    //!
     inline void cursorPointOnSceneChangedEventTimeRow(const QPointF& pos,
                                                       const bool is_landsat);
+
+    //!
+    //! \brief m_image_data
+    //!
     uchar* m_image_data;
+
+
+    //!
+    //! \brief readTiff
+    //! \param path
+    //! \param xSize
+    //! \param ySize
+    //! \return
+    //!
     uint16_t* readTiff(const QString& path,
                        int& xSize,
                        int& ySize);
 
+
+    //!
+    //! \brief read_landsat_bands_data
+    //! \param file_names
+    //!
     void read_landsat_bands_data(const QStringList& file_names);
     QVector<double> getLandsat8Speya(const int x, const int y);
     inline QVector<double> getLandsat8Ksy(const int x, const int y);
 
-    QString m_root_path;
-    QImage m_satellite_image;
-    uint16_t* m_landsat9_data_bands[LANDSAT_BANDS_NUMBER] = {nullptr};
-    QPair<int,int> m_landsat9_bands_image_sizes[LANDSAT_BANDS_NUMBER];
-    bool m_landsat9_missed_channels[LANDSAT_BANDS_NUMBER];
+    QString m_root_path;                                                        //!< Путьк открытой корневой директории
+    QImage m_satellite_image;                                                   //!< Базовое RGB изображение спутника
+    uint16_t* m_landsat9_data_bands[LANDSAT_BANDS_NUMBER] = {nullptr};          //!< Данные каналов для каждого канала
+    QPair<int,int> m_landsat9_bands_image_sizes[LANDSAT_BANDS_NUMBER];          //!< Размеры изображений для каждого канала
+    bool m_landsat9_missed_channels[LANDSAT_BANDS_NUMBER];                      //!< Не доступные для загрузки каналы
 
 
 
-    double m_radiance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];
-    double m_reflectance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];
-    double m_lattitude;
-    double m_longitude;
+    double m_radiance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];                 //!< Коэффициенты привидения значений АЦП в СПЭЯ
+    double m_reflectance_mult_add_arrays[LANDSAT_BANDS_NUMBER][2];              //!< Коэффициенты привидения значений АЦП в КСЯ
+    double m_lattitude;                                                         //!< географическая широта для выбранного пикселя
+    double m_longitude;                                                         //!< географическая долгота для выбранного пикселя
 
-    bool m_is_image_created;
-    bool m_is_bekas;
-    LayerList* m_layer_gui_list;
-    LayerList* m_layer_roi_list;
-    QCustomPlot* m_preview_plot;
-    QComboBox* m_comboBox_calculation_method;
-    QVector<double> m_landsat9_sample;
-    QVector<double> m_sentinel_sample;
-    QVector<double> m_bekas_sample;
+    bool m_is_image_created;                                                    //!< флаг созданного базового изображения
+    bool m_is_bekas;                                                            //!< флаг использования образца БЕКАС
+    LayerList* m_layer_gui_list;                                                //!< Список базовых слоёв
+    LayerList* m_layer_roi_list;                                                //!< Список областей интересов
+    QCustomPlot* m_preview_plot;                                                //!< Объект для отображения графика КСЯ для пикселя под курсором
+    QComboBox* m_comboBox_calculation_method;                                   //!< Комбобокс для выбора метрики поиска
+    QVector<double> m_landsat9_sample;                                          //!< Образец для поиска Landsat 9
+    QVector<double> m_sentinel_sample;                                          //!< Образец для поиска Sentinel
+    QVector<double> m_bekas_sample;                                             //!< Образец для поиска БЕКАС
 
 
 
