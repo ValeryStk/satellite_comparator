@@ -4,6 +4,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 RC_FILE = resource.rc
 TARGET = ForestGuard
 CONFIG += c++11
+CONFIG += windows
+CONFIG -= console
 
 include(../pathes.pri)
 include(gdal.pri)

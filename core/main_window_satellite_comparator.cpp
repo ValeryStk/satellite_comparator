@@ -2133,13 +2133,13 @@ QString MainWindowSatelliteComparator::getDateTimeFromXML(const QString& xmlFile
     QFile file(xmlFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Не удалось открыть файл:" << xmlFilePath;
-        return -1;
+        return "";
     }
     QDomDocument doc;
     if (!doc.setContent(&file)) {
         qWarning() << "Ошибка парсинга XML";
         file.close();
-        return -1;
+        return "";
     }
     file.close();
 
