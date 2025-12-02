@@ -1,4 +1,4 @@
-ForestGuardSource/
-_SETUP_OUTPUT/
+ForestGuardSource/*
+_SETUP_OUTPUT/*
 !ForestGuardSource/.gitkeep
 !_SETUP_OUTPUT/.gitkeep
