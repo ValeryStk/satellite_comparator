@@ -1,7 +1,6 @@
 #include "sam.h"
 
 #include <cmath>
-#include <QDebug>
 
 
 namespace sam {

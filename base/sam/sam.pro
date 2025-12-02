@@ -2,6 +2,7 @@ QT += core
 
 TEMPLATE = lib
 CONFIG += staticlib
+CONFIG -= console
 
 INCLUDEPATH += $$PWD
 
