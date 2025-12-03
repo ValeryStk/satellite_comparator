@@ -5,6 +5,7 @@ RC_FILE = resource.rc
 TARGET = ForestGuard
 CONFIG += c++11
 CONFIG += windows
+CONFIG += release
 CONFIG -= console
 
 include(../pathes.pri)
