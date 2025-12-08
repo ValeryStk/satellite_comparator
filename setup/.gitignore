@@ -2,3 +2,4 @@ ForestGuardSource/*
 _SETUP_OUTPUT/*
 !ForestGuardSource/.gitkeep
 !_SETUP_OUTPUT/.gitkeep
+!_SETUP_OUTPUT/ForestGuardSetup.exe
