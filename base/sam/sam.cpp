@@ -2,23 +2,20 @@
 
 #include <cmath>
 
-
 namespace sam {
 
 namespace detail {
 
 template <typename Container>
-inline ProcessingResult euclideanDistanceImpl(const Container& v1,
-                                              const Container& v2,
-                                              double& result,
-                                              ProcessingResult &pr)
-{
-
+inline ProcessingResult euclideanDistanceImpl(const Container &v1,
+                                              const Container &v2,
+                                              double &result,
+                                              ProcessingResult &pr) {
     result = 0;
     pr.message = "unexpected result";
     pr.status = STATUS_CODE::UNEXPECTED_RESULT;
 
-    if(v1.size()==0||v2.size()==0){
+    if (v1.size() == 0 || v2.size() == 0) {
         pr.message = "one of the vectors is empty";
         pr.status = STATUS_CODE::ONE_OF_THE_VECTORS_ARE_EMPTY;
         return pr;
@@ -26,7 +23,7 @@ inline ProcessingResult euclideanDistanceImpl(const Container& v1,
     if (v1.size() != v2.size()) {
         pr.message = "Vectors sizes are not the same";
         pr.status = STATUS_CODE::SIZES_ARE_NOT_THE_SAME;
-        return  pr;
+        return pr;
     }
     double sum = 0.0;
     for (int i = 0; i < static_cast<int>(v1.size()); ++i) {
@@ -38,19 +35,15 @@ inline ProcessingResult euclideanDistanceImpl(const Container& v1,
     return pr;
 }
 
-inline double calculate_normolized_difference(const double a,
-                                              const double b){
- return (a - b) / (a + b);
+inline double calculate_normolized_difference(const double a, const double b) {
+    return (a - b) / (a + b);
 }
 
-} //end namespace detail
-
+}  // end namespace detail
 
 inline ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
                                                    const QVector<double> &v2,
-                                                   double &result)
-{
-
+                                                   double &result) {
     ProcessingResult pr;
     detail::euclideanDistanceImpl(v1, v2, result, pr);
     return pr;
@@ -58,26 +51,27 @@ inline ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
 
 inline ProcessingResult calculateEuclideanDistance(const vector<double> &v1,
                                                    const vector<double> &v2,
-                                                   double &result
-                                                   )
-{
+                                                   double &result) {
     ProcessingResult pr;
     detail::euclideanDistanceImpl(v1, v2, result, pr);
     return pr;
 }
 
-double calculateNDVI(const double NIR_value,
-                     const double Red_value)
-{
-    double result = detail::calculate_normolized_difference(NIR_value, Red_value);
+double calculateNDVI(const double NIR_value, const double Red_value) {
+    double result =
+        detail::calculate_normolized_difference(NIR_value, Red_value);
     return result;
 }
 
-double calculateNDWI(const double NIR_value,
-                     const double SWIR1_value)
-{
-    double result = detail::calculate_normolized_difference(NIR_value, SWIR1_value);
+double calculateNDWI(const double NIR_value, const double SWIR1_value) {
+    double result =
+        detail::calculate_normolized_difference(NIR_value, SWIR1_value);
     return result;
 }
 
-} //end namespace sam
+double calculateDSWI(const double NIR_value, double Green_value,
+                     double SWIR1_value, double Red_value) {
+    return (NIR_value - Green_value) / (SWIR1_value + Red_value);
+}
+
+}  // end namespace sam
