@@ -1,16 +1,17 @@
 #include "sam.h"
 
+#include <QVector>
 #include <cmath>
+
+#include "satellites_bands_map.h"
 
 namespace sam {
 
 namespace detail {
 
 template <typename Container>
-inline ProcessingResult euclideanDistanceImpl(const Container &v1,
-                                              const Container &v2,
-                                              double &result,
-                                              ProcessingResult &pr) {
+ProcessingResult euclideanDistanceImpl(const Container &v1, const Container &v2,
+                                       double &result, ProcessingResult &pr) {
     result = 0;
     pr.message = "unexpected result";
     pr.status = STATUS_CODE::UNEXPECTED_RESULT;
@@ -27,7 +28,8 @@ inline ProcessingResult euclideanDistanceImpl(const Container &v1,
     }
     double sum = 0.0;
     for (int i = 0; i < static_cast<int>(v1.size()); ++i) {
-        sum += std::pow(v1[i] - v2[i], 2);
+        double diff = v1[i] - v2[i];
+        sum += diff * diff;
     }
     result = std::sqrt(sum);
     pr.message = "OK";
@@ -35,43 +37,59 @@ inline ProcessingResult euclideanDistanceImpl(const Container &v1,
     return pr;
 }
 
-inline double calculate_normolized_difference(const double a, const double b) {
-    return (a - b) / (a + b);
+double calculate_normalized_difference(const double a, const double b) {
+    double sum = a + b;
+    return std::abs(sum) < 1e-10 ? 0.0 : (a - b) / sum;
 }
 
 }  // end namespace detail
 
-inline ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
-                                                   const QVector<double> &v2,
-                                                   double &result) {
+ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
+                                            const QVector<double> &v2,
+                                            double &result) {
     ProcessingResult pr;
     detail::euclideanDistanceImpl(v1, v2, result, pr);
     return pr;
 }
 
-inline ProcessingResult calculateEuclideanDistance(const vector<double> &v1,
-                                                   const vector<double> &v2,
-                                                   double &result) {
+ProcessingResult calculateEuclideanDistance(const std::vector<double> &v1,
+                                            const std::vector<double> &v2,
+                                            double &result) {
     ProcessingResult pr;
     detail::euclideanDistanceImpl(v1, v2, result, pr);
     return pr;
 }
 
-double calculateNDVI(const double NIR_value, const double Red_value) {
-    double result =
-        detail::calculate_normolized_difference(NIR_value, Red_value);
-    return result;
+double calculateNDVI(const double nir1, const double red) {
+    return detail::calculate_normalized_difference(nir1, red);
 }
 
-double calculateNDWI(const double NIR_value, const double SWIR1_value) {
-    double result =
-        detail::calculate_normolized_difference(NIR_value, SWIR1_value);
-    return result;
+double calculateNDWI(const double nir1, const double swir1) {
+    return detail::calculate_normalized_difference(nir1, swir1);
 }
 
-double calculateDSWI(const double NIR_value, double Green_value,
-                     double SWIR1_value, double Red_value) {
-    return (NIR_value - Green_value) / (SWIR1_value + Red_value);
+double calculateDSWI(const double nir1, const double green, const double swir1,
+                     const double red) {
+    return (nir1 - green) / (swir1 + red);
+}
+
+double calculateEVI(const double nir1, double red, const double blue) {
+    static const double G = 2.5;
+    static const double C1 = 6.0;
+    static const double C2 = 7.5;
+    static const double L = 1;
+
+    return G * (nir1 - red) / (nir1 + (C1 * red - C2 * blue) + L);
+}
+
+BandIndices getVegetationIndices(sk satellite) {
+    BandIndices indices;
+    indices.nir1 = getBandIndex(sam::kNIR1, satellite);
+    indices.red = getBandIndex(sam::kRED, satellite);
+    indices.green = getBandIndex(sam::kGREEN, satellite);
+    indices.blue = getBandIndex(sam::kBLUE, satellite);
+    indices.swir1 = getBandIndex(sam::kSWIR1, satellite);
+    return indices;
 }
 
 }  // end namespace sam

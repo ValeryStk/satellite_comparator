@@ -4,9 +4,19 @@
 #include <QVector>
 #include <vector>
 
+#include "satellites_bands_map.h"
+
 namespace sam {
 
-using std::vector;
+struct BandIndices {
+    int nir1 = -1;
+    int red = -1;
+    int green = -1;
+    int blue = -1;
+    int swir1 = -1;
+};
+
+BandIndices getVegetationIndices(sam::sk satellite);
 
 enum class STATUS_CODE {
     OK = 0,
@@ -16,28 +26,31 @@ enum class STATUS_CODE {
 };
 
 struct ProcessingResult {
-    sam::STATUS_CODE status;
+    STATUS_CODE status;
     std::string message;
 };
 
-inline ProcessingResult calculateEuclideanDistance(const vector<double> &v1,
-                                                   const vector<double> &v2,
-                                                   double &result);
+ProcessingResult calculateEuclideanDistance(const std::vector<double> &v1,
+                                            const std::vector<double> &v2,
+                                            double &result);
 
-inline ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
-                                                   const QVector<double> &v2,
-                                                   double &result);
+ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
+                                            const QVector<double> &v2,
+                                            double &result);
 
 // Нормализованный индекс растительности NDVI (Оценка плотности и состояния
 // растительного покрова)
-inline double calculateNDVI(const double NIR_value, const double Red_value);
+inline double calculateNDVI(const double nir1, const double red);
 
 // Нормализованный индекс водного содержания NDWI (Определение водных объектов и
 // влажности растительности)
-inline double calculateNDWI(const double NIR_value, const double SWIR1_value);
+inline double calculateNDWI(const double nir1, const double swir1);
 
-inline double calculateDSWI(const double NIR_value, double Green_value,
-                            double SWIR1_value, double Red_value);
+inline double calculateDSWI(const double nir1, const double green,
+                            const double swir1, const double red);
+
+inline double calculateEVI(const double nir1, const double red,
+                           const double blue);
 
 }  // namespace sam
 
