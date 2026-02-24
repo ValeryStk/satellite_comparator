@@ -8,6 +8,7 @@ INCLUDEPATH += $$BEKAS_DIR $$CORE_DIR
 
 include($$BEKAS_DIR/bekas.pri)
 include($$CORE_DIR/matio.pri)
+include($$GUI_DIR/spectral_indices_widget.pri)
 
 HEADERS += bekas_UnitTests.h\
            $$CORE_DIR/udpjsonrpc.h\

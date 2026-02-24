@@ -2,6 +2,7 @@
 ROOT_PROJECT_DIR = $$PWD
 BASE_DIR         = $$PWD/base
 CORE_DIR         = $$PWD/core
+GUI_DIR          = $$PWD/gui
 HELP_DIR         = $$PWD/help
 TESTS_DIR        = $$PWD/tests
 THIRD_PARTY_DIR  = $$PWD/third_party

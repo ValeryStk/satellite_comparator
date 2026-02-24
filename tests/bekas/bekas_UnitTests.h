@@ -4,8 +4,7 @@
 #include <QObject>
 #include <QtTest>
 
-class bekas_UnitTests : public QObject
-{
+class bekas_UnitTests : public QObject {
     Q_OBJECT
 
 public:
@@ -18,7 +17,7 @@ private slots:
     void cleanup();
 
     void bekasTest();
-
+    void spectral_indices_widget();
 };
 
-#endif // UNITTESTS_H
+#endif  // UNITTESTS_H
