@@ -1,84 +1,72 @@
 #include "main_window_satellite_comparator.h"
-#include "ui_main_window_satellite_comparator.h"
 
-#include <algorithm>
+#include <MatFilesOperator.h>
+#include <matio.h>
+
+#include <QByteArray>
+#include <QDomDocument>
 #include <QFile>
 #include <QFileDialog>
-#include <QTextStream>
+#include <QSpacerItem>
 #include <QTextCodec>
-#include "libs/gdal/x64/include/gdal_priv.h"
-#include "libs/gdal/x64/include/cpl_conv.h"
-#include "libs/gdal/x64/include/cpl_string.h"
-#include "libs/gdal/x64/include/ogr_spatialref.h"
-#include "libs/gdal/x64/include/xtiffio.h"
-#include "libs/gdal/x64/include/geotiff.h"
-#include "libs/gdal/x64/include/geotiffio.h"
-#include "libs/gdal/x64/include/tiff.h"
-#include "libs/gdal/x64/include/tiffio.h"
-#include "json_utils.h"
-#include "QDebug"
-#include "QImageReader"
+#include <QTextStream>
+#include <algorithm>
+
+#include "QApplication"
 #include "QCheckBox"
+#include "QDebug"
 #include "QGraphicsPixmapItem"
 #include "QGraphicsProxyWidget"
-#include "qcustomplot.h"
-#include "progress_informator.h"
-#include "text_constants.h"
+#include "QImageReader"
+#include "cpl_conv.h"
+#include "davis.h"
 #include "google_maps_url_maker.h"
-#include <QSpacerItem>
-#include "satellite_xml_reader.h"
+#include "icon_generator.h"
+#include "image_viewer.h"
+#include "json_utils.h"
 #include "layer_list.h"
 #include "layer_roi_list.h"
-#include "icon_generator.h"
-#include "thread"
-#include <QDomDocument>
-#include "cpl_conv.h"
-#include "QApplication"
-#include <QByteArray>
-#include <matio.h>
-#include <MatFilesOperator.h>
-#include "version.h"
-#include "image_viewer.h"
-#include "view_sync_manager.h"
-#include "sam.cpp"
-#include "davis.h"
 #include "least_square_solver.h"
+#include "libs/gdal/x64/include/cpl_conv.h"
+#include "libs/gdal/x64/include/cpl_string.h"
+#include "libs/gdal/x64/include/gdal_priv.h"
+#include "libs/gdal/x64/include/geotiff.h"
+#include "libs/gdal/x64/include/geotiffio.h"
+#include "libs/gdal/x64/include/ogr_spatialref.h"
+#include "libs/gdal/x64/include/tiff.h"
+#include "libs/gdal/x64/include/tiffio.h"
+#include "libs/gdal/x64/include/xtiffio.h"
+#include "progress_informator.h"
+#include "qcustomplot.h"
+#include "sam.cpp"
+#include "satellite_xml_reader.h"
+#include "text_constants.h"
+#include "thread"
+#include "ui_main_window_satellite_comparator.h"
+#include "version.h"
+#include "view_sync_manager.h"
 
-
-
-
-
-
-class PixelGeo{
+class PixelGeo {
 public:
-    PixelGeo(sad::geoTransform geo){
-
+    PixelGeo(sad::geoTransform geo) {
         m_geo = geo;
         // Создаем проекцию UTM
         utmSrs.SetProjCS("UTM");
-        utmSrs.SetWellKnownGeogCS("WGS84"); // DATUM из MTL.json
-        utmSrs.SetUTM(m_geo.utmZone, true);   // Северное - true или южное - false полушарие
+        utmSrs.SetWellKnownGeogCS("WGS84");  // DATUM из MTL.json
+        utmSrs.SetUTM(m_geo.utmZone,
+                      true);  // Северное - true или южное - false полушарие
 
         // Создаем целевую проекцию (WGS84)
         wgs84Srs.SetWellKnownGeogCS("WGS84");
 
         // Создаем преобразователь координат
         transformer = OGRCreateCoordinateTransformation(&utmSrs, &wgs84Srs);
-
     }
 
+    ~PixelGeo() { OCTDestroyCoordinateTransformation(transformer); }
 
-    ~PixelGeo(){
-        OCTDestroyCoordinateTransformation(transformer);
-    }
-
-
-    void getGeoCoordinates(const int x,
-                           const int y,
-                           double& latitude,
-                           double& longitude)
-    {
-
+    void getGeoCoordinates(const int x, const int y, double& latitude,
+                           double& longitude) {
         // Вычисляем координаты в проекции UTM
         double utmX = m_geo.ulX + x * m_geo.resX + y * 0;
         double utmY = m_geo.ulY + x * 0 + y * m_geo.resY;
@@ -96,58 +84,45 @@ public:
         longitude = lon;
     }
 
-
 private:
     sad::geoTransform m_geo;
     OGRSpatialReference utmSrs;
     OGRSpatialReference wgs84Srs;
     OGRCoordinateTransformation* transformer;
-
 };
-
 
 PixelGeo* base_pixel_geo;
 
+constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER = 11000 * 11000 * 3;
 
-
-
-constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER  = 11000 * 11000 * 3;
-
-
-QCPTextElement *title_satellite_name;
-QVector<double> waves_landsat9 = {443,482,562,655,865,1610,2200};
-QVector<double> waves_landsat9_5 = {443,482,562,655,865};
-
+QCPTextElement* title_satellite_name;
+QVector<double> waves_landsat9 = {443, 482, 562, 655, 865, 1610, 2200};
+QVector<double> waves_landsat9_5 = {443, 482, 562, 655, 865};
 
 // C++ слушает порт 5001, MATLAB — 5000
 constexpr int LOCAL_PORT = 5001;
 constexpr int MATLAB_PORT = 5000;
 
-
 QList<QColor> distinctColors = {
-    QColor(255, 0, 0),      // Красный
-    QColor(0, 255, 0),      // Зеленый
-    QColor(0, 0, 255),      // Синий
-    QColor(255, 0, 255),    // Пурпурный
-    QColor(0, 255, 255),    // Бирюзовый
-    QColor(255, 165, 0),    // Оранжевый
-    QColor(128, 0, 128),    // Фиолетовый
-    QColor(0, 128, 128),    // Темно-бирюзовый
-    QColor(128, 128, 0),    // Оливковый
-    QColor(0, 0, 0),        // Чёрный
+    QColor(255, 0, 0),    // Красный
+    QColor(0, 255, 0),    // Зеленый
+    QColor(0, 0, 255),    // Синий
+    QColor(255, 0, 255),  // Пурпурный
+    QColor(0, 255, 255),  // Бирюзовый
+    QColor(255, 165, 0),  // Оранжевый
+    QColor(128, 0, 128),  // Фиолетовый
+    QColor(0, 128, 128),  // Темно-бирюзовый
+    QColor(128, 128, 0),  // Оливковый
+    QColor(0, 0, 0),      // Чёрный
 };
 
 ViewSyncManager* syncManager;
 QVector<ImageViewer*> m_viewers;
 
-
 namespace {
 
-void downsample_uint16(const uint16_t* input,
-                       uint16_t* output,
-                       const int width,
+void downsample_uint16(const uint16_t* input, uint16_t* output, const int width,
                        const int height) {
-
     int outWidth = width / 2;
     int outHeight = height / 2;
 
@@ -174,253 +149,246 @@ void copyQStringArray(const QString source[], QString destination[], int size) {
     }
 }
 
-
 QStringList commonSortFilesByDateTime(const QStringList& unsortedFiles,
-                                      const char splitter,
-                                      const int index){
+                                      const char splitter, const int index) {
     QStringList sortedScenes = unsortedFiles;
 
-    std::sort(sortedScenes.begin(), sortedScenes.end(), [=](const QString &a, const QString &b) {
-        QString dateStrA = a.split(splitter).value(index);
-        QString dateStrB = b.split(splitter).value(index);
-        QDate dateA = QDate::fromString(dateStrA.mid(0,8), "yyyyMMdd");
-        QDate dateB = QDate::fromString(dateStrB.mid(0,8), "yyyyMMdd");
-        return dateA < dateB;
-    });
+    std::sort(
+        sortedScenes.begin(), sortedScenes.end(),
+        [=](const QString& a, const QString& b) {
+            QString dateStrA = a.split(splitter).value(index);
+            QString dateStrB = b.split(splitter).value(index);
+            QDate dateA = QDate::fromString(dateStrA.mid(0, 8), "yyyyMMdd");
+            QDate dateB = QDate::fromString(dateStrB.mid(0, 8), "yyyyMMdd");
+            return dateA < dateB;
+        });
     return sortedScenes;
 }
 
 // Сортировка списка файлов Landsat по дате съёмки (4-й блок в имени файла)
-QStringList sortLandsatFilesByDateTime(const QStringList &unsortedFiles) {
-    return commonSortFilesByDateTime(unsortedFiles,'_',3);
+QStringList sortLandsatFilesByDateTime(const QStringList& unsortedFiles) {
+    return commonSortFilesByDateTime(unsortedFiles, '_', 3);
 }
 
 // Сортировка списка файлов Landsat по дате съёмки (4-й блок в имени файла)
-QStringList sortSentinelFilesByDateTime(const QStringList &unsortedFiles) {
-    return commonSortFilesByDateTime(unsortedFiles,'_',2);
+QStringList sortSentinelFilesByDateTime(const QStringList& unsortedFiles) {
+    return commonSortFilesByDateTime(unsortedFiles, '_', 2);
 }
 
-}// end of namespace
+}  // end of namespace
 
-
-
-MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindowSatelliteComparator)
-    , m_scene(new QGraphicsScene)
-    , m_scene_cross_square_item(new CrossSquare(100))
-    , m_dynamic_checkboxes_widget(nullptr)
-    , m_sat_comparator(new SatteliteComparator)
-    , m_image_data(new uchar[MAX_BYTES_IN_BASE_IMAGE_LAYER])
-    , m_is_image_created(false)
-    , m_is_bekas(false)
-    , m_scene_text_item_metric_value(new QGraphicsTextItem)
-    , bekas_window(nullptr)
-    , time_row_indexes_plot(new QCustomPlot)
-
+MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget* parent)
+    : QMainWindow(parent),
+      ui(new Ui::MainWindowSatelliteComparator),
+      m_scene(new QGraphicsScene),
+      m_scene_cross_square_item(new CrossSquare(100)),
+      m_dynamic_checkboxes_widget(nullptr),
+      m_sat_comparator(new SatteliteComparator),
+      m_image_data(new uchar[MAX_BYTES_IN_BASE_IMAGE_LAYER]),
+      m_is_image_created(false),
+      m_is_bekas(false),
+      m_scene_text_item_metric_value(new QGraphicsTextItem),
+      bekas_window(nullptr),
+      time_row_indexes_plot(new QCustomPlot)
 
 {
     ui->setupUi(this);
     m_label_scene_coord = new QLabel;
     ui->statusbar->addPermanentWidget(m_label_scene_coord);
     initUdpRpcConnection();
+    setUpUi();
     QString app_title_version = "%1 %2 %3";
-    setWindowTitle(app_title_version.arg(satc::app_name).arg(" ").arg(QString(VER_PRODUCTVERSION_STR)));
+    setWindowTitle(app_title_version.arg(satc::app_name)
+                       .arg(" ")
+                       .arg(QString(VER_PRODUCTVERSION_STR)));
     gdal_start_driver();
     initSentinelStructs();
     initLandsatStructs();
     makeConnectsForMenuActions();
     addBaseItemsToScene();
     setUpPreviewPlot();
-    connect(ui->graphicsView_satellite_image,SIGNAL(pointChanged(QPointF)),
-            this,SLOT(cursorPointOnSceneChangedEvent(QPointF)));
-    connect(ui->graphicsView_satellite_image,SIGNAL(sampleChanged(QPointF)),
-            this,SLOT(samplePointOnSceneChangedEvent(QPointF)));
+    connect(ui->graphicsView_satellite_image, SIGNAL(pointChanged(QPointF)),
+            this, SLOT(cursorPointOnSceneChangedEvent(QPointF)));
+    connect(ui->graphicsView_satellite_image, SIGNAL(sampleChanged(QPointF)),
+            this, SLOT(samplePointOnSceneChangedEvent(QPointF)));
     ui->graphicsView_satellite_image->setUp(m_scene);
     setUpToolWidget();
-    connect(ui->graphicsView_satellite_image,SIGNAL(roiPolygonAdded(const QString)),this,SLOT(add_roi_to_gui_list(const QString)));
-    connect(ui->widget_image_saturation_light_corrector,SIGNAL(slidersWereChanged()), SLOT(updateImage()));
+    connect(ui->graphicsView_satellite_image,
+            SIGNAL(roiPolygonAdded(const QString)), this,
+            SLOT(add_roi_to_gui_list(const QString)));
+    connect(ui->widget_image_saturation_light_corrector,
+            SIGNAL(slidersWereChanged()), SLOT(updateImage()));
 }
 
-MainWindowSatelliteComparator::~MainWindowSatelliteComparator()
-{
+MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
     delete ui;
     gdal_close_driver();
 }
 
-void MainWindowSatelliteComparator::openLandsat9HeaderData()
-{
+void MainWindowSatelliteComparator::openLandsat9HeaderData() {
     m_satelite_type = sad::LANDSAT_9;
     openCommonLandsatHeaderData(satc::satellite_name_landsat_9);
 }
 
-void MainWindowSatelliteComparator::openLandsat8HeaderData()
-{
+void MainWindowSatelliteComparator::openLandsat8HeaderData() {
     m_satelite_type = sad::LANDSAT_8;
     openCommonLandsatHeaderData(satc::satellite_name_landsat_8);
 }
 
-void MainWindowSatelliteComparator::openSentinel2AHeaderData()
-{
+void MainWindowSatelliteComparator::openSentinel2AHeaderData() {
     m_satelite_type = sad::SENTINEL_2A;
     openCommonSentinelHeaderData(satc::satellite_name_sentinel_2A);
 }
 
-void MainWindowSatelliteComparator::openSentinel2BHeaderData()
-{
+void MainWindowSatelliteComparator::openSentinel2BHeaderData() {
     m_satelite_type = sad::SENTINEL_2B;
     openCommonSentinelHeaderData(satc::satellite_name_sentinel_2B);
 }
 
-void MainWindowSatelliteComparator::openBekasSpectraData()
-{
+void MainWindowSatelliteComparator::openBekasSpectraData() {
     bekas_window = new UasvViewWindow;
     bekas_window->setWindowTitle(satc::app_name);
     bekas_window->setAttribute(Qt::WA_DeleteOnClose);
-    connect(bekas_window,SIGNAL(sendSampleForSatelliteComparator(QVector<double>, QVector<double>)),
-            this,SLOT(processBekasDataForComparing(QVector<double>,QVector<double>)));
+    connect(
+        bekas_window,
+        SIGNAL(
+            sendSampleForSatelliteComparator(QVector<double>, QVector<double>)),
+        this,
+        SLOT(processBekasDataForComparing(QVector<double>, QVector<double>)));
     bekas_window->setUDPobj(m_rpc);
     bekas_window->show();
 }
 
-void MainWindowSatelliteComparator::openTimeRowData()
-{
-    QString dir = QFileDialog::getExistingDirectory(this, "Выберите папку c временным рядом", QDir::homePath());
+void MainWindowSatelliteComparator::openTimeRowData() {
+    QString dir = QFileDialog::getExistingDirectory(
+        this, "Выберите папку c временным рядом", QDir::homePath());
     QDir directory(dir);
-    QStringList subdirs = directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-    qDebug()<<"before sorting by date time"<<subdirs;
-    if(subdirs.empty())return;
+    QStringList subdirs =
+        directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    qDebug() << "before sorting by date time" << subdirs;
+    if (subdirs.empty()) return;
 
     QStringList landsat_subdirs;
     QStringList sentinel_subdirs;
 
-    for(const auto &subdir:qAsConst(subdirs)){
-        if(subdir.contains("S2B")||subdir.contains("S2A")){
+    for (const auto& subdir : qAsConst(subdirs)) {
+        if (subdir.contains("S2B") || subdir.contains("S2A")) {
             sentinel_subdirs.append(subdir);
-        }else if(subdir.contains("LC09")||subdir.contains("LC08")){
+        } else if (subdir.contains("LC09") || subdir.contains("LC08")) {
             landsat_subdirs.append(subdir);
         }
     };
 
-    if(!landsat_subdirs.empty()&&!sentinel_subdirs.empty()){
-        uts::showWarnigMessage("Данные с разных спутников","В папке могут быть изображения только для одного типа спутника.");
+    if (!landsat_subdirs.empty() && !sentinel_subdirs.empty()) {
+        uts::showWarnigMessage(
+            "Данные с разных спутников",
+            "В папке могут быть изображения только для одного типа спутника.");
         return;
     }
-    if(landsat_subdirs.empty()&&sentinel_subdirs.empty()){
+    if (landsat_subdirs.empty() && sentinel_subdirs.empty()) {
         uts::showWarnigMessage("Нет данных", "Данные отсутсвуют");
         return;
     }
 
-
-
     QVector<sad::LANDSAT_METADATA_FILE> meta_datas;
     QVector<QString> date_time_row_stamps;
 
-    if(!landsat_subdirs.empty()){
+    if (!landsat_subdirs.empty()) {
         m_satelite_type = sad::TIME_ROW_LANDSAT_COMBINATION;
         subdirs = sortLandsatFilesByDateTime(landsat_subdirs);
-        qDebug()<<"landsat after sorting by date time"<<subdirs;
+        qDebug() << "landsat after sorting by date time" << subdirs;
         //!!!!! FILTER SUBDIRS
 
         m_time_row.resize(subdirs.size());
         m_time_row_geo.resize(m_time_row.size());
         m_time_row_qa_mask.resize(m_time_row.size());
-        for(int i=0;i<m_time_row.size();++i){
+        for (int i = 0; i < m_time_row.size(); ++i) {
             sad::LANDSAT_METADATA_FILE landsat_metadata;
             sad::geoTransform gt;
-            m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_MTL.json",
-                                                                 landsat_metadata,
-                                                                 gt);
+            m_time_row[i] = getDataFromJsonForLandsat8_9_TimeRow(
+                directory.absolutePath() + "/" + subdirs[i] + "/" + subdirs[i] +
+                    "_MTL.json",
+                landsat_metadata, gt);
             sad::QA_MASK_DATA qa_mask;
-            qa_mask.file_name = directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_QA_PIXEL.TIF";
-            qa_mask.data = readTiff(qa_mask.file_name,qa_mask.width,qa_mask.height);
-            //qDebug()<<"mask_widht -- mask_height: "<<qa_mask.width<<qa_mask.height;
+            qa_mask.file_name = directory.absolutePath() + "/" + subdirs[i] +
+                                "/" + subdirs[i] + "_QA_PIXEL.TIF";
+            qa_mask.data =
+                readTiff(qa_mask.file_name, qa_mask.width, qa_mask.height);
+            // qDebug()<<"mask_widht -- mask_height:
+            // "<<qa_mask.width<<qa_mask.height;
             m_time_row_qa_mask[i] = qa_mask;
 
-
             meta_datas.push_back(landsat_metadata);
-            date_time_row_stamps.push_back(landsat_metadata.image_attributes.date_acquired);
+            date_time_row_stamps.push_back(
+                landsat_metadata.image_attributes.date_acquired);
             m_time_row_geo[i] = gt;
-
         }
 
-    }else{
-      m_satelite_type = sad::TIME_ROW_SENTINEL_COMBINATION;
-      subdirs = sortSentinelFilesByDateTime(sentinel_subdirs);
-      qDebug()<<"sentinel time row after sorting by date time"<<subdirs;
+    } else {
+        m_satelite_type = sad::TIME_ROW_SENTINEL_COMBINATION;
+        subdirs = sortSentinelFilesByDateTime(sentinel_subdirs);
+        qDebug() << "sentinel time row after sorting by date time" << subdirs;
 
-      //WORK IN PROGRESS (WIP)
-      m_time_row.resize(subdirs.size());
-      m_time_row_geo.resize(m_time_row.size());
-      m_time_row_qa_mask.resize(m_time_row.size());
+        // WORK IN PROGRESS (WIP)
+        m_time_row.resize(subdirs.size());
+        m_time_row_geo.resize(m_time_row.size());
+        m_time_row_qa_mask.resize(m_time_row.size());
 
+        for (int i = 0; i < m_time_row.size(); ++i) {
+            sad::SENTINEL_METADATA sentinel_metadata;
+            sad::geoTransform gt;
+            m_time_row[i] = getDataForSentinel_TimeRow(
+                directory.absolutePath() + "/" + subdirs[i] + "/MTD_MSIL2A.xml",
+                sad::SENTINEL_2A, sentinel_metadata, gt);
+            /*sad::QA_MASK_DATA qa_mask;
+            qa_mask.file_name = directory.absolutePath() + "/" + subdirs[i]+"/"
+            +  subdirs[i] + "_QA_PIXEL.TIF"; qa_mask.data =
+            readTiff(qa_mask.file_name,qa_mask.width,qa_mask.height);
+            //qDebug()<<"mask_widht -- mask_height:
+            "<<qa_mask.width<<qa_mask.height; m_time_row_qa_mask[i] = qa_mask;*/
 
-
-
-      for(int i=0;i<m_time_row.size();++i){
-          sad::SENTINEL_METADATA sentinel_metadata;
-          sad::geoTransform gt;
-          m_time_row[i] = getDataForSentinel_TimeRow(directory.absolutePath() + "/" + subdirs[i]+"/MTD_MSIL2A.xml",
-                                                     sad::SENTINEL_2A,
-                                                     sentinel_metadata,
-                                                     gt);
-          /*sad::QA_MASK_DATA qa_mask;
-          qa_mask.file_name = directory.absolutePath() + "/" + subdirs[i]+"/" +  subdirs[i] + "_QA_PIXEL.TIF";
-          qa_mask.data = readTiff(qa_mask.file_name,qa_mask.width,qa_mask.height);
-          //qDebug()<<"mask_widht -- mask_height: "<<qa_mask.width<<qa_mask.height;
-          m_time_row_qa_mask[i] = qa_mask;*/
-
-
-          date_time_row_stamps.push_back(sentinel_metadata.image_attributes.date_acquired);
-          qDebug()<<"Date time row stamp: "<<sentinel_metadata.image_attributes.date_acquired;
-          m_time_row_geo[i] = gt;
-
-      }
-
-
-
-
+            date_time_row_stamps.push_back(
+                sentinel_metadata.image_attributes.date_acquired);
+            qDebug() << "Date time row stamp: "
+                     << sentinel_metadata.image_attributes.date_acquired;
+            m_time_row_geo[i] = gt;
+        }
     }
 
-
-
-
-
-
-    base_pixel_geo = new PixelGeo (m_time_row_geo[0]);
+    base_pixel_geo = new PixelGeo(m_time_row_geo[0]);
 
     // Будем добавлять график, если его не хватает для новых временных точек
-    while(m_time_row.size() > m_preview_plot->graphCount()){
+    while (m_time_row.size() > m_preview_plot->graphCount()) {
         m_preview_plot->addGraph();
-    };//
-    for(int i=0;i<m_preview_plot->graphCount();i++){
-        if(i<distinctColors.size()){
+    };  //
+    for (int i = 0; i < m_preview_plot->graphCount(); i++) {
+        if (i < distinctColors.size()) {
             m_preview_plot->graph(i)->setPen(QColor(distinctColors[i]));
         }
     }
     m_preview_plot->legend->setVisible(false);
     QStringList gui_available_bands;
-    for(int j=0;j<m_time_row[0].size();++j){
-        gui_available_bands<<m_time_row[0][j].gui_name;
+    for (int j = 0; j < m_time_row[0].size(); ++j) {
+        gui_available_bands << m_time_row[0][j].gui_name;
     };
-    if(m_dynamic_checkboxes_widget){
+    if (m_dynamic_checkboxes_widget) {
         m_dynamic_checkboxes_widget->clear();
         delete m_dynamic_checkboxes_widget;
     }
-    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(gui_available_bands,
-                                                            ui->verticalLayout_satellite_bands);
-    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
+    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(
+        gui_available_bands, ui->verticalLayout_satellite_bands);
+    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1, 2, 3});
     ui->statusbar->showMessage("");
     m_is_image_created = true;
     m_scene_cross_square_item->setVisible(true);
     ui->graphicsView_satellite_image->setIsSignal(true);
-    change_bands_and_show_image(m_time_row[0]);//NEED REFACTORING
+    change_bands_and_show_image(m_time_row[0]);  // NEED REFACTORING
 
     syncManager = new ViewSyncManager;
 
     auto imgs = get_cropedImages_for_time_row(m_time_row, m_satelite_type);
 
-    for(int i=0;i<imgs.size();++i){
+    for (int i = 0; i < imgs.size(); ++i) {
         ImageViewer* viewer = new ImageViewer;
         m_viewers.push_back(viewer);
         QPixmap pixmap = QPixmap::fromImage(imgs[i]);
@@ -432,11 +400,9 @@ void MainWindowSatelliteComparator::openTimeRowData()
         int r = distinctColors[i].red();
         int g = distinctColors[i].green();
         int b = distinctColors[i].blue();
-        QIcon icon = iut::createIcon(r,g,b,QSize(50,50));
-
+        QIcon icon = iut::createIcon(r, g, b, QSize(50, 50));
 
         QWidget* container = new QWidget(viewer);
-
 
         QHBoxLayout* layout = new QHBoxLayout(container);
 
@@ -453,11 +419,10 @@ void MainWindowSatelliteComparator::openTimeRowData()
         layout->addWidget(textLabel);
 
         // Стиль контейнера: полупрозрачный тёмный фон
-        container->setStyleSheet("background-color: rgba(0, 0, 0, 150); border-radius: 5px;");
+        container->setStyleSheet(
+            "background-color: rgba(0, 0, 0, 150); border-radius: 5px;");
         container->setLayout(layout);
     }
-
-
 
     QGridLayout* layout = new QGridLayout;
     int row = 0, col = 0;
@@ -473,35 +438,32 @@ void MainWindowSatelliteComparator::openTimeRowData()
     m_time_row_widget.setWindowTitle("Временной ряд");
     m_time_row_widget.show();
     // paintTimeRowBadForest(Qt::black);
-
 }
 
-void MainWindowSatelliteComparator::findAreasUsingSelectedMetric()
-{
+void MainWindowSatelliteComparator::findAreasUsingSelectedMetric() {
     QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
-    QString message = QString("Пожалуйста подождите,\nпроисходит поиск областей\n(%1)...").arg(m_comboBox_calculation_method->currentText());
-    ProgressInformator progress_info(ui->graphicsView_satellite_image,
-                                     message);
+    QString message =
+        QString("Пожалуйста подождите,\nпроисходит поиск областей\n(%1)...")
+            .arg(m_comboBox_calculation_method->currentText());
+    ProgressInformator progress_info(ui->graphicsView_satellite_image, message);
     progress_info.show();
     QApplication::processEvents();
     paintSamplePoints(color);
     progress_info.close();
 }
 
-void MainWindowSatelliteComparator::centerSceneOnCrossSquare()
-{
+void MainWindowSatelliteComparator::centerSceneOnCrossSquare() {
     ui->graphicsView_satellite_image->centerOn(m_scene_cross_square_item);
     ui->graphicsView_satellite_image->setTransform(QTransform());
 }
 
-void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
-{
-
-    if(m_satelite_type==sad::TIME_ROW_LANDSAT_COMBINATION){
-        cursorPointOnSceneChangedEventTimeRow(pos,true);
+void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
+    QPointF pos) {
+    if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
+        cursorPointOnSceneChangedEventTimeRow(pos, true);
         return;
-    }else if(m_satelite_type==sad::TIME_ROW_SENTINEL_COMBINATION){
-        cursorPointOnSceneChangedEventTimeRow(pos,false);
+    } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
+        cursorPointOnSceneChangedEventTimeRow(pos, false);
         return;
     }
     QVector<double> data;
@@ -510,38 +472,43 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
     QVector<double> trimmed_satellite_data;
 
     const QString x_y = "x: %1   y:%2";
-    QString x_y_message = x_y.arg(QString::number(pos.x()),QString::number(pos.y()));
+    QString x_y_message =
+        x_y.arg(QString::number(pos.x()), QString::number(pos.y()));
     m_label_scene_coord->setText(x_y_message);
 
-    if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
-        data = getLandsat8Ksy(pos.x(),pos.y());
-    }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
-        auto w_k = getSentinelKsy(pos.x(),pos.y());
+    if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
+        m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
+        data = getLandsat8Ksy(pos.x(), pos.y());
+    } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+        auto w_k = getSentinelKsy(pos.x(), pos.y());
         data = w_k.second;
         waves = w_k.first;
-        if(m_sentinel_sample.empty()){
-            sample = data;//TEMPORARY
-        }else{
+        if (m_sentinel_sample.empty()) {
+            sample = data;  // TEMPORARY
+        } else {
             sample = m_sentinel_sample;
         }
         trimmed_satellite_data = data;
     }
-    if(data.empty()){
+    if (data.empty()) {
         return;
     }
 
-    if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
-
-        if(data.size()!=(int)LANDSAT_BANDS_NUMBER-4){
-            qDebug()<<"ERROR SIZE:"<<data.size();
+    if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
+        m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
+        if (data.size() != (int)LANDSAT_BANDS_NUMBER - 4) {
+            qDebug() << "ERROR SIZE:" << data.size();
             return;
         }
-        if(m_is_bekas){
+        if (m_is_bekas) {
             sample = m_bekas_sample;
             waves = waves_landsat9_5;
-            size_t elems_to_copy = std::min(static_cast<size_t>(data.size()), static_cast<size_t>(5));
-            trimmed_satellite_data = data.mid(0,static_cast<int>(elems_to_copy));
-        }else{
+            size_t elems_to_copy = std::min(static_cast<size_t>(data.size()),
+                                            static_cast<size_t>(5));
+            trimmed_satellite_data =
+                data.mid(0, static_cast<int>(elems_to_copy));
+        } else {
             sample = m_landsat9_sample;
             waves = waves_landsat9;
             trimmed_satellite_data = data;
@@ -554,52 +521,53 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(QPointF pos)
     m_preview_plot->graph(1)->setData(waves, sample);
 
     double result = 999;
-    if(m_comboBox_calculation_method->currentText()==satc::spectral_angle){
-        result = calculateSpectralAngle(trimmed_satellite_data,sample);
-    }else if(m_comboBox_calculation_method->currentText()==satc::euclid_metrika){
-        result = euclideanDistance(trimmed_satellite_data,sample);
+    if (m_comboBox_calculation_method->currentText() == satc::spectral_angle) {
+        result = calculateSpectralAngle(trimmed_satellite_data, sample);
+    } else if (m_comboBox_calculation_method->currentText() ==
+               satc::euclid_metrika) {
+        result = euclideanDistance(trimmed_satellite_data, sample);
     }
-    m_scene_text_item_metric_value->setPos(pos.x(),pos.y()+5);
+    m_scene_text_item_metric_value->setPos(pos.x(), pos.y() + 5);
     m_scene_text_item_metric_value->setPlainText(QString::number(result));
     m_preview_plot->rescaleAxes(true);
     m_preview_plot->replot();
 
-    double lat,lon;
-    auto geo_coord_str = getGeoCoordinates(pos.x(),pos.y(),m_geo,lat,lon,true);
+    double lat, lon;
+    auto geo_coord_str =
+        getGeoCoordinates(pos.x(), pos.y(), m_geo, lat, lon, true);
     ui->statusbar->showMessage(geo_coord_str);
 }
 
-void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
-{
-
-
+void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
+    QPointF pos) {
     m_is_bekas = false;
     m_scene_cross_square_item->setPos(pos);
     m_scene_cross_square_item->update();
     double lat = 0.0;
     double longitude = 0.0;
 
-
-    if(m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION || m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION){
-        getGeoCoordinates(pos.x(),pos.y(),m_time_row_geo[0],lat,longitude,false);
+    if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION ||
+        m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
+        getGeoCoordinates(pos.x(), pos.y(), m_time_row_geo[0], lat, longitude,
+                          false);
         m_lattitude = lat;
         m_longitude = longitude;
         return;
     }
-    getGeoCoordinates(pos.x(),pos.y(),m_geo,lat,longitude,false);
+    getGeoCoordinates(pos.x(), pos.y(), m_geo, lat, longitude, false);
     m_lattitude = lat;
     m_longitude = longitude;
-
 
     QVector<double> data;
     QVector<double> sample;
     QVector<double> waves;
-    if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8){
-        data = getLandsat8Ksy(pos.x(),pos.y());
+    if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9 ||
+        m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8) {
+        data = getLandsat8Ksy(pos.x(), pos.y());
 
-        if(data.empty())return;
-        if(data.size()!=(int)LANDSAT_BANDS_NUMBER-4){
-            qDebug()<<"ERROR SIZE:"<<data.size();
+        if (data.empty()) return;
+        if (data.size() != (int)LANDSAT_BANDS_NUMBER - 4) {
+            qDebug() << "ERROR SIZE:" << data.size();
             return;
         }
 
@@ -607,15 +575,14 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
         sample = m_landsat9_sample;
         waves = waves_landsat9;
 
-
-    }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
-        auto w_k = getSentinelKsy(pos.x(),pos.y());
+    } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+        auto w_k = getSentinelKsy(pos.x(), pos.y());
         data = w_k.second;
         waves = w_k.first;
         m_sentinel_sample = data;
         sample = m_sentinel_sample;
     }
-
 
     m_preview_plot->graph(0)->data().clear();
     m_preview_plot->graph(1)->data().clear();
@@ -623,14 +590,14 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(QPointF pos)
     m_preview_plot->graph(1)->setData(waves, sample);
     m_preview_plot->rescaleAxes(true);
     m_preview_plot->replot();
-
 }
 
-void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& satellite_name)
-{
-    QString openSatMessage = QString("Открыть заголовочный файл %1").arg(satellite_name);
-    QString headerName =  QFileDialog::getOpenFileName(this,openSatMessage,"",
-                                                       "файлы(*_MTL.json *_MTL.txt *_MTL.xml)");
+void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
+    const QString& satellite_name) {
+    QString openSatMessage =
+        QString("Открыть заголовочный файл %1").arg(satellite_name);
+    QString headerName = QFileDialog::getOpenFileName(
+        this, openSatMessage, "", "файлы(*_MTL.json *_MTL.txt *_MTL.xml)");
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
     clear_satellite_data();
@@ -638,125 +605,160 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(const QString& s
     m_scene_cross_square_item->setVisible(false);
     QFile file(headerName);
     static bool isHeaderValid = false;
-    if(file.exists()==false)return;
-    if(m_dynamic_checkboxes_widget)m_dynamic_checkboxes_widget->clear();
+    if (file.exists() == false) return;
+    if (m_dynamic_checkboxes_widget) m_dynamic_checkboxes_widget->clear();
     QFileInfo fi(headerName);
     m_root_path = fi.path();
     const QString extension = fi.completeSuffix();
-    QString dataLoadingMessage = QString("Загрузка данных %1...").arg(satellite_name);
+    QString dataLoadingMessage =
+        QString("Загрузка данных %1...").arg(satellite_name);
     ui->statusbar->showMessage(dataLoadingMessage);
     QApplication::processEvents();
     QList<QString> landsat_gui_available_bands;
 
-    if(extension == "json"){
+    if (extension == "json") {
         QJsonObject jo;
-        jsn::getJsonObjectFromFile(headerName,jo);
-        if(jo.contains("LANDSAT_METADATA_FILE")){
-            QJsonObject image_attributes = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","IMAGE_ATTRIBUTES"}).toObject();
-            title_satellite_name->setText(image_attributes.value("SPACECRAFT_ID").toString());
-            qDebug()<<image_attributes.value("DATE_ACQUIRED").toString();
-            qDebug()<<image_attributes.value("SCENE_CENTER_TIME").toString();
-            QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
-            QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"});
+        jsn::getJsonObjectFromFile(headerName, jo);
+        if (jo.contains("LANDSAT_METADATA_FILE")) {
+            QJsonObject image_attributes =
+                jsn::getValueByPath(
+                    jo, {"LANDSAT_METADATA_FILE", "IMAGE_ATTRIBUTES"})
+                    .toObject();
+            title_satellite_name->setText(
+                image_attributes.value("SPACECRAFT_ID").toString());
+            qDebug() << image_attributes.value("DATE_ACQUIRED").toString();
+            qDebug() << image_attributes.value("SCENE_CENTER_TIME").toString();
+            QJsonValue value = jsn::getValueByPath(
+                jo, {"LANDSAT_METADATA_FILE", "PRODUCT_CONTENTS"});
+            QJsonValue radiance_value = jsn::getValueByPath(
+                jo, {"LANDSAT_METADATA_FILE",
+                     "LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"});
             QJsonObject check_bands = value.toObject();
             QJsonObject radiance = radiance_value.toObject();
-            QJsonObject projection = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PROJECTION_ATTRIBUTES"}).toObject();
+            QJsonObject projection =
+                jsn::getValueByPath(
+                    jo, {"LANDSAT_METADATA_FILE", "PROJECTION_ATTRIBUTES"})
+                    .toObject();
             m_geo.utmZone = projection["UTM_ZONE"].toString().toDouble();
-            m_geo.ulX = projection["CORNER_UL_PROJECTION_X_PRODUCT"].toString().toDouble();
-            m_geo.ulY = projection["CORNER_UL_PROJECTION_Y_PRODUCT"].toString().toDouble();
-            m_geo.resX = projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
-            m_geo.resY = - m_geo.resX;
+            m_geo.ulX = projection["CORNER_UL_PROJECTION_X_PRODUCT"]
+                            .toString()
+                            .toDouble();
+            m_geo.ulY = projection["CORNER_UL_PROJECTION_Y_PRODUCT"]
+                            .toString()
+                            .toDouble();
+            m_geo.resX =
+                projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
+            m_geo.resY = -m_geo.resX;
 
-            for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
-                if(check_bands.value(sad::landsat9_bands_keys[i]).isUndefined()){
-                    qDebug()<<"missed band: "<<sad::landsat9_bands_keys[i];
+            for (int i = 0; i < LANDSAT_BANDS_NUMBER; ++i) {
+                if (check_bands.value(sad::landsat9_bands_keys[i])
+                        .isUndefined()) {
+                    qDebug() << "missed band: " << sad::landsat9_bands_keys[i];
                     m_landsat9_missed_channels[i] = true;
                     continue;
                 }
                 m_landsat9_missed_channels[i] = false;
-                landsat_gui_available_bands.append(sad::landsat_bands_gui_names[i]);
-                auto band_file_name = check_bands[sad::landsat9_bands_keys[i]].toString();
+                landsat_gui_available_bands.append(
+                    sad::landsat_bands_gui_names[i]);
+                auto band_file_name =
+                    check_bands[sad::landsat9_bands_keys[i]].toString();
                 int xS;
                 int yS;
-                m_landsat9_data_bands[i] = readTiff(fi.path()+"/"+band_file_name,xS,yS);
-                m_landsat9_bands_image_sizes[i] = {xS,yS};
+                m_landsat9_data_bands[i] =
+                    readTiff(fi.path() + "/" + band_file_name, xS, yS);
+                m_landsat9_bands_image_sizes[i] = {xS, yS};
 
-                if(i<7){//TODO TEST Есть только до 9 канала TEST REFLECTANCE_MULT_BAND_9  REFLECTANCE_ADD_BAND_9
-                    double mult_refl = radiance[sad::landsat9_mult_reflectence_keys[i]].toString().toDouble();
-                    double add_refl = radiance[sad::landsat9_add_reflectence_keys[i]].toString().toDouble();
+                if (i < 7) {  // TODO TEST Есть только до 9 канала TEST
+                              // REFLECTANCE_MULT_BAND_9  REFLECTANCE_ADD_BAND_9
+                    double mult_refl =
+                        radiance[sad::landsat9_mult_reflectence_keys[i]]
+                            .toString()
+                            .toDouble();
+                    double add_refl =
+                        radiance[sad::landsat9_add_reflectence_keys[i]]
+                            .toString()
+                            .toDouble();
                     m_reflectance_mult_add_arrays[i][0] = mult_refl;
                     m_reflectance_mult_add_arrays[i][1] = add_refl;
                 }
             }
             isHeaderValid = true;
-        }else{
-            return;// Пока работает только LANDSAT 9
+        } else {
+            return;  // Пока работает только LANDSAT 9
         };
-    }else if(extension == "txt"){
-        auto file_names = getLandSat9BandsFromTxtFormat(headerName,
-                                                        landsat_gui_available_bands);
-        //qDebug()<<"TXT filenames: "<<file_names;
-        title_satellite_name->setText(getLandSatSpaceCraftIDFromTxtFormat(headerName));
+    } else if (extension == "txt") {
+        auto file_names = getLandSat9BandsFromTxtFormat(
+            headerName, landsat_gui_available_bands);
+        // qDebug()<<"TXT filenames: "<<file_names;
+        title_satellite_name->setText(
+            getLandSatSpaceCraftIDFromTxtFormat(headerName));
         read_landsat_bands_data(file_names);
         fillLandSat9ReflectanceMultAdd(headerName);
         fillLandSat9GeoData(headerName);
         isHeaderValid = true;
-    }else if(extension == "xml"){
+    } else if (extension == "xml") {
         auto data = satc::readLandsatXmlHeader(headerName);
         title_satellite_name->setText(data.image_attributes.spacecraft_id);
         QStringList file_names;
-        for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
-            if(data.landsat9_missed_channels[i])continue;
+        for (int i = 0; i < LANDSAT_BANDS_NUMBER; ++i) {
+            if (data.landsat9_missed_channels[i]) continue;
             file_names.append(data.product_contents.file_name_bands[i]);
             landsat_gui_available_bands.append(sad::landsat_bands_gui_names[i]);
-            m_reflectance_mult_add_arrays[i][0] = data.level2_surface_reflectance_parameters.reflectance_mult_band[i].toDouble();
-            m_reflectance_mult_add_arrays[i][1] = data.level2_surface_reflectance_parameters.reflectance_add_band[i].toDouble();
+            m_reflectance_mult_add_arrays[i][0] =
+                data.level2_surface_reflectance_parameters
+                    .reflectance_mult_band[i]
+                    .toDouble();
+            m_reflectance_mult_add_arrays[i][1] =
+                data.level2_surface_reflectance_parameters
+                    .reflectance_add_band[i]
+                    .toDouble();
         }
         read_landsat_bands_data(file_names);
         m_geo.utmZone = data.projection_attributes.utm_zone.toDouble();
-        m_geo.resX = data.projection_attributes.grid_cell_size_reflective.toDouble();
+        m_geo.resX =
+            data.projection_attributes.grid_cell_size_reflective.toDouble();
         m_geo.resY = -m_geo.resX;
-        m_geo.ulX = data.projection_attributes.corner_ul_projection_x_product.toDouble();
-        m_geo.ulY = data.projection_attributes.corner_ul_projection_y_product.toDouble();
-        if(!data.isHeaderValid)return;
+        m_geo.ulX = data.projection_attributes.corner_ul_projection_x_product
+                        .toDouble();
+        m_geo.ulY = data.projection_attributes.corner_ul_projection_y_product
+                        .toDouble();
+        if (!data.isHeaderValid) return;
         isHeaderValid = true;
     }
-    if(isHeaderValid == false){
+    if (isHeaderValid == false) {
         m_satelite_type = sad::UNKNOWN_SATELLITE;
         return;
     }
 
-
-    //fill universal struct instead of specific (WORK IN PROGRESS)
-    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
-        if(m_landsat9_missed_channels[sad::sorted_landsat_bands_order_by_wavelength[i]])continue;
-        qDebug()<<"----check test---"<<sad::landsat_bands_gui_names[sad::sorted_landsat_bands_order_by_wavelength[i]];
+    // fill universal struct instead of specific (WORK IN PROGRESS)
+    for (int i = 0; i < LANDSAT_BANDS_NUMBER; ++i) {
+        if (m_landsat9_missed_channels
+                [sad::sorted_landsat_bands_order_by_wavelength[i]])
+            continue;
+        qDebug() << "----check test---"
+                 << sad::landsat_bands_gui_names
+                        [sad::sorted_landsat_bands_order_by_wavelength[i]];
     }
 
-
-
-    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(landsat_gui_available_bands,
-                                                            ui->verticalLayout_satellite_bands);
-    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
-    connect(m_dynamic_checkboxes_widget,
-            SIGNAL(choosed_bands_changed()),
-            this,SLOT(change_bands_and_show_image()));
-
+    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(
+        landsat_gui_available_bands, ui->verticalLayout_satellite_bands);
+    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1, 2, 3});
+    connect(m_dynamic_checkboxes_widget, SIGNAL(choosed_bands_changed()), this,
+            SLOT(change_bands_and_show_image()));
 
     change_bands_and_show_image();
     ui->statusbar->showMessage("");
     m_is_image_created = true;
     m_scene_cross_square_item->setVisible(true);
     ui->graphicsView_satellite_image->setIsSignal(true);
-
 }
 
-void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& satellite_name)
-{
-    QString openSatMessage = QString("Открыть заголовочный файл %1").arg(satellite_name);
-    QString headerName =  QFileDialog::getOpenFileName(this,openSatMessage,"",
-                                                       "файлы(MTD_MSIL2A.xml)");
-
+void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
+    const QString& satellite_name) {
+    QString openSatMessage =
+        QString("Открыть заголовочный файл %1").arg(satellite_name);
+    QString headerName = QFileDialog::getOpenFileName(this, openSatMessage, "",
+                                                      "файлы(MTD_MSIL2A.xml)");
 
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
@@ -779,7 +781,8 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
     file.close();
     QFileInfo fi(headerName);
     m_root_path = fi.path();
-    QString dataLoadingMessage = QString("Загрузка данных %1...").arg(satellite_name);
+    QString dataLoadingMessage =
+        QString("Загрузка данных %1...").arg(satellite_name);
     ui->statusbar->showMessage(dataLoadingMessage);
     QApplication::processEvents();
 
@@ -796,52 +799,61 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
             // Ищем точное вхождение ключа как часть имени файла
             if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
                 filteredFiles << file;
-                break; // нашли — переходим к следующему файлу
+                break;  // нашли — переходим к следующему файлу
             }
         }
     }
     QStringList finalFiles;
     QMap<QString, QString> bestResolutionForBand;
-    const QStringList priorityOrder = { "R20m","R10m","R60m" };
+    const QStringList priorityOrder = {"R20m", "R10m", "R60m"};
 
     // Для каждого band ищем путь с наивысшим приоритетом по разрешению
     for (const QString& bandKey : sad::sentinel_bands_keys) {
         for (const QString& resolution : priorityOrder) {
             for (const QString& file : qAsConst(filteredFiles)) {
-                if (file.contains(resolution) && file.contains("_" + bandKey + "_")) {
+                if (file.contains(resolution) &&
+                    file.contains("_" + bandKey + "_")) {
                     bestResolutionForBand[bandKey] = file;
-                    break; // нашли лучший — переходим к следующему band
+                    break;  // нашли лучший — переходим к следующему band
                 }
             }
-            if (bestResolutionForBand.contains(bandKey)) break; // если уже найден — не ищем в меньших разрешениях
+            if (bestResolutionForBand.contains(bandKey))
+                break;  // если уже найден — не ищем в меньших разрешениях
         }
     }
 
     // Собираем финальный список
     finalFiles = bestResolutionForBand.values();
-    //qDebug()<<finalFiles;
+    // qDebug()<<finalFiles;
     title_satellite_name->setText(satellite_name);
 
     for (const QString& file : qAsConst(finalFiles)) {
         for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
             if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
-                m_sentinel_metadata.sentinel_missed_channels[i] = false; // Канал найден — не пропущен
+                m_sentinel_metadata.sentinel_missed_channels[i] =
+                    false;  // Канал найден — не пропущен
                 m_sentinel_metadata.files[i] = file;
                 break;
             }
         }
     }
 
-    if(m_dynamic_checkboxes_widget)m_dynamic_checkboxes_widget->clear();
+    if (m_dynamic_checkboxes_widget) m_dynamic_checkboxes_widget->clear();
     QList<QString> availableBandNames;
     QString gui_channels[SENTINEL_BANDS_NUMBER];
     double central_waves[SENTINEL_BANDS_NUMBER];
-    if(m_satelite_type == sad::SENTINEL_2A){
-        copyQStringArray(sad::sentinel_2A_gui_band_names,gui_channels,SENTINEL_BANDS_NUMBER);
-        std::copy(sad::sentinel_2A_central_wave_lengths,sad::sentinel_2A_central_wave_lengths+SENTINEL_BANDS_NUMBER,central_waves);
-    }else if(m_satelite_type == sad::SENTINEL_2B){
-        copyQStringArray(sad::sentinel_2B_gui_band_names,gui_channels,SENTINEL_BANDS_NUMBER);
-        std::copy(sad::sentinel_2B_central_wave_lengths,sad::sentinel_2B_central_wave_lengths+SENTINEL_BANDS_NUMBER,central_waves);
+    if (m_satelite_type == sad::SENTINEL_2A) {
+        copyQStringArray(sad::sentinel_2A_gui_band_names, gui_channels,
+                         SENTINEL_BANDS_NUMBER);
+        std::copy(sad::sentinel_2A_central_wave_lengths,
+                  sad::sentinel_2A_central_wave_lengths + SENTINEL_BANDS_NUMBER,
+                  central_waves);
+    } else if (m_satelite_type == sad::SENTINEL_2B) {
+        copyQStringArray(sad::sentinel_2B_gui_band_names, gui_channels,
+                         SENTINEL_BANDS_NUMBER);
+        std::copy(sad::sentinel_2B_central_wave_lengths,
+                  sad::sentinel_2B_central_wave_lengths + SENTINEL_BANDS_NUMBER,
+                  central_waves);
     }
 
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
@@ -854,33 +866,34 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
 
             bool isResolutionMissed = true;
             for (const QString& resolution : priorityOrder) {
-                if (data.file_name.contains(resolution)){
+                if (data.file_name.contains(resolution)) {
                     data.resolution_in_pixel_meters = resolution;
-                    data.width = sad::sentinel_resolutions.value(resolution).first;
-                    data.height = sad::sentinel_resolutions.value(resolution).second;
+                    data.width =
+                        sad::sentinel_resolutions.value(resolution).first;
+                    data.height =
+                        sad::sentinel_resolutions.value(resolution).second;
                     isResolutionMissed = false;
-                    qDebug()<<"r, w, h: "<<data.resolution_in_pixel_meters<<data.width<<data.height;
+                    qDebug() << "r, w, h: " << data.resolution_in_pixel_meters
+                             << data.width << data.height;
                     break;
                 };
             }
-            if(isResolutionMissed){
-
-                //TODO EXCEPTION
-                //Мы обязательно должны знать разрешение
-                // Выбросить исключение
-                qDebug()<<"<--------------------- NO RESOLUTION EXCEPTION !!!------------------>";
-
+            if (isResolutionMissed) {
+                // TODO EXCEPTION
+                // Мы обязательно должны знать разрешение
+                //  Выбросить исключение
+                qDebug() << "<--------------------- NO RESOLUTION EXCEPTION "
+                            "!!!------------------>";
             }
             m_sentinel_data.append(data);
         }
     }
-    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(availableBandNames,
-                                                            ui->verticalLayout_satellite_bands);
-    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1,2,3});
+    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(
+        availableBandNames, ui->verticalLayout_satellite_bands);
+    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1, 2, 3});
 
-    connect(m_dynamic_checkboxes_widget,
-            SIGNAL(choosed_bands_changed()),
-            this,SLOT(change_bands()));
+    connect(m_dynamic_checkboxes_widget, SIGNAL(choosed_bands_changed()), this,
+            SLOT(change_bands()));
 
     read_sentinel2_bands_data(m_sentinel_data);
     change_bands_and_show_image(m_sentinel_data);
@@ -889,16 +902,16 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
     m_is_image_created = true;
     m_scene_cross_square_item->setVisible(true);
     ui->graphicsView_satellite_image->setIsSignal(true);
-    QHash <QString,sad::geoTransform> sentinel_geo;
-    if(finalFiles.empty()==false){
-        QFileInfo finfo(m_root_path + "/" + finalFiles[0]+".jp2");
+    QHash<QString, sad::geoTransform> sentinel_geo;
+    if (finalFiles.empty() == false) {
+        QFileInfo finfo(m_root_path + "/" + finalFiles[0] + ".jp2");
         QDir dir(finfo.absolutePath());
         dir.cdUp();
         dir.cdUp();
-        const QString geo_file = dir.path()+"/MTD_TL.xml";
+        const QString geo_file = dir.path() + "/MTD_TL.xml";
         fi.setFile(geo_file);
         auto xml_doc = fi.absoluteFilePath();
-        qDebug()<<xml_doc<<"--->"<<fi.exists();
+        qDebug() << xml_doc << "--->" << fi.exists();
         m_geo.utmZone = extractUTMZoneFromXML(xml_doc);
         sentinel_geo = extractGeoPositions(xml_doc);
         m_geo.ulX = sentinel_geo["20"].ulX;
@@ -908,19 +921,20 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(const QString& 
     }
 }
 
-void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<double>& x,
-                                                                 const QVector<double>& y)
-{
-    //qDebug()<<"sat_comparator: "<<x.size()<<y.size();
-    if(m_satelite_type == sad::UNKNOWN_SATELLITE)return;
-    m_sat_comparator->initial_fill_data_to_show(x,y,waves_landsat9,m_landsat9_sample);
-    if(m_satelite_type == sad::LANDSAT_9){
+void MainWindowSatelliteComparator::processBekasDataForComparing(
+    const QVector<double>& x, const QVector<double>& y) {
+    // qDebug()<<"sat_comparator: "<<x.size()<<y.size();
+    if (m_satelite_type == sad::UNKNOWN_SATELLITE) return;
+    m_sat_comparator->initial_fill_data_to_show(x, y, waves_landsat9,
+                                                m_landsat9_sample);
+    if (m_satelite_type == sad::LANDSAT_9) {
         m_sat_comparator->set_satellite_responses("landsat9");
-    }else if(m_satelite_type == sad::LANDSAT_8){
+    } else if (m_satelite_type == sad::LANDSAT_8) {
         m_sat_comparator->set_satellite_responses("landsat8");
     }
-    auto folded_device_spectr_for_landsat = m_sat_comparator->fold_spectr_to_satellite_responses();
-    if(folded_device_spectr_for_landsat.empty()){
+    auto folded_device_spectr_for_landsat =
+        m_sat_comparator->fold_spectr_to_satellite_responses();
+    if (folded_device_spectr_for_landsat.empty()) {
         m_is_bekas = false;
         return;
     }
@@ -928,26 +942,28 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(const QVector<d
     m_is_bekas = true;
 }
 
-void MainWindowSatelliteComparator::handleJsonRpcResult(const QJsonValue &result)
-{
-    qDebug()<<"call handleJsonRpcResult from MainWindowSatelliteComparator";
-    qDebug()<<"result:"<< result.toString();
+void MainWindowSatelliteComparator::handleJsonRpcResult(
+    const QJsonValue& result) {
+    qDebug() << "call handleJsonRpcResult from MainWindowSatelliteComparator";
+    qDebug() << "result:" << result.toString();
 }
 
-void MainWindowSatelliteComparator::processTestMatlabRequest(const QVariantMap &params)
-{
+void MainWindowSatelliteComparator::processTestMatlabRequest(
+    const QVariantMap& params) {
     QString path = params["path"].toString();
-    int     mode = params["mode"].toInt();
-    qDebug()<<"matlab вызывал Test и передал параметры: "<<path<<" "<<mode;
+    int mode = params["mode"].toInt();
+    qDebug() << "matlab вызывал Test и передал параметры: " << path << " "
+             << mode;
 }
 
-void MainWindowSatelliteComparator::processpClassifiedBecasSpectraMatlabRequest(const QVariantMap &params)
-{
+void MainWindowSatelliteComparator::processpClassifiedBecasSpectraMatlabRequest(
+    const QVariantMap& params) {
     QString pathMatfile = params["matFilePath"].toString();
     MatFilesOperator reader;
-    BecasDataFromMatlab dataReaded =  reader.readBecasDataFromMatlab(pathMatfile);
-    if(dataReaded.isSomeErrors){
-        qDebug()<<"при чтении файла произошли ошибки";
+    BecasDataFromMatlab dataReaded =
+        reader.readBecasDataFromMatlab(pathMatfile);
+    if (dataReaded.isSomeErrors) {
+        qDebug() << "при чтении файла произошли ошибки";
         return;
     }
 
@@ -956,13 +972,15 @@ void MainWindowSatelliteComparator::processpClassifiedBecasSpectraMatlabRequest(
                                           dataReaded.colorsOfEachSpectr);
 }
 
-void MainWindowSatelliteComparator::updateImage()
-{
-    if(m_image_item){
-        double coef_saturation = ui->widget_image_saturation_light_corrector->getCoefSaturation();
-        double coef_light = ui->widget_image_saturation_light_corrector->getCoefLight();
-        if(coef_light == 1 && coef_saturation == 1) return;
-        QImage imgNew = createModifiedImage(m_satellite_image, coef_saturation, coef_light);
+void MainWindowSatelliteComparator::updateImage() {
+    if (m_image_item) {
+        double coef_saturation =
+            ui->widget_image_saturation_light_corrector->getCoefSaturation();
+        double coef_light =
+            ui->widget_image_saturation_light_corrector->getCoefLight();
+        if (coef_light == 1 && coef_saturation == 1) return;
+        QImage imgNew =
+            createModifiedImage(m_satellite_image, coef_saturation, coef_light);
         auto pixmap = QPixmap::fromImage(imgNew);
         m_scene->removeItem(m_image_item);
         delete m_image_item;
@@ -974,45 +992,48 @@ void MainWindowSatelliteComparator::updateImage()
     }
 }
 
-QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const QString& path,
-                                                                         QList<QString>& available_gui_bands)
-{
+QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(
+    const QString& path, QList<QString>& available_gui_bands) {
     QStringList bands;
     QFile file(path);
-    if(file.exists()==false)return bands;
+    if (file.exists() == false) return bands;
     QTextStream ts(&file);
     ts.setCodec("UTF-8");
-    if(file.open(QIODevice::ReadOnly)==false)return bands;
+    if (file.open(QIODevice::ReadOnly) == false) return bands;
     QString temp;
     QStringList bands_lines;
     bool isGroupProductContentsStart = false;
-    while(ts.readLineInto(&temp)){
-        if(temp.contains("GROUP = PRODUCT_CONTENTS")){isGroupProductContentsStart = true;}
-        if(temp.contains("END_GROUP = PRODUCT_CONTENTS")){break;}
-        if(isGroupProductContentsStart==false)continue;
-        if(temp.contains("FILE_NAME_BAND_")){
+    while (ts.readLineInto(&temp)) {
+        if (temp.contains("GROUP = PRODUCT_CONTENTS")) {
+            isGroupProductContentsStart = true;
+        }
+        if (temp.contains("END_GROUP = PRODUCT_CONTENTS")) {
+            break;
+        }
+        if (isGroupProductContentsStart == false) continue;
+        if (temp.contains("FILE_NAME_BAND_")) {
             bands_lines.append(temp);
-            temp = temp.mid(temp.indexOf('"'),temp.lastIndexOf('"'));
-            temp.replace('"',"");
+            temp = temp.mid(temp.indexOf('"'), temp.lastIndexOf('"'));
+            temp.replace('"', "");
             bands.append(temp);
         }
     }
-    //qDebug()<<bands_lines;
-    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
+    // qDebug()<<bands_lines;
+    for (int i = 0; i < LANDSAT_BANDS_NUMBER; ++i) {
         QString searchString = sad::landsat9_bands_keys[i];
         bool found = false;
-        for (const QString &item : bands_lines)
-        {
+        for (const QString& item : bands_lines) {
             if (item.contains(searchString, Qt::CaseSensitive)) {
                 found = true;
-                //qDebug()<<item<<"********** MATCHED ****************"<<searchString;
+                // qDebug()<<item<<"********** MATCHED
+                // ****************"<<searchString;
                 break;
             }
         }
-        if(found==false){
-            qDebug()<<"missed band: "<<sad::landsat9_bands_keys[i];
+        if (found == false) {
+            qDebug() << "missed band: " << sad::landsat9_bands_keys[i];
             m_landsat9_missed_channels[i] = true;
-        }else{
+        } else {
             m_landsat9_missed_channels[i] = false;
             available_gui_bands.append(sad::landsat_bands_gui_names[i]);
         }
@@ -1020,194 +1041,200 @@ QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(const Q
     return bands;
 }
 
-QString MainWindowSatelliteComparator::getLandSatSpaceCraftIDFromTxtFormat(const QString &path)
-{
+QString MainWindowSatelliteComparator::getLandSatSpaceCraftIDFromTxtFormat(
+    const QString& path) {
     QFile file(path);
-    if(file.exists()==false)return "";
+    if (file.exists() == false) return "";
     QTextStream ts(&file);
     ts.setCodec("UTF-8");
-    if(file.open(QIODevice::ReadOnly)==false)return "";
+    if (file.open(QIODevice::ReadOnly) == false) return "";
     QString temp;
     QStringList bands_lines;
     bool isGroupImageAttributes = false;
-    while(ts.readLineInto(&temp)){
-        if(temp.contains("GROUP = IMAGE_ATTRIBUTES")){isGroupImageAttributes = true;}
-        if(temp.contains("END_GROUP = IMAGE_ATTRIBUTES")){break;}
-        if(isGroupImageAttributes==false)continue;
-        if(temp.contains("SPACECRAFT_ID")){
+    while (ts.readLineInto(&temp)) {
+        if (temp.contains("GROUP = IMAGE_ATTRIBUTES")) {
+            isGroupImageAttributes = true;
+        }
+        if (temp.contains("END_GROUP = IMAGE_ATTRIBUTES")) {
+            break;
+        }
+        if (isGroupImageAttributes == false) continue;
+        if (temp.contains("SPACECRAFT_ID")) {
             bands_lines.append(temp);
-            temp = temp.mid(temp.indexOf('"'),temp.lastIndexOf('"'));
-            temp.replace('"',"");
+            temp = temp.mid(temp.indexOf('"'), temp.lastIndexOf('"'));
+            temp.replace('"', "");
             return temp;
         }
     }
     return "";
 }
 
-void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(const QString& path)
-{
+void MainWindowSatelliteComparator::fillLandSat9ReflectanceMultAdd(
+    const QString& path) {
     QFile file(path);
-    if(file.exists()==false) return;
+    if (file.exists() == false) return;
     QTextStream ts(&file);
     ts.setCodec("UTF-8");
-    if(file.open(QIODevice::ReadOnly)==false) return;
+    if (file.open(QIODevice::ReadOnly) == false) return;
     QString temp;
     QVector<double> mult;
     QVector<double> add;
     bool isReflectanceGroup = false;
-    while(ts.readLineInto(&temp)){
+    while (ts.readLineInto(&temp)) {
         temp = temp.trimmed();
-        if(temp=="GROUP = LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"){
+        if (temp == "GROUP = LEVEL2_SURFACE_REFLECTANCE_PARAMETERS") {
             isReflectanceGroup = true;
             continue;
         }
-        if(isReflectanceGroup==false)continue;
-        if(temp=="END_GROUP = LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"){
+        if (isReflectanceGroup == false) continue;
+        if (temp == "END_GROUP = LEVEL2_SURFACE_REFLECTANCE_PARAMETERS") {
             break;
         }
-        if(temp.contains("REFLECTANCE_MULT_BAND_")){
-            temp = temp.mid(temp.indexOf("= "),temp.size()-1);
-            temp.replace("= ","");
+        if (temp.contains("REFLECTANCE_MULT_BAND_")) {
+            temp = temp.mid(temp.indexOf("= "), temp.size() - 1);
+            temp.replace("= ", "");
             mult.append(temp.toDouble());
-        }else
-            if(temp.contains("REFLECTANCE_ADD_BAND_")){
-                temp = temp.mid(temp.indexOf("= "),temp.size()-1);
-                temp.replace("= ","");
-                add.append(temp.toDouble());
-            }
+        } else if (temp.contains("REFLECTANCE_ADD_BAND_")) {
+            temp = temp.mid(temp.indexOf("= "), temp.size() - 1);
+            temp.replace("= ", "");
+            add.append(temp.toDouble());
+        }
     }
 
-    if(mult.size()!=add.size()){
-        qDebug()<<"SIZES ARE NOT THE SAME....";
+    if (mult.size() != add.size()) {
+        qDebug() << "SIZES ARE NOT THE SAME....";
         return;
     }
-    if(mult.size()>LANDSAT_BANDS_NUMBER){
-        qDebug()<<"SIZE TOO BIG...";
+    if (mult.size() > LANDSAT_BANDS_NUMBER) {
+        qDebug() << "SIZE TOO BIG...";
         return;
     }
-    for(int i=0;i<mult.size();++i){
+    for (int i = 0; i < mult.size(); ++i) {
         m_reflectance_mult_add_arrays[i][0] = mult[i];
         m_reflectance_mult_add_arrays[i][1] = add[i];
     }
-
-
 }
 
-void MainWindowSatelliteComparator::fillLandSat9GeoData(const QString &path)
-{
+void MainWindowSatelliteComparator::fillLandSat9GeoData(const QString& path) {
     QFile file(path);
-    if(file.exists()==false) return;
+    if (file.exists() == false) return;
     QTextStream ts(&file);
     ts.setCodec("UTF-8");
-    if(file.open(QIODevice::ReadOnly)==false) return;
+    if (file.open(QIODevice::ReadOnly) == false) return;
     QString temp;
     bool isProjectionGroup = false;
-    while(ts.readLineInto(&temp)){
-        if(temp.contains("GROUP = PROJECTION_ATTRIBUTES")){
+    while (ts.readLineInto(&temp)) {
+        if (temp.contains("GROUP = PROJECTION_ATTRIBUTES")) {
             isProjectionGroup = true;
             continue;
         }
-        if(isProjectionGroup==false)continue;
-        if(temp.contains("END_GROUP = PROJECTION_ATTRIBUTES")){
+        if (isProjectionGroup == false) continue;
+        if (temp.contains("END_GROUP = PROJECTION_ATTRIBUTES")) {
             break;
         }
-        if(temp.contains("CORNER_UL_PROJECTION_X_PRODUCT")){
-            temp = temp.mid(temp.indexOf("= "),temp.size()-1);
-            temp.replace("= ","");
+        if (temp.contains("CORNER_UL_PROJECTION_X_PRODUCT")) {
+            temp = temp.mid(temp.indexOf("= "), temp.size() - 1);
+            temp.replace("= ", "");
             m_geo.ulX = temp.toDouble();
-        }else
-            if(temp.contains("CORNER_UL_PROJECTION_Y_PRODUCT")){
-                temp = temp.mid(temp.indexOf("= "),temp.size()-1);
-                temp.replace("= ","");
-                m_geo.ulY = temp.toDouble();
-            }else
-                if(temp.contains("UTM_ZONE")){
-                    temp = temp.mid(temp.indexOf("= "),temp.size()-1);
-                    temp.replace("= ","");
-                    m_geo.utmZone = temp.toDouble();
-                }else
-                    if(temp.contains("GRID_CELL_SIZE_REFLECTIVE")){
-                        temp = temp.mid(temp.indexOf("= "),temp.size()-1);
-                        temp.replace("= ","");
-                        m_geo.resX = temp.toDouble();
-                        m_geo.resY = - m_geo.resX;
-                    }
+        } else if (temp.contains("CORNER_UL_PROJECTION_Y_PRODUCT")) {
+            temp = temp.mid(temp.indexOf("= "), temp.size() - 1);
+            temp.replace("= ", "");
+            m_geo.ulY = temp.toDouble();
+        } else if (temp.contains("UTM_ZONE")) {
+            temp = temp.mid(temp.indexOf("= "), temp.size() - 1);
+            temp.replace("= ", "");
+            m_geo.utmZone = temp.toDouble();
+        } else if (temp.contains("GRID_CELL_SIZE_REFLECTIVE")) {
+            temp = temp.mid(temp.indexOf("= "), temp.size() - 1);
+            temp.replace("= ", "");
+            m_geo.resX = temp.toDouble();
+            m_geo.resY = -m_geo.resX;
+        }
     }
 }
 
-void MainWindowSatelliteComparator::clearLandsat9DataBands()
-{
+void MainWindowSatelliteComparator::clearLandsat9DataBands() {
     for (int i = 0; i < LANDSAT_BANDS_NUMBER; ++i) {
-        if(m_landsat9_missed_channels[i])continue;
-        if(m_landsat9_data_bands[i]==nullptr)continue;
+        if (m_landsat9_missed_channels[i]) continue;
+        if (m_landsat9_data_bands[i] == nullptr) continue;
         delete[] m_landsat9_data_bands[i];
-        m_landsat9_missed_channels[i]=true;
+        m_landsat9_missed_channels[i] = true;
         m_landsat9_data_bands[i] = nullptr;
     }
 }
 
-void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const QPointF &pos, const bool is_landsat)
-{
-
-    if(m_time_row.empty())return;
+void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(
+    const QPointF& pos, const bool is_landsat) {
+    if (m_time_row.empty()) return;
     int xSize = INT_MAX;
     int ySize = INT_MAX;
-    for(int i=0;i<m_time_row.size();++i){
-        if(xSize > m_time_row[i][0].width)xSize = m_time_row[i][0].width;
-        if(ySize > m_time_row[i][0].height)ySize = m_time_row[i][0].height;
+    for (int i = 0; i < m_time_row.size(); ++i) {
+        if (xSize > m_time_row[i][0].width) xSize = m_time_row[i][0].width;
+        if (ySize > m_time_row[i][0].height) ySize = m_time_row[i][0].height;
     }
 
-    if(pos.x() >= xSize || pos.x() < 0) return;
-    if(pos.y() >= ySize || pos.y() < 0) return;
+    if (pos.x() >= xSize || pos.x() < 0) return;
+    if (pos.y() >= ySize || pos.y() < 0) return;
 
     const QString x_y = "x: %1   y:%2";
-    QString x_y_message = x_y.arg(QString::number(pos.x()),QString::number(pos.y()));
+    QString x_y_message =
+        x_y.arg(QString::number(pos.x()), QString::number(pos.y()));
     m_label_scene_coord->setText(x_y_message);
     double latitude = 0.0;
     double longitude = 0.0;
-    auto geo_coord_str = getGeoCoordinates(pos.x(),pos.y(),m_time_row_geo[0],latitude,longitude,true);
+    auto geo_coord_str = getGeoCoordinates(pos.x(), pos.y(), m_time_row_geo[0],
+                                           latitude, longitude, true);
     ui->statusbar->showMessage(geo_coord_str);
     QVector<QPointF> m_points(m_time_row.size());
-    for(int i=0;i<m_time_row.size();++i){
-        m_points[i] = (geoToPixel(latitude,longitude,m_time_row_geo[i]));
-        if(m_points[i].x() >= xSize || m_points[i].x() < 0) return;
-        if(m_points[i].y() >= ySize || m_points[i].y() < 0) return;
+    for (int i = 0; i < m_time_row.size(); ++i) {
+        m_points[i] = (geoToPixel(latitude, longitude, m_time_row_geo[i]));
+        if (m_points[i].x() >= xSize || m_points[i].x() < 0) return;
+        if (m_points[i].y() >= ySize || m_points[i].y() < 0) return;
     }
 
     QVector<sad::BANDS_FOR_CALCULATING_INDEXES> data_indexes;
-    for(int i=0;i<m_points.size();++i){
+    for (int i = 0; i < m_points.size(); ++i) {
         m_viewers[i]->centerOnPoint(m_points[i]);
         uint16_t value = 0;
-        QVector<double>one_ksy;
-        QVector<double>waves;
+        QVector<double> one_ksy;
+        QVector<double> waves;
         int red_band_index = 0;
         int nir_band_index = 0;
-        int swir1_index =0;
+        int swir1_index = 0;
 
-        if(is_landsat){
+        if (is_landsat) {
             red_band_index = 3;
             nir_band_index = 4;
-            swir1_index =5;
-        }else{
+            swir1_index = 5;
+        } else {
             red_band_index = 3;
             nir_band_index = 6;
-            swir1_index =9;
+            swir1_index = 9;
         }
 
         sad::BANDS_FOR_CALCULATING_INDEXES values;
-        for(int j=0;j<m_time_row[i].size();++j){
-            value = m_time_row[i][j].data[((int)m_points[i].y()*m_time_row[i][j].width) + (int)m_points[i].x()];
+        for (int j = 0; j < m_time_row[i].size(); ++j) {
+            value = m_time_row[i][j]
+                        .data[((int)m_points[i].y() * m_time_row[i][j].width) +
+                              (int)m_points[i].x()];
             double one_ksy_value;
-            if(is_landsat){
-            one_ksy_value = m_time_row[i][j].reflectance_mult * value + m_time_row[i][j].reflectance_add;
-            }else{
-            one_ksy_value = value/10000.0;
+            if (is_landsat) {
+                one_ksy_value = m_time_row[i][j].reflectance_mult * value +
+                                m_time_row[i][j].reflectance_add;
+            } else {
+                one_ksy_value = value / 10000.0;
             }
 
-            if(one_ksy_value==0||one_ksy_value>1) continue;
-            if(j==red_band_index){values.RED_BAND = one_ksy_value;}  //red value    3 sentinel
-            if(j==nir_band_index){values.NIR_BAND = one_ksy_value;}  //nir value    6 sentinel
-            if(j==swir1_index){values.SWIR1_BAND = one_ksy_value;}   //swir1 value  9 sentinel
+            if (one_ksy_value == 0 || one_ksy_value > 1) continue;
+            if (j == red_band_index) {
+                values.RED_BAND = one_ksy_value;
+            }  // red value    3 sentinel
+            if (j == nir_band_index) {
+                values.NIR_BAND = one_ksy_value;
+            }  // nir value    6 sentinel
+            if (j == swir1_index) {
+                values.SWIR1_BAND = one_ksy_value;
+            }  // swir1 value  9 sentinel
             one_ksy.push_back(one_ksy_value);
             waves.push_back(m_time_row[i][j].central_wave_length);
         }
@@ -1216,19 +1243,20 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         m_preview_plot->graph(i)->setData(waves, one_ksy);
         m_preview_plot->rescaleAxes(true);
         m_preview_plot->replot();
-
     }
 
     QVector<double> ndvi_time_row;
     QVector<double> ndwi_time_row;
-    for(int i=0;i<data_indexes.size();++i){
-        double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND,data_indexes[i].RED_BAND);
-        double ndwi = sam::calculateNDWI(data_indexes[i].NIR_BAND,data_indexes[i].SWIR1_BAND);
+    for (int i = 0; i < data_indexes.size(); ++i) {
+        double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND,
+                                         data_indexes[i].RED_BAND);
+        double ndwi = sam::calculateNDWI(data_indexes[i].NIR_BAND,
+                                         data_indexes[i].SWIR1_BAND);
         ndvi_time_row.push_back(ndvi);
         ndwi_time_row.push_back(ndwi);
     }
-    showTimeRowIndexesDataViaPlot(std::move(ndvi_time_row), std::move(ndwi_time_row));
-
+    showTimeRowIndexesDataViaPlot(std::move(ndvi_time_row),
+                                  std::move(ndwi_time_row));
 
     /* auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
     auto ndvi_vector = ndvi_ndwi_indexes.ndvi_time_row;
@@ -1237,16 +1265,12 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(const 
         qDebug()<<"ndvi: "<<value;
     }
     qDebug()<<"----------------------------------";*/
-    //qDebug()<<"ndvi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
-    //qDebug()<<"ndwi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
-
+    // qDebug()<<"ndvi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
+    // qDebug()<<"ndwi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
 }
 
-
 uint16_t* MainWindowSatelliteComparator::readTiff(const QString& path,
-                                                  int& xSize,
-                                                  int& ySize)
-{
+                                                  int& xSize, int& ySize) {
     QString imgPath = path;
     QByteArray ba = imgPath.toUtf8();
     QFile file(imgPath);
@@ -1254,142 +1278,143 @@ uint16_t* MainWindowSatelliteComparator::readTiff(const QString& path,
     ts.setCodec("UTF-8");
     bool isFileExists = file.exists();
 
-    if(false==isFileExists){
-        qDebug()<<"File exists: -->"<<path<<isFileExists;
+    if (false == isFileExists) {
+        qDebug() << "File exists: -->" << path << isFileExists;
         return nullptr;
     }
-    const char *fileName = ba.constData();
+    const char* fileName = ba.constData();
 
-    GDALDataset* poDataset = (GDALDataset*) GDALOpen( fileName, GA_ReadOnly );
+    GDALDataset* poDataset = (GDALDataset*)GDALOpen(fileName, GA_ReadOnly);
     GDALRasterBand* poBand;
     poBand = poDataset->GetRasterBand(1);
     xSize = poBand->GetXSize();
     ySize = poBand->GetYSize();
-    uint16_t* raster = new uint16[xSize*ySize];
-    poBand->RasterIO(GF_Read, 0, 0, xSize, ySize, raster, xSize, ySize, GDT_UInt16, 0, 0);
+    uint16_t* raster = new uint16[xSize * ySize];
+    poBand->RasterIO(GF_Read, 0, 0, xSize, ySize, raster, xSize, ySize,
+                     GDT_UInt16, 0, 0);
     GDALClose(poDataset);
     return raster;
-
 }
 
-void MainWindowSatelliteComparator::read_landsat_bands_data(const QStringList& file_names)
-{
-    for(int i=0;i<file_names.size();++i){
+void MainWindowSatelliteComparator::read_landsat_bands_data(
+    const QStringList& file_names) {
+    for (int i = 0; i < file_names.size(); ++i) {
         auto band_file_name = file_names[i];
         int xS = 0;
         int yS = 0;
-        m_landsat9_data_bands[i] = readTiff(m_root_path+"/"+band_file_name,xS,yS);
-        //qDebug()<<"x y -- sizes: "<<xS<<yS;
-        m_landsat9_bands_image_sizes[i] = {xS,yS};
+        m_landsat9_data_bands[i] =
+            readTiff(m_root_path + "/" + band_file_name, xS, yS);
+        // qDebug()<<"x y -- sizes: "<<xS<<yS;
+        m_landsat9_bands_image_sizes[i] = {xS, yS};
     }
 }
 
 QVector<double> MainWindowSatelliteComparator::getLandsat8Speya(const int x,
-                                                                const int y)
-{
-    if(m_is_image_created==false)return {};
-    int xSize= m_landsat9_bands_image_sizes->first;
-    int ySize= m_landsat9_bands_image_sizes->second;
-    if(x>xSize||y>ySize) return {};
-    if(x<0||y<0) return {};
+                                                                const int y) {
+    if (m_is_image_created == false) return {};
+    int xSize = m_landsat9_bands_image_sizes->first;
+    int ySize = m_landsat9_bands_image_sizes->second;
+    if (x > xSize || y > ySize) return {};
+    if (x < 0 || y < 0) return {};
     QVector<double> speya;
-    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
-        if(i==7||i==9||i==10)continue;// пропускаем каналы panchrom, и последние два LWR-100m
-        uint16_t value = m_landsat9_data_bands[i][(y*xSize) + x];
-        double speya_d = m_radiance_mult_add_arrays[i][0]*value+m_radiance_mult_add_arrays[i][1];
+    for (int i = 0; i < LANDSAT_BANDS_NUMBER; ++i) {
+        if (i == 7 || i == 9 || i == 10)
+            continue;  // пропускаем каналы panchrom, и последние два LWR-100m
+        uint16_t value = m_landsat9_data_bands[i][(y * xSize) + x];
+        double speya_d = m_radiance_mult_add_arrays[i][0] * value +
+                         m_radiance_mult_add_arrays[i][1];
         speya.append(speya_d);
     }
-    //qDebug()<<"speya: --> "<<speya;
+    // qDebug()<<"speya: --> "<<speya;
     return speya;
 }
 
-inline QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(const int x,
-                                                                     const int y)
-{
-    if(m_is_image_created==false)return {};
-    int xSize= m_landsat9_bands_image_sizes->first;
-    int ySize= m_landsat9_bands_image_sizes->second;
-    if(x>xSize||y>ySize) return {};
-    if(x<0||y<0) return {};
+inline QVector<double> MainWindowSatelliteComparator::getLandsat8Ksy(
+    const int x, const int y) {
+    if (m_is_image_created == false) return {};
+    int xSize = m_landsat9_bands_image_sizes->first;
+    int ySize = m_landsat9_bands_image_sizes->second;
+    if (x > xSize || y > ySize) return {};
+    if (x < 0 || y < 0) return {};
     QVector<double> ksy;
-    for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
-        if(i==7||i==8||i==9||i==10)continue;// пропускаем каналы panchrom, и последние два LWR-100m
-        uint16_t value = m_landsat9_data_bands[i][(y*xSize) + x];
-        double ksy_d = m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
+    for (int i = 0; i < LANDSAT_BANDS_NUMBER; ++i) {
+        if (i == 7 || i == 8 || i == 9 || i == 10)
+            continue;  // пропускаем каналы panchrom, и последние два LWR-100m
+        uint16_t value = m_landsat9_data_bands[i][(y * xSize) + x];
+        double ksy_d = m_reflectance_mult_add_arrays[i][0] * value +
+                       m_reflectance_mult_add_arrays[i][1];
         ksy.append(ksy_d);
     }
     return ksy;
 }
 
-void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color)
-{
-
-    if(m_satelite_type == sad::SATELLITE_TYPE::TIME_ROW_LANDSAT_COMBINATION){
+void MainWindowSatelliteComparator::paintSamplePoints(const QColor& color) {
+    if (m_satelite_type == sad::SATELLITE_TYPE::TIME_ROW_LANDSAT_COMBINATION) {
         return;
     }
     int xSize = 0;
     int ySize = 0;
-    QVector<double>sample;
+    QVector<double> sample;
 
-    if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
+    if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
+        m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
         xSize = m_landsat9_bands_image_sizes->first;
         ySize = m_landsat9_bands_image_sizes->second;
         sample = m_landsat9_sample;
-    }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
-        if(m_sentinel_data.empty())return;//MESSAGE WARNING
+    } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+        if (m_sentinel_data.empty()) return;  // MESSAGE WARNING
         xSize = m_sentinel_data[0].width;
         ySize = m_sentinel_data[0].height;
         sample = m_sentinel_sample;
-        if(sample.empty())return;
+        if (sample.empty()) return;
     };
 
-    int total_pixels = xSize*ySize;
+    int total_pixels = xSize * ySize;
 
-
-    if(m_is_bekas){
+    if (m_is_bekas) {
         sample = m_bekas_sample;
     }
 
-    auto new_layer = new uchar[total_pixels*4];
+    auto new_layer = new uchar[total_pixels * 4];
 
     int midY = ySize / 2;
     int offset1 = 0;
     int offset2 = midY * xSize * 4;
 
-    std::thread t1(&MainWindowSatelliteComparator::processLayer,this, new_layer, xSize, 0, midY, sample, color, offset1);
-    std::thread t2(&MainWindowSatelliteComparator::processLayer,this, new_layer, xSize, midY, ySize, sample, color, offset2);
+    std::thread t1(&MainWindowSatelliteComparator::processLayer, this,
+                   new_layer, xSize, 0, midY, sample, color, offset1);
+    std::thread t2(&MainWindowSatelliteComparator::processLayer, this,
+                   new_layer, xSize, midY, ySize, sample, color, offset2);
     t1.join();
     t2.join();
-    auto cleanup = [](void* info) {
-        delete[] static_cast<uchar*>(info);
-    };
-    auto img = QImage(new_layer,xSize,ySize,xSize*4,QImage::Format_RGBA8888,cleanup,new_layer);
+    auto cleanup = [](void* info) { delete[] static_cast<uchar*>(info); };
+    auto img = QImage(new_layer, xSize, ySize, xSize * 4,
+                      QImage::Format_RGBA8888, cleanup, new_layer);
     auto pixmap = QPixmap::fromImage(img);
     auto new_image_item = new QGraphicsPixmapItem(pixmap);
-    new_image_item->setZValue(ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+    new_image_item->setZValue(
+        ui->graphicsView_satellite_image->getMaxZValue(m_scene));
     m_scene->addItem(new_image_item);
     ui->graphicsView_satellite_image->centerOn(m_scene_cross_square_item);
 
-
-    const QString searchParams = m_comboBox_calculation_method->currentText() + ": "+QString::number(euclid_param_spinbox->value());
+    const QString searchParams = m_comboBox_calculation_method->currentText() +
+                                 ": " +
+                                 QString::number(euclid_param_spinbox->value());
     auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
-    m_layers_search_result_items.insert(stamp,new_image_item);
-    m_layer_gui_list->addItemToList(stamp,searchParams,color);
+    m_layers_search_result_items.insert(stamp, new_image_item);
+    m_layer_gui_list->addItemToList(stamp, searchParams, color);
 }
 
-QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
-                                                         const int y,
-                                                         const sad::geoTransform& geo,
-                                                         double& latitude,
-                                                         double& longitude,
-                                                         bool isStringReturn)
-{
-
+QString MainWindowSatelliteComparator::getGeoCoordinates(
+    const int x, const int y, const sad::geoTransform& geo, double& latitude,
+    double& longitude, bool isStringReturn) {
     // Создаем проекцию UTM
     OGRSpatialReference utmSrs;
     utmSrs.SetProjCS("UTM");
-    utmSrs.SetWellKnownGeogCS("WGS84"); // DATUM из MTL.json
-    utmSrs.SetUTM(geo.utmZone, true);   // Северное - true или южное - false полушарие
+    utmSrs.SetWellKnownGeogCS("WGS84");  // DATUM из MTL.json
+    utmSrs.SetUTM(geo.utmZone,
+                  true);  // Северное - true или южное - false полушарие
 
     // Создаем целевую проекцию (WGS84)
     OGRSpatialReference wgs84Srs;
@@ -1397,7 +1422,7 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
 
     // Создаем преобразователь координат
     OGRCoordinateTransformation* transformer =
-            OGRCreateCoordinateTransformation(&utmSrs, &wgs84Srs);
+        OGRCreateCoordinateTransformation(&utmSrs, &wgs84Srs);
 
     // Вычисляем координаты в проекции UTM
     double utmX = geo.ulX + x * geo.resX + y * 0;
@@ -1411,25 +1436,22 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(const int x,
         return "";
     }
     OCTDestroyCoordinateTransformation(transformer);
-    //m_lattitude = lat;
-    //m_longitude = lon;
+    // m_lattitude = lat;
+    // m_longitude = lon;
     latitude = lat;
     longitude = lon;
 
-
-    if(isStringReturn){
+    if (isStringReturn) {
         QString lat_lon = QString("Широта: %1 Долгота: %2").arg(lat).arg(lon);
         return lat_lon;
     }
 
     return "";
-
 }
 
 QPointF MainWindowSatelliteComparator::geoToPixel(double latitude,
                                                   double longitude,
-                                                  const sad::geoTransform &gt)
-{
+                                                  const sad::geoTransform& gt) {
     static OGRSpatialReference srcSRS;
     static OGRSpatialReference dstSRS;
     static OGRCoordinateTransformation* coordTransform = nullptr;
@@ -1454,9 +1476,8 @@ QPointF MainWindowSatelliteComparator::geoToPixel(double latitude,
     return QPointF(pixelX, pixelY);
 }
 
-inline double MainWindowSatelliteComparator::euclideanDistance(const QVector<double> &v1,
-                                                               const QVector<double> &v2)
-{
+inline double MainWindowSatelliteComparator::euclideanDistance(
+    const QVector<double>& v1, const QVector<double>& v2) {
     if (v1.size() != v2.size()) {
         throw std::invalid_argument("Векторы должны быть одинаковой длины");
     }
@@ -1469,9 +1490,8 @@ inline double MainWindowSatelliteComparator::euclideanDistance(const QVector<dou
     return qSqrt(sum);
 }
 
-inline double MainWindowSatelliteComparator::calculateSpectralAngle(const QVector<double> &S1,
-                                                                    const QVector<double> &S2)
-{
+inline double MainWindowSatelliteComparator::calculateSpectralAngle(
+    const QVector<double>& S1, const QVector<double>& S2) {
     if (S1.size() != S2.size()) {
         return -1;
     }
@@ -1491,33 +1511,30 @@ inline double MainWindowSatelliteComparator::calculateSpectralAngle(const QVecto
 
     double cosineTheta = dotProduct / (normS1 * normS2);
 
-    return qAcos(cosineTheta) * 180.0 / M_PI; // Возвращаем угол в градусах
+    return qAcos(cosineTheta) * 180.0 / M_PI;  // Возвращаем угол в градусах
 }
 
-void MainWindowSatelliteComparator::showGoogleMap()
-{
+void MainWindowSatelliteComparator::showGoogleMap() {
     std::string command = "start ";
-    command.append(maps_utility::makeGoogleUrl(m_lattitude,
-                                               m_longitude));
+    command.append(maps_utility::makeGoogleUrl(m_lattitude, m_longitude));
     system(command.c_str());
 }
 
-void MainWindowSatelliteComparator::resetColorsToDefaultRGB()
-{
+void MainWindowSatelliteComparator::resetColorsToDefaultRGB() {
     ui->widget_image_saturation_light_corrector->setDefaultValues();
-    if(m_dynamic_checkboxes_widget){
+    if (m_dynamic_checkboxes_widget) {
         m_dynamic_checkboxes_widget->setRGBchannels();
-        if(m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 || m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9){
+        if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
+            m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
             change_bands_and_show_image();
-        }else if(m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A || m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B){
+        } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
+                   m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
             change_bands_and_show_image(m_sentinel_data);
         }
     }
 }
 
-
-void MainWindowSatelliteComparator::change_bands_and_show_image()
-{
+void MainWindowSatelliteComparator::change_bands_and_show_image() {
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
     const int nXSize = m_landsat9_bands_image_sizes->first;
     const int nYSize = m_landsat9_bands_image_sizes->second;
@@ -1533,51 +1550,56 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
             int B = 0;
             int G = 0;
             int R = 0;
-            for(int j=0;j<bands.size();++j){
-
+            for (int j = 0; j < bands.size(); ++j) {
                 int choosedColor = -1;
-                if(bands[j].second==BLUE){
-                    B = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0);
+                if (bands[j].second == BLUE) {
+                    B = static_cast<int>(
+                        m_landsat9_data_bands[bands[j].first][y * nXSize + x] /
+                        255.0);
                     choosedColor = BLUE;
-                }else if(bands[j].second==GREEN){
-                    G = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0);
+                } else if (bands[j].second == GREEN) {
+                    G = static_cast<int>(
+                        m_landsat9_data_bands[bands[j].first][y * nXSize + x] /
+                        255.0);
                     choosedColor = GREEN;
-                }else if(bands[j].second==RED){
-                    R = static_cast<int>(m_landsat9_data_bands[bands[j].first][y * nXSize + x] / 255.0);
+                } else if (bands[j].second == RED) {
+                    R = static_cast<int>(
+                        m_landsat9_data_bands[bands[j].first][y * nXSize + x] /
+                        255.0);
                     choosedColor = RED;
                 }
-                if(bands.size() == 1){
+                if (bands.size() == 1) {
                     switch (choosedColor) {
-                    case RED:
-                        G=R;
-                        B=R;
-                        break;
-                    case GREEN:
-                        B=G;
-                        R=G;
-                        break;
-                    case BLUE:
-                        R=B;
-                        G=B;
-                        break;
-                    default:
-                        break;
+                        case RED:
+                            G = R;
+                            B = R;
+                            break;
+                        case GREEN:
+                            B = G;
+                            R = G;
+                            break;
+                        case BLUE:
+                            R = B;
+                            G = B;
+                            break;
+                        default:
+                            break;
                     }
                 }
-
             }
-            m_image_data[offset]=R;
-            m_image_data[offset+1]=G;
-            m_image_data[offset+2]=B;
+            m_image_data[offset] = R;
+            m_image_data[offset + 1] = G;
+            m_image_data[offset + 2] = B;
             offset = offset + 3;
         }
     }
-    if(m_image_item){
-        qDebug()<<"Delete image item....";
-        m_scene->removeItem(m_image_item);// удаление со сцены
-        delete m_image_item;            // освобождение памяти
+    if (m_image_item) {
+        qDebug() << "Delete image item....";
+        m_scene->removeItem(m_image_item);  // удаление со сцены
+        delete m_image_item;  // освобождение памяти
     }
-    m_satellite_image = QImage(m_image_data,nXSize,nYSize,nXSize*3,QImage::Format_RGB888);
+    m_satellite_image =
+        QImage(m_image_data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
     auto pixmap = QPixmap::fromImage(m_satellite_image);
     m_image_item = new QGraphicsPixmapItem(pixmap);
     m_image_item->setCursor(Qt::CrossCursor);
@@ -1588,13 +1610,13 @@ void MainWindowSatelliteComparator::change_bands_and_show_image()
     updateImage();
 }
 
-void MainWindowSatelliteComparator::change_bands_and_show_image(const QVector<sad::BAND_DATA>& band_data)
-{
-    if(band_data.empty())return;
+void MainWindowSatelliteComparator::change_bands_and_show_image(
+    const QVector<sad::BAND_DATA>& band_data) {
+    if (band_data.empty()) return;
     const int nXSize = band_data[0].width;
-    const int nYSize =  band_data[0].height;
+    const int nYSize = band_data[0].height;
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
-    if(bands.empty())return;
+    if (bands.empty()) return;
     ProgressInformator progress_info(ui->graphicsView_satellite_image,
                                      satc::message_changing_bands);
     progress_info.show();
@@ -1606,49 +1628,52 @@ void MainWindowSatelliteComparator::change_bands_and_show_image(const QVector<sa
             int B = 0;
             int G = 0;
             int R = 0;
-            for(int j=0;j<bands.size();++j){
+            for (int j = 0; j < bands.size(); ++j) {
                 int choosedColor = -1;
-                if(bands[j].second==BLUE){
-                    B = static_cast<int>(band_data[bands[j].first].data[y * nXSize + x] / 255.0);
+                if (bands[j].second == BLUE) {
+                    B = static_cast<int>(
+                        band_data[bands[j].first].data[y * nXSize + x] / 255.0);
                     choosedColor = BLUE;
-                }else if(bands[j].second==GREEN){
-                    G = static_cast<int>(band_data[bands[j].first].data[y * nXSize + x] / 255.0);
+                } else if (bands[j].second == GREEN) {
+                    G = static_cast<int>(
+                        band_data[bands[j].first].data[y * nXSize + x] / 255.0);
                     choosedColor = GREEN;
-                }else if(bands[j].second==RED){
-                    R = static_cast<int>(band_data[bands[j].first].data[y * nXSize + x] / 255.0);
+                } else if (bands[j].second == RED) {
+                    R = static_cast<int>(
+                        band_data[bands[j].first].data[y * nXSize + x] / 255.0);
                     choosedColor = RED;
                 }
-                if(bands.size() == 1){
+                if (bands.size() == 1) {
                     switch (choosedColor) {
-                    case RED:
-                        G=R;
-                        B=R;
-                        break;
-                    case GREEN:
-                        B=G;
-                        R=G;
-                        break;
-                    case BLUE:
-                        R=B;
-                        G=B;
-                        break;
-                    default:
-                        break;
+                        case RED:
+                            G = R;
+                            B = R;
+                            break;
+                        case GREEN:
+                            B = G;
+                            R = G;
+                            break;
+                        case BLUE:
+                            R = B;
+                            G = B;
+                            break;
+                        default:
+                            break;
                     }
                 }
-
             }
-            m_image_data[offset]=R;
-            m_image_data[offset+1]=G;
-            m_image_data[offset+2]=B;
-            offset = offset+3;
+            m_image_data[offset] = R;
+            m_image_data[offset + 1] = G;
+            m_image_data[offset + 2] = B;
+            offset = offset + 3;
         }
     }
-    if(m_image_item){
+    if (m_image_item) {
         m_scene->removeItem(m_image_item);
         delete m_image_item;
     }
-    m_satellite_image = QImage(m_image_data,nXSize,nYSize,nXSize*3,QImage::Format_RGB888);
+    m_satellite_image =
+        QImage(m_image_data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
     auto pixmap = QPixmap::fromImage(m_satellite_image);
     m_image_item = new QGraphicsPixmapItem(pixmap);
     m_image_item->setCursor(Qt::CrossCursor);
@@ -1659,60 +1684,58 @@ void MainWindowSatelliteComparator::change_bands_and_show_image(const QVector<sa
     updateImage();
 }
 
-void MainWindowSatelliteComparator::change_bands()
-{
+void MainWindowSatelliteComparator::change_bands() {
     change_bands_and_show_image(m_sentinel_data);
 }
 
-void MainWindowSatelliteComparator::show_layer(const QString& id)
-{
+void MainWindowSatelliteComparator::show_layer(const QString& id) {
     m_layers_search_result_items.value(id)->setVisible(true);
 }
 
-void MainWindowSatelliteComparator::hide_layer(const QString& id)
-{
+void MainWindowSatelliteComparator::hide_layer(const QString& id) {
     m_layers_search_result_items.value(id)->setVisible(false);
 }
 
-void MainWindowSatelliteComparator::remove_scene_layer(const QString& id)
-{
+void MainWindowSatelliteComparator::remove_scene_layer(const QString& id) {
     auto image_item = m_layers_search_result_items.value(id);
 
-    if(image_item) {
+    if (image_item) {
         m_scene->removeItem(image_item);
         delete image_item;
         m_layers_search_result_items.remove(id);
     }
 }
 
-void MainWindowSatelliteComparator::add_roi_to_gui_list(const QString &id)
-{
-    m_layer_roi_list->addItemToList(id,"Класс по умолчанию",QColor(Qt::yellow));
+void MainWindowSatelliteComparator::add_roi_to_gui_list(const QString& id) {
+    m_layer_roi_list->addItemToList(id, "Класс по умолчанию",
+                                    QColor(Qt::yellow));
 }
 
-void MainWindowSatelliteComparator::show_roi_average(const QString &id)
-{
-    qDebug()<<"TEST ROI POLYGON INTERSECTION CONNECTION....";
+void MainWindowSatelliteComparator::show_roi_average(const QString& id) {
+    qDebug() << "TEST ROI POLYGON INTERSECTION CONNECTION....";
     auto polItem = ui->graphicsView_satellite_image->getPolygonById(id);
-    auto points = ui->graphicsView_satellite_image->getPointsInsidePolygon(polItem,m_image_item);
-    qDebug()<<"POINTS SIZE: "<<points.size();
-    for(int i=0;i<points.size();++i){
-        qDebug()<<points[i].x()<<points[i].y();
+    auto points = ui->graphicsView_satellite_image->getPointsInsidePolygon(
+        polItem, m_image_item);
+    qDebug() << "POINTS SIZE: " << points.size();
+    for (int i = 0; i < points.size(); ++i) {
+        qDebug() << points[i].x() << points[i].y();
     }
 }
 
-void MainWindowSatelliteComparator::calculate_time_row_gradient(const QString& id)
-{
-    if(m_time_row.empty())return;
+void MainWindowSatelliteComparator::calculate_time_row_gradient(
+    const QString& id) {
+    if (m_time_row.empty()) return;
     auto gradient_colors = iut::generateOrangeShades(m_time_row.size());
-    qDebug()<<"Time row gradient connection check....."<<id;
-    auto roi_item =  ui->graphicsView_satellite_image->getPolygonById(id);
-    if(!roi_item)return;
-    QVector<QPointF>insidePoints;
+    qDebug() << "Time row gradient connection check....." << id;
+    auto roi_item = ui->graphicsView_satellite_image->getPolygonById(id);
+    if (!roi_item) return;
+    QVector<QPointF> insidePoints;
     // Получаем ограничивающий прямоугольник в координатах сцены
-    QRectF boundingRect = roi_item->mapToScene(roi_item->boundingRect()).boundingRect();
+    QRectF boundingRect =
+        roi_item->mapToScene(roi_item->boundingRect()).boundingRect();
     QPolygonF polygon = roi_item->mapToScene(roi_item->polygon());
-    qDebug()<<"Bounding rect..."<<boundingRect.left()<<boundingRect.right();
+    qDebug() << "Bounding rect..." << boundingRect.left()
+             << boundingRect.right();
     for (int x = boundingRect.left(); x <= boundingRect.right(); x += 1) {
         for (int y = boundingRect.top(); y <= boundingRect.bottom(); y += 1) {
             QPointF scenePoint(x, y);
@@ -1724,67 +1747,68 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient(const QString& i
 
     int xSize = INT_MAX;
     int ySize = INT_MAX;
-    for(int i=0;i<m_time_row.size();++i){
-        if(xSize > m_time_row[i][0].width)xSize = m_time_row[i][0].width;
-        if(ySize > m_time_row[i][0].height)ySize = m_time_row[i][0].height;
+    for (int i = 0; i < m_time_row.size(); ++i) {
+        if (xSize > m_time_row[i][0].width) xSize = m_time_row[i][0].width;
+        if (ySize > m_time_row[i][0].height) ySize = m_time_row[i][0].height;
     }
 
-
-
-
-
-
-    auto new_layer = new uchar[xSize*ySize*4];
+    auto new_layer = new uchar[xSize * ySize * 4];
     std::memset(new_layer, 0, xSize * ySize * 4);
 
-
-    for(int pi=0;pi<insidePoints.size();++pi){
-        if(insidePoints[pi].x() >= xSize || insidePoints[pi].x() < 0) continue;
-        if(insidePoints[pi].y() >= ySize || insidePoints[pi].y() < 0) continue;
+    for (int pi = 0; pi < insidePoints.size(); ++pi) {
+        if (insidePoints[pi].x() >= xSize || insidePoints[pi].x() < 0) continue;
+        if (insidePoints[pi].y() >= ySize || insidePoints[pi].y() < 0) continue;
         double latitude = 0.0;
         double longitude = 0.0;
-        getGeoCoordinates(insidePoints[pi].x(),insidePoints[pi].y(),m_time_row_geo[0],latitude,longitude,false);
+        getGeoCoordinates(insidePoints[pi].x(), insidePoints[pi].y(),
+                          m_time_row_geo[0], latitude, longitude, false);
         QVector<QPointF> m_points(m_time_row.size());
-        m_points[0] = {insidePoints[pi].x(),insidePoints[pi].y()};
-        for(int i=1;i<m_time_row.size();++i){
-            m_points[i] = (geoToPixel(latitude,longitude,m_time_row_geo[i]));
-            if(m_points[i].x() >= xSize || m_points[i].x() < 0) continue; //NEED SMART CHECK
-            if(m_points[i].y() >= ySize || m_points[i].y() < 0) continue;
+        m_points[0] = {insidePoints[pi].x(), insidePoints[pi].y()};
+        for (int i = 1; i < m_time_row.size(); ++i) {
+            m_points[i] = (geoToPixel(latitude, longitude, m_time_row_geo[i]));
+            if (m_points[i].x() >= xSize || m_points[i].x() < 0)
+                continue;  // NEED SMART CHECK
+            if (m_points[i].y() >= ySize || m_points[i].y() < 0) continue;
         }
         auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
 
-        int start_color = m_time_row[0][0].width * 4 * m_points[0].y() + m_points[0].x() * 4;
+        int start_color =
+            m_time_row[0][0].width * 4 * m_points[0].y() + m_points[0].x() * 4;
         QColor color;
-        if(ndvi_ndwi_indexes.dp_ndvi == 0){color = gradient_colors[0];}
-        if(ndvi_ndwi_indexes.dp_ndvi == 1){color = gradient_colors[1];}
-        if(ndvi_ndwi_indexes.dp_ndvi == 2){color = gradient_colors[2];}
-        if(ndvi_ndwi_indexes.dp_ndvi == 3){color = gradient_colors[3];}
+        if (ndvi_ndwi_indexes.dp_ndvi == 0) {
+            color = gradient_colors[0];
+        }
+        if (ndvi_ndwi_indexes.dp_ndvi == 1) {
+            color = gradient_colors[1];
+        }
+        if (ndvi_ndwi_indexes.dp_ndvi == 2) {
+            color = gradient_colors[2];
+        }
+        if (ndvi_ndwi_indexes.dp_ndvi == 3) {
+            color = gradient_colors[3];
+        }
 
         new_layer[start_color] = color.red();
-        new_layer[start_color+1] = color.green();
-        new_layer[start_color+2] = color.blue();
-        new_layer[start_color+3] = 255;
+        new_layer[start_color + 1] = color.green();
+        new_layer[start_color + 2] = color.blue();
+        new_layer[start_color + 3] = 255;
     }
 
-
-    auto cleanup = [](void* info) {
-        delete[] static_cast<uchar*>(info);
-    };
-    auto img = QImage(new_layer,xSize,ySize,xSize*4,QImage::Format_RGBA8888,cleanup,new_layer);
+    auto cleanup = [](void* info) { delete[] static_cast<uchar*>(info); };
+    auto img = QImage(new_layer, xSize, ySize, xSize * 4,
+                      QImage::Format_RGBA8888, cleanup, new_layer);
     auto pixmap = QPixmap::fromImage(img);
     auto new_image_item = new QGraphicsPixmapItem(pixmap);
-    new_image_item->setZValue(ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+    new_image_item->setZValue(
+        ui->graphicsView_satellite_image->getMaxZValue(m_scene));
     m_scene->addItem(new_image_item);
 
-    m_layers_search_result_items.insert("DP_HEAT_MAP",new_image_item);
-    m_layer_gui_list->addItemToList("DP_HEAT_MAP","",QColor(Qt::red));
-
+    m_layers_search_result_items.insert("DP_HEAT_MAP", new_image_item);
+    m_layer_gui_list->addItemToList("DP_HEAT_MAP", "", QColor(Qt::red));
 }
 
-void MainWindowSatelliteComparator::processLayer(uchar* layer,
-                                                 int xSize,
-                                                 int yStart,
-                                                 int yEnd,
+void MainWindowSatelliteComparator::processLayer(uchar* layer, int xSize,
+                                                 int yStart, int yEnd,
                                                  const QVector<double> sample,
                                                  QColor color,
                                                  int offsetStart) {
@@ -1792,130 +1816,148 @@ void MainWindowSatelliteComparator::processLayer(uchar* layer,
     for (int y = yStart; y < yEnd; ++y) {
         for (int x = 0; x < xSize; ++x) {
             QVector<double> ksy;
-            if(m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_8||m_satelite_type==sad::SATELLITE_TYPE::LANDSAT_9){
+            if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
+                m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
                 ksy = getLandsat8Ksy(x, y);
-            }else if(m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2A||m_satelite_type==sad::SATELLITE_TYPE::SENTINEL_2B){
+            } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
+                       m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
                 auto w_k = getSentinelKsy(x, y);
                 ksy = w_k.second;
             }
             if (m_is_bekas) {
-                size_t elems_to_copy = std::min(static_cast<size_t>(ksy.size()), static_cast<size_t>(5));//TO DO DEFINE NUMBER OF CHANNELS
-                std::vector<double> temp(ksy.begin(), ksy.begin() + elems_to_copy);
+                size_t elems_to_copy = std::min(
+                    static_cast<size_t>(ksy.size()),
+                    static_cast<size_t>(5));  // TO DO DEFINE NUMBER OF CHANNELS
+                std::vector<double> temp(ksy.begin(),
+                                         ksy.begin() + elems_to_copy);
                 ksy = QVector<double>::fromStdVector(temp);
             }
 
             double result = 999;
-            if (m_comboBox_calculation_method->currentText() == satc::spectral_angle) {
+            if (m_comboBox_calculation_method->currentText() ==
+                satc::spectral_angle) {
                 result = calculateSpectralAngle(ksy, sample);
-            } else if (m_comboBox_calculation_method->currentText() == satc::euclid_metrika) {
+            } else if (m_comboBox_calculation_method->currentText() ==
+                       satc::euclid_metrika) {
                 result = euclideanDistance(ksy, sample);
             }
 
-            layer[offset]     = color.red();
+            layer[offset] = color.red();
             layer[offset + 1] = color.green();
             layer[offset + 2] = color.blue();
-            layer[offset + 3] = result < euclid_param_spinbox->value() ? 255 : 0;
+            layer[offset + 3] =
+                result < euclid_param_spinbox->value() ? 255 : 0;
 
             offset += 4;
         }
     }
 }
 
-void MainWindowSatelliteComparator::initSentinelStructs()
-{
+void MainWindowSatelliteComparator::initSentinelStructs() {
     m_sentinel_metadata.isHeaderValid = false;
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
-        m_sentinel_metadata.sentinel_missed_channels[i] = true; // Изначально считаем все каналы пропущенными
+        m_sentinel_metadata.sentinel_missed_channels[i] =
+            true;  // Изначально считаем все каналы пропущенными
     }
 }
 
-void MainWindowSatelliteComparator::initLandsatStructs()
-{
-    std::fill(std::begin(m_landsat9_missed_channels),std::end(m_landsat9_missed_channels),true);
+void MainWindowSatelliteComparator::initLandsatStructs() {
+    std::fill(std::begin(m_landsat9_missed_channels),
+              std::end(m_landsat9_missed_channels), true);
     m_landsat9_sample = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 }
 
-void MainWindowSatelliteComparator::setUpPreviewPlot()
-{
+void MainWindowSatelliteComparator::setUpPreviewPlot() {
     m_preview_plot = new QCustomPlot;
-    m_preview_plot->setFixedSize(400,200);
+    m_preview_plot->setFixedSize(400, 200);
     m_preview_plot->legend->setVisible(true);
-    QCPGraph *graph_satellite = m_preview_plot->addGraph();
-    m_preview_plot->xAxis->setRange(400,2400);
-    m_preview_plot->yAxis->setRange(-0.2,1.2);
+    QCPGraph* graph_satellite = m_preview_plot->addGraph();
+    m_preview_plot->xAxis->setRange(400, 2400);
+    m_preview_plot->yAxis->setRange(-0.2, 1.2);
     m_preview_plot->xAxis->setLabel("Длина волны, nm");
     m_preview_plot->yAxis->setLabel("КСЯ");
     // Создаем заголовок
-    title_satellite_name = new QCPTextElement(m_preview_plot,
-                                              "",
-                                              QFont("Arial", 10,
-                                                    QFont::Bold));
+    title_satellite_name =
+        new QCPTextElement(m_preview_plot, "", QFont("Arial", 10, QFont::Bold));
     m_preview_plot->plotLayout()->insertRow(0);
     m_preview_plot->plotLayout()->addElement(0, 0, title_satellite_name);
-    graph_satellite->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
-    QCPGraph *graph_device = m_preview_plot->addGraph();
-    graph_device->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCrossSquare, 5));
+    graph_satellite->setScatterStyle(
+        QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
+    QCPGraph* graph_device = m_preview_plot->addGraph();
+    graph_device->setScatterStyle(
+        QCPScatterStyle(QCPScatterStyle::ssCrossSquare, 5));
     m_preview_plot->graph(0)->setName("Курсорный");
     m_preview_plot->graph(1)->setName("Образец для поиска");
     m_preview_plot->graph(0)->setPen(QPen(Qt::blue));
     m_preview_plot->graph(1)->setPen(QPen(Qt::red));
 }
 
-void MainWindowSatelliteComparator::setUpToolWidget()
-{
+void MainWindowSatelliteComparator::setUpToolWidget() {
     QWidget* widget_tools = new QWidget(ui->graphicsView_satellite_image);
     m_comboBox_calculation_method = new QComboBox;
-    m_comboBox_calculation_method->addItems({satc::euclid_metrika,satc::spectral_angle});
+    m_comboBox_calculation_method->addItems(
+        {satc::euclid_metrika, satc::spectral_angle});
 
     m_layer_gui_list = new LayerList;
-    connect(m_layer_gui_list,SIGNAL(showItem(const QString)),SLOT(show_layer(const QString)));
-    connect(m_layer_gui_list,SIGNAL(hideItem(const QString)),SLOT(hide_layer(const QString)));
-    connect(m_layer_gui_list,SIGNAL(removeItem(const QString)),SLOT(remove_scene_layer(const QString)));
+    connect(m_layer_gui_list, SIGNAL(showItem(const QString)),
+            SLOT(show_layer(const QString)));
+    connect(m_layer_gui_list, SIGNAL(hideItem(const QString)),
+            SLOT(hide_layer(const QString)));
+    connect(m_layer_gui_list, SIGNAL(removeItem(const QString)),
+            SLOT(remove_scene_layer(const QString)));
 
     m_layer_roi_list = new LayerRoiList;
     ui->verticalLayout_roi->addWidget(m_layer_roi_list);
-    connect(m_layer_roi_list,SIGNAL(showItem(const QString)),ui->graphicsView_satellite_image,SLOT(show_roi_layer(const QString)));
-    connect(m_layer_roi_list,SIGNAL(hideItem(const QString)),ui->graphicsView_satellite_image,SLOT(hide_roi_layer(const QString)));
-    connect(m_layer_roi_list,SIGNAL(removeItem(const QString)),ui->graphicsView_satellite_image,SLOT(remove_roi_scene_layer(const QString)));
-    connect(m_layer_roi_list,SIGNAL(roi_color_changed(const QString, const QColor)),
-            ui->graphicsView_satellite_image,SLOT(changeRoiColor(const QString, const QColor)));
-    connect(m_layer_roi_list,SIGNAL(roi_item_selected(const QString)),
-            ui->graphicsView_satellite_image,SLOT(setRoiSelectEffect(const QString)));
-    connect(m_layer_roi_list,SIGNAL(roiPolygonAverage(const QString)),
-            this,SLOT(show_roi_average(const QString)));
-    connect(m_layer_roi_list,SIGNAL(createTimeRowGradient(const QString)),
+    connect(m_layer_roi_list, SIGNAL(showItem(const QString)),
+            ui->graphicsView_satellite_image,
+            SLOT(show_roi_layer(const QString)));
+    connect(m_layer_roi_list, SIGNAL(hideItem(const QString)),
+            ui->graphicsView_satellite_image,
+            SLOT(hide_roi_layer(const QString)));
+    connect(m_layer_roi_list, SIGNAL(removeItem(const QString)),
+            ui->graphicsView_satellite_image,
+            SLOT(remove_roi_scene_layer(const QString)));
+    connect(m_layer_roi_list,
+            SIGNAL(roi_color_changed(const QString, const QColor)),
+            ui->graphicsView_satellite_image,
+            SLOT(changeRoiColor(const QString, const QColor)));
+    connect(m_layer_roi_list, SIGNAL(roi_item_selected(const QString)),
+            ui->graphicsView_satellite_image,
+            SLOT(setRoiSelectEffect(const QString)));
+    connect(m_layer_roi_list, SIGNAL(roiPolygonAverage(const QString)), this,
+            SLOT(show_roi_average(const QString)));
+    connect(m_layer_roi_list, SIGNAL(createTimeRowGradient(const QString)),
             this, SLOT(calculate_time_row_gradient(const QString)));
-
-
 
     QHBoxLayout* tool_root_layout = new QHBoxLayout;
     QVBoxLayout* toolLayOut = new QVBoxLayout;
     tool_root_layout->addLayout(toolLayOut);
-    const QSize tool_element_size(30,30);
+    const QSize tool_element_size(30, 30);
 
-
-    QPushButton *pushbutton_centerOn = new QPushButton;
+    QPushButton* pushbutton_centerOn = new QPushButton;
     pushbutton_centerOn->setText("●");
     pushbutton_centerOn->setFixedSize(tool_element_size);
 
-    QPushButton *zoomInButton = new QPushButton;
+    QPushButton* zoomInButton = new QPushButton;
     zoomInButton->setText("+");
     zoomInButton->setFixedSize(tool_element_size);
-    QPushButton *zoomOutButton = new QPushButton;
+    QPushButton* zoomOutButton = new QPushButton;
     zoomOutButton->setText("-");
     zoomOutButton->setFixedSize(tool_element_size);
-    QPushButton *googleMap = new QPushButton;
+    QPushButton* googleMap = new QPushButton;
     googleMap->setText("GM");
     googleMap->setFixedSize(tool_element_size);
 
-    QPushButton *resetToRGB = new QPushButton;
+    QPushButton* resetToRGB = new QPushButton;
     resetToRGB->setText("RC");
     resetToRGB->setFixedSize(tool_element_size);
 
-    QVBoxLayout *euclid_layout = new QVBoxLayout;
-    QSpacerItem *spacer1 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Fixed);
-    QSpacerItem *spacer2 = new QSpacerItem(20, 40, QSizePolicy::Expanding, QSizePolicy::Expanding);
-    QPushButton *pushbutton_paint_samples = new QPushButton;
+    QVBoxLayout* euclid_layout = new QVBoxLayout;
+    QSpacerItem* spacer1 =
+        new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Fixed);
+    QSpacerItem* spacer2 =
+        new QSpacerItem(20, 40, QSizePolicy::Expanding, QSizePolicy::Expanding);
+    QPushButton* pushbutton_paint_samples = new QPushButton;
     pushbutton_paint_samples->setText("Запуск поиска");
 
     euclid_param_spinbox = new QDoubleSpinBox;
@@ -1938,73 +1980,76 @@ void MainWindowSatelliteComparator::setUpToolWidget()
     tool_root_layout->addWidget(m_preview_plot);
     widget_tools->setLayout(tool_root_layout);
     tool_root_layout->addLayout(euclid_layout);
-    //tool_root_layout->addWidget(m_layer_gui_list);
+    // tool_root_layout->addWidget(m_layer_gui_list);
     ui->verticalLayout_search_layers->addWidget(m_layer_gui_list);
     widget_tools->show();
 
-    connect(pushbutton_centerOn,SIGNAL(clicked()),this,SLOT(centerSceneOnCrossSquare()));
-    connect(zoomInButton, SIGNAL(clicked()),ui->graphicsView_satellite_image,SLOT(zoomIn()));
-    connect(zoomOutButton, SIGNAL(clicked()),ui->graphicsView_satellite_image,SLOT(zoomOut()));
-    connect(googleMap,SIGNAL(clicked()),this,SLOT(showGoogleMap()));
-    connect(resetToRGB,SIGNAL(clicked()),this,SLOT(resetColorsToDefaultRGB()));
-    connect(pushbutton_paint_samples,SIGNAL(clicked()),this,SLOT(findAreasUsingSelectedMetric()));
-
+    connect(pushbutton_centerOn, SIGNAL(clicked()), this,
+            SLOT(centerSceneOnCrossSquare()));
+    connect(zoomInButton, SIGNAL(clicked()), ui->graphicsView_satellite_image,
+            SLOT(zoomIn()));
+    connect(zoomOutButton, SIGNAL(clicked()), ui->graphicsView_satellite_image,
+            SLOT(zoomOut()));
+    connect(googleMap, SIGNAL(clicked()), this, SLOT(showGoogleMap()));
+    connect(resetToRGB, SIGNAL(clicked()), this,
+            SLOT(resetColorsToDefaultRGB()));
+    connect(pushbutton_paint_samples, SIGNAL(clicked()), this,
+            SLOT(findAreasUsingSelectedMetric()));
 }
 
-void MainWindowSatelliteComparator::makeConnectsForMenuActions()
-{
-    connect(ui->actionBekas,SIGNAL(triggered()),this,SLOT(openBekasSpectraData()));
-    connect(ui->actionOpenLandsat9Header,SIGNAL(triggered()),this,SLOT(openLandsat9HeaderData()));
-    connect(ui->actionOpenLandsat8Header,SIGNAL(triggered()),this,SLOT(openLandsat8HeaderData()));
-    connect(ui->actionSentinel_2A,SIGNAL(triggered()),this,SLOT(openSentinel2AHeaderData()));
-    connect(ui->actionSentinel_2B,SIGNAL(triggered()),this,SLOT(openSentinel2BHeaderData()));
-    connect(ui->action_LoadTimeRow,SIGNAL(triggered()),this,SLOT(openTimeRowData()));
+void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
+    connect(ui->actionBekas, SIGNAL(triggered()), this,
+            SLOT(openBekasSpectraData()));
+    connect(ui->actionOpenLandsat9Header, SIGNAL(triggered()), this,
+            SLOT(openLandsat9HeaderData()));
+    connect(ui->actionOpenLandsat8Header, SIGNAL(triggered()), this,
+            SLOT(openLandsat8HeaderData()));
+    connect(ui->actionSentinel_2A, SIGNAL(triggered()), this,
+            SLOT(openSentinel2AHeaderData()));
+    connect(ui->actionSentinel_2B, SIGNAL(triggered()), this,
+            SLOT(openSentinel2BHeaderData()));
+    connect(ui->action_LoadTimeRow, SIGNAL(triggered()), this,
+            SLOT(openTimeRowData()));
 }
 
-void MainWindowSatelliteComparator::addBaseItemsToScene()
-{
+void MainWindowSatelliteComparator::addBaseItemsToScene() {
     m_scene_text_item_metric_value->setDefaultTextColor(Qt::black);
     m_scene_text_item_metric_value->setFont(QFont("Arial", 12));
     m_scene_text_item_metric_value->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR_TEXT);
     m_scene->addItem(m_scene_text_item_metric_value);
-    m_scene_cross_square_item->setPos(0,0);
+    m_scene_cross_square_item->setPos(0, 0);
     m_scene_cross_square_item->setVisible(false);
     m_scene_cross_square_item->setZValue(Z_INDEX_CROSS_SQUARE_CURSOR);
     m_scene->addItem(m_scene_cross_square_item);
 }
 
-void MainWindowSatelliteComparator::read_sentinel2_bands_data(QVector<sad::BAND_DATA>& data)
-{
-
+void MainWindowSatelliteComparator::read_sentinel2_bands_data(
+    QVector<sad::BAND_DATA>& data) {
     for (int i = 0; i < data.size(); ++i) {
         const QString& band_file_name = data[i].file_name;
         int xS = 0;
         int yS = 0;
 
-        data[i].data  = readTiff(m_root_path + "/" + band_file_name+".jp2",xS,yS);
+        data[i].data =
+            readTiff(m_root_path + "/" + band_file_name + ".jp2", xS, yS);
 
-        if(data[i].resolution_in_pixel_meters=="R10m"){
-            //qDebug()<<"RESOLUTION 10 TO 20";
-            int outX = xS/2;
-            int outY = yS/2;
+        if (data[i].resolution_in_pixel_meters == "R10m") {
+            // qDebug()<<"RESOLUTION 10 TO 20";
+            int outX = xS / 2;
+            int outY = yS / 2;
             // Выделяем буфер вручную
             uint16_t* buffer = new uint16_t[(sizeof(uint16_t) * outX * outY)];
-            downsample_uint16(data[i].data,buffer,xS,yS);
-            delete []data[i].data;
+            downsample_uint16(data[i].data, buffer, xS, yS);
+            delete[] data[i].data;
             data[i].data = buffer;
-
         }
-        //qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
-        if(data[i].width != xS)qDebug()<<"WRONG X";
-        if(data[i].height != yS)qDebug()<<"WRONG Y";
-
+        // qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
+        if (data[i].width != xS) qDebug() << "WRONG X";
+        if (data[i].height != yS) qDebug() << "WRONG Y";
     }
-
-
 }
 
-void MainWindowSatelliteComparator::gdal_start_driver()
-{
+void MainWindowSatelliteComparator::gdal_start_driver() {
     QString dataPath = QApplication::applicationDirPath() + "/data";
     CPLSetConfigOption("GDAL_DATA", dataPath.toUtf8().constData());
     GDALAllRegister();
@@ -2015,45 +2060,43 @@ void MainWindowSatelliteComparator::gdal_start_driver()
     CPLSetConfigOption("GDAL_JP2KAK_USE", "YES");
 }
 
-void MainWindowSatelliteComparator::gdal_close_driver()
-{
+void MainWindowSatelliteComparator::gdal_close_driver() {
     GDALDestroyDriverManager();
 }
 
-QPair<QVector<double>, QVector<double> > MainWindowSatelliteComparator::getSentinelKsy(const int x,
-                                                                                       const int y)
-{
-    if(m_is_image_created==false)return {};
-    if(m_sentinel_data.empty())return {};
-    int xSize= m_sentinel_data[0].width;
-    int ySize= m_sentinel_data[0].width;
-    if(x>xSize||y>ySize) return {};
-    if(x<0||y<0) return {};
+QPair<QVector<double>, QVector<double>>
+MainWindowSatelliteComparator::getSentinelKsy(const int x, const int y) {
+    if (m_is_image_created == false) return {};
+    if (m_sentinel_data.empty()) return {};
+    int xSize = m_sentinel_data[0].width;
+    int ySize = m_sentinel_data[0].width;
+    if (x > xSize || y > ySize) return {};
+    if (x < 0 || y < 0) return {};
     QVector<double> ksy;
     QVector<double> waves;
-    for(int i=0;i<m_sentinel_data.size();++i){
-        uint16_t value = m_sentinel_data[i].data[(y*xSize) + x];
-        //double ksy_d = m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
-        ksy.append(value/10000.0);
+    for (int i = 0; i < m_sentinel_data.size(); ++i) {
+        uint16_t value = m_sentinel_data[i].data[(y * xSize) + x];
+        // double ksy_d =
+        // m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
+        ksy.append(value / 10000.0);
         waves.append(m_sentinel_data[i].central_wave_length);
     }
-    return {waves,ksy};
+    return {waves, ksy};
 }
 
-void MainWindowSatelliteComparator::clear_satellite_data()
-{
-    if(m_sentinel_data.empty())return;
-    for(int i=0;i<m_sentinel_data.size();++i){
+void MainWindowSatelliteComparator::clear_satellite_data() {
+    if (m_sentinel_data.empty()) return;
+    for (int i = 0; i < m_sentinel_data.size(); ++i) {
         auto data = m_sentinel_data[i].data;
-        if(data)delete[]data;
+        if (data) delete[] data;
     }
     m_sentinel_data.clear();
 }
 
-void MainWindowSatelliteComparator::clear_all_layers()
-{
-    if(m_layers_search_result_items.empty())return;
-    for (auto it = m_layers_search_result_items.constBegin(); it != m_layers_search_result_items.constEnd(); ++it) {
+void MainWindowSatelliteComparator::clear_all_layers() {
+    if (m_layers_search_result_items.empty()) return;
+    for (auto it = m_layers_search_result_items.constBegin();
+         it != m_layers_search_result_items.constEnd(); ++it) {
         QString key = it.key();
         remove_scene_layer(key);
     }
@@ -2061,9 +2104,8 @@ void MainWindowSatelliteComparator::clear_all_layers()
     m_layers_search_result_items.clear();
 }
 
-QHash<QString, sad::geoTransform> MainWindowSatelliteComparator::extractGeoPositions
-(const QString &xmlFilePath)
-{
+QHash<QString, sad::geoTransform>
+MainWindowSatelliteComparator::extractGeoPositions(const QString& xmlFilePath) {
     QHash<QString, sad::geoTransform> positions;
 
     QFile file(xmlFilePath);
@@ -2094,8 +2136,8 @@ QHash<QString, sad::geoTransform> MainWindowSatelliteComparator::extractGeoPosit
     return positions;
 }
 
-int MainWindowSatelliteComparator::extractUTMZoneFromXML(const QString &xmlFilePath)
-{
+int MainWindowSatelliteComparator::extractUTMZoneFromXML(
+    const QString& xmlFilePath) {
     QFile file(xmlFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Не удалось открыть файл:" << xmlFilePath;
@@ -2128,8 +2170,8 @@ int MainWindowSatelliteComparator::extractUTMZoneFromXML(const QString &xmlFileP
     return -1;
 }
 
-QString MainWindowSatelliteComparator::getDateTimeFromXML(const QString& xmlFilePath)
-{
+QString MainWindowSatelliteComparator::getDateTimeFromXML(
+    const QString& xmlFilePath) {
     QFile file(xmlFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Не удалось открыть файл:" << xmlFilePath;
@@ -2148,20 +2190,19 @@ QString MainWindowSatelliteComparator::getDateTimeFromXML(const QString& xmlFile
     return date_time;
 }
 
-void MainWindowSatelliteComparator::getKSY(const QPointF &pos,
-                                           QVector<double> &waves,
-                                           QVector<double> &ksy)
-{
+void MainWindowSatelliteComparator::getKSY(const QPointF& pos,
+                                           QVector<double>& waves,
+                                           QVector<double>& ksy) {
     Q_UNUSED(pos)
     Q_UNUSED(waves)
     Q_UNUSED(ksy)
 }
 
-QImage MainWindowSatelliteComparator::createModifiedImage(const QImage &img,
+QImage MainWindowSatelliteComparator::createModifiedImage(const QImage& img,
                                                           double coefSat,
-                                                          double coefLight)
-{
-    QImage adjusted = img.convertToFormat(QImage::Format_ARGB32_Premultiplied).copy();
+                                                          double coefLight) {
+    QImage adjusted =
+        img.convertToFormat(QImage::Format_ARGB32_Premultiplied).copy();
     const int pixelCount = adjusted.width() * adjusted.height();
     QRgb* pixels = reinterpret_cast<QRgb*>(adjusted.bits());
 
@@ -2189,90 +2230,121 @@ QImage MainWindowSatelliteComparator::createModifiedImage(const QImage &img,
     return adjusted;
 }
 
-void MainWindowSatelliteComparator::initUdpRpcConnection()
-{
-    m_rpc = new UdpJsonRpc(LOCAL_PORT,
-                           QHostAddress::LocalHost, MATLAB_PORT, this);
+void MainWindowSatelliteComparator::initUdpRpcConnection() {
+    m_rpc =
+        new UdpJsonRpc(LOCAL_PORT, QHostAddress::LocalHost, MATLAB_PORT, this);
 
     // Регистрируем методы, которые может вызывать Matlab app.
     m_rpc->registerMethod("processClassifiedBecasSpectra",
-                          [this](const QJsonValue &params) -> QJsonValue {
-        qDebug()<<"processClassifiedBecasSpectra";
-        QVariantMap map = params.toVariant().toMap();
-        processpClassifiedBecasSpectraMatlabRequest(map);
-        return NULL;
-    });
-
+                          [this](const QJsonValue& params) -> QJsonValue {
+                              qDebug() << "processClassifiedBecasSpectra";
+                              QVariantMap map = params.toVariant().toMap();
+                              processpClassifiedBecasSpectraMatlabRequest(map);
+                              return NULL;
+                          });
 
     // Подключаем сигнал получения результата к слоту обработки
-    connect(m_rpc,
-            &UdpJsonRpc::resultReady,
-            this,
+    connect(m_rpc, &UdpJsonRpc::resultReady, this,
             &MainWindowSatelliteComparator::handleJsonRpcResult);
 }
 
-QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat8_9_TimeRow(const QString& headerName,
-                                                                                            sad::LANDSAT_METADATA_FILE& landsat_metadata,
-                                                                                            sad::geoTransform& gt)
-{
+QVector<sad::BAND_DATA>
+MainWindowSatelliteComparator::getDataFromJsonForLandsat8_9_TimeRow(
+    const QString& headerName, sad::LANDSAT_METADATA_FILE& landsat_metadata,
+    sad::geoTransform& gt) {
     QJsonObject jo;
     QVector<sad::BAND_DATA> bands_data;
-    jsn::getJsonObjectFromFile(headerName,jo);
+    jsn::getJsonObjectFromFile(headerName, jo);
 
     QFileInfo fi(headerName);
     m_root_path = fi.path();
     const QString extension = fi.completeSuffix();
 
-    if(extension == "json"){
-
-        if(jo.contains("LANDSAT_METADATA_FILE")){
-            QJsonObject image_attributes = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","IMAGE_ATTRIBUTES"}).toObject();
-            landsat_metadata.image_attributes.spacecraft_id = image_attributes.value("SPACECRAFT_ID").toString();
-            QString date_acquired = image_attributes.value("DATE_ACQUIRED").toString();
+    if (extension == "json") {
+        if (jo.contains("LANDSAT_METADATA_FILE")) {
+            QJsonObject image_attributes =
+                jsn::getValueByPath(
+                    jo, {"LANDSAT_METADATA_FILE", "IMAGE_ATTRIBUTES"})
+                    .toObject();
+            landsat_metadata.image_attributes.spacecraft_id =
+                image_attributes.value("SPACECRAFT_ID").toString();
+            QString date_acquired =
+                image_attributes.value("DATE_ACQUIRED").toString();
             landsat_metadata.image_attributes.date_acquired = date_acquired;
-            QDate date {QDate::fromString(date_acquired,"yyyy-MM-dd")};
-            QString timeStr = image_attributes.value("SCENE_CENTER_TIME").toString().remove('Z');
-
+            QDate date{QDate::fromString(date_acquired, "yyyy-MM-dd")};
+            QString timeStr = image_attributes.value("SCENE_CENTER_TIME")
+                                  .toString()
+                                  .remove('Z');
 
             int dotIndex = timeStr.indexOf('.');
             if (dotIndex != -1 && timeStr.length() > dotIndex + 4) {
                 timeStr = timeStr.left(dotIndex + 4);
             }
 
-            QTime time = {QTime::fromString(timeStr,"hh:mm:ss.zzz")};
-            //qDebug()<<date.toString("yyyy-MM-dd")<<time.toString("----> hh:mm:ss.zzz");
-            QJsonValue value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PRODUCT_CONTENTS"});
-            QJsonValue radiance_value = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"});
+            QTime time = {QTime::fromString(timeStr, "hh:mm:ss.zzz")};
+            // qDebug()<<date.toString("yyyy-MM-dd")<<time.toString("---->
+            // hh:mm:ss.zzz");
+            QJsonValue value = jsn::getValueByPath(
+                jo, {"LANDSAT_METADATA_FILE", "PRODUCT_CONTENTS"});
+            QJsonValue radiance_value = jsn::getValueByPath(
+                jo, {"LANDSAT_METADATA_FILE",
+                     "LEVEL2_SURFACE_REFLECTANCE_PARAMETERS"});
             QJsonObject check_bands = value.toObject();
             QJsonObject radiance = radiance_value.toObject();
-            QJsonObject projection = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PROJECTION_ATTRIBUTES"}).toObject();
+            QJsonObject projection =
+                jsn::getValueByPath(
+                    jo, {"LANDSAT_METADATA_FILE", "PROJECTION_ATTRIBUTES"})
+                    .toObject();
             gt = getGeo(jo);
-            landsat_metadata.projection_attributes.utm_zone = projection["UTM_ZONE"].toString().toDouble();
-            landsat_metadata.projection_attributes.corner_ul_projection_x_product = projection["CORNER_UL_PROJECTION_X_PRODUCT"].toString().toDouble();
-            landsat_metadata.projection_attributes.corner_ul_projection_y_product = projection["CORNER_UL_PROJECTION_Y_PRODUCT"].toString().toDouble();
-            landsat_metadata.projection_attributes.grid_cell_size_reflective = projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
-            QDateTime dt(date,time);
+            landsat_metadata.projection_attributes.utm_zone =
+                projection["UTM_ZONE"].toString().toDouble();
+            landsat_metadata.projection_attributes
+                .corner_ul_projection_x_product =
+                projection["CORNER_UL_PROJECTION_X_PRODUCT"]
+                    .toString()
+                    .toDouble();
+            landsat_metadata.projection_attributes
+                .corner_ul_projection_y_product =
+                projection["CORNER_UL_PROJECTION_Y_PRODUCT"]
+                    .toString()
+                    .toDouble();
+            landsat_metadata.projection_attributes.grid_cell_size_reflective =
+                projection["GRID_CELL_SIZE_REFLECTIVE"].toString().toDouble();
+            QDateTime dt(date, time);
             m_time_row_dates_unix_time.first.push_back(dt.toSecsSinceEpoch());
-            m_time_row_dates_unix_time.second.push_back(date.toString("yyyy_MM_dd"));
-            for(int i=0;i<LANDSAT_BANDS_NUMBER;++i){
-
-                auto sorted_order_index = sad::sorted_landsat_bands_order_by_wavelength[i];
-                if(check_bands.value(sad::landsat9_bands_keys[sorted_order_index]).isUndefined()){
+            m_time_row_dates_unix_time.second.push_back(
+                date.toString("yyyy_MM_dd"));
+            for (int i = 0; i < LANDSAT_BANDS_NUMBER; ++i) {
+                auto sorted_order_index =
+                    sad::sorted_landsat_bands_order_by_wavelength[i];
+                if (check_bands
+                        .value(sad::landsat9_bands_keys[sorted_order_index])
+                        .isUndefined()) {
                     continue;
                 }
                 sad::BAND_DATA bd;
-                auto band_file_name = check_bands[sad::landsat9_bands_keys[sorted_order_index]].toString();
+                auto band_file_name =
+                    check_bands[sad::landsat9_bands_keys[sorted_order_index]]
+                        .toString();
                 int xS = 0;
                 int yS = 0;
                 bd.gui_name = sad::landsat_bands_gui_names[sorted_order_index];
-                bd.data = readTiff(fi.path()+"/"+band_file_name,xS,yS);
+                bd.data = readTiff(fi.path() + "/" + band_file_name, xS, yS);
                 bd.width = xS;
                 bd.height = yS;
-                double mult_refl = radiance[sad::landsat9_mult_reflectence_keys[sorted_order_index]].toString().toDouble();
-                double add_refl = radiance[sad::landsat9_add_reflectence_keys[sorted_order_index]].toString().toDouble();
+                double mult_refl = radiance[sad::landsat9_mult_reflectence_keys
+                                                [sorted_order_index]]
+                                       .toString()
+                                       .toDouble();
+                double add_refl =
+                    radiance
+                        [sad::landsat9_add_reflectence_keys[sorted_order_index]]
+                            .toString()
+                            .toDouble();
                 bd.reflectance_mult = mult_refl;
                 bd.reflectance_add = add_refl;
-                bd.central_wave_length = sad::landsat_central_wavelengths[sorted_order_index];
+                bd.central_wave_length =
+                    sad::landsat_central_wavelengths[sorted_order_index];
                 bands_data.append(bd);
             }
         }
@@ -2281,30 +2353,28 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataFromJsonForLandsat
     return bands_data;
 }
 
-QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataForSentinel_TimeRow(const QString& headerName,
-                                                                                  sad::SATELLITE_TYPE st,
-                                                                                  sad::SENTINEL_METADATA& metadata,
-                                                                                  sad::geoTransform& gt)
-{
-
+QVector<sad::BAND_DATA>
+MainWindowSatelliteComparator::getDataForSentinel_TimeRow(
+    const QString& headerName, sad::SATELLITE_TYPE st,
+    sad::SENTINEL_METADATA& metadata, sad::geoTransform& gt) {
     QVector<sad::BAND_DATA> bands_data;
     QFile file(headerName);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "Не удалось открыть файл Sentinel XML";
-        return{};
+        return {};
     }
 
     QDomDocument doc;
     if (!doc.setContent(&file)) {
         qWarning() << "Ошибка разбора XML";
         file.close();
-        return{};
+        return {};
     }
     file.close();
     QFileInfo fi(headerName);
     m_root_path = fi.path();
 
-    qDebug()<<"sentinel time row rooth path: --->"<<m_root_path;
+    qDebug() << "sentinel time row rooth path: --->" << m_root_path;
 
     QStringList imageFiles;
     QDomNodeList imageNodes = doc.elementsByTagName("IMAGE_FILE");
@@ -2319,38 +2389,39 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataForSentinel_TimeRo
             // Ищем точное вхождение ключа как часть имени файла
             if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
                 filteredFiles << file;
-                break; // нашли — переходим к следующему файлу
+                break;  // нашли — переходим к следующему файлу
             }
         }
     }
     QStringList finalFiles;
     QMap<QString, QString> bestResolutionForBand;
-    const QStringList priorityOrder = { "R20m","R10m","R60m" };
+    const QStringList priorityOrder = {"R20m", "R10m", "R60m"};
 
     // Для каждого band ищем путь с наивысшим приоритетом по разрешению
     for (const QString& bandKey : sad::sentinel_bands_keys) {
         for (const QString& resolution : priorityOrder) {
             for (const QString& file : qAsConst(filteredFiles)) {
-                if (file.contains(resolution) && file.contains("_" + bandKey + "_")) {
+                if (file.contains(resolution) &&
+                    file.contains("_" + bandKey + "_")) {
                     bestResolutionForBand[bandKey] = file;
-                    break; // нашли лучший — переходим к следующему band
+                    break;  // нашли лучший — переходим к следующему band
                 }
             }
-            if (bestResolutionForBand.contains(bandKey)) break; // если уже найден — не ищем в меньших разрешениях
+            if (bestResolutionForBand.contains(bandKey))
+                break;  // если уже найден — не ищем в меньших разрешениях
         }
     }
 
     // Собираем финальный список
     finalFiles = bestResolutionForBand.values();
 
-
-    qDebug()<<finalFiles;
-
+    qDebug() << finalFiles;
 
     for (const QString& file : qAsConst(finalFiles)) {
         for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
             if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
-                metadata.sentinel_missed_channels[i] = false; // Канал найден — не пропущен
+                metadata.sentinel_missed_channels[i] =
+                    false;  // Канал найден — не пропущен
                 metadata.files[i] = file;
                 break;
             }
@@ -2360,12 +2431,18 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataForSentinel_TimeRo
     QList<QString> availableBandNames;
     QString gui_channels[SENTINEL_BANDS_NUMBER];
     double central_waves[SENTINEL_BANDS_NUMBER];
-    if(st == sad::SENTINEL_2A){
-        copyQStringArray(sad::sentinel_2A_gui_band_names,gui_channels,SENTINEL_BANDS_NUMBER);
-        std::copy(sad::sentinel_2A_central_wave_lengths,sad::sentinel_2A_central_wave_lengths+SENTINEL_BANDS_NUMBER,central_waves);
-    }else if(st == sad::SENTINEL_2B){
-        copyQStringArray(sad::sentinel_2B_gui_band_names,gui_channels,SENTINEL_BANDS_NUMBER);
-        std::copy(sad::sentinel_2B_central_wave_lengths,sad::sentinel_2B_central_wave_lengths+SENTINEL_BANDS_NUMBER,central_waves);
+    if (st == sad::SENTINEL_2A) {
+        copyQStringArray(sad::sentinel_2A_gui_band_names, gui_channels,
+                         SENTINEL_BANDS_NUMBER);
+        std::copy(sad::sentinel_2A_central_wave_lengths,
+                  sad::sentinel_2A_central_wave_lengths + SENTINEL_BANDS_NUMBER,
+                  central_waves);
+    } else if (st == sad::SENTINEL_2B) {
+        copyQStringArray(sad::sentinel_2B_gui_band_names, gui_channels,
+                         SENTINEL_BANDS_NUMBER);
+        std::copy(sad::sentinel_2B_central_wave_lengths,
+                  sad::sentinel_2B_central_wave_lengths + SENTINEL_BANDS_NUMBER,
+                  central_waves);
     }
 
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
@@ -2378,55 +2455,57 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataForSentinel_TimeRo
 
             bool isResolutionMissed = true;
             for (const QString& resolution : priorityOrder) {
-                if (data.file_name.contains(resolution)){
+                if (data.file_name.contains(resolution)) {
                     data.resolution_in_pixel_meters = resolution;
-                    data.width = sad::sentinel_resolutions.value(resolution).first;
-                    data.height = sad::sentinel_resolutions.value(resolution).second;
+                    data.width =
+                        sad::sentinel_resolutions.value(resolution).first;
+                    data.height =
+                        sad::sentinel_resolutions.value(resolution).second;
                     isResolutionMissed = false;
-                    qDebug()<<"r, w, h: "<<data.resolution_in_pixel_meters<<data.width<<data.height;
+                    qDebug() << "r, w, h: " << data.resolution_in_pixel_meters
+                             << data.width << data.height;
                     break;
                 };
             }
-            if(isResolutionMissed){
-
-                //TODO EXCEPTION
-                //Мы обязательно должны знать разрешение
-                // Выбросить исключение
-                qDebug()<<"<--------------------- NO RESOLUTION EXCEPTION !!!------------------>";
+            if (isResolutionMissed) {
+                // TODO EXCEPTION
+                // Мы обязательно должны знать разрешение
+                //  Выбросить исключение
+                qDebug() << "<--------------------- NO RESOLUTION EXCEPTION "
+                            "!!!------------------>";
                 continue;
-
             }
             bands_data.append(data);
         }
     }
 
-
     read_sentinel2_bands_data(bands_data);
 
-    QHash <QString,sad::geoTransform> sentinel_geo;
-    if(finalFiles.empty()==false){
-        QFileInfo finfo(m_root_path + "/" + finalFiles[0]+".jp2");
+    QHash<QString, sad::geoTransform> sentinel_geo;
+    if (finalFiles.empty() == false) {
+        QFileInfo finfo(m_root_path + "/" + finalFiles[0] + ".jp2");
         QDir dir(finfo.absolutePath());
         dir.cdUp();
         dir.cdUp();
-        const QString geo_file = dir.path()+"/MTD_TL.xml";
+        const QString geo_file = dir.path() + "/MTD_TL.xml";
         fi.setFile(geo_file);
         auto xml_doc = fi.absoluteFilePath();
-        //qDebug()<<xml_doc<<"--->"<<fi.exists();
+        // qDebug()<<xml_doc<<"--->"<<fi.exists();
         gt.utmZone = extractUTMZoneFromXML(xml_doc);
         sentinel_geo = extractGeoPositions(xml_doc);
         QString date_time = getDateTimeFromXML(xml_doc);
 
-        QDate date = QDate::fromString(date_time.mid(0,10),"yyyy-MM-dd");
-        qDebug()<<"date: "<<date.toString("yyyy-MM-dd");
-        QString timePart = date_time.mid(11, 12); // "09:25:54.344"
-        qDebug()<<"time_part -->"<<timePart;
+        QDate date = QDate::fromString(date_time.mid(0, 10), "yyyy-MM-dd");
+        qDebug() << "date: " << date.toString("yyyy-MM-dd");
+        QString timePart = date_time.mid(11, 12);  // "09:25:54.344"
+        qDebug() << "time_part -->" << timePart;
         QTime time = QTime::fromString(timePart, "HH:mm:ss.zzz");
 
         QDateTime dt(date, time);
         metadata.image_attributes.date_acquired = date_time;
         m_time_row_dates_unix_time.first.push_back(dt.toSecsSinceEpoch());
-        m_time_row_dates_unix_time.second.push_back(date.toString("yyyy_MM_dd"));
+        m_time_row_dates_unix_time.second.push_back(
+            date.toString("yyyy_MM_dd"));
 
         gt.ulX = sentinel_geo["20"].ulX;
         gt.ulY = sentinel_geo["20"].ulY;
@@ -2437,10 +2516,11 @@ QVector<sad::BAND_DATA> MainWindowSatelliteComparator::getDataForSentinel_TimeRo
     return bands_data;
 }
 
-sad::geoTransform MainWindowSatelliteComparator::getGeo(const QJsonObject& jo)
-{
+sad::geoTransform MainWindowSatelliteComparator::getGeo(const QJsonObject& jo) {
     sad::geoTransform gt;
-    QJsonObject projection = jsn::getValueByPath(jo,{"LANDSAT_METADATA_FILE","PROJECTION_ATTRIBUTES"}).toObject();
+    QJsonObject projection = jsn::getValueByPath(jo, {"LANDSAT_METADATA_FILE",
+                                                      "PROJECTION_ATTRIBUTES"})
+                                 .toObject();
     gt.utmZone = projection["UTM_ZONE"].toString().toDouble();
     gt.ulX = projection["CORNER_UL_PROJECTION_X_PRODUCT"].toString().toDouble();
     gt.ulY = projection["CORNER_UL_PROJECTION_Y_PRODUCT"].toString().toDouble();
@@ -2449,21 +2529,21 @@ sad::geoTransform MainWindowSatelliteComparator::getGeo(const QJsonObject& jo)
     return gt;
 }
 
-QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(const QVector<QVector<sad::BAND_DATA> > &m_time_row,
-                                                                             sad::SATELLITE_TYPE st)
-{
-    if(m_time_row.empty()) return {QImage()};
+QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(
+    const QVector<QVector<sad::BAND_DATA>>& m_time_row,
+    sad::SATELLITE_TYPE st) {
+    if (m_time_row.empty()) return {QImage()};
 
     QVector<QImage> images;
 
     int mult = 1;
-    if(m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION){
-       mult = 2;
-    }else if(m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION){
-      mult = 6;
+    if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
+        mult = 2;
+    } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
+        mult = 6;
     }
 
-    for(int i=0; i<m_time_row.size(); ++i){
+    for (int i = 0; i < m_time_row.size(); ++i) {
         int offset = 0;
         const int nXSize = m_time_row[i][0].width;
         const int nYSize = m_time_row[i][0].height;
@@ -2473,125 +2553,142 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(con
                 int B = 0;
                 int G = 0;
                 int R = 0;
-                B = static_cast<int>(m_time_row[i][1].data[y * nXSize + x] / 255.0)*mult;
-                G = static_cast<int>(m_time_row[i][2].data[y * nXSize + x] / 255.0)*mult;
-                R = static_cast<int>(m_time_row[i][3].data[y * nXSize + x] / 255.0)*mult;
-                data[offset]   = R;
-                data[offset+1] = G;
-                data[offset+2] = B;
-                offset = offset+3;
+                B = static_cast<int>(m_time_row[i][1].data[y * nXSize + x] /
+                                     255.0) *
+                    mult;
+                G = static_cast<int>(m_time_row[i][2].data[y * nXSize + x] /
+                                     255.0) *
+                    mult;
+                R = static_cast<int>(m_time_row[i][3].data[y * nXSize + x] /
+                                     255.0) *
+                    mult;
+                data[offset] = R;
+                data[offset + 1] = G;
+                data[offset + 2] = B;
+                offset = offset + 3;
             }
         }
-        QImage img = QImage(data.get(),nXSize,nYSize,nXSize*3,QImage::Format_RGB888).copy();
+        QImage img = QImage(data.get(), nXSize, nYSize, nXSize * 3,
+                            QImage::Format_RGB888)
+                         .copy();
         images.push_back(img);
     }
 
     return images;
 }
 
-void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(QVector<double>&& ndvis,
-                                                                  QVector<double>&& ndwis)
-{
-    if(!time_row_indexes_plot) return;
+void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(
+    QVector<double>&& ndvis, QVector<double>&& ndwis) {
+    if (!time_row_indexes_plot) return;
     QCPGraph* qcpg_ndvi;
     QCPGraph* qcpg_ndwi;
-    if(time_row_indexes_plot->graphCount()==0){
+    if (time_row_indexes_plot->graphCount() == 0) {
         qcpg_ndvi = time_row_indexes_plot->addGraph();
         qcpg_ndwi = time_row_indexes_plot->addGraph();
         QColor ndvi_color(QColor("#228B22"));
         QColor ndwi_color(Qt::blue);
         qcpg_ndvi->setPen(QPen(ndvi_color));
         qcpg_ndwi->setPen(QPen(ndwi_color));
-        qcpg_ndvi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(ndvi_color), QBrush(ndvi_color), 10));
-        qcpg_ndwi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QPen(ndwi_color), QBrush(ndwi_color), 10));
-        time_row_indexes_plot->setMinimumSize(QSize(400,100));
+        qcpg_ndvi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle,
+                                                   QPen(ndvi_color),
+                                                   QBrush(ndvi_color), 10));
+        qcpg_ndwi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle,
+                                                   QPen(ndwi_color),
+                                                   QBrush(ndwi_color), 10));
+        time_row_indexes_plot->setMinimumSize(QSize(400, 100));
         time_row_indexes_plot->setWindowTitle("Индексы NDVI, NDWI");
         time_row_indexes_plot->legend->setVisible(true);
         time_row_indexes_plot->yAxis->setLabel("Значение индексов");
         time_row_indexes_plot->xAxis->setLabel("Дата съёмки");
-        time_row_indexes_plot->plotLayout()->setMargins(QMargins(0, 10, 50, 10)); //left, top, right, bottom
-        time_row_indexes_plot->yAxis->setRange(-1,1);
+        time_row_indexes_plot->plotLayout()->setMargins(
+            QMargins(0, 10, 50, 10));  // left, top, right, bottom
+        time_row_indexes_plot->yAxis->setRange(-1, 1);
         qcpg_ndwi->setName("NDWI");
         qcpg_ndvi->setName("NDVI");
         QSharedPointer<QCPAxisTickerText> dateTicker(new QCPAxisTickerText);
-        dateTicker->addTicks(m_time_row_dates_unix_time.first, m_time_row_dates_unix_time.second);
+        dateTicker->addTicks(m_time_row_dates_unix_time.first,
+                             m_time_row_dates_unix_time.second);
         time_row_indexes_plot->xAxis->setTicker(dateTicker);
 
-        auto *yTicker = new QCPAxisTickerFixed;
+        auto* yTicker = new QCPAxisTickerFixed;
         yTicker->setTickStep(0.1);
         yTicker->setTickOrigin(0.0);
-        time_row_indexes_plot->yAxis->setTicker(QSharedPointer<QCPAxisTickerFixed>(yTicker));
-
+        time_row_indexes_plot->yAxis->setTicker(
+            QSharedPointer<QCPAxisTickerFixed>(yTicker));
     }
     time_row_indexes_plot->graph(0)->data().clear();
     time_row_indexes_plot->graph(1)->data().clear();
-    time_row_indexes_plot->graph(0)->setData(m_time_row_dates_unix_time.first, ndvis);
-    time_row_indexes_plot->graph(1)->setData(m_time_row_dates_unix_time.first, ndwis);
+    time_row_indexes_plot->graph(0)->setData(m_time_row_dates_unix_time.first,
+                                             ndvis);
+    time_row_indexes_plot->graph(1)->setData(m_time_row_dates_unix_time.first,
+                                             ndwis);
     time_row_indexes_plot->xAxis->rescale(true);
     time_row_indexes_plot->replot();
 
-    if(time_row_indexes_plot->isHidden())time_row_indexes_plot->show();
+    if (time_row_indexes_plot->isHidden()) time_row_indexes_plot->show();
 }
 
-bool MainWindowSatelliteComparator::isDataCloudShadow_OK(QVector<QPointF> &points)
-{
-    if(m_time_row_qa_mask.empty())return false;
-    if(points.empty())return false;
-    //if(points.size() != m_time_row_qa_mask.size())return false;
+bool MainWindowSatelliteComparator::isDataCloudShadow_OK(
+    QVector<QPointF>& points) {
+    if (m_time_row_qa_mask.empty()) return false;
+    if (points.empty()) return false;
+    // if(points.size() != m_time_row_qa_mask.size())return false;
 
-    for(int i=0;i<points.size();++i){
-        auto index = ((int)points[i].y()*m_time_row_qa_mask[i].width) + (int)points[i].x();
-        auto max_size = m_time_row_qa_mask[i].height * m_time_row_qa_mask[i].width;
-        if(max_size < index) return false;
+    for (int i = 0; i < points.size(); ++i) {
+        auto index = ((int)points[i].y() * m_time_row_qa_mask[i].width) +
+                     (int)points[i].x();
+        auto max_size =
+            m_time_row_qa_mask[i].height * m_time_row_qa_mask[i].width;
+        if (max_size < index) return false;
         uint16_t mask_value = m_time_row_qa_mask[i].data[index];
         bool isFill = mask_value & (1 << 0);
-        if(isFill) return false;
+        if (isFill) return false;
         bool isCloud = mask_value & (1 << 3);
-        if(isCloud) return false;
+        if (isCloud) return false;
         bool isShadow = mask_value & (1 << 4);
-        if(isShadow) return false;
+        if (isShadow) return false;
     }
     return true;
 }
 
-void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
-{
+void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color) {
     Q_UNUSED(color)
     QTime time;
     time.start();
-    qDebug()<<"time row paint image foo";
+    qDebug() << "time row paint image foo";
 
-    if(m_time_row.empty())return;
+    if (m_time_row.empty()) return;
 
     int xSize = INT_MAX;
     int ySize = INT_MAX;
 
-    for(int i=0;i<m_time_row.size();++i){
-        if(xSize > m_time_row[i][0].width)xSize = m_time_row[i][0].width;
-        if(ySize > m_time_row[i][0].height)ySize = m_time_row[i][0].height;
+    for (int i = 0; i < m_time_row.size(); ++i) {
+        if (xSize > m_time_row[i][0].width) xSize = m_time_row[i][0].width;
+        if (ySize > m_time_row[i][0].height) ySize = m_time_row[i][0].height;
     }
 
     QVector<QPointF> m_points(m_time_row.size());
     double latitude = 0.0;
     double longitude = 0.0;
 
-    auto new_layer = new uchar[xSize*ySize*4];
+    auto new_layer = new uchar[xSize * ySize * 4];
     int offset = 0;
 
-    for(int y=0;y<ySize;++y){
-        for(int x=0;x<xSize;++x){
-            base_pixel_geo->getGeoCoordinates(x,y,latitude,longitude);
-            m_points[0] = QPoint(x,y);
-            for(int i=1;i<m_time_row.size();++i){
-                m_points[i] = geoToPixel(latitude,longitude,m_time_row_geo[i]);
+    for (int y = 0; y < ySize; ++y) {
+        for (int x = 0; x < xSize; ++x) {
+            base_pixel_geo->getGeoCoordinates(x, y, latitude, longitude);
+            m_points[0] = QPoint(x, y);
+            for (int i = 1; i < m_time_row.size(); ++i) {
+                m_points[i] =
+                    geoToPixel(latitude, longitude, m_time_row_geo[i]);
             }
-            if(!isDataCloudShadow_OK(m_points)){
-                new_layer[offset]     = color.red();
+            if (!isDataCloudShadow_OK(m_points)) {
+                new_layer[offset] = color.red();
                 new_layer[offset + 1] = color.green();
                 new_layer[offset + 2] = color.blue();
                 new_layer[offset + 3] = 255;
-            }else{
-                new_layer[offset]     = color.red();
+            } else {
+                new_layer[offset] = color.red();
                 new_layer[offset + 1] = color.green();
                 new_layer[offset + 2] = color.blue();
                 new_layer[offset + 3] = 0;
@@ -2600,20 +2697,19 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
         }
     }
 
-    auto cleanup = [](void* info) {
-        delete[] static_cast<uchar*>(info);
-    };
-    auto img = QImage(new_layer,xSize,ySize,xSize*4,QImage::Format_RGBA8888,cleanup,new_layer);
+    auto cleanup = [](void* info) { delete[] static_cast<uchar*>(info); };
+    auto img = QImage(new_layer, xSize, ySize, xSize * 4,
+                      QImage::Format_RGBA8888, cleanup, new_layer);
     auto pixmap = QPixmap::fromImage(img);
     auto new_image_item = new QGraphicsPixmapItem(pixmap);
-    new_image_item->setZValue(ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+    new_image_item->setZValue(
+        ui->graphicsView_satellite_image->getMaxZValue(m_scene));
     m_scene->addItem(new_image_item);
 
-    m_layers_search_result_items.insert("COMMON_TIME_ROW_MASK",new_image_item);
-    m_layer_gui_list->addItemToList("COMMON_TIME_ROW_MASK","",color);
+    m_layers_search_result_items.insert("COMMON_TIME_ROW_MASK", new_image_item);
+    m_layer_gui_list->addItemToList("COMMON_TIME_ROW_MASK", "", color);
 
     auto elapsedMs = time.elapsed();
-
 
     int hours = elapsedMs / (1000 * 60 * 60);
     int minutes = (elapsedMs / (1000 * 60)) % 60;
@@ -2621,49 +2717,59 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor& color)
     int milliseconds = elapsedMs % 1000;
 
     qDebug() << QString("Время выполнения: %1 ч %2 мин %3 сек %4 мс")
-                .arg(hours)
-                .arg(minutes)
-                .arg(seconds)
-                .arg(milliseconds);
+                    .arg(hours)
+                    .arg(minutes)
+                    .arg(seconds)
+                    .arg(milliseconds);
 }
 
-sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(const QVector<QPointF> &points)
-{
-
+sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
+    const QVector<QPointF>& points) {
     int red_band_index = 0;
     int nir_band_index = 0;
-    int swir1_index =0;
+    int swir1_index = 0;
 
-    if(m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION){
+    if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
         red_band_index = 3;
         nir_band_index = 4;
-        swir1_index =5;
-    }else if(sad::TIME_ROW_SENTINEL_COMBINATION){
+        swir1_index = 5;
+    } else if (sad::TIME_ROW_SENTINEL_COMBINATION) {
         red_band_index = 3;
         nir_band_index = 6;
-        swir1_index =9;
+        swir1_index = 9;
     }
 
-
     QVector<sad::BANDS_FOR_CALCULATING_INDEXES> data_indexes;
-    for(int i=0;i<points.size();++i){
+    for (int i = 0; i < points.size(); ++i) {
         sad::BANDS_FOR_CALCULATING_INDEXES values;
-        for(int j=0;j<m_time_row[i].size();++j){
-            double value = m_time_row[i][j].data[((int)points[i].y()*m_time_row[i][j].width) + (int)points[i].x()];
-            double one_ksy_value = m_time_row[i][j].reflectance_mult * value + m_time_row[i][j].reflectance_add;
-            if(one_ksy_value==0) continue;
-            if(j==red_band_index){values.RED_BAND = one_ksy_value;}
-            if(j==nir_band_index){values.NIR_BAND = one_ksy_value;}
-            if(j==swir1_index){values.SWIR1_BAND = one_ksy_value;}
+        for (int j = 0; j < m_time_row[i].size(); ++j) {
+            double value =
+                m_time_row[i][j]
+                    .data[((int)points[i].y() * m_time_row[i][j].width) +
+                          (int)points[i].x()];
+            double one_ksy_value = m_time_row[i][j].reflectance_mult * value +
+                                   m_time_row[i][j].reflectance_add;
+            if (one_ksy_value == 0) continue;
+            if (j == red_band_index) {
+                values.RED_BAND = one_ksy_value;
+            }
+            if (j == nir_band_index) {
+                values.NIR_BAND = one_ksy_value;
+            }
+            if (j == swir1_index) {
+                values.SWIR1_BAND = one_ksy_value;
+            }
         }
         data_indexes.push_back(values);
     }
     int common_size = data_indexes.size();
     QVector<double> ndvi_time_row(common_size);
     QVector<double> ndwi_time_row(common_size);
-    for(int i=0;i<common_size;++i){
-        double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND, data_indexes[i].RED_BAND);
-        double ndwi = sam::calculateNDWI(data_indexes[i].NIR_BAND, data_indexes[i].SWIR1_BAND);
+    for (int i = 0; i < common_size; ++i) {
+        double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND,
+                                         data_indexes[i].RED_BAND);
+        double ndwi = sam::calculateNDWI(data_indexes[i].NIR_BAND,
+                                         data_indexes[i].SWIR1_BAND);
         ndvi_time_row[i] = ndvi;
         ndwi_time_row[i] = ndwi;
     }
@@ -2671,16 +2777,17 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(cons
     sad::NDWI_NDVI_TIME_ROW result;
     int dp_ndvi = 0;
     QVector<double> slopes;
-    for(int i=ndvi_time_row.size() - 1;i>0;--i){
-        QVector<double> time_frame = ndvi_time_row.mid(i-1,ndvi_time_row.size() - i+1);
+    for (int i = ndvi_time_row.size() - 1; i > 0; --i) {
+        QVector<double> time_frame =
+            ndvi_time_row.mid(i - 1, ndvi_time_row.size() - i + 1);
         // std::reverse(time_frame.begin(), time_frame.end());
-        //qDebug()<<"-------time frame-------";
+        // qDebug()<<"-------time frame-------";
         /*for(int j=0;j<time_frame.size();++j){
            qDebug()<<time_frame[j];
        }
        qDebug()<<"----end time frame----------";*/
         double slope = calculate_slope(time_frame);
-        if(slope<0)++dp_ndvi;
+        if (slope < 0) ++dp_ndvi;
         slopes.push_back(slope);
     }
 
@@ -2692,19 +2799,37 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(cons
     return result;
 }
 
-double MainWindowSatelliteComparator::calculate_slope(const QVector<double> &values)
-{
+double MainWindowSatelliteComparator::calculate_slope(
+    const QVector<double>& values) {
     LeastSquareSolver solver;
     double result = 0.0;
     std::vector<double> x_values(values.size());
-    std::iota(x_values.begin(), x_values.end(),1.0);
-    solver.setModel([](double x, const std::vector<double>& p) {return p[0] * x + p[1];}, 2);
+    std::iota(x_values.begin(), x_values.end(), 1.0);
+    solver.setModel(
+        [](double x, const std::vector<double>& p) { return p[0] * x + p[1]; },
+        2);
     solver.setData(x_values, values.toStdVector());
     solver.setInitialGuess({1.0, 1.0, 9.0});
     if (solver.solve()) {
         auto params = solver.getParameters();
-        result = params[0] ;
-        //qDebug() << "Slope:" << params[0] << "Intercept:" << params[1];
+        result = params[0];
+        // qDebug() << "Slope:" << params[0] << "Intercept:" << params[1];
     }
     return result;
+}
+
+void MainWindowSatelliteComparator::setUpUi() {
+    // Создаем спектральный виджет
+    m_spectralWidget = new SpectralIndicesWidget();
+
+    // Создаем док
+    m_spectralDock = new QDockWidget("Спектральные индексы", this);
+    m_spectralDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+    m_spectralDock->setWidget(m_spectralWidget);
+
+    // Добавляем док в левую область
+    addDockWidget(Qt::RightDockWidgetArea, m_spectralDock);
+
+    setWindowTitle("Спектральный анализатор");
+    resize(1200, 800);
 }
