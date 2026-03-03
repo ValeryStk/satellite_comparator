@@ -2909,7 +2909,7 @@ void MainWindowSatelliteComparator::setUpUi() {
   m_spectralDock->setWidget(m_spectralWidget);
 
   // Добавляем док в левую область
-  addDockWidget(Qt::BottomDockWidgetArea, m_spectralDock);
+  addDockWidget(Qt::RightDockWidgetArea, m_spectralDock);
 
   setWindowTitle("Спектральный анализатор");
   resize(1200, 800);
