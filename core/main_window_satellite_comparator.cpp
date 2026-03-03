@@ -495,7 +495,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     double red_value = 0.0;
     double blue_value = 0.0;
     double swir1_value = 0.0;
-    double green_value;
+    double green_value = 0.0;
     if (m_satelite_type == sad::SENTINEL_2A) {
       nir1_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.nir1];
       red_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.red];
@@ -535,7 +535,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     qDebug() << "EVI index: " << evi;
 
     m_spectralWidget->setIndices(
-        {{"NDVI", ndvi}, {{"NDWI"}, {ndwi}}, {{"DSWI"}, {ndwi}}, {"EVI", evi}});
+        {{"NDVI", ndvi}, {{"NDWI"}, {ndwi}}, {{"DSWI"}, {dswi}}, {"EVI", evi}});
   }
   if (data.empty()) {
     return;
