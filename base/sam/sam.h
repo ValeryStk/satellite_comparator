@@ -17,7 +17,7 @@ struct BandIndices {
   int swir1 = -1;
 };
 
-BandIndices getVegetationIndices(sam::sk satellite);
+BandIndices getBandsIndexes(sam::sk satellite);
 
 enum class STATUS_CODE {
   OK = 0,

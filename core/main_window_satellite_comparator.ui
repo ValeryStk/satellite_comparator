@@ -144,7 +144,14 @@
     <addaction name="actionBekas"/>
     <addaction name="action_LoadTimeRow"/>
    </widget>
+   <widget class="QMenu" name="menu_3">
+    <property name="title">
+     <string>Вид</string>
+    </property>
+    <addaction name="action_spectral_indicies"/>
+   </widget>
    <addaction name="menu"/>
+   <addaction name="menu_3"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionOpenLandsat9Header">
@@ -175,6 +182,17 @@
   <action name="action_LoadTimeRow">
    <property name="text">
     <string>Загрузка временного ряда</string>
+   </property>
+  </action>
+  <action name="action_spectral_indicies">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Спектральные индексы</string>
    </property>
   </action>
  </widget>

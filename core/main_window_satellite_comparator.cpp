@@ -2085,6 +2085,15 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
           SLOT(openSentinel2BHeaderData()));
   connect(ui->action_LoadTimeRow, SIGNAL(triggered()), this,
           SLOT(openTimeRowData()));
+  connect(ui->action_spectral_indicies, &QAction::triggered, this,
+          [this](bool checked) {
+            // Ваш код обработки здесь
+            if (checked) {
+              m_spectralDock->show();
+            } else {
+              m_spectralDock->hide();
+            }
+          });
 }
 
 void MainWindowSatelliteComparator::addBaseItemsToScene() {
@@ -2904,7 +2913,7 @@ void MainWindowSatelliteComparator::setUpUi() {
   m_spectralDock->setWidget(m_spectralWidget);
 
   // Добавляем док в левую область
-  addDockWidget(Qt::RightDockWidgetArea, m_spectralDock);
+  addDockWidget(Qt::BottomDockWidgetArea, m_spectralDock);
 
   setWindowTitle("Спектральный анализатор");
   resize(1200, 800);
