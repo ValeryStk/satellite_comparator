@@ -484,11 +484,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
       sample = m_sentinel_sample;
     }
     trimmed_satellite_data = data;
-    int nir1_index = sam::getBandIndex(sam::kNIR1, sam::sk::SENTINEL);
-    int red1_index = sam::getBandIndex(sam::kRED, sam::sk::SENTINEL);
-    int blue1_index = sam::getBandIndex(sam::kBLUE, sam::sk::SENTINEL);
-    int swir1_index = sam::getBandIndex(sam::kSWIR1, sam::sk::SENTINEL);
-    int green_index = sam::getBandIndex(sam::kGREEN, sam::sk::SENTINEL);
+
+    auto bands_indexes = sam::getBandsIndexes(sam::sk::SENTINEL);
     int nir1_cw = 0;
     int red_cw = 0;
     int blue_cw = 0;
@@ -500,17 +497,17 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     double swir1_value = 0.0;
     double green_value;
     if (m_satelite_type == sad::SENTINEL_2A) {
-      nir1_cw = sad::sentinel_2A_central_wave_lengths[nir1_index];
-      red_cw = sad::sentinel_2A_central_wave_lengths[red1_index];
-      blue_cw = sad::sentinel_2A_central_wave_lengths[blue1_index];
-      swir1_cw = sad::sentinel_2A_central_wave_lengths[swir1_index];
-      green_cw = sad::sentinel_2A_central_wave_lengths[green_index];
+      nir1_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.nir1];
+      red_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.red];
+      blue_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.blue];
+      swir1_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.swir1];
+      green_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.green];
     } else {
-      nir1_cw = sad::sentinel_2B_central_wave_lengths[nir1_index];
-      red_cw = sad::sentinel_2B_central_wave_lengths[red1_index];
-      blue_cw = sad::sentinel_2B_central_wave_lengths[blue1_index];
-      swir1_cw = sad::sentinel_2B_central_wave_lengths[swir1_index];
-      green_cw = sad::sentinel_2B_central_wave_lengths[green_index];
+      nir1_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.nir1];
+      red_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.red];
+      blue_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.blue];
+      swir1_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.swir1];
+      green_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.green];
     }
     qDebug() << "nir1_cw" << nir1_cw << "red_cw" << red_cw << "blue_cw"
              << blue_cw;
