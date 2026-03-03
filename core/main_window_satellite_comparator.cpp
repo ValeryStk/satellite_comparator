@@ -2087,7 +2087,6 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
           SLOT(openTimeRowData()));
   connect(ui->action_spectral_indicies, &QAction::triggered, this,
           [this](bool checked) {
-            // Ваш код обработки здесь
             if (checked) {
               m_spectralDock->show();
             } else {
