@@ -75,17 +75,17 @@ const QString landsat9_add_reflectence_keys[LANDSAT_BANDS_NUMBER] = {
 };
 
 const QString landsat_bands_gui_names[LANDSAT_BANDS_NUMBER] = {
-    "B01 - 443 nm (Aerosol) 30 m",
-    "B02 - 482 nm (Blue) 30 m",
-    "B03 - 562 nm (Green) 30 m",
-    "B04 - 655 nm (Red) 30 m",
-    "B05 - 865 nm (Near infrared) 30 m",
-    "B06 - 1610 nm (SWIR 1) 30 m",
-    "B07 - 2200 nm (SWIR 2) 30 m",
-    "B08 - 590 nm (Panchromatic) 15 m",
-    "B09 - 1375 nm (Cirrus) 30 m",
-    "B10 - 10800 nm (LWIR) 100 m",
-    "B11 - 12000 nm (LWIR) 100 m"
+    "B01 - 443   nm AER",
+    "B02 - 482   nm BLUE",
+    "B03 - 562   nm GREEN",
+    "B04 - 655   nm RED",
+    "B05 - 865   nm NIR1",
+    "B06 - 1610  nm SWIR1",
+    "B07 - 2200  nm SWIR2",
+    "B08 - 590   nm PAN",
+    "B09 - 1375  nm SWIR",
+    "B10 - 10800 nm TIRS1",
+    "B11 - 12000 nm TIRS2"
 };
 
 const double landsat_central_wavelengths[LANDSAT_BANDS_NUMBER] = {
