@@ -21,7 +21,6 @@ namespace sam {
     const char kSWIR1[] = "SWIR1";
     const char kSWIR2[] = "SWIR2";
 
-
 const std::unordered_map<std::string, std::unordered_map<sk, int>> bands_map = {
     {std::string(kAER),   {{sk::SENTINEL, 0},  {sk::LANDSAT, 0}}},
     {std::string(kBLUE),  {{sk::SENTINEL, 1},  {sk::LANDSAT, 1}}},
@@ -57,4 +56,4 @@ int getBandIndex(const char *band_name, sk satellite) {
   return getBandIndex(std::string(band_name), satellite);
 }
 
-} // namespace sam
+} // end namespace sam

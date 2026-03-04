@@ -6,6 +6,12 @@
 #include "satellites_bands_map.h"
 
 namespace sam {
+// clang-format off
+extern const char kSpectralIndexNDVI[] = "NDVI";
+extern const char kSpectralIndexSWVI[] = "SWVI";
+extern const char kSpectralIndexDSWI[] = "DSWI";
+extern const char kSpectralIndexEVI[]  = "EVI";
+// clang-format on
 
 namespace detail {
 
@@ -64,7 +70,7 @@ double calculateNDVI(const double nir1, const double red) {
   return detail::calculate_normalized_difference(nir1, red);
 }
 
-double calculateNDWI(const double nir1, const double swir1) {
+double calculateSWVI(const double nir1, const double swir1) {
   return detail::calculate_normalized_difference(nir1, swir1);
 }
 

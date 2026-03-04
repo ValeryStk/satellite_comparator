@@ -525,17 +525,15 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
       }
     }
     double ndvi = sam::calculateNDVI(nir1_value, red_value);
-    double ndwi = sam::calculateNDWI(nir1_value, swir1_value);
+    double swvi = sam::calculateSWVI(nir1_value, swir1_value);
     double dswi =
         sam::calculateDSWI(nir1_value, green_value, swir1_value, red_value);
     double evi = sam::calculateEVI(nir1_value, red_value, blue_value);
-    qDebug() << "NDVI index: " << ndvi;
-    qDebug() << "NDWI index: " << ndwi;
-    qDebug() << "DSWI index: " << dswi;
-    qDebug() << "EVI index: " << evi;
 
-    m_spectralWidget->setIndices(
-        {{"NDVI", ndvi}, {{"NDWI"}, {ndwi}}, {{"DSWI"}, {dswi}}, {"EVI", evi}});
+    m_spectralWidget->setIndices({{sam::kSpectralIndexNDVI, ndvi},
+                                  {{sam::kSpectralIndexSWVI}, {swvi}},
+                                  {{sam::kSpectralIndexDSWI}, {dswi}},
+                                  {sam::kSpectralIndexEVI, evi}});
   }
   if (data.empty()) {
     return;
@@ -1312,7 +1310,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(
   for (int i = 0; i < data_indexes.size(); ++i) {
     double ndvi =
         sam::calculateNDVI(data_indexes[i].NIR_BAND, data_indexes[i].RED_BAND);
-    double ndwi = sam::calculateNDWI(data_indexes[i].NIR_BAND,
+    double ndwi = sam::calculateSWVI(data_indexes[i].NIR_BAND,
                                      data_indexes[i].SWIR1_BAND);
     ndvi_time_row.push_back(ndvi);
     ndwi_time_row.push_back(ndwi);
@@ -2848,7 +2846,7 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
   for (int i = 0; i < common_size; ++i) {
     double ndvi =
         sam::calculateNDVI(data_indexes[i].NIR_BAND, data_indexes[i].RED_BAND);
-    double ndwi = sam::calculateNDWI(data_indexes[i].NIR_BAND,
+    double ndwi = sam::calculateSWVI(data_indexes[i].NIR_BAND,
                                      data_indexes[i].SWIR1_BAND);
     ndvi_time_row[i] = ndvi;
     ndwi_time_row[i] = ndwi;

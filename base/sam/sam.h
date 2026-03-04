@@ -9,6 +9,11 @@
 // spectral analyzing module (sam)
 namespace sam {
 
+extern const char kSpectralIndexNDVI[];
+extern const char kSpectralIndexSWVI[];
+extern const char kSpectralIndexDSWI[];
+extern const char kSpectralIndexEVI[];
+
 struct BandIndices {
   int nir1 = -1;
   int red = -1;
@@ -39,13 +44,9 @@ ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
                                             const QVector<double> &v2,
                                             double &result);
 
-// Нормализованный индекс растительности NDVI (Оценка плотности и состояния
-// растительного покрова)
 inline double calculateNDVI(const double nir1, const double red);
 
-// Нормализованный индекс водного содержания NDWI (Определение водных объектов и
-// влажности растительности)
-inline double calculateNDWI(const double nir1, const double swir1);
+inline double calculateSWVI(const double nir1, const double swir1);
 
 inline double calculateDSWI(const double nir1, const double green,
                             const double swir1, const double red);

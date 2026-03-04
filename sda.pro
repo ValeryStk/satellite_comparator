@@ -1,3 +1,4 @@
+#sda Satellite Data Analyzer
 TEMPLATE = subdirs
 CONFIG += ordered
 
