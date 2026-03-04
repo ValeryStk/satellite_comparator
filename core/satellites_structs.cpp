@@ -2,7 +2,7 @@
 
 namespace sad {
 
-
+// clang-format off
 const QString landsat9_bands_keys[LANDSAT_BANDS_NUMBER] = {
     "FILE_NAME_BAND_1",
     "FILE_NAME_BAND_2",
@@ -89,17 +89,17 @@ const QString landsat_bands_gui_names[LANDSAT_BANDS_NUMBER] = {
 };
 
 const double landsat_central_wavelengths[LANDSAT_BANDS_NUMBER] = {
-    443,//0
-    482,//1
-    562,//2
-    655,//3
-    865,//4
-    1610,//5
-    2200,//6
-    590,//7
-    1375,//8
+    443,  //0
+    482,  //1
+    562,  //2
+    655,  //3
+    865,  //4
+    1610, //5
+    2200, //6
+    590,  //7
+    1375, //8
     10800,//9
-    12000//10
+    12000 //10
 };
 
 
@@ -118,25 +118,21 @@ const int sorted_landsat_bands_order_by_wavelength[LANDSAT_BANDS_NUMBER] = {
 };
 
 
-
-
-
-
 // SENTINEL-2A
 const QString sentinel_2A_gui_band_names[SENTINEL_BANDS_NUMBER] = {
-    "B01 - 443 nm aerosol",
-    "B02 - 493 nm blue",
-    "B03 - 560 nm green",
-    "B04 - 665 nm red",
-    "B05 - 704 nm VNIR",
-    "B06 - 740 nm VNIR",
-    "B07 - 783 nm VNIR",
-    "B08 - 833 nm VNIR",
-    "B8A - 865 nm SWIR",
-    "B09 - 945 nm SWIR",
+    "B01 - 443  nm AER",
+    "B02 - 493  nm BLUE",
+    "B03 - 560  nm GREEN",
+    "B04 - 665  nm RED",
+    "B05 - 704  nm RE1",
+    "B06 - 740  nm RE2",
+    "B07 - 783  nm RE3",
+    "B08 - 833  nm NIR1",
+    "B8A - 865  nm NIR2",
+    "B09 - 945  nm WV",
     "B10 - 1374 nm SWIR",
-    "B11 - 1614 nm SWIR",
-    "B12 - 2202 nm SWIR"
+    "B11 - 1614 nm SWIR1",
+    "B12 - 2202 nm SWIR2"
 };
 
 const double sentinel_2A_central_wave_lengths[SENTINEL_BANDS_NUMBER] = {
@@ -157,19 +153,19 @@ const double sentinel_2A_central_wave_lengths[SENTINEL_BANDS_NUMBER] = {
 
 // SENTINEL-2B
 const QString sentinel_2B_gui_band_names[SENTINEL_BANDS_NUMBER] = {
-    "B01 - 442 nm aerosol",
-    "B02 - 492 nm blue",
-    "B03 - 559 nm green",
-    "B04 - 665 nm red",
-    "B05 - 704 nm VNIR",
-    "B06 - 739 nm VNIR",
-    "B07 - 780 nm VNIR",
-    "B08 - 833 nm VNIR",
-    "B8A - 864 nm SWIR",
-    "B09 - 943 nm SWIR",
+    "B01 - 442  nm AER",
+    "B02 - 492  nm BLUE",
+    "B03 - 559  nm GREEN",
+    "B04 - 665  nm RED",
+    "B05 - 704  nm RE1",
+    "B06 - 739  nm RE2",
+    "B07 - 780  nm RE3",
+    "B08 - 833  nm NIR1",
+    "B8A - 864  nm NIR2",
+    "B09 - 943  nm WV",
     "B10 - 1377 nm SWIR",
-    "B11 - 1610 nm SWIR",
-    "B12 - 2186 nm SWIR"
+    "B11 - 1610 nm SWIR1",
+    "B12 - 2186 nm SWIR2"
 };
 
 const double sentinel_2B_central_wave_lengths[SENTINEL_BANDS_NUMBER] = {
@@ -212,5 +208,5 @@ const QHash<const QString,QPair<int,int>> sentinel_resolutions = {
     {"R60m",{1830,1830}}
 };
 
-
-}
+// clang-format on
+} // namespace sad
