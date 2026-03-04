@@ -35,7 +35,7 @@ class MainWindowSatelliteComparator : public QMainWindow {
 
 public:
     //! Конмтруктор
-    explicit MainWindowSatelliteComparator(QWidget* parent = nullptr);
+    explicit MainWindowSatelliteComparator(QWidget *parent = nullptr);
 
     //! Деструктор
     ~MainWindowSatelliteComparator();
@@ -46,44 +46,50 @@ private slots:
 
     //! Слот для изменения каналов для временного ряда (загружается базовое
     //! изображение - самый поздний момент времени)
-    void change_bands_and_show_image(const QVector<sad::BAND_DATA>& band_data);
+    void change_bands_and_show_image(const QVector<sad::BAND_DATA> &band_data);
 
     //! Слот изменения каналов
     void change_bands();
 
     //! Слот отображения слоя
     //! \param id - идентификатор слоя
-    void show_layer(const QString& id);
+    void show_layer(const QString &id);
 
     //!
     //! \brief Слот сокрытия слоя
     //! \param id - идентификатор слоя
     //!
-    void hide_layer(const QString& id);
+    void hide_layer(const QString &id);
 
     //!
     //! \brief Слот для удаления слоя со сцены
     //! \param id - идентификатор слоя
     //!
-    void remove_scene_layer(const QString& id);
+    void remove_scene_layer(const QString &id);
 
     //!
     //! \brief Слот для добавления региона интереса в список
     //! \param id - идентификатор региона интереса
     //!
-    void add_roi_to_gui_list(const QString& id);
+    void add_roi_to_gui_list(const QString &id);
 
     //!
     //! \brief  Слот для расчёта среднего КСЯ по области
     //! \param id - идентификатор региона интереса
     //!
-    void show_roi_average(const QString& id);
+    void show_roi_average(const QString &id);
+
+    //!
+    //! \brief  Слот для отправки данных внутри региона интереса в матлаб
+    //! \param id - идентификатор региона интереса
+    //!
+    void send_roi_spectrs_to_matlab(const QString &id);
 
     //!
     //! \brief Слот расчёта градиента усыхания
     //! \param id - идентификатор региона интереса
     //!
-    void calculate_time_row_gradient(const QString& id);
+    void calculate_time_row_gradient(const QString &id);
 
     //! Слот для открытия данных Landsat 9
     void openLandsat9HeaderData();
@@ -121,17 +127,17 @@ private slots:
 
     //! \brief openCommonLandsatHeaderData
     //! \param satellite_name - имя спутника
-    void openCommonLandsatHeaderData(const QString& satellite_name);
+    void openCommonLandsatHeaderData(const QString &satellite_name);
 
     //! \brief openCommonSentinelHeaderData
     //! \param satellite_name
-    void openCommonSentinelHeaderData(const QString& satellite_name);
+    void openCommonSentinelHeaderData(const QString &satellite_name);
 
     //! \brief processBekasDataForComparing
     //! \param x
     //! \param y
-    void processBekasDataForComparing(const QVector<double>& x,
-                                      const QVector<double>& y);
+    void processBekasDataForComparing(const QVector<double> &x,
+                                      const QVector<double> &y);
     //!
     //! \brief showGoogleMap
     //!
@@ -146,19 +152,19 @@ private slots:
     //! \brief handleJsonRpcResult
     //! \param result
     //!
-    void handleJsonRpcResult(const QJsonValue& result);
+    void handleJsonRpcResult(const QJsonValue &result);
 
     //!
     //! \brief processTestMatlabRequest
     //! \param params
     //!
-    void processTestMatlabRequest(const QVariantMap& params);
+    void processTestMatlabRequest(const QVariantMap &params);
 
     //!
     //! \brief processpClassifiedBecasSpectraMatlabRequest
     //! \param params
     //!
-    void processpClassifiedBecasSpectraMatlabRequest(const QVariantMap& params);
+    void processpClassifiedBecasSpectraMatlabRequest(const QVariantMap &params);
 
     //!
     //! \brief updateImage
@@ -168,34 +174,34 @@ private slots:
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
-    Ui::MainWindowSatelliteComparator* ui;
+    Ui::MainWindowSatelliteComparator *ui;
 
     //! \brief Виджет временного ряда
     QWidget m_time_row_widget;
 
     //! \brief Текстовое поле для оотображения географических координат
-    QLabel* m_label_scene_coord;
+    QLabel *m_label_scene_coord;
 
     //! \brief Графическая сцена
-    QGraphicsScene* m_scene;
+    QGraphicsScene *m_scene;
 
     //! \brief Объект изображения графической сцены
-    QGraphicsPixmapItem* m_image_item = nullptr;
+    QGraphicsPixmapItem *m_image_item = nullptr;
 
     //!
     //! \brief m_layers_search_result_items
     //!
-    QHash<const QString, QGraphicsPixmapItem*> m_layers_search_result_items;
+    QHash<const QString, QGraphicsPixmapItem *> m_layers_search_result_items;
 
     //!
     //! \brief m_layers_roi_items
     //!
-    QHash<const QString, QGraphicsPolygonItem*> m_layers_roi_items;
+    QHash<const QString, QGraphicsPolygonItem *> m_layers_roi_items;
 
     //!
     //! \brief m_scene_cross_square_item
     //!
-    CrossSquare* m_scene_cross_square_item;
+    CrossSquare *m_scene_cross_square_item;
 
     //!
     //! \brief m_satelite_type
@@ -205,12 +211,12 @@ private:
     //!
     //! \brief m_dynamic_checkboxes_widget
     //!
-    DynamicCheckboxWidget* m_dynamic_checkboxes_widget;
+    DynamicCheckboxWidget *m_dynamic_checkboxes_widget;
 
     //!
     //! \brief m_sat_comparator
     //!
-    SatteliteComparator* m_sat_comparator;
+    SatteliteComparator *m_sat_comparator;
 
     //!
     //! \brief getLandSat9BandsFromTxtFormat
@@ -219,26 +225,26 @@ private:
     //! \return
     //!
     QStringList getLandSat9BandsFromTxtFormat(
-        const QString& path, QList<QString>& available_gui_bands);
+        const QString &path, QList<QString> &available_gui_bands);
 
     //!
     //! \brief getLandSatSpaceCraftIDFromTxtFormat
     //! \param path
     //! \return
     //!
-    QString getLandSatSpaceCraftIDFromTxtFormat(const QString& path);
+    QString getLandSatSpaceCraftIDFromTxtFormat(const QString &path);
 
     //!
     //! \brief fillLandSat9ReflectanceMultAdd
     //! \param path
     //!
-    void fillLandSat9ReflectanceMultAdd(const QString& path);
+    void fillLandSat9ReflectanceMultAdd(const QString &path);
 
     //!
     //! \brief fillLandSat9GeoData
     //! \param path
     //!
-    void fillLandSat9GeoData(const QString& path);
+    void fillLandSat9GeoData(const QString &path);
 
     //!
     //! \brief clearLandsat9DataBands
@@ -250,13 +256,13 @@ private:
     //! \param pos
     //! \param is_landsat
     //!
-    inline void cursorPointOnSceneChangedEventTimeRow(const QPointF& pos,
+    inline void cursorPointOnSceneChangedEventTimeRow(const QPointF &pos,
                                                       const bool is_landsat);
 
     //!
     //! \brief m_image_data
     //!
-    uchar* m_image_data;
+    uchar *m_image_data;
 
     //!
     //! \brief readTiff
@@ -265,19 +271,19 @@ private:
     //! \param ySize
     //! \return
     //!
-    uint16_t* readTiff(const QString& path, int& xSize, int& ySize);
+    uint16_t *readTiff(const QString &path, int &xSize, int &ySize);
 
     //!
     //! \brief read_landsat_bands_data
     //! \param file_names
     //!
-    void read_landsat_bands_data(const QStringList& file_names);
+    void read_landsat_bands_data(const QStringList &file_names);
     QVector<double> getLandsat8Speya(const int x, const int y);
     inline QVector<double> getLandsat8Ksy(const int x, const int y);
 
     QString m_root_path;  //!< Путьк открытой корневой директории
     QImage m_satellite_image;  //!< Базовое RGB изображение спутника
-    uint16_t* m_landsat9_data_bands[LANDSAT_BANDS_NUMBER] = {
+    uint16_t *m_landsat9_data_bands[LANDSAT_BANDS_NUMBER] = {
         nullptr};  //!< Данные каналов для каждого канала
     QPair<int, int> m_landsat9_bands_image_sizes
         [LANDSAT_BANDS_NUMBER];  //!< Размеры изображений для каждого канала
@@ -296,35 +302,35 @@ private:
 
     bool m_is_image_created;  //!< флаг созданного базового изображения
     bool m_is_bekas;  //!< флаг использования образца БЕКАС
-    LayerList* m_layer_gui_list;  //!< Список базовых слоёв
-    LayerList* m_layer_roi_list;  //!< Список областей интересов
-    QCustomPlot* m_preview_plot;  //!< Объект для отображения графика КСЯ для
+    LayerList *m_layer_gui_list;  //!< Список базовых слоёв
+    LayerList *m_layer_roi_list;  //!< Список областей интересов
+    QCustomPlot *m_preview_plot;  //!< Объект для отображения графика КСЯ для
                                   //!< пикселя под курсором
-    QComboBox*
+    QComboBox *
         m_comboBox_calculation_method;  //!< Комбобокс для выбора метрики поиска
     QVector<double> m_landsat9_sample;  //!< Образец для поиска Landsat 9
     QVector<double> m_sentinel_sample;  //!< Образец для поиска Sentinel
     QVector<double> m_bekas_sample;  //!< Образец для поиска БЕКАС
 
-    QDoubleSpinBox* euclid_param_spinbox;
-    QGraphicsTextItem* m_scene_text_item_metric_value;
-    UasvViewWindow* bekas_window;
-    void paintSamplePoints(const QColor& color);
+    QDoubleSpinBox *euclid_param_spinbox;
+    QGraphicsTextItem *m_scene_text_item_metric_value;
+    UasvViewWindow *bekas_window;
+    void paintSamplePoints(const QColor &color);
     QString getGeoCoordinates(const int x, const int y,
-                              const sad::geoTransform& geo, double& latitude,
-                              double& longitude, bool isStringReturn);
+                              const sad::geoTransform &geo, double &latitude,
+                              double &longitude, bool isStringReturn);
     QPointF geoToPixel(double latitude, double longitude,
-                       const sad::geoTransform& gt);
+                       const sad::geoTransform &gt);
 
-    inline double euclideanDistance(const QVector<double>& v1,
-                                    const QVector<double>& v2);
+    inline double euclideanDistance(const QVector<double> &v1,
+                                    const QVector<double> &v2);
 
-    inline double calculateSpectralAngle(const QVector<double>& S1,
-                                         const QVector<double>& S2);
+    inline double calculateSpectralAngle(const QVector<double> &S1,
+                                         const QVector<double> &S2);
 
     sad::geoTransform m_geo;
 
-    void processLayer(uchar* layer, int xSize, int yStart, int yEnd,
+    void processLayer(uchar *layer, int xSize, int yStart, int yEnd,
                       const QVector<double> sample, QColor color,
                       int offsetStart);
 
@@ -339,7 +345,7 @@ private:
 
     QVector<sad::BAND_DATA> m_sentinel_data;
     QVector<sad::BAND_DATA> m_landsat_data;
-    void read_sentinel2_bands_data(QVector<sad::BAND_DATA>& data);
+    void read_sentinel2_bands_data(QVector<sad::BAND_DATA> &data);
 
     void gdal_start_driver();
     void gdal_close_driver();
@@ -351,45 +357,45 @@ private:
     void clear_all_layers();
 
     QHash<QString, sad::geoTransform> extractGeoPositions(
-        const QString& xmlFilePath);
-    int extractUTMZoneFromXML(const QString& xmlFilePath);
-    QString getDateTimeFromXML(const QString& xmlFilePath);
-    void getKSY(const QPointF& pos, QVector<double>& waves,
-                QVector<double>& ksy);
-    QImage createModifiedImage(const QImage& img, double coefSat,
+        const QString &xmlFilePath);
+    int extractUTMZoneFromXML(const QString &xmlFilePath);
+    QString getDateTimeFromXML(const QString &xmlFilePath);
+    void getKSY(const QPointF &pos, QVector<double> &waves,
+                QVector<double> &ksy);
+    QImage createModifiedImage(const QImage &img, double coefSat,
                                double coefLight);
     void initUdpRpcConnection();
-    UdpJsonRpc* m_rpc;
+    UdpJsonRpc *m_rpc;
 
     QVector<sad::BAND_DATA> getDataFromJsonForLandsat8_9_TimeRow(
-        const QString& headerName, sad::LANDSAT_METADATA_FILE& landsat_metadata,
-        sad::geoTransform& gt);
+        const QString &headerName, sad::LANDSAT_METADATA_FILE &landsat_metadata,
+        sad::geoTransform &gt);
 
     QVector<sad::BAND_DATA> getDataForSentinel_TimeRow(
-        const QString& headerName, sad::SATELLITE_TYPE st,
-        sad::SENTINEL_METADATA& metadata, sad::geoTransform& gt);
+        const QString &headerName, sad::SATELLITE_TYPE st,
+        sad::SENTINEL_METADATA &metadata, sad::geoTransform &gt);
 
     QVector<QVector<sad::BAND_DATA>> m_time_row;
     QVector<sad::QA_MASK_DATA> m_time_row_qa_mask;
     QVector<sad::geoTransform> m_time_row_geo;
-    sad::geoTransform getGeo(const QJsonObject& jo);
+    sad::geoTransform getGeo(const QJsonObject &jo);
 
     QVector<QImage> get_cropedImages_for_time_row(
-        const QVector<QVector<sad::BAND_DATA>>& m_time_row,
+        const QVector<QVector<sad::BAND_DATA>> &m_time_row,
         sad::SATELLITE_TYPE st);
-    QCustomPlot* time_row_indexes_plot;
+    QCustomPlot *time_row_indexes_plot;
     QPair<QVector<double>, QVector<QString>> m_time_row_dates_unix_time;
-    void showTimeRowIndexesDataViaPlot(QVector<double>&& ndvis,
-                                       QVector<double>&& ndwis);
-    bool isDataCloudShadow_OK(QVector<QPointF>& points);
-    void paintTimeRowBadForest(const QColor& color);
+    void showTimeRowIndexesDataViaPlot(QVector<double> &&ndvis,
+                                       QVector<double> &&ndwis);
+    bool isDataCloudShadow_OK(QVector<QPointF> &points);
+    void paintTimeRowBadForest(const QColor &color);
 
     sad::NDWI_NDVI_TIME_ROW getIndexesForTimeRow(
-        const QVector<QPointF>& points);
-    double calculate_slope(const QVector<double>& values);
+        const QVector<QPointF> &points);
+    double calculate_slope(const QVector<double> &values);
 
-    SpectralIndicesWidget* m_spectralWidget;
-    QDockWidget* m_spectralDock;
+    SpectralIndicesWidget *m_spectralWidget;
+    QDockWidget *m_spectralDock;
     void setUpUi();
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H
