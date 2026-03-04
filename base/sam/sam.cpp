@@ -50,6 +50,16 @@ double calculate_normalized_difference(const double a, const double b) {
 
 } // end namespace detail
 
+BandIndices getBandsIndexes(sk satellite) {
+  BandIndices indices;
+  indices.nir1 = getBandIndex(sam::kNIR1, satellite);
+  indices.red = getBandIndex(sam::kRED, satellite);
+  indices.green = getBandIndex(sam::kGREEN, satellite);
+  indices.blue = getBandIndex(sam::kBLUE, satellite);
+  indices.swir1 = getBandIndex(sam::kSWIR1, satellite);
+  return indices;
+}
+
 ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
                                             const QVector<double> &v2,
                                             double &result) {
@@ -88,14 +98,16 @@ double calculateEVI(const double nir1, double red, const double blue) {
   return G * (nir1 - red) / (nir1 + (C1 * red - C2 * blue) + L);
 }
 
-BandIndices getBandsIndexes(sk satellite) {
-  BandIndices indices;
-  indices.nir1 = getBandIndex(sam::kNIR1, satellite);
-  indices.red = getBandIndex(sam::kRED, satellite);
-  indices.green = getBandIndex(sam::kGREEN, satellite);
-  indices.blue = getBandIndex(sam::kBLUE, satellite);
-  indices.swir1 = getBandIndex(sam::kSWIR1, satellite);
-  return indices;
+double calculateNBR(const double nir1, const double swir2) {
+  return detail::calculate_normalized_difference(nir1, swir2);
+}
+
+double calculateNDSWIR(const double nir1, const double swir1) {
+  return detail::calculate_normalized_difference(nir1, swir1);
+}
+
+double calculateNBRSWIR(const double swir2, const double swir1) {
+  return (swir2 - swir1 - 0.02) / (swir2 + swir1 + 0.1);
 }
 
 } // end namespace sam

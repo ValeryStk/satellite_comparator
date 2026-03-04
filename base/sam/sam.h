@@ -54,6 +54,12 @@ inline double calculateDSWI(const double nir1, const double green,
 inline double calculateEVI(const double nir1, const double red,
                            const double blue);
 
+inline double calculateNBR(const double nir1, const double swir2);
+
+inline double calculateNDSWIR(const double nir1, const double swir1);
+
+inline double calculateNBRSWIR(const double swir2, const double swir1);
+
 } // end namespace sam
 
 #endif // SAM_H
