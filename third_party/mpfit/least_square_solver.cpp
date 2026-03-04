@@ -1,22 +1,20 @@
 #include "least_square_solver.h"
-#include "mpfit.h"
-#include <cstring>
+
 #include <QDebug>
+#include <cstring>
+
+#include "mpfit.h"
 
 LeastSquareSolver* LeastSquareSolver::activeSolver = nullptr;
 
-int mpfit_model(int m,
-                int n,
-                double* p,
-                double* dy,
-                double** dvec,
+int mpfit_model(int m, int n, double* p, double* dy, double** dvec,
                 void* /*vars*/) {
     auto* solver = LeastSquareSolver::activeSolver;
-    //if (!solver || !dvec || !dvec[0]) return -1;
+    // if (!solver || !dvec || !dvec[0]) return -1;
 
     for (int i = 0; i < m; ++i) {
-        dy[i] = solver->yData[i] - (p[0]*solver->xData[i] + p[1]);
-        //qDebug()<<dy[i]<<"----"<<solver->xData[i]<<"----"<<solver->yData[i]<<"-----"<<p[0]<<"------"<<p[1];
+        dy[i] = solver->yData[i] - (p[0] * solver->xData[i] + p[1]);
+        // qDebug()<<dy[i]<<"----"<<solver->xData[i]<<"----"<<solver->yData[i]<<"-----"<<p[0]<<"------"<<p[1];
     }
 
     return 0;
@@ -29,7 +27,8 @@ void LeastSquareSolver::setModel(ModelFunction model, int numParams) {
     paramCount = numParams;
 }
 
-void LeastSquareSolver::setData(const std::vector<double>& x, const std::vector<double>& y) {
+void LeastSquareSolver::setData(const std::vector<double>& x,
+                                const std::vector<double>& y) {
     xData = x;
     yData = y;
 }
@@ -53,18 +52,13 @@ bool LeastSquareSolver::solve() {
     std::memset(&result, 0, sizeof(result));
     result.xerror = new double[paramCount];
 
-    double* dydata[] = { yData.data() };
+    double* dydata[] = {yData.data()};
 
     activeSolver = this;
 
-    int status = mpfit(mpfit_model,
-                       static_cast<int>(xData.size()),
-                       paramCount,
-                       parameters.data(),
-                       pars.data(),
-                       nullptr,
-                       dydata,
-                       &result);
+    int status =
+        mpfit(mpfit_model, static_cast<int>(xData.size()), paramCount,
+              parameters.data(), pars.data(), nullptr, dydata, &result);
 
     activeSolver = nullptr;
     delete[] result.xerror;
@@ -74,4 +68,3 @@ bool LeastSquareSolver::solve() {
 std::vector<double> LeastSquareSolver::getParameters() const {
     return parameters;
 }
-

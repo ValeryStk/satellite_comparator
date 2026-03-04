@@ -4,14 +4,11 @@
 #include <QObject>
 #include <QtTest>
 
-
-class SatelliteComparatorUnitTests : public QObject
-{
+class SatelliteComparatorUnitTests : public QObject {
     Q_OBJECT
 
 public:
     SatelliteComparatorUnitTests();
-
 
 private slots:
     void initTestCase();
@@ -22,7 +19,6 @@ private slots:
     void testSatelliteComparatorBaseCheck();
     void testSatelliteComparatorLinearInterpolation();
     void testLoadSatelliteDataJson();
-
 };
 
-#endif // SATELLITECOMPARATORUNITTESTS_H
+#endif  // SATELLITECOMPARATORUNITTESTS_H

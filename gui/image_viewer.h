@@ -1,10 +1,10 @@
 #ifndef IMAGE_VIEWER_H
 #define IMAGE_VIEWER_H
 
-#include <QGraphicsView>
-#include <QGraphicsScene>
-#include <QGraphicsPixmapItem>
 #include <QGraphicsLineItem>
+#include <QGraphicsPixmapItem>
+#include <QGraphicsScene>
+#include <QGraphicsView>
 
 class ViewSyncManager;
 
@@ -39,4 +39,4 @@ private:
     void updateCrosshair(int x, int y);
 };
 
-#endif // IMAGEVIEWER_H
+#endif  // IMAGEVIEWER_H

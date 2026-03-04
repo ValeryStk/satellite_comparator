@@ -1,50 +1,39 @@
 #include "sattelite_comparator.h"
 
+namespace {
 
-
-namespace{
-
-bool areVectorsEqual(const QVector<double> &a,
-                     const QVector<double> &b)
-{
+bool areVectorsEqual(const QVector<double>& a, const QVector<double>& b) {
     if (a.size() != b.size()) {
         return false;
     }
     return std::equal(a.begin(), a.end(), b.begin());
 }
 
-}
-
+}  // namespace
 
 SatteliteComparator::SatteliteComparator(QVector<double> device_waves,
                                          QVector<double> device_values,
                                          QVector<double> satellite_waves,
-                                         QVector<double> satellite_values):
-    m_sdb(get_sdb()),
-    m_all_satellites_data(get_satellites_data()),
-    m_common_wave_grid(get_common_waves())
+                                         QVector<double> satellite_values)
+    : m_sdb(get_sdb()),
+      m_all_satellites_data(get_satellites_data()),
+      m_common_wave_grid(get_common_waves())
 
 {
-    initial_fill_data_to_show(device_waves,
-                              device_values,
-                              satellite_waves,
+    initial_fill_data_to_show(device_waves, device_values, satellite_waves,
                               satellite_values);
 }
 
-SatteliteComparator::~SatteliteComparator()
-{
-
-}
+SatteliteComparator::~SatteliteComparator() {}
 
 BASE_CHECK_RESULT SatteliteComparator::base_check_before_interpolation(
-        const QVector<double>& waves,
-        const QVector<double>& values)
-{
-    if(waves.empty()) return BASE_CHECK_RESULT::WAVES_IS_EMPTY;
+    const QVector<double>& waves, const QVector<double>& values) {
+    if (waves.empty()) return BASE_CHECK_RESULT::WAVES_IS_EMPTY;
 
-    if(values.empty()) return BASE_CHECK_RESULT::VALUES_IS_EMPTY;
+    if (values.empty()) return BASE_CHECK_RESULT::VALUES_IS_EMPTY;
 
-    if(waves.size() != values.size()) return BASE_CHECK_RESULT::SIZES_ARE_NOT_THE_SAME;
+    if (waves.size() != values.size())
+        return BASE_CHECK_RESULT::SIZES_ARE_NOT_THE_SAME;
 
     if (!std::is_sorted(waves.begin(), waves.end())) {
         return BASE_CHECK_RESULT::WAVES_IS_NOT_SORTED;
@@ -52,13 +41,10 @@ BASE_CHECK_RESULT SatteliteComparator::base_check_before_interpolation(
     return BASE_CHECK_RESULT::OK;
 }
 
-
 // Возвращает интерполированное значение для нового x
 double SatteliteComparator::linearInterpolation(const QVector<double>& x,
                                                 const QVector<double>& y,
-                                                const double target_x)
-{
-
+                                                const double target_x) {
     if (target_x < x.front() || target_x > x.back()) {
         return -1;
     }
@@ -67,13 +53,13 @@ double SatteliteComparator::linearInterpolation(const QVector<double>& x,
     auto it = std::find(x.begin(), x.end(), target_x);
     if (it != x.end()) {
         int idx = static_cast<int>(std::distance(x.begin(), it));
-        return y[idx]; // Возврат значения без интерполяции
+        return y[idx];  // Возврат значения без интерполяции
     }
 
     // Найти место для вставки, чтобы сохранить упорядоченность
     auto lower = std::lower_bound(x.begin(), x.end(), target_x);
     if (lower == x.begin()) {
-        return y.front(); // Если target равен первому элементу
+        return y.front();  // Если target равен первому элементу
     }
 
     // Индексы для интерполяции
@@ -85,47 +71,44 @@ double SatteliteComparator::linearInterpolation(const QVector<double>& x,
     return y1 + (target_x - x1) * (y2 - y1) / (x2 - x1);
 }
 
-QHash<QString, satellites_data> SatteliteComparator::get_satellites_data()
-{
+QHash<QString, satellites_data> SatteliteComparator::get_satellites_data() {
     satellites_data sd;
     QJsonObject json_satellites = m_sdb["satellites"].toObject();
     m_satellites_list = json_satellites.keys();
-    QHash<QString,satellites_data> all_responses;
-    for(auto &sk:m_satellites_list){
+    QHash<QString, satellites_data> all_responses;
+    for (auto& sk : m_satellites_list) {
         auto obj = json_satellites[sk].toObject();
         sd.responses = jsn::getMatrixFromJsonArray(obj["responses"].toArray());
         sd.alias = obj["alias"].toString();
         sd.bands = jsn::getMatrixFromJsonArray(obj["bands"].toArray());
-        sd.central_waves = jsn::getVectorDoubleFromJsonArray(obj["central_waves"].toArray());
-        all_responses.insert(sk,sd);
+        sd.central_waves =
+            jsn::getVectorDoubleFromJsonArray(obj["central_waves"].toArray());
+        all_responses.insert(sk, sd);
     }
     return all_responses;
 }
 
-QPair<QVector<double>,QVector<double>> SatteliteComparator::interpolate(
-        const QVector<double>& x,
-        const QVector<double>& y,
-        const QVector<double>& new_x,
-        BASE_CHECK_RESULT& result_status)
-{
+QPair<QVector<double>, QVector<double>> SatteliteComparator::interpolate(
+    const QVector<double>& x, const QVector<double>& y,
+    const QVector<double>& new_x, BASE_CHECK_RESULT& result_status) {
     QVector<double> new_values;
     QVector<double> existed_waves;
-    result_status = base_check_before_interpolation(x,y);
+    result_status = base_check_before_interpolation(x, y);
 
-    if( result_status == BASE_CHECK_RESULT::OK){
-        for(int i=0;i<new_x.size();++i){
-            if(-1==linearInterpolation(x,y,new_x[i]))continue;
-            new_values.push_back(linearInterpolation(x,y,new_x[i]));
+    if (result_status == BASE_CHECK_RESULT::OK) {
+        for (int i = 0; i < new_x.size(); ++i) {
+            if (-1 == linearInterpolation(x, y, new_x[i])) continue;
+            new_values.push_back(linearInterpolation(x, y, new_x[i]));
             existed_waves.push_back(new_x[i]);
         }
-        return {existed_waves,new_values};
+        return {existed_waves, new_values};
     }
     return {};
 }
 
-int SatteliteComparator::tryToFindTheSameVector(const QVector<QVector<double>> &vectorOfVectors,
-                                                const QVector<double> &targetVector)
-{
+int SatteliteComparator::tryToFindTheSameVector(
+    const QVector<QVector<double>>& vectorOfVectors,
+    const QVector<double>& targetVector) {
     for (int i = 0; i < vectorOfVectors.size(); ++i) {
         if (areVectorsEqual(vectorOfVectors[i], targetVector)) {
             return static_cast<int>(i);
@@ -134,41 +117,40 @@ int SatteliteComparator::tryToFindTheSameVector(const QVector<QVector<double>> &
     return -1;
 }
 
-QJsonObject SatteliteComparator::get_sdb()
-{
+QJsonObject SatteliteComparator::get_sdb() {
     QJsonObject sdb;
-    jsn::getJsonObjectFromFile(":/res/sd.json",sdb);
+    jsn::getJsonObjectFromFile(":/res/sd.json", sdb);
     return sdb;
 }
 
-QVector<double> SatteliteComparator::get_common_waves()
-{
-    return jsn::getVectorDoubleFromJsonArray(m_sdb["_common_wave_grid"].toArray());
+QVector<double> SatteliteComparator::get_common_waves() {
+    return jsn::getVectorDoubleFromJsonArray(
+        m_sdb["_common_wave_grid"].toArray());
 }
 
-QVector<QVector<double>> SatteliteComparator::get_bands(const QString& satellite_name)
-{
-    auto satellite = m_sdb["satellites"].toObject().value(satellite_name).toObject();
+QVector<QVector<double>> SatteliteComparator::get_bands(
+    const QString& satellite_name) {
+    auto satellite =
+        m_sdb["satellites"].toObject().value(satellite_name).toObject();
     auto bands = satellite["bands"].toArray();
     return jsn::getMatrixFromJsonArray(bands);
 }
 
-void SatteliteComparator::initial_fill_data_to_show(const QVector<double>& device_waves,
-                                                    const QVector<double>& device_values,
-                                                    const QVector<double>& satellite_waves,
-                                                    const QVector<double>& satellite_values)
-{
+void SatteliteComparator::initial_fill_data_to_show(
+    const QVector<double>& device_waves, const QVector<double>& device_values,
+    const QVector<double>& satellite_waves,
+    const QVector<double>& satellite_values) {
     m_comparator_data.device_waves = device_waves;
     m_comparator_data.device_values = device_values;
     m_comparator_data.satellite_waves = satellite_waves;
     m_comparator_data.satellite_values = satellite_values;
 }
 
-bool SatteliteComparator::set_satellite_responses(const QString& satellite_name)
-{
-    for(const auto &sat_name:qAsConst(m_satellites_list)){
+bool SatteliteComparator::set_satellite_responses(
+    const QString& satellite_name) {
+    for (const auto& sat_name : qAsConst(m_satellites_list)) {
         auto check = m_all_satellites_data[sat_name];
-        if(sat_name==satellite_name){
+        if (sat_name == satellite_name) {
             m_sat_data.satellite_name = sat_name;
             m_sat_data.alias = check.alias;
             m_sat_data.bands = check.bands;
@@ -180,58 +162,49 @@ bool SatteliteComparator::set_satellite_responses(const QString& satellite_name)
     return false;
 }
 
-void SatteliteComparator::compare_spectrs()
-{
+void SatteliteComparator::compare_spectrs() {
     BASE_CHECK_RESULT result;
     auto x_y = interpolate(m_comparator_data.device_waves,
-                           m_comparator_data.device_values,
-                           m_common_wave_grid,
+                           m_comparator_data.device_values, m_common_wave_grid,
                            result);
-
 }
 
-QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses()
-{
+QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses() {
     static const int SATTELITE_WAVE_OFFSET = 400;
-    QVector<double>folded_spectr(m_sat_data.bands.size());
-    QVector<double>satellite_bands_sum(m_sat_data.bands.size());
-    QVector<double>device_spectr_bands_sum(m_sat_data.bands.size());
+    QVector<double> folded_spectr(m_sat_data.bands.size());
+    QVector<double> satellite_bands_sum(m_sat_data.bands.size());
+    QVector<double> device_spectr_bands_sum(m_sat_data.bands.size());
     BASE_CHECK_RESULT status;
     auto x_y = interpolate(m_comparator_data.device_waves,
-                           m_comparator_data.device_values,
-                           m_common_wave_grid,
+                           m_comparator_data.device_values, m_common_wave_grid,
                            status);
-    if(status==BASE_CHECK_RESULT::OK){
-        for(int i=0;i<m_sat_data.bands.size();++i){
-            int start = m_sat_data.bands[i][0]-SATTELITE_WAVE_OFFSET;
-            int end   = m_sat_data.bands[i][1]-SATTELITE_WAVE_OFFSET;
-            for(int j=start;j<end;++j){
-                satellite_bands_sum[i]+=m_sat_data.responses[j][i];
-                device_spectr_bands_sum[i]+=x_y.second[j]*m_sat_data.responses[j][i];
+    if (status == BASE_CHECK_RESULT::OK) {
+        for (int i = 0; i < m_sat_data.bands.size(); ++i) {
+            int start = m_sat_data.bands[i][0] - SATTELITE_WAVE_OFFSET;
+            int end = m_sat_data.bands[i][1] - SATTELITE_WAVE_OFFSET;
+            for (int j = start; j < end; ++j) {
+                satellite_bands_sum[i] += m_sat_data.responses[j][i];
+                device_spectr_bands_sum[i] +=
+                    x_y.second[j] * m_sat_data.responses[j][i];
             }
         }
-        for(int i=0;i<device_spectr_bands_sum.size();++i){
-            folded_spectr[i]=device_spectr_bands_sum[i]/satellite_bands_sum[i];
+        for (int i = 0; i < device_spectr_bands_sum.size(); ++i) {
+            folded_spectr[i] =
+                device_spectr_bands_sum[i] / satellite_bands_sum[i];
         }
         return folded_spectr;
     }
     return {};
 }
 
-
 QVector<double> SatteliteComparator::check_intersection(
-        const QVector<double> &waves_1,
-        const QVector<double> &waves_2)
-{
-    QVector<double>intersection;
+    const QVector<double>& waves_1, const QVector<double>& waves_2) {
+    QVector<double> intersection;
     double start = std::max(waves_1.first(), waves_2.first());
     double end = std::min(waves_1.last(), waves_2.last());
-    if (start <= end){
-        intersection = {start,end};
+    if (start <= end) {
+        intersection = {start, end};
         return {start, end};
-    }
-    else
+    } else
         return {};
 }
-
-

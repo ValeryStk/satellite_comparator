@@ -4,13 +4,11 @@
 #include <QObject>
 #include <QtTest>
 
-class SamUnitTests : public QObject
-{
+class SamUnitTests : public QObject {
     Q_OBJECT
 
 public:
     SamUnitTests();
-
 
 private slots:
     void initTestCase();
@@ -19,9 +17,6 @@ private slots:
     void cleanup();
 
     void samMetricsTest();
-
-
-
 };
 
-#endif // SAMUNITTESTS_H
+#endif  // SAMUNITTESTS_H

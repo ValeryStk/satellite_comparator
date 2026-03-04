@@ -1,17 +1,18 @@
 #ifndef SATELLITES_STRUCTS_H
 #define SATELLITES_STRUCTS_H
 
-#include "QString"
-#include <QHash>
 #include <QDateTime>
+#include <QHash>
 #include <QVector>
 
+#include "QString"
+
 constexpr int LANDSAT_BANDS_NUMBER = 11;
-constexpr int  SENTINEL_BANDS_NUMBER = 13;
+constexpr int SENTINEL_BANDS_NUMBER = 13;
 
-namespace sad{
+namespace sad {
 
-enum SATELLITE_TYPE{
+enum SATELLITE_TYPE {
     LANDSAT_9,
     LANDSAT_8,
     SENTINEL_2A,
@@ -37,25 +38,25 @@ extern const double landsat_central_wavelengths[LANDSAT_BANDS_NUMBER];
 
 extern const int sorted_landsat_bands_order_by_wavelength[LANDSAT_BANDS_NUMBER];
 
-
 struct geoTransform {
-    double ulX = 0;           // Верхний левый X (восточное направление)
-    double resX = 0;          // Разрешение по X
-    double rotateX = 0;       // Поворот X (обычно 0 для Landsat)
-    double ulY = 0;           // Верхний левый Y (северное направление)
-    double rotateY = 0;       // Поворот Y (обычно 0 для Landsat)
-    double resY = 0;          // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
+    double ulX = 0;  // Верхний левый X (восточное направление)
+    double resX = 0;     // Разрешение по X
+    double rotateX = 0;  // Поворот X (обычно 0 для Landsat)
+    double ulY = 0;  // Верхний левый Y (северное направление)
+    double rotateY = 0;  // Поворот Y (обычно 0 для Landsat)
+    double resY =
+        0;  // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
     double utmZone = 0;
 };
 
-struct PRODUCT_CONTENTS{
+struct PRODUCT_CONTENTS {
     QString landsat_product_id;
     QDateTime date_time;
     QString processing_level;
     QString file_name_bands[LANDSAT_BANDS_NUMBER];
 };
 
-struct IMAGE_ATTRIBUTES{
+struct IMAGE_ATTRIBUTES {
     QString spacecraft_id;
     QString sensor_id;
     QString date_acquired;
@@ -63,7 +64,7 @@ struct IMAGE_ATTRIBUTES{
     QString sun_elevation;
 };
 
-struct PROJECTION_ATTRIBUTES{
+struct PROJECTION_ATTRIBUTES {
     QString utm_zone;
     QString grid_cell_size_reflective;
     QString orientation;
@@ -71,12 +72,12 @@ struct PROJECTION_ATTRIBUTES{
     QString corner_ul_projection_y_product;
 };
 
-struct LEVEL1_RADIOMETRIC_RESCALING{
+struct LEVEL1_RADIOMETRIC_RESCALING {
     QString reflectance_mult_band[LANDSAT_BANDS_NUMBER];
     QString reflectance_add_band[LANDSAT_BANDS_NUMBER];
 };
 
-struct LANDSAT_METADATA_FILE{
+struct LANDSAT_METADATA_FILE {
     bool isHeaderValid = false;
     bool landsat9_missed_channels[LANDSAT_BANDS_NUMBER];
     PRODUCT_CONTENTS product_contents;
@@ -91,12 +92,12 @@ extern const double sentinel_2A_central_wave_lengths[SENTINEL_BANDS_NUMBER];
 extern const QString sentinel_2B_gui_band_names[SENTINEL_BANDS_NUMBER];
 extern const double sentinel_2B_central_wave_lengths[SENTINEL_BANDS_NUMBER];
 
-extern const QHash<const QString,QPair<int,int>> sentinel_resolutions;
+extern const QHash<const QString, QPair<int, int>> sentinel_resolutions;
 extern const QString sentinel_bands_keys[SENTINEL_BANDS_NUMBER];
 
-struct SENTINEL_KSY_ADD_MULT{
-    QVector<double> add  [SENTINEL_BANDS_NUMBER];
-    QVector<double> mult [SENTINEL_BANDS_NUMBER];
+struct SENTINEL_KSY_ADD_MULT {
+    QVector<double> add[SENTINEL_BANDS_NUMBER];
+    QVector<double> mult[SENTINEL_BANDS_NUMBER];
 };
 
 struct SENTINEL_METADATA {
@@ -108,7 +109,7 @@ struct SENTINEL_METADATA {
     SENTINEL_KSY_ADD_MULT reflectence_params;
 };
 
-struct BAND_DATA{
+struct BAND_DATA {
     double central_wave_length;
     QString gui_name;
     QString resolution_in_pixel_meters;
@@ -127,28 +128,26 @@ struct QA_MASK_DATA {
     uint16_t* data = nullptr;
 };
 
-struct DATA_CLOUD_SHADOW_MASK{
-bool is_data;
-bool is_cloud;
-bool is_shadow;
-bool is_common_valid;
+struct DATA_CLOUD_SHADOW_MASK {
+    bool is_data;
+    bool is_cloud;
+    bool is_shadow;
+    bool is_common_valid;
 };
 
-
-struct BANDS_FOR_CALCULATING_INDEXES{
+struct BANDS_FOR_CALCULATING_INDEXES {
     double RED_BAND;
     double NIR_BAND;
     double SWIR1_BAND;
 };
 
-struct NDWI_NDVI_TIME_ROW{
-   QVector<double> ndvi_time_row;
-   QVector<double> ndwi_time_row;
-   QVector<double> slopes;
-   int dp_ndvi = 0;
+struct NDWI_NDVI_TIME_ROW {
+    QVector<double> ndvi_time_row;
+    QVector<double> ndwi_time_row;
+    QVector<double> slopes;
+    int dp_ndvi = 0;
 };
 
-}
+}  // namespace sad
 
-
-#endif // SATELLITES_STRUCTS_H
+#endif  // SATELLITES_STRUCTS_H

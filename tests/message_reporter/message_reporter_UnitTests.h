@@ -4,8 +4,7 @@
 #include <QObject>
 #include <QtTest>
 
-class message_reporter_UnitTests : public QObject
-{
+class message_reporter_UnitTests : public QObject {
     Q_OBJECT
 
 public:
@@ -18,7 +17,6 @@ private slots:
     void cleanup();
 
     void showMessages();
-
 };
 
-#endif // UNITTESTS_H
+#endif  // UNITTESTS_H

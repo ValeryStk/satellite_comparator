@@ -2,19 +2,21 @@
 #define WAVESRANGEDIALOG_H
 
 #include <QDialog>
+
 #include "SpectrPlotterWidget.h"
 
 namespace Ui {
 class WavesRangeDialog;
 }
 
-class WavesRangeDialog : public QDialog
-{
+class WavesRangeDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit WavesRangeDialog(QWidget *parent, QVector<double> waves, QVector<double> values,
-                              double maxValue, db_json::BandUnits bandsUnits, db_json::SpectrumUnits spUnits,
+    explicit WavesRangeDialog(QWidget *parent, QVector<double> waves,
+                              QVector<double> values, double maxValue,
+                              db_json::BandUnits bandsUnits,
+                              db_json::SpectrumUnits spUnits,
                               double minWave = 0, double maxWave = 0);
     ~WavesRangeDialog();
 
@@ -34,25 +36,26 @@ private slots:
 
     void on_doubleSpinBoxEndWave_editingFinished();
 
-    void keyPressEvent(QKeyEvent* event) override;
+    void keyPressEvent(QKeyEvent *event) override;
 
 private:
     /**
      * @brief setupGui  Function that setups GUI
      */
-    void setupGui(QVector<double> &waves, QVector<double> &values, double maxValue,
-                  db_json::BandUnits bandsUnits, db_json::SpectrumUnits spUnits);
+    void setupGui(QVector<double> &waves, QVector<double> &values,
+                  double maxValue, db_json::BandUnits bandsUnits,
+                  db_json::SpectrumUnits spUnits);
 
     void setupCurves();
     void drawMinLine();
     void drawMaxLine();
 
     Ui::WavesRangeDialog *ui;
-    SpectrPlotterWidget *m_plotterWidget;   //!< Plotter widget
+    SpectrPlotterWidget *m_plotterWidget;  //!< Plotter widget
     double m_minWave;
     double m_maxWave;
     QCPItemStraightLine *m_minVerticalLine;
     QCPItemStraightLine *m_maxVerticalLine;
 };
 
-#endif // WAVESRANGEDIALOG_H
+#endif  // WAVESRANGEDIALOG_H

@@ -1,22 +1,25 @@
 #include "CompMonitor.h"
+
+#include <QDebug>
+#include <QScreen>
 #include <QString>
 #include <QStringList>
-#include <QDebug>
 #include <QSysInfo>
-#include <QScreen>
 
-
-CompMonitor::CompMonitor()
-{
-    qInfo()<<"      Получение информации о конфигурации системы......\n\n";
-    qInfo()<<"      Операционная система:"<<QSysInfo::prettyProductName()<<"\n";
-    qInfo()<<"      Сборка:"<<QSysInfo::kernelVersion()<<"\n";
+CompMonitor::CompMonitor() {
+    qInfo() << "      Получение информации о конфигурации системы......\n\n";
+    qInfo() << "      Операционная система:" << QSysInfo::prettyProductName()
+            << "\n";
+    qInfo() << "      Сборка:" << QSysInfo::kernelVersion() << "\n";
 
     SYSTEM_INFO systemInfo;
     GetSystemInfo(&systemInfo);
-    qInfo()<<"      CPU architecture:"<<QSysInfo::currentCpuArchitecture()<<"\n";
-    qInfo()<<"      Number of processors:"<<systemInfo.dwNumberOfProcessors<<"\n";
-    qInfo()<<"      Processor version:"<<systemInfo.wProcessorRevision<<"\n";
+    qInfo() << "      CPU architecture:" << QSysInfo::currentCpuArchitecture()
+            << "\n";
+    qInfo() << "      Number of processors:" << systemInfo.dwNumberOfProcessors
+            << "\n";
+    qInfo() << "      Processor version:" << systemInfo.wProcessorRevision
+            << "\n";
 
     MEMORYSTATUSEX memory_status;
     QStringList system_info;
@@ -24,15 +27,19 @@ CompMonitor::CompMonitor()
     memory_status.dwLength = sizeof(MEMORYSTATUSEX);
 
     if (GlobalMemoryStatusEx(&memory_status)) {
-
-    qInfo()<<"      Total RAM:"<<memory_status.ullTotalPhys / (1024*1024*1024)<<"Gb"<<"\n";
-    qInfo()<<"      Free  RAM:"<<memory_status.ullAvailPhys / (1024*1024*1024)<<"Gb"<<"\n\n";
+        qInfo() << "      Total RAM:"
+                << memory_status.ullTotalPhys / (1024 * 1024 * 1024) << "Gb"
+                << "\n";
+        qInfo() << "      Free  RAM:"
+                << memory_status.ullAvailPhys / (1024 * 1024 * 1024) << "Gb"
+                << "\n\n";
 
     } else {
-
-        qInfo()<<"   UKNOWN TYPE OF THE MEMORY"<<"\n\n";
+        qInfo() << "   UKNOWN TYPE OF THE MEMORY"
+                << "\n\n";
     }
 
-
-    qInfo()<<"_________________________________________________________________________"<<"\n\n";
+    qInfo() << "_______________________________________________________________"
+               "__________"
+            << "\n\n";
 }

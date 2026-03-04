@@ -2,13 +2,12 @@
 #define SLIDERSOFIMAGECORRECTORUNITTESTS_H
 
 #include <QObject>
-#include <QtTest>
 #include <QSlider>
+#include <QtTest>
 
 class SlidersOfImageCorrector;
 
-class SlidersOfImageCorrectorUnitTests : public QObject
-{
+class SlidersOfImageCorrectorUnitTests : public QObject {
     Q_OBJECT
 
 public:
@@ -18,7 +17,7 @@ private:
     void helper_for_test_coef(const int slider_value,
                               const double expected_multiplier_value,
                               const QString& name_test,
-                              SlidersOfImageCorrector *sic,
+                              SlidersOfImageCorrector* sic,
                               const uint header_width);
 
 private slots:
@@ -27,9 +26,7 @@ private slots:
     void init();
     void cleanup();
 
-
     void testSliderImageCorrector();
-
 };
 
-#endif // SLIDERSOFIMAGECORRECTORUNITTESTS_H
+#endif  // SLIDERSOFIMAGECORRECTORUNITTESTS_H

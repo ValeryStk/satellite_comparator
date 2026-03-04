@@ -1,25 +1,24 @@
 #ifndef SLIDERS_OF_IMAGE_CORRECTOR_H
 #define SLIDERS_OF_IMAGE_CORRECTOR_H
 
-#include <QWidget>
 #include <QSlider>
-
+#include <QWidget>
 
 namespace Ui {
 class SlidersOfImageCorrector;
 }
 
 /**
- * @brief Класс предназначен для расчёта коэффициентов которые используются при регулировкe яркости и цветового баланса изображения
+ * @brief Класс предназначен для расчёта коэффициентов которые используются при
+ * регулировкe яркости и цветового баланса изображения
  */
-class SlidersOfImageCorrector : public QWidget
-{
+class SlidersOfImageCorrector : public QWidget {
     Q_OBJECT
     friend class SlidersOfImageCorrectorUnitTests;
 
 public:
     //! Конструктор
-    explicit SlidersOfImageCorrector(QWidget *parent = nullptr);
+    explicit SlidersOfImageCorrector(QWidget* parent = nullptr);
 
     //! Деструктор
     ~SlidersOfImageCorrector();
@@ -30,7 +29,8 @@ public:
     //! Функция получения коэффициента яркости
     double getCoefLight() const;
 
-    //! Функция установки значений слайдеров и коэффициентов нейтральными значениями
+    //! Функция установки значений слайдеров и коэффициентов нейтральными
+    //! значениями
     void setDefaultValues();
 
     //! Функция получения текущего значения слайдера яркости
@@ -47,7 +47,7 @@ private slots:
     //! Слот изменения коэффициента насыщенности
     void onSaturationChanged();
 
-     //! Слот изменения коэффициента яркости
+    //! Слот изменения коэффициента яркости
     void onLightChanged();
 
     //! Слот обработки действия слайдера яркости при нажатии
@@ -60,14 +60,12 @@ private slots:
 
     void on_slider_saturation_valueChanged(int value);
 
-
 private:
-    Ui::SlidersOfImageCorrector *ui;                        //!< Пользовательский интерфейс
-    double coefSaturation;                                  //!< Коэффициент насыщенности цвета изображения
-    double coefLight;                                       //!< Коэффициент яркости цвета изображения
+    Ui::SlidersOfImageCorrector* ui;  //!< Пользовательский интерфейс
+    double coefSaturation;  //!< Коэффициент насыщенности цвета изображения
+    double coefLight;  //!< Коэффициент яркости цвета изображения
 
     void showToolTip(QSlider* slider, const int value);
-
 };
 
-#endif // SLIDERS_OF_IMAGE_CORRECTOR_H
+#endif  // SLIDERS_OF_IMAGE_CORRECTOR_H

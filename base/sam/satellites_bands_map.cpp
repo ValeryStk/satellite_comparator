@@ -39,21 +39,21 @@ const std::unordered_map<std::string, std::unordered_map<sk, int>> bands_map = {
 // clang-format on
 
 int getBandIndex(const std::string &band_name, sk satellite) {
-  auto outer_it = bands_map.find(band_name);
-  if (outer_it == bands_map.end()) {
-    return -1; // Канал не найден
-  }
+    auto outer_it = bands_map.find(band_name);
+    if (outer_it == bands_map.end()) {
+        return -1;  // Канал не найден
+    }
 
-  auto inner_it = outer_it->second.find(satellite);
-  if (inner_it == outer_it->second.end()) {
-    return -1; // Спутник не поддерживает канал
-  }
+    auto inner_it = outer_it->second.find(satellite);
+    if (inner_it == outer_it->second.end()) {
+        return -1;  // Спутник не поддерживает канал
+    }
 
-  return inner_it->second; // Индекс канала (>=0) или -1 (не поддерживается)
+    return inner_it->second;  // Индекс канала (>=0) или -1 (не поддерживается)
 }
 
 int getBandIndex(const char *band_name, sk satellite) {
-  return getBandIndex(std::string(band_name), satellite);
+    return getBandIndex(std::string(band_name), satellite);
 }
 
-} // end namespace sam
+}  // end namespace sam

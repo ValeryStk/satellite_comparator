@@ -1,11 +1,11 @@
 #ifndef DYNAMIC_CHECKBOX_WIDGET_H
 #define DYNAMIC_CHECKBOX_WIDGET_H
 
-#include <QWidget>
-#include <QVBoxLayout>
 #include <QCheckBox>
-#include <QString>
 #include <QList>
+#include <QString>
+#include <QVBoxLayout>
+#include <QWidget>
 
 #define RGB_NUMBER 3
 
@@ -22,18 +22,18 @@ class DynamicCheckboxWidget : public QWidget {
     Q_OBJECT
 public:
     explicit DynamicCheckboxWidget(const QList<QString>& labels,
-                                   QVBoxLayout *layout = nullptr);
+                                   QVBoxLayout* layout = nullptr);
 
-QVector<QPair<int,int>> get_choosed_bands();
+    QVector<QPair<int, int>> get_choosed_bands();
 
-void setInitialCheckBoxesToggled(const QVector<int>& toToggle);
+    void setInitialCheckBoxesToggled(const QVector<int>& toToggle);
 
-void setRGBchannels();
+    void setRGBchannels();
 
-void clear();
+    void clear();
 
 private slots:
-    void onCheckboxStateChanged(QCheckBox *checkBox);
+    void onCheckboxStateChanged(QCheckBox* checkBox);
 
 signals:
     void choosed_bands_changed();
@@ -41,11 +41,13 @@ signals:
 private:
     QVBoxLayout* m_layout;
     QList<QCheckBox*> m_checkboxes;
-    QList<QPair<QCheckBox*,int>> m_checkedOrder; // Список для отслеживания порядка выбора чекбоксов
+    QList<QPair<QCheckBox*, int>>
+        m_checkedOrder;  // Список для отслеживания порядка выбора чекбоксов
     const int MAX_POSSIBLE_CHECKED = RGB_NUMBER;
-    bool used_colors[RGB_NUMBER] = {false,false,false};//RGB
-    QString colors_svg[RGB_NUMBER] = {RES_COLOR_BLUE,RES_COLOR_GREEN,RES_COLOR_RED};
-    int color_sequence[RGB_NUMBER] = {BLUE,GREEN,RED};
+    bool used_colors[RGB_NUMBER] = {false, false, false};  // RGB
+    QString colors_svg[RGB_NUMBER] = {RES_COLOR_BLUE, RES_COLOR_GREEN,
+                                      RES_COLOR_RED};
+    int color_sequence[RGB_NUMBER] = {BLUE, GREEN, RED};
 };
 
-#endif // DYNAMIC_CHECKBOX_WIDGET_H
+#endif  // DYNAMIC_CHECKBOX_WIDGET_H

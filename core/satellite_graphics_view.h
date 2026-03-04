@@ -1,42 +1,41 @@
 #ifndef SATELLITE_GRAPHICS_VIEW_H
 #define SATELLITE_GRAPHICS_VIEW_H
 
-#include <QObject>
 #include <QGraphicsView>
+#include <QObject>
 
-constexpr int Z_INDEX_BASE_IMAGE  = 0;
-constexpr int Z_INDEX_ROI_AREA_POLYGON  = 9998;
-constexpr int Z_INDEX_CROSS_SQUARE_CURSOR  = 9999;
-constexpr int Z_INDEX_CROSS_SQUARE_CURSOR_TEXT  = 10000;
+constexpr int Z_INDEX_BASE_IMAGE = 0;
+constexpr int Z_INDEX_ROI_AREA_POLYGON = 9998;
+constexpr int Z_INDEX_CROSS_SQUARE_CURSOR = 9999;
+constexpr int Z_INDEX_CROSS_SQUARE_CURSOR_TEXT = 10000;
 
-
-class SatelliteGraphicsView: public QGraphicsView
-{
+class SatelliteGraphicsView : public QGraphicsView {
     Q_OBJECT
 public:
-    SatelliteGraphicsView(QWidget *parent = nullptr);
+    SatelliteGraphicsView(QWidget* parent = nullptr);
 
     void setIsSignal(bool value);
     void setUp(QGraphicsScene* scene);
     qreal getMaxZValue(QGraphicsScene* scene);
-    QGraphicsPolygonItem *getPolygonById(const QString& id);
-    QVector<QPoint> getPointsInsidePolygon(QGraphicsPolygonItem *polygonItem,
-                                           QGraphicsPixmapItem *imageItem);
+    QGraphicsPolygonItem* getPolygonById(const QString& id);
+    QVector<QPoint> getPointsInsidePolygon(QGraphicsPolygonItem* polygonItem,
+                                           QGraphicsPixmapItem* imageItem);
 
 private:
     bool isSignal = false;
     QPointF m_current_point;
     QPolygonF polygon;
-    QGraphicsPolygonItem *polygonItem;
-    QVector<int> unused_trick = {Z_INDEX_BASE_IMAGE,Z_INDEX_ROI_AREA_POLYGON,Z_INDEX_CROSS_SQUARE_CURSOR,Z_INDEX_CROSS_SQUARE_CURSOR_TEXT};
-    QHash<QString,QGraphicsPolygonItem*> m_roi_polygons;
-
+    QGraphicsPolygonItem* polygonItem;
+    QVector<int> unused_trick = {Z_INDEX_BASE_IMAGE, Z_INDEX_ROI_AREA_POLYGON,
+                                 Z_INDEX_CROSS_SQUARE_CURSOR,
+                                 Z_INDEX_CROSS_SQUARE_CURSOR_TEXT};
+    QHash<QString, QGraphicsPolygonItem*> m_roi_polygons;
 
 protected:
     void mouseMoveEvent(QMouseEvent* event) override;
-    void wheelEvent(QWheelEvent *event) override;
-    void mouseDoubleClickEvent(QMouseEvent *event) override;
-    void keyPressEvent(QKeyEvent *event) override;
+    void wheelEvent(QWheelEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
 signals:
     void pointChanged(QPointF point);
@@ -51,7 +50,6 @@ private slots:
     void remove_roi_scene_layer(const QString& id);
     void changeRoiColor(const QString& roi_id, const QColor& new_color);
     void setRoiSelectEffect(const QString& roi_id);
-
 };
 
-#endif // SATELLITE_GRAPHICS_VIEW_H
+#endif  // SATELLITE_GRAPHICS_VIEW_H

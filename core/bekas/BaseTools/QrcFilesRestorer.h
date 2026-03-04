@@ -1,13 +1,14 @@
 #ifndef QRCFILESRESTORER_H
 #define QRCFILESRESTORER_H
-#include "qstring.h"
 #include <QFile>
+
+#include "qstring.h"
 /**
  * @brief The QrcFilesRestorer class
- * Class needed to restore files from Application resources while there are no files in program folder
+ * Class needed to restore files from Application resources while there are no
+ * files in program folder
  */
-class QrcFilesRestorer
-{
+class QrcFilesRestorer {
 public:
     /**
      * @brief QrcFilesRestorer  Constructor
@@ -16,11 +17,11 @@ public:
     QrcFilesRestorer(QString path2Qrc);
 
     /**
-     * @brief restoreFilesFromQrc   Static function to restore files from resources
+     * @brief restoreFilesFromQrc   Static function to restore files from
+     * resources
      * @param path2Qrc  Path to qrc-file
      */
     static void restoreFilesFromQrc(QString path2Qrc);
-
 };
 
-#endif // QRCFILESRESTORER_H
+#endif  // QRCFILESRESTORER_H

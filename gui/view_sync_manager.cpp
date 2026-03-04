@@ -1,7 +1,6 @@
 #include "view_sync_manager.h"
 
-ViewSyncManager::ViewSyncManager(QObject* parent)
-    : QObject(parent) {}
+ViewSyncManager::ViewSyncManager(QObject* parent) : QObject(parent) {}
 
 void ViewSyncManager::setZoom(double scale) {
     if (scale != m_currentZoom) {
@@ -17,10 +16,6 @@ void ViewSyncManager::setCenter(const QPointF& center) {
     }
 }
 
-double ViewSyncManager::currentZoom() const {
-    return m_currentZoom;
-}
+double ViewSyncManager::currentZoom() const { return m_currentZoom; }
 
-QPointF ViewSyncManager::currentCenter() const {
-    return m_currentCenter;
-}
+QPointF ViewSyncManager::currentCenter() const { return m_currentCenter; }

@@ -1,11 +1,10 @@
 #ifndef MATFILESOPERATOR_H
 #define MATFILESOPERATOR_H
-#include <QString>
-#include <QList>
 #include <QColor>
+#include <QList>
+#include <QString>
 
-struct BecasDataFromMatlab
-{
+struct BecasDataFromMatlab {
     QStringList specNamesWithExtens;
     QStringList specNames;
     QString pathFolderName;
@@ -14,14 +13,13 @@ struct BecasDataFromMatlab
     bool isSomeErrors = false;
 };
 
-class MatFilesOperator
-{
+class MatFilesOperator {
 public:
     MatFilesOperator();
     void saveBecasDataToMatFile(const QList<QString> &specNames,
-                       const QString &pathFolderName, bool isReflectance,
-                       const QString &fullMatPath);
+                                const QString &pathFolderName,
+                                bool isReflectance, const QString &fullMatPath);
     BecasDataFromMatlab readBecasDataFromMatlab(const QString &fullMatPath);
 };
 
-#endif // MATFILESOPERATOR_H
+#endif  // MATFILESOPERATOR_H

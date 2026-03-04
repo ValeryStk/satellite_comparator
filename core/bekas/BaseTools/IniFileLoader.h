@@ -8,11 +8,10 @@
  * @brief The IniFileLoader class
  * Class for INI file loading and initialisaton of Qsettings object
  */
-class IniFileLoader : public QObject
-{
+class IniFileLoader : public QObject {
     Q_OBJECT
 
-    QSettings *m_settings;   //!< Settings object
+    QSettings *m_settings;  //!< Settings object
 
 public:
     /**
@@ -30,11 +29,12 @@ public:
     QSettings *settings() const;
 
     /**
-     * @brief createSettingsObject  Static function to create settings object depending on project name
+     * @brief createSettingsObject  Static function to create settings object
+     * depending on project name
      * @param projectName   Project text name
      * @return  Settings object
      */
     static QSettings *createSettingsObject(QString projectName);
 };
 
-#endif // INIFILELOADER_H
+#endif  // INIFILELOADER_H

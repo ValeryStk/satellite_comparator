@@ -1,14 +1,14 @@
 #ifndef SATELLITE_XML_READER_H
 #define SATELLITE_XML_READER_H
 
-#include "satellites_structs.h"
 #include "QString"
+#include "satellites_structs.h"
 
-namespace satc{
+namespace satc {
 
-sad::LANDSAT_METADATA_FILE readLandsatXmlHeader(const QString& pathToLandsatHeader);
+sad::LANDSAT_METADATA_FILE readLandsatXmlHeader(
+    const QString& pathToLandsatHeader);
 
 }
 
-
-#endif // SATELLITE_XML_READER_H
+#endif  // SATELLITE_XML_READER_H

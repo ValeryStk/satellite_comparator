@@ -1,13 +1,13 @@
 #ifndef DBJSON_H
 #define DBJSON_H
+#include <qdatetime.h>
+
+#include "QJsonDocument"
 #include "QString"
 #include "QVector"
-#include "QJsonDocument"
-#include <qdatetime.h>
 
 class QJsonArray;
 class QJsonObject;
-
 
 namespace db_json {
 
@@ -23,43 +23,35 @@ extern const QStringList BANDS_UNITS_DESCRIPTION;
  * @brief The ImageType enum
  * Enum for image type desription
  */
-enum ImageType{
-    IT_UNKNOWN, IT_OBSERVE, IT_VISIR
-};
-
-
+enum ImageType { IT_UNKNOWN, IT_OBSERVE, IT_VISIR };
 
 /**
  * @brief The WindDirection enum
  * Enum for wind directions
  */
-enum WindDirection{
+enum WindDirection {
     WD_UNKNOWN,
-    WD_NORTH_WEST, WD_NORTH, WD_NORTH_EAST,
+    WD_NORTH_WEST,
+    WD_NORTH,
+    WD_NORTH_EAST,
     WD_EAST,
-    WD_SOUTH_EAST, WD_SOUTH, WD_SOUTH_WEST,
+    WD_SOUTH_EAST,
+    WD_SOUTH,
+    WD_SOUTH_WEST,
     WD_WEST,
 };
-
 
 /**
  * @brief The CaptureLevel enum
  * Enum for Capture Level
  */
-enum CaptureLevel{
-    CL_UNKNOWN, CL_LAB, CL_EARTH, CL_AVIA, CL_SPACE
-};
-
-
+enum CaptureLevel { CL_UNKNOWN, CL_LAB, CL_EARTH, CL_AVIA, CL_SPACE };
 
 /**
  * @brief The SpectrumUnits enum
  * Enum of graph units in spectrum
  */
-enum SpectrumUnits{
-    SU_UNKNOWN, SU_ADC, SU_RFL, SU_BRIGHT
-};
-
+enum SpectrumUnits { SU_UNKNOWN, SU_ADC, SU_RFL, SU_BRIGHT };
 
 /**
  * @brief The BandUnits enum
@@ -68,29 +60,27 @@ enum SpectrumUnits{
  * BU_NUMBERS     Numbers of bands
  * BU_WAVELENGTH  Waves, nm
  */
-enum BandUnits{
-    BU_UNKNOWN, BU_NUMBERS, BU_WAVELENGTH
-};
-
+enum BandUnits { BU_UNKNOWN, BU_NUMBERS, BU_WAVELENGTH };
 
 /**
  * @brief The CLASSIFICATION struct
  * Structure describing the place in classification
  */
-struct CLASSIFICATION{
-    QString general_type;   //!< General type description
-    QString class_name;     //!< Class name description
-    QString object_name;    //!< Object name description
+struct CLASSIFICATION {
+    QString general_type;  //!< General type description
+    QString class_name;    //!< Class name description
+    QString object_name;   //!< Object name description
 };
 
 /**
  * @brief The LOCATION struct
  * Structure describing location for measurements
  */
-struct LOCATION{
-    double latitude = UNDEFINED;    //!< Measurements point latitude (WGS-84)
-    double longitude = UNDEFINED;   //!< Measurements point longtitude (WGS-84)
-    double altitude = UNDEFINED;    //!< Measurements point altitude (upper the Sea)
+struct LOCATION {
+    double latitude = UNDEFINED;   //!< Measurements point latitude (WGS-84)
+    double longitude = UNDEFINED;  //!< Measurements point longtitude (WGS-84)
+    double altitude =
+        UNDEFINED;  //!< Measurements point altitude (upper the Sea)
     QString local_name;
     QString place_name;
     QString place_type;
@@ -101,60 +91,62 @@ struct LOCATION{
  * @brief The IMAGE_OBJECT struct
  * Structure describing the image connected with the spectral data
  */
-struct IMAGE_OBJECT{
-    QString pathToFile;     //!< Absolute path to the image
-    ImageType type;         //!< Image type
-    QString description;    //!< Image text description
-    QVector<QPair<int,int>> spFov;  //!< The spectrometer field of view as the vector of points
+struct IMAGE_OBJECT {
+    QString pathToFile;   //!< Absolute path to the image
+    ImageType type;       //!< Image type
+    QString description;  //!< Image text description
+    QVector<QPair<int, int>>
+        spFov;  //!< The spectrometer field of view as the vector of points
 };
 
 /**
  * @brief The FRACTION struct
- * Structure describing the fraction of materials for which spectral data was collected
+ * Structure describing the fraction of materials for which spectral data was
+ * collected
  */
-struct FRACTION{
-    QString name;               //!< Fraction name
-    double from = UNDEFINED;    //!< Fraction minimum value
-    double to = UNDEFINED;      //!< Fraction maximum value
-    QString unit;               //!< Fraction units
+struct FRACTION {
+    QString name;             //!< Fraction name
+    double from = UNDEFINED;  //!< Fraction minimum value
+    double to = UNDEFINED;    //!< Fraction maximum value
+    QString unit;             //!< Fraction units
 };
 
 /**
  * @brief The AIR_CONDITIONS struct
  * Structure describing the air conditions in measurements process
  */
-struct AIR_CONDITIONS{
-    double temperature; //!< Temperature in the moment of measurements
-    double humidity;    //!< Humidity in the moment of measurements
+struct AIR_CONDITIONS {
+    double temperature;  //!< Temperature in the moment of measurements
+    double humidity;     //!< Humidity in the moment of measurements
 };
 
 /**
  * @brief The WEATHER_CONDITIONS struct
  * Structure describing the weather conditions in measurements process
  */
-struct WEATHER_CONDITIONS{
-    int clouds_level = UNDEFINED;   //!< Clouds level in measurements process
-    int wind = UNDEFINED;           //!< Wind level in measurements process
-    WindDirection wind_direction;        //!< Wind direction
+struct WEATHER_CONDITIONS {
+    int clouds_level = UNDEFINED;  //!< Clouds level in measurements process
+    int wind = UNDEFINED;          //!< Wind level in measurements process
+    WindDirection wind_direction;  //!< Wind direction
 };
 
 /**
  * @brief The META_DATA struct
  * Structure desribing meta data for the measurements
  */
-struct META_DATA{
-    QDateTime date_time;            //!< Maesurements date and time
-    QString owner;                  //!< Maesurements data owner
-    double sun_elevation_angle = UNDEFINED; //!< Sun elevation angle
-    double capture_angle = UNDEFINED;       //!< Capturing angle
-    QString experiment_name;        //!< Name of the experiment
-    CaptureLevel capture_level;     //!< The level of measurements
+struct META_DATA {
+    QDateTime date_time;                     //!< Maesurements date and time
+    QString owner;                           //!< Maesurements data owner
+    double sun_elevation_angle = UNDEFINED;  //!< Sun elevation angle
+    double capture_angle = UNDEFINED;        //!< Capturing angle
+    QString experiment_name;                 //!< Name of the experiment
+    CaptureLevel capture_level;              //!< The level of measurements
     CLASSIFICATION classification;  //!< Spectra place in classification
     LOCATION location;              //!< Measurements location description
     QVector<IMAGE_OBJECT> images;   //!< Images connected to spectra description
-    QString relief_type;            //!< The type of relief in the measurements area
-    FRACTION fraction;              //!< Measured materials fraction
-    AIR_CONDITIONS air_conditions;  //!< Measurements air conditions
+    QString relief_type;  //!< The type of relief in the measurements area
+    FRACTION fraction;    //!< Measured materials fraction
+    AIR_CONDITIONS air_conditions;          //!< Measurements air conditions
     WEATHER_CONDITIONS weather_conditions;  //!< Measurements weather conditions
 };
 
@@ -162,20 +154,20 @@ struct META_DATA{
  * @brief The SPECTRAL_ATTRIBUTES struct
  * Structure needed to describe spectral attributes
  */
-struct SPECTRAL_ATTRIBUTES{
-    QString instrument;     //!< Measurements instrument description
-    SpectrumUnits type;     //!< Spectrum units
-    QString description;    //!< Spectrum description
+struct SPECTRAL_ATTRIBUTES {
+    QString instrument;   //!< Measurements instrument description
+    SpectrumUnits type;   //!< Spectrum units
+    QString description;  //!< Spectrum description
 };
 
 /**
  * @brief The SPECTRAL_DATA struct
  * Structure needed to desribe spectral data
  */
-struct SPECTRAL_DATA{
-    QVector<SPECTRAL_ATTRIBUTES> attributes;    //!< Spectral attributes
-    QVector<QVector<double>> waves;             //!< Spectral data waves vector
-    QVector<QVector<double>> values;            //!< Spectral data values vector
+struct SPECTRAL_DATA {
+    QVector<SPECTRAL_ATTRIBUTES> attributes;  //!< Spectral attributes
+    QVector<QVector<double>> waves;           //!< Spectral data waves vector
+    QVector<QVector<double>> values;          //!< Spectral data values vector
 };
 
 /**
@@ -183,12 +175,11 @@ struct SPECTRAL_DATA{
  * Structure needed to desribe spectra with its metadata
  */
 struct SPECTRAL_STRUCT {
-    META_DATA md;       //!< Measurements metadata
-    SPECTRAL_DATA sd;   //!< Measurements spectrum data
+    META_DATA md;      //!< Measurements metadata
+    SPECTRAL_DATA sd;  //!< Measurements spectrum data
 };
 
-bool getJsonObjectFromFile(const QString &path,
-                           QJsonObject &object);
+bool getJsonObjectFromFile(const QString &path, QJsonObject &object);
 
 CaptureLevel getCaptureLevelFromStr(QString captureLevel);
 
@@ -200,8 +191,7 @@ SpectrumUnits getSpectrumUnitsFromStr(QString spectrumUnits);
 
 SPECTRAL_STRUCT getStructFromJsonObject(const QJsonObject &json_object);
 
-bool saveJsonObjectToFile(const QString &path,
-                          const QJsonObject &json_object,
+bool saveJsonObjectToFile(const QString &path, const QJsonObject &json_object,
                           QJsonDocument::JsonFormat format);
 
 bool saveStructToJsonFile(const QString &path,
@@ -221,6 +211,6 @@ QString getStringMdFromStruct(META_DATA metaData);
 
 QString getStringSpecAttrsFromStruct(SPECTRAL_ATTRIBUTES specAttrs);
 
-} // end namespace db_json
+}  // end namespace db_json
 
-#endif // DBJSON_H
+#endif  // DBJSON_H

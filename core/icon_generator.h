@@ -1,12 +1,12 @@
 #ifndef ICON_GENERATOR_H
 #define ICON_GENERATOR_H
 
+#include <QColor>
 #include <QIcon>
 #include <QSize>
-#include <QColor>
 #include <QVector>
 
-namespace iut{
+namespace iut {
 //!
 //! \brief Функция для генерирования изображения виде закрашеного квадрата
 //! \param r комонента красного цвета
@@ -17,15 +17,14 @@ namespace iut{
 //!
 QIcon createIcon(int r, int g, int b, QSize size = QSize(100, 100));
 
-
 //!
 //! \brief Функция генерирования N количества оттенков оранжевого цвета
 //! \param N количество градаций оранжевого
-//! \return  QVector<QColor> - Вектор цветов с N количеством оттенков оранжевого цвета
+//! \return  QVector<QColor> - Вектор цветов с N количеством оттенков оранжевого
+//! цвета
 //!
 QVector<QColor> generateOrangeShades(int N);
 
+}  // namespace iut
 
-}
-
-#endif // ICON_GENERATOR_H
+#endif  // ICON_GENERATOR_H

@@ -3,11 +3,9 @@
 
 #include <QLabel>
 
-class ProgressInformator : public QLabel
-{
+class ProgressInformator : public QLabel {
 public:
-    ProgressInformator(QWidget* parent,
-                       const QString &text);
+    ProgressInformator(QWidget* parent, const QString& text);
 };
 
-#endif // PROGRESSINFORMATOR_H
+#endif  // PROGRESSINFORMATOR_H

@@ -7,15 +7,14 @@ namespace Ui {
 class PhotospectralGraphicsView;
 }
 
-class PhotospectralGraphicsView : public QGraphicsView
-{
+class PhotospectralGraphicsView : public QGraphicsView {
     Q_OBJECT
 
 public:
     explicit PhotospectralGraphicsView(QWidget *parent = nullptr);
     ~PhotospectralGraphicsView() override;
 
-    void setShowingImage(QString imageFilePath, QVector<QPair<int,int>> spFov);
+    void setShowingImage(QString imageFilePath, QVector<QPair<int, int>> spFov);
 
     void saveImageWithFov(QString savingFilePath);
 
@@ -25,13 +24,14 @@ private slots:
 private:
     void paintImageAndFov();
 
-    QPolygonF getPolygonFromPoints(QVector<QPair<int, int> > fovPoints);
+    QPolygonF getPolygonFromPoints(QVector<QPair<int, int>> fovPoints);
 
-    QPair<int, int> recalcPointCoords(QPair<int, int> baseCoords, QSize baseSize);
+    QPair<int, int> recalcPointCoords(QPair<int, int> baseCoords,
+                                      QSize baseSize);
 
-    QGraphicsScene *m_scene;                    //!< For Image with FOV
+    QGraphicsScene *m_scene;  //!< For Image with FOV
     QString m_imageFilepath;
-    QVector<QPair<int, int> > m_specFov;
+    QVector<QPair<int, int>> m_specFov;
 };
 
-#endif // PHOTOSPECTRALGRAPHICSVIEW_H
+#endif  // PHOTOSPECTRALGRAPHICSVIEW_H

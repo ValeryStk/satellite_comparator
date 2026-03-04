@@ -1,21 +1,19 @@
 #include "cross_square.h"
 
 CrossSquare::CrossSquare(int size) : m_size(size) {
-    //setTransformOriginPoint(m_size / 2, m_size / 2);
+    // setTransformOriginPoint(m_size / 2, m_size / 2);
 }
 
-QRectF CrossSquare::boundingRect() const
-{
+QRectF CrossSquare::boundingRect() const {
     return QRectF(-m_size / 2, -m_size / 2, m_size, m_size);
 }
 
-
-void CrossSquare::paint(QPainter *painter,
-                        const QStyleOptionGraphicsItem *, QWidget *) {
+void CrossSquare::paint(QPainter *painter, const QStyleOptionGraphicsItem *,
+                        QWidget *) {
     // Рисуем квадрат
     QPen pen;
     pen.setWidth(2);
-    pen.setColor(QColor(255,0,0,128));
+    pen.setColor(QColor(255, 0, 0, 128));
     painter->setPen(pen);
     painter->drawRect(-m_size / 2, -m_size / 2, m_size, m_size);
     pen.setWidth(1);
@@ -30,4 +28,3 @@ void CrossSquare::paint(QPainter *painter,
     painter->drawLine(center_top, center_bottom);
     painter->drawLine(center_left, center_right);
 }
-

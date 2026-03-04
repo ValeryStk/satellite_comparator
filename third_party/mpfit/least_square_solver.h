@@ -1,10 +1,11 @@
 #pragma once
-#include <vector>
 #include <functional>
+#include <vector>
 
 class LeastSquareSolver {
 public:
-    using ModelFunction = std::function<double(double, const std::vector<double>&)>;
+    using ModelFunction =
+        std::function<double(double, const std::vector<double>&)>;
 
     LeastSquareSolver();
     void setModel(ModelFunction model, int numParams);
@@ -22,6 +23,6 @@ private:
     // Статический доступ к текущему экземпляру
     static LeastSquareSolver* activeSolver;
 
-    friend int mpfit_model(int m, int n, double* p, double* dy, double** dvec, void* vars);
+    friend int mpfit_model(int m, int n, double* p, double* dy, double** dvec,
+                           void* vars);
 };
-

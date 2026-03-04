@@ -1,9 +1,10 @@
 #include "progress_informator.h"
-#include "QGuiApplication"
+
 #include <QScreen>
 
-ProgressInformator::ProgressInformator(QWidget *parent, const QString& text)
-{
+#include "QGuiApplication"
+
+ProgressInformator::ProgressInformator(QWidget* parent, const QString& text) {
     this->setParent(parent);
     this->setStyleSheet("background-color: white; border: 1px solid black;");
     QFont font("Arial", 16, QFont::Bold);

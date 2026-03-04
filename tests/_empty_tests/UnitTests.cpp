@@ -2,38 +2,24 @@
 
 #include <QDebug>
 
+namespace {}  // end namespace
 
-namespace{
+UnitTests::UnitTests() {}
 
-
-} // end namespace
-
-
-UnitTests::UnitTests()
-{
-}
-
-void UnitTests::initTestCase()
-{
+void UnitTests::initTestCase() {
     // Инициализация перед запуском всех тестов
 }
 
-void UnitTests::cleanupTestCase()
-{
+void UnitTests::cleanupTestCase() {
     // Очистка после выполнения всех тестов
 }
 
-void UnitTests::init()
-{
+void UnitTests::init() {
     // Инициализация перед каждым тестом
-
 }
 
-void UnitTests::cleanup()
-{
+void UnitTests::cleanup() {
     // Очистка после каждого теста
 }
-
-
 
 QTEST_MAIN(UnitTests)

@@ -209,4 +209,4 @@ const QHash<const QString,QPair<int,int>> sentinel_resolutions = {
 };
 
 // clang-format on
-} // namespace sad
+}  // namespace sad

@@ -1,51 +1,37 @@
 #include "udpjsonrpc.h"
+
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonArray>
 
-UdpJsonRpc::UdpJsonRpc(quint16 localPort,
-                       const QHostAddress &peerHost,
-                       quint16 peerPort,
-                       QObject *parent)
-    : QObject(parent),
-      m_peerHost(peerHost),
-      m_peerPort(peerPort)
-{
+UdpJsonRpc::UdpJsonRpc(quint16 localPort, const QHostAddress &peerHost,
+                       quint16 peerPort, QObject *parent)
+    : QObject(parent), m_peerHost(peerHost), m_peerPort(peerPort) {
     m_sock.bind(QHostAddress::LocalHost, localPort);
-    connect(&m_sock, &QUdpSocket::readyRead,
-            this, &UdpJsonRpc::onReadyRead);
-
+    connect(&m_sock, &QUdpSocket::readyRead, this, &UdpJsonRpc::onReadyRead);
 }
 
 void UdpJsonRpc::registerMethod(
-        const QString &name,
-        std::function<QJsonValue(const QJsonValue&)> handler)
-{
+    const QString &name,
+    std::function<QJsonValue(const QJsonValue &)> handler) {
     m_methods[name] = handler;
 }
 
-void UdpJsonRpc::call(const QString &method,
-                      const QJsonValue &params)
-{
-    QJsonObject req{
-        {"jsonrpc","2.0"},
-        {"method", method},
-        {"params",  params}
-    };
+void UdpJsonRpc::call(const QString &method, const QJsonValue &params) {
+    QJsonObject req{{"jsonrpc", "2.0"}, {"method", method}, {"params", params}};
     auto data = QJsonDocument(req).toJson(QJsonDocument::Compact) + '\n';
     auto res = m_sock.writeDatagram(data, m_peerHost, m_peerPort);
-    qDebug()<<"bytes were sended: "<<res;
+    qDebug() << "bytes were sended: " << res;
 }
 
-void UdpJsonRpc::onReadyRead()
-{
+void UdpJsonRpc::onReadyRead() {
     while (m_sock.hasPendingDatagrams()) {
         QByteArray datagram;
         datagram.resize(m_sock.pendingDatagramSize());
         QHostAddress sender;
-        quint16      senderPort;
-        m_sock.readDatagram(datagram.data(), datagram.size(),
-                            &sender, &senderPort);
+        quint16 senderPort;
+        m_sock.readDatagram(datagram.data(), datagram.size(), &sender,
+                            &senderPort);
 
         // разбор JSON
         auto doc = QJsonDocument::fromJson(datagram);
@@ -57,8 +43,7 @@ void UdpJsonRpc::onReadyRead()
             QString m = obj.value("method").toString();
             QJsonValue p = obj.value("params");
             QJsonValue res;
-            if (m_methods.contains(m))
-                res = m_methods[m](p);
+            if (m_methods.contains(m)) res = m_methods[m](p);
 
         }
         // если ответ

@@ -1,51 +1,40 @@
 #include "MPFIT_wrapper_UnitTests.h"
 
 #include <QDebug>
+
 #include "least_square_solver.h"
 
+namespace {}  // end namespace
 
-namespace{
-
-
-} // end namespace
-
-
-MPFIT_wrapper_UnitTests::MPFIT_wrapper_UnitTests()
-{
-
-        LeastSquareSolver solver;
-        solver.setModel([](double x, const std::vector<double>& p) {return p[0] * x + p[1];}, 2);
-        solver.setData({1, 2, 3}, {10, 6, 2});
-        solver.setInitialGuess({1.0, 1.0, 9.0});
-        if (solver.solve()) {
-            auto params = solver.getParameters();
-            qDebug() << "Slope:" << params[0] << "Intercept:" << params[1];
-        } else {
-            qDebug() << "Fit failed.";
-        }
+MPFIT_wrapper_UnitTests::MPFIT_wrapper_UnitTests() {
+    LeastSquareSolver solver;
+    solver.setModel(
+        [](double x, const std::vector<double>& p) { return p[0] * x + p[1]; },
+        2);
+    solver.setData({1, 2, 3}, {10, 6, 2});
+    solver.setInitialGuess({1.0, 1.0, 9.0});
+    if (solver.solve()) {
+        auto params = solver.getParameters();
+        qDebug() << "Slope:" << params[0] << "Intercept:" << params[1];
+    } else {
+        qDebug() << "Fit failed.";
+    }
 }
 
-void MPFIT_wrapper_UnitTests::initTestCase()
-{
+void MPFIT_wrapper_UnitTests::initTestCase() {
     // Инициализация перед запуском всех тестов
 }
 
-void MPFIT_wrapper_UnitTests::cleanupTestCase()
-{
+void MPFIT_wrapper_UnitTests::cleanupTestCase() {
     // Очистка после выполнения всех тестов
 }
 
-void MPFIT_wrapper_UnitTests::init()
-{
+void MPFIT_wrapper_UnitTests::init() {
     // Инициализация перед каждым тестом
-
 }
 
-void MPFIT_wrapper_UnitTests::cleanup()
-{
+void MPFIT_wrapper_UnitTests::cleanup() {
     // Очистка после каждого теста
 }
-
-
 
 QTEST_MAIN(MPFIT_wrapper_UnitTests)

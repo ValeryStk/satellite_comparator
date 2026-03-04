@@ -15,25 +15,25 @@ extern const char kSpectralIndexDSWI[];
 extern const char kSpectralIndexEVI[];
 
 struct BandIndices {
-  int nir1 = -1;
-  int red = -1;
-  int green = -1;
-  int blue = -1;
-  int swir1 = -1;
+    int nir1 = -1;
+    int red = -1;
+    int green = -1;
+    int blue = -1;
+    int swir1 = -1;
 };
 
 BandIndices getBandsIndexes(sam::sk satellite);
 
 enum class STATUS_CODE {
-  OK = 0,
-  SIZES_ARE_NOT_THE_SAME,
-  ONE_OF_THE_VECTORS_ARE_EMPTY,
-  UNEXPECTED_RESULT
+    OK = 0,
+    SIZES_ARE_NOT_THE_SAME,
+    ONE_OF_THE_VECTORS_ARE_EMPTY,
+    UNEXPECTED_RESULT
 };
 
 struct ProcessingResult {
-  STATUS_CODE status;
-  std::string message;
+    STATUS_CODE status;
+    std::string message;
 };
 
 ProcessingResult calculateEuclideanDistance(const std::vector<double> &v1,
@@ -60,6 +60,6 @@ inline double calculateNDSWIR(const double nir1, const double swir1);
 
 inline double calculateNBRSWIR(const double swir2, const double swir1);
 
-} // end namespace sam
+}  // end namespace sam
 
-#endif // SAM_H
+#endif  // SAM_H

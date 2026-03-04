@@ -1,11 +1,11 @@
 #ifndef FILESPARSER_H
 #define FILESPARSER_H
 
-#include <QObject>
 #include <bekas/BaseTools/DBJson.h>
 
-class FilesParser : public QObject
-{
+#include <QObject>
+
+class FilesParser : public QObject {
     Q_OBJECT
 public:
     explicit FilesParser(QObject *parent, QString inputDirPath);
@@ -30,7 +30,7 @@ public:
 
     QVector<double> getBrightTemplWaves();
 
-    QString getImagePath(QVector<QPair<int,int>> &spFov);
+    QString getImagePath(QVector<QPair<int, int>> &spFov);
 
     const QStringList &spectraNamesList() const;
 
@@ -69,4 +69,4 @@ private:
     db_json::CLASSIFICATION m_currClassification;
 };
 
-#endif // FILESPARSER_H
+#endif  // FILESPARSER_H

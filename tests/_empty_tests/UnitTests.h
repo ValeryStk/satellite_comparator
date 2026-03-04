@@ -4,8 +4,7 @@
 #include <QObject>
 #include <QtTest>
 
-class UnitTests : public QObject
-{
+class UnitTests : public QObject {
     Q_OBJECT
 
 public:
@@ -16,7 +15,6 @@ private slots:
     void cleanupTestCase();
     void init();
     void cleanup();
-
 };
 
-#endif // UNITTESTS_H
+#endif  // UNITTESTS_H

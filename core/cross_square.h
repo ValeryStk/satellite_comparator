@@ -9,11 +9,11 @@ public:
     explicit CrossSquare(int size);
 
     QRectF boundingRect() const override;
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *,
+               QWidget *) override;
 
 private:
     int m_size;
 };
 
-#endif // CROSS_SQUARE_H
-
+#endif  // CROSS_SQUARE_H

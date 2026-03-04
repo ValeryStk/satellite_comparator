@@ -1,8 +1,9 @@
 #include "google_maps_url_maker.h"
+
 #include "cmath"
 #include "iostream"
 
-namespace{
+namespace {
 
 const char httpsPart[] = R"(https://www.google.com/maps/place/)";
 const char gradus[] = R"(%C2%B0)";
@@ -13,17 +14,15 @@ const char South[] = "S";
 const char East[] = "E";
 const char West[] = "W";
 const char Plus[] = "+";
-const char End[] = R"(/data=!3m2!1e3!4b1!4m4!3m3!8m2!3d46.0544!4d150.062?entry=ttu)";
+const char End[] =
+    R"(/data=!3m2!1e3!4b1!4m4!3m3!8m2!3d46.0544!4d150.062?entry=ttu)";
 
-}
+}  // namespace
 
+namespace maps_utility {
 
-namespace maps_utility
-{
-
-std::string convertDecimalDegridToGradusMinutesSeconds(const double &latitude,
-                                                       const double &longitude){
-
+std::string convertDecimalDegridToGradusMinutesSeconds(
+    const double &latitude, const double &longitude) {
     int latSeconds = (int)std::round(latitude * 3600);
     int latDegrees = latSeconds / 3600;
     latSeconds = std::abs(latSeconds % 3600);
@@ -43,9 +42,9 @@ std::string convertDecimalDegridToGradusMinutesSeconds(const double &latitude,
     coordinates.append(minutes);
     coordinates.append(std::to_string(latSeconds));
     coordinates += seconds;
-    if(latitude>=0){
+    if (latitude >= 0) {
         coordinates.append(North);
-    }else{
+    } else {
         coordinates.append(South);
     };
     coordinates.append(Plus);
@@ -55,9 +54,9 @@ std::string convertDecimalDegridToGradusMinutesSeconds(const double &latitude,
     coordinates.append(minutes);
     coordinates.append(std::to_string(longSeconds));
     coordinates.append(seconds);
-    if(longitude>=0){
+    if (longitude >= 0) {
         coordinates.append(East);
-    }else{
+    } else {
         coordinates.append(West);
     }
     coordinates.append("/");
@@ -70,10 +69,11 @@ std::string convertDecimalDegridToGradusMinutesSeconds(const double &latitude,
     return coordinates;
 }
 
-std::string makeGoogleUrl(const double &latitude, const double &longitude){
+std::string makeGoogleUrl(const double &latitude, const double &longitude) {
     std::string url = httpsPart;
-    url.append(convertDecimalDegridToGradusMinutesSeconds(latitude,longitude).c_str());
-    std::cout<<url;
+    url.append(convertDecimalDegridToGradusMinutesSeconds(latitude, longitude)
+                   .c_str());
+    std::cout << url;
     return url;
 }
-};
+};  // namespace maps_utility
