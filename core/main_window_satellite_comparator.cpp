@@ -457,31 +457,6 @@ void MainWindowSatelliteComparator::centerSceneOnCrossSquare() {
     ui->graphicsView_satellite_image->setTransform(QTransform());
 }
 
-QVector<double> MainWindowSatelliteComparator::getKsyValues(const int x,
-                                                            const int y) {
-    QVector<double> data;
-    if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
-        m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
-        data = getLandsat8Ksy(x, y);
-    } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
-               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
-        data = getSentinelKsyValues(x, y);
-    }
-    return data;
-}
-
-QVector<double> MainWindowSatelliteComparator::getWaves() {
-    QVector<double> waves;
-    if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
-        m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
-        waves = waves_landsat9;
-    } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
-               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
-        waves = getSentinelWaves();
-    }
-    return waves;
-}
-
 void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     QPointF pos) {
     if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
@@ -2204,6 +2179,31 @@ QVector<double> MainWindowSatelliteComparator::getSentinelKsyValues(
         ksy.append(value / 10000.0);
     }
     return ksy;
+}
+
+QVector<double> MainWindowSatelliteComparator::getKsyValues(const int x,
+                                                            const int y) {
+    QVector<double> data;
+    if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
+        m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
+        data = getLandsat8Ksy(x, y);
+    } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+        data = getSentinelKsyValues(x, y);
+    }
+    return data;
+}
+
+QVector<double> MainWindowSatelliteComparator::getWaves() {
+    QVector<double> waves;
+    if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
+        m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
+        waves = waves_landsat9;
+    } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+        waves = getSentinelWaves();
+    }
+    return waves;
 }
 
 void MainWindowSatelliteComparator::clear_satellite_data() {
