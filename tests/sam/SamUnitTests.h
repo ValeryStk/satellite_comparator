@@ -17,6 +17,7 @@ private slots:
     void cleanup();
 
     void samMetricsTest();
+    void samTreeStatesTest();
 };
 
 #endif  // SAMUNITTESTS_H

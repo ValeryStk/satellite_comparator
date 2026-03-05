@@ -5,7 +5,7 @@
 PlantHealth::PlantHealth() {
     // Инициализация пороговых значений для вегетационного индекса
     // Значения индекса: от 0 до 2+ (чем выше, тем здоровее растение)
-
+    // TODO добавить дипазоны по умолчанию для разных индексов
     // Пороги для классов (верхняя граница класса)
     ranges[1] = 1.5;  // Healthy: > 1.5
     ranges[2] = 1.2;  // Weakened: 1.2 - 1.5
@@ -31,9 +31,7 @@ PlantHealth::PlantHealth() {
     classColors[6] = "#8B4513";  // Темно-коричневый
 }
 
-PlantHealth::~PlantHealth() {
-    // Деструктор (ничего не делаем, так как нет динамической памяти)
-}
+PlantHealth::~PlantHealth() {}
 
 int PlantHealth::getHealthClass(double indexValue) const {
     // Проверка на некорректные значения

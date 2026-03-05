@@ -9,10 +9,12 @@ TARGET = samTests
 HEADERS +=\
     $$SAM_DIR/sam.h\
     $$SAM_DIR/satellites_bands_map.h \
+    $$SAM_DIR/health_ranges.h \
     SamUnitTests.h
 
 
 SOURCES +=\
     $$SAM_DIR/sam.cpp\
     $$SAM_DIR/satellites_bands_map.cpp \
+    $$SAM_DIR/health_ranges.cpp \
     SamUnitTests.cpp

@@ -2,6 +2,7 @@
 
 #include <QDebug>
 
+#include "health_ranges.h"
 #include "sam.h"
 
 namespace {}  // end namespace
@@ -38,6 +39,29 @@ void SamUnitTests::samMetricsTest() {
     pr = sam::calculateEuclideanDistance(v1, v2, result);
     QCOMPARE(pr.status, sam::STATUS_CODE::OK);
     qDebug() << QString::fromStdString(pr.message) << result;
+}
+
+void SamUnitTests::samTreeStatesTest() {
+    // Создаем объект для оценки состояния растений
+    PlantHealth health;
+
+    // Тестовые значения индекса
+    double testValues[] = {1.8, 1.3, 1.1, 0.9, 0.7, 0.3, -0.5};
+
+    qDebug() << "=== Оценка состояния растений по вегетационному индексу ===";
+
+    for (double value : testValues) {
+        int healthClass = health.getHealthClass(value);
+
+        qDebug() << "\nИндекс = " << value;
+        qDebug() << "  Класс: " << healthClass;
+        qDebug() << "  Состояние: "
+                 << QString::fromStdString(health.getClassName(healthClass));
+        qDebug() << "  Цвет (HEX): "
+                 << QString::fromStdString(health.getClassColor(healthClass));
+        qDebug() << "  Описание: "
+                 << QString::fromStdString(health.getDescription(healthClass));
+    }
 }
 
 QTEST_MAIN(SamUnitTests)
