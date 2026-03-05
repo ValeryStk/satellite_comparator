@@ -1,4 +1,4 @@
-#include "plant_health.h"
+#include "health_ranges.h"
 
 PlantHealth::PlantHealth() {
     // Диапазоны по умолчанию
@@ -32,7 +32,7 @@ void PlantHealth::printRanges() const {
     for (auto it = ranges.begin(); it != ranges.end(); ++it) {
         const auto& cat = categories[it.key() - 1];
         double min = (it.key() == 1) ? 80.0 : ranges[it.key() + 1] + 0.1;
-        qDebug() << cat.name << ":" << min << "-" << it.value() 
+        qDebug() << cat.name << ":" << min << "-" << it.value()
                  << cat.color.name() << cat.color.name(QColor::HexRgb);
     }
     qDebug() << "";
