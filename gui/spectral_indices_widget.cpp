@@ -76,7 +76,6 @@ void SpectralIndicesWidget::setupUI() {
     m_plot = new QCustomPlot(this);
     QSize size(300, 200);
     this->setMinimumSize(size);
-    // this->setMaximumSize(size);
     layout->addWidget(m_plot);
 }
 
