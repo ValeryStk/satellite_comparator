@@ -6,6 +6,10 @@
 
 #include "libs/matio/src/matio.h"
 
+const QString matlabAppDirRelativeName = "SpectraClassifier/application";
+const QString matlabAppExeFile = "SpectraClassifier.exe";
+const QString matFileName = "data_from_cpp_app.mat";
+
 namespace {
 
 void writeBoolAsUint8(mat_t *matfp, const char *name, bool value) {
@@ -287,4 +291,99 @@ BecasDataFromMatlab MatFilesOperator::readBecasDataFromMatlab(
     answerStruct.selectedClustIndxs = classIndexes;
     answerStruct.colorsOfEachSpectr = colors;
     return answerStruct;
+}
+
+void MatFilesOperator::saveMultiSpecDataToMatFile(
+    const QVector<double> &waves, const QVector<int> &x, const QVector<int> &y,
+    const QVector<QVector<double>> &specs, const QString &fullMatPath) {
+    mat_t *matfp =
+        Mat_CreateVer(fullMatPath.toUtf8().constData(), nullptr, MAT_FT_MAT5);
+    if (!matfp) {
+        qWarning() << "Не удалось открыть MAT-файл:" << fullMatPath;
+        return;
+    }
+
+    const int nChan = waves.size();
+    const int nX = x.size();
+    const int nY = y.size();
+    const int nSpec = specs.size();
+
+    if (nChan <= 0 || nSpec <= 0) {
+        qWarning() << "Empty waves/specs:"
+                   << "waves=" << nChan << "specs=" << nSpec;
+        Mat_Close(matfp);
+        return;
+    }
+
+    // Проверим, что каждый спектр той же длины, что waves
+    for (int i = 0; i < nSpec; ++i) {
+        if (specs[i].size() != nChan) {
+            qWarning() << "specs[" << i
+                       << "] size != waves.size():" << specs[i].size() << "vs"
+                       << nChan;
+            Mat_Close(matfp);
+            return;
+        }
+    }
+
+    auto writeRowVectorDouble = [&](const char *name,
+                                    const QVector<double> &v) {
+        size_t dims[2] = {1, static_cast<size_t>(v.size())};
+        matvar_t *var = Mat_VarCreate(name, MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dims,
+                                      const_cast<double *>(v.constData()), 0);
+        if (!var) {
+            qWarning() << "Mat_VarCreate failed for" << name;
+            return;
+        }
+        Mat_VarWrite(matfp, var, MAT_COMPRESSION_NONE);
+        Mat_VarFree(var);
+    };
+    auto writeRowVectorInt32 = [&](const char *name, const QVector<int> &v) {
+        // MATLAB int32
+        QVector<qint32> tmp;
+        tmp.reserve(v.size());
+        for (int val : v) tmp.push_back(static_cast<qint32>(val));
+
+        size_t dims[2] = {1, static_cast<size_t>(tmp.size())};
+        matvar_t *var = Mat_VarCreate(name, MAT_C_INT32, MAT_T_INT32, 2, dims,
+                                      tmp.data(), 0);
+        if (!var) {
+            qWarning() << "Mat_VarCreate failed for" << name;
+            return;
+        }
+        Mat_VarWrite(matfp, var, MAT_COMPRESSION_NONE);
+        Mat_VarFree(var);
+    };
+
+    writeRowVectorDouble("waves", waves);
+    writeRowVectorInt32("x", x);
+    writeRowVectorInt32("y", y);
+
+    // specs: Nspec x Nchan (MATLAB column-major)
+    QVector<double> buf;
+    buf.resize(nSpec * nChan);
+
+    for (int r = 0; r < nSpec; ++r) {
+        for (int c = 0; c < nChan; ++c) {
+            buf[r + c * nSpec] = specs[r][c];  // column-major
+        }
+    }
+
+    size_t dimsSpecs[2] = {static_cast<size_t>(nSpec),
+                           static_cast<size_t>(nChan)};
+    matvar_t *specsVar = Mat_VarCreate("specs", MAT_C_DOUBLE, MAT_T_DOUBLE, 2,
+                                       dimsSpecs, buf.data(), 0);
+    if (!specsVar) {
+        qWarning() << "Mat_VarCreate failed for specs";
+        Mat_Close(matfp);
+        return;
+    }
+
+    Mat_VarWrite(matfp, specsVar, MAT_COMPRESSION_NONE);
+    Mat_VarFree(specsVar);
+
+    Mat_Close(matfp);
+
+    qDebug() << "Saved multispec mat:" << fullMatPath << "nSpec=" << nSpec
+             << "nChan=" << nChan << "x=" << nX << "y=" << nY;
 }

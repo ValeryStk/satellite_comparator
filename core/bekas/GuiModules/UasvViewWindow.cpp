@@ -14,10 +14,6 @@
 #include "text_constants.h"
 #include "ui_UasvViewWindow.h"
 
-QString matlabAppDirRelativeName = "SpectraClassifier/application";
-QString matlabAppExeFile = "SpectraClassifier.exe";
-QString matFileName = "pathes.mat";
-
 CustomStringListModel::CustomStringListModel(QObject *parent)
     : QStringListModel(parent) {}
 
