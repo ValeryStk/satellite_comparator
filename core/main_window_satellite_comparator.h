@@ -352,6 +352,20 @@ private:
 
     QPair<QVector<double>, QVector<double>> getSentinelKsy(const int x,
                                                            const int y);
+    //! \brief получение длин волн для данных Сентинел
+    QVector<double> getSentinelWaves();
+
+    //! \brief получение значений КСЯ для Сентинел
+    //! \param x, y - координаты пикселя
+    QVector<double> getSentinelKsyValues(const int x, const int y);
+
+    //! \brief получение значений КСЯ для любого спутника
+    //! \param x
+    //! \param y
+    QVector<double> getKsyValues(const int x, const int y);
+
+    //! \brief получение длин волн для любого спутника
+    QVector<double> getWaves();
 
     void clear_satellite_data();
     void clear_all_layers();

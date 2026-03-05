@@ -2138,7 +2138,7 @@ MainWindowSatelliteComparator::getSentinelKsy(const int x, const int y) {
     if (m_is_image_created == false) return {};
     if (m_sentinel_data.empty()) return {};
     int xSize = m_sentinel_data[0].width;
-    int ySize = m_sentinel_data[0].width;
+    int ySize = m_sentinel_data[0].height;
     if (x > xSize || y > ySize) return {};
     if (x < 0 || y < 0) return {};
     QVector<double> ksy;
@@ -2151,6 +2151,59 @@ MainWindowSatelliteComparator::getSentinelKsy(const int x, const int y) {
         waves.append(m_sentinel_data[i].central_wave_length);
     }
     return {waves, ksy};
+}
+
+QVector<double> MainWindowSatelliteComparator::getSentinelWaves() {
+    if (m_is_image_created == false) return {};
+    if (m_sentinel_data.empty()) return {};
+    QVector<double> waves;
+    for (int i = 0; i < m_sentinel_data.size(); ++i) {
+        waves.append(m_sentinel_data[i].central_wave_length);
+    }
+    return waves;
+}
+
+QVector<double> MainWindowSatelliteComparator::getSentinelKsyValues(
+    const int x, const int y) {
+    if (m_is_image_created == false) return {};
+    if (m_sentinel_data.empty()) return {};
+    int xSize = m_sentinel_data[0].width;
+    int ySize = m_sentinel_data[0].height;
+    if (x > xSize || y > ySize) return {};
+    if (x < 0 || y < 0) return {};
+    QVector<double> ksy;
+    for (int i = 0; i < m_sentinel_data.size(); ++i) {
+        uint16_t value = m_sentinel_data[i].data[(y * xSize) + x];
+        // double ksy_d =
+        // m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
+        ksy.append(value / 10000.0);
+    }
+    return ksy;
+}
+
+QVector<double> MainWindowSatelliteComparator::getKsyValues(const int x,
+                                                            const int y) {
+    QVector<double> data;
+    if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
+        m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
+        data = getLandsat8Ksy(x, y);
+    } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+        data = getSentinelKsyValues(x, y);
+    }
+    return data;
+}
+
+QVector<double> MainWindowSatelliteComparator::getWaves() {
+    QVector<double> waves;
+    if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
+        m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
+        waves = waves_landsat9;
+    } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+        waves = getSentinelWaves();
+    }
+    return waves;
 }
 
 void MainWindowSatelliteComparator::clear_satellite_data() {
