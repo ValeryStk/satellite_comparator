@@ -1,49 +1,45 @@
-#ifndef PLANT_HEALTH_H
-#define PLANT_HEALTH_H
+#ifndef PLANTHEALTH_H
+#define PLANTHEALTH_H
 
-#include <QColor>
-#include <QMap>
-#include <QString>
-#include <QDebug>
+#include <map>
+#include <string>
 
-// Структура категории (статичная)
-struct Category {
-    int id;
-    QString name;
-    QColor color;
-};
-
-// Класс для работы с диапазонами
+/**
+ * Класс для оценки состояния растений по вегетационному индексу
+ *
+ * Классы состояния (от 1 до 6):
+ * 1 - Healthy (здоровые)
+ * 2 - Weakened (ослабленные)
+ * 3 - Severely Weakened (сильно ослабленные)
+ * 4 - Dying (усыхающие)
+ * 5 - Fresh Deadwood (свежий сухостой)
+ * 6 - Old Deadwood (старый сухостой)
+ */
 class PlantHealth {
 private:
-    // Статичные категории с цветами
-    const Category categories[6] = {
-        {1, "Healthy", QColor(0, 128, 0)},      // #008000
-        {2, "Weakened", QColor(144, 238, 144)},  // #90EE90
-        {3, "Severely Weakened", QColor(154, 205, 50)}, // #9ACD32
-        {4, "Dying", QColor(255, 215, 0)},       // #FFD700
-        {5, "Fresh Deadwood", QColor(205, 133, 63)}, // #CD853F
-        {6, "Old Deadwood", QColor(139, 69, 19)}  // #8B4513
-    };
-    
-    // Диапазоны: ключ - ID категории, значение - макс. значение диапазона
-    QMap<int, double> ranges;
-    
+    std::map<int, double> ranges;  // Пороговые значения для классов состояния
+    std::map<int, std::string> classNames;   // Названия классов
+    std::map<int, std::string> classColors;  // Цвета классов (HEX)
+
 public:
-    // Конструктор с диапазонами по умолчанию
+    // Конструктор и деструктор
     PlantHealth();
-    
-    // Установить диапазон для категории
-    void setRange(int categoryId, double max);
-    
-    // Получить категорию по значению
-    const Category& getCategory(double value) const;
-    
-    // Получить цвет по значению
-    QColor getColor(double value) const;
-    
-    // Показать текущие диапазоны
-    void printRanges() const;
+    ~PlantHealth();
+
+    // Основные методы для работы с классами состояния
+    int getHealthClass(double indexValue) const;
+    double getThreshold(int healthClass) const;
+    std::string getClassName(int healthClass) const;
+    std::string getClassColor(int healthClass) const;
+
+    // Методы для работы с порогами
+    void setThreshold(int healthClass, double value);
+    void resetToDefaults();
+
+    // Вспомогательные методы
+    std::map<int, double> getAllThresholds() const;
+    std::string getDescription(int healthClass) const;
+    bool isValidClass(int healthClass) const;
 };
 
-#endif
+#endif  // PLANTHEALTH_H
