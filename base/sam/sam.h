@@ -13,14 +13,20 @@ extern const char kSpectralIndexNDVI[];
 extern const char kSpectralIndexSWVI[];
 extern const char kSpectralIndexDSWI[];
 extern const char kSpectralIndexEVI[];
+extern const char kSpectralIndexNBR[];
+extern const char kSpectralIndexNDSWIR[];
+extern const char kSpectralIndexNBRSWIR[];
 
+// clang-format off
 struct BandIndices {
-    int nir1 = -1;
-    int red = -1;
+    int red   = -1;
     int green = -1;
-    int blue = -1;
+    int blue  = -1;
+    int nir1  = -1;
     int swir1 = -1;
+    int swir2 = -1;
 };
+// clang-format on
 
 BandIndices getBandsIndexes(sam::sk satellite);
 

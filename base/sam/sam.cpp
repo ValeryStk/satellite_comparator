@@ -7,10 +7,13 @@
 
 namespace sam {
 // clang-format off
-extern const char kSpectralIndexNDVI[] = "NDVI";
-extern const char kSpectralIndexSWVI[] = "SWVI";
-extern const char kSpectralIndexDSWI[] = "DSWI";
-extern const char kSpectralIndexEVI[]  = "EVI";
+extern const char kSpectralIndexNDVI[]     = "NDVI";
+extern const char kSpectralIndexSWVI[]     = "SWVI";
+extern const char kSpectralIndexDSWI[]     = "DSWI";
+extern const char kSpectralIndexEVI[]      = "EVI";
+extern const char kSpectralIndexNBR[]      = "NBR";
+extern const char kSpectralIndexNDSWIR[]   = "NDSWIR";
+extern const char kSpectralIndexNBRSWIR[]  = "NBRSWIR";
 // clang-format on
 
 namespace detail {
@@ -52,11 +55,12 @@ double calculate_normalized_difference(const double a, const double b) {
 
 BandIndices getBandsIndexes(sk satellite) {
     BandIndices indices;
-    indices.nir1 = getBandIndex(sam::kNIR1, satellite);
     indices.red = getBandIndex(sam::kRED, satellite);
     indices.green = getBandIndex(sam::kGREEN, satellite);
     indices.blue = getBandIndex(sam::kBLUE, satellite);
+    indices.nir1 = getBandIndex(sam::kNIR1, satellite);
     indices.swir1 = getBandIndex(sam::kSWIR1, satellite);
+    indices.swir2 = getBandIndex(sam::kSWIR2, satellite);
     return indices;
 }
 
