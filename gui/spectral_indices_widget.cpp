@@ -74,7 +74,7 @@ void SpectralIndicesWidget::updateDisplay() {
 void SpectralIndicesWidget::setupUI() {
     auto *layout = new QVBoxLayout(this);
     m_plot = new QCustomPlot(this);
-    QSize size(600, 200);
+    QSize size(300, 200);
     this->setMinimumSize(size);
     // this->setMaximumSize(size);
     layout->addWidget(m_plot);
