@@ -12,6 +12,7 @@
 #include <QTextStream>
 #include <algorithm>
 
+#include "MatFilesOperator.h"
 #include "QApplication"
 #include "QCheckBox"
 #include "QDebug"
@@ -1027,6 +1028,11 @@ void MainWindowSatelliteComparator::processpClassifiedBecasSpectraMatlabRequest(
                                           dataReaded.colorsOfEachSpectr);
 }
 
+void MainWindowSatelliteComparator::processpClassifiedMultiSpecMatlabRequest(
+    const QVariantMap &params) {
+    qDebug() << "зашли в processpClassifiedMultiSpecMatlabRequest";
+}
+
 void MainWindowSatelliteComparator::updateImage() {
     if (m_image_item) {
         double coef_saturation =
@@ -1780,6 +1786,34 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id) {
 void MainWindowSatelliteComparator::send_roi_spectrs_to_matlab(
     const QString &id) {
     qDebug() << "слот для отправки спектрво в матлаб";
+
+    // формируем спектры полигона
+    auto polItem = ui->graphicsView_satellite_image->getPolygonById(id);
+    auto points = ui->graphicsView_satellite_image->getPointsInsidePolygon(
+        polItem, m_image_item);
+
+    QVector<int> pixelsX(points.size());
+    QVector<int> pixelsY(points.size());
+    QVector<QVector<double>> specs(points.size());
+
+    for (int i = 0; i < points.size(); ++i) {
+        pixelsX[i] = points[i].x();
+        pixelsY[i] = points[i].y();
+        specs[i] = getKsyValues(pixelsX[i], pixelsY[i]);
+    }
+    auto waves = getWaves();
+
+    // сохраняем Mat файл с данными
+    QString exeDir = QCoreApplication::applicationDirPath();
+    QString fullMatPath =
+        exeDir + "/" + matlabAppDirRelativeName + "/" + matFileName;
+    MatFilesOperator mat;
+    mat.saveMultiSpecDataToMatFile(waves, pixelsX, pixelsY, specs, fullMatPath);
+
+    // создаем json и отправляем его в matlab app
+    QJsonObject params;
+    params["matFilePath"] = fullMatPath;
+    m_rpc->call("processMultiCamSpectra", QJsonValue(params));
 }
 
 void MainWindowSatelliteComparator::calculate_time_row_gradient(
@@ -2363,6 +2397,13 @@ void MainWindowSatelliteComparator::initUdpRpcConnection() {
                               qDebug() << "processClassifiedBecasSpectra";
                               QVariantMap map = params.toVariant().toMap();
                               processpClassifiedBecasSpectraMatlabRequest(map);
+                              return NULL;
+                          });
+    m_rpc->registerMethod("processClassifiedMultispec",
+                          [this](const QJsonValue &params) -> QJsonValue {
+                              qDebug() << "processClassifiedMultispec";
+                              QVariantMap map = params.toVariant().toMap();
+                              processpClassifiedMultiSpecMatlabRequest(map);
                               return NULL;
                           });
 

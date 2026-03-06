@@ -167,6 +167,12 @@ private slots:
     void processpClassifiedBecasSpectraMatlabRequest(const QVariantMap &params);
 
     //!
+    //! \brief processpClassifiedMultiSpecMatlabRequest
+    //! \param params
+    //!
+    void processpClassifiedMultiSpecMatlabRequest(const QVariantMap &params);
+
+    //!
     //! \brief updateImage
     //!
     void updateImage();
