@@ -43,12 +43,13 @@ void SamUnitTests::samMetricsTest() {
 
 void SamUnitTests::samTreeStatesTest() {
     // Создаем объект для оценки состояния растений
-    PlantHealth health;
+    PlantHealth health(sam::kSpectralIndexNDVI);
 
     // Тестовые значения индекса
     double testValues[] = {1.8, 1.3, 1.1, 0.9, 0.7, 0.3, -0.5};
 
-    qDebug() << "=== Оценка состояния растений по вегетационному индексу ===";
+    qDebug()
+        << "=== Оценка состояния растений по вегетационному индексу NDVI ===";
 
     for (double value : testValues) {
         int healthClass = health.getHealthClass(value);

@@ -3,9 +3,20 @@
 
 #include <map>
 #include <string>
+#include <vector>
+
+namespace sam {
+extern const char kSpectralIndexNDVI[];
+extern const char kSpectralIndexSWVI[];
+extern const char kSpectralIndexDSWI[];
+extern const char kSpectralIndexEVI[];
+extern const char kSpectralIndexNBR[];
+extern const char kSpectralIndexNDSWIR[];
+extern const char kSpectralIndexNBRSWIR[];
+}  // namespace sam
 
 /**
- * Класс для оценки состояния растений по вегетационному индексу
+ * Класс для оценки состояния растений по вегетационным индексам
  *
  * Классы состояния (от 1 до 6):
  * 1 - Healthy (здоровые)
@@ -17,14 +28,24 @@
  */
 class PlantHealth {
 private:
-    std::map<int, double> ranges;  // Пороговые значения для классов состояния
+    std::string currentIndex;  // Текущий выбранный индекс
+    std::map<std::string, std::map<int, double>>
+        indexRanges;  // Пороги для каждого индекса
     std::map<int, std::string> classNames;   // Названия классов
     std::map<int, std::string> classColors;  // Цвета классов (HEX)
 
+    // Инициализация диапазонов для разных индексов
+    void initDefaultRanges();
+
 public:
-    // Конструктор и деструктор
-    PlantHealth();
+    // Единый конструктор с параметром
+    explicit PlantHealth(const std::string& indexName);
     ~PlantHealth();
+
+    // Методы для работы с индексами
+    bool setIndex(const std::string& indexName);
+    std::string getCurrentIndex() const;
+    std::vector<std::string> getAvailableIndices() const;
 
     // Основные методы для работы с классами состояния
     int getHealthClass(double indexValue) const;
@@ -35,6 +56,7 @@ public:
     // Методы для работы с порогами
     void setThreshold(int healthClass, double value);
     void resetToDefaults();
+    void resetIndexToDefaults(const std::string& indexName);
 
     // Вспомогательные методы
     std::map<int, double> getAllThresholds() const;
