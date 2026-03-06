@@ -9,14 +9,6 @@
 // spectral analyzing module (sam)
 namespace sam {
 
-extern const char kSpectralIndexNDVI[];
-extern const char kSpectralIndexSWVI[];
-extern const char kSpectralIndexDSWI[];
-extern const char kSpectralIndexEVI[];
-extern const char kSpectralIndexNBR[];
-extern const char kSpectralIndexNDSWIR[];
-extern const char kSpectralIndexNBRSWIR[];
-
 // clang-format off
 struct BandIndices {
     int red   = -1;

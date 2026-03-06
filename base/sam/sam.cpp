@@ -6,15 +6,6 @@
 #include "satellites_bands_map.h"
 
 namespace sam {
-// clang-format off
-extern const char kSpectralIndexNDVI[]     = "NDVI";
-extern const char kSpectralIndexSWVI[]     = "SWVI";
-extern const char kSpectralIndexDSWI[]     = "DSWI";
-extern const char kSpectralIndexEVI[]      = "EVI";
-extern const char kSpectralIndexNBR[]      = "NBR";
-extern const char kSpectralIndexNDSWIR[]   = "NDSWIR";
-extern const char kSpectralIndexNBRSWIR[]  = "NBRSWIR";
-// clang-format on
 
 namespace detail {
 

@@ -3,6 +3,8 @@
 
 #include <QVBoxLayout>
 
+#include "health_ranges.h"
+
 SpectralIndicesWidget::SpectralIndicesWidget(QWidget *parent)
     : QWidget(parent) {
     setupUI();
@@ -24,17 +26,15 @@ void SpectralIndicesWidget::updateDisplay() {
 
     QStringList indexNames = m_indices.keys();
     QVector<double> x(indexNames.size()), y(indexNames.size());
-
+    QVector<QColor> colors;
     for (int i = 0; i < indexNames.size(); ++i) {
         x[i] = i + 1;
         y[i] = m_indices[indexNames[i]];
+        PlantHealth ph(indexNames[i].toStdString().c_str());
+        int healthClass = ph.getHealthClass(y[i]);
+        colors.append(
+            QColor(QString::fromStdString(ph.getClassColor(healthClass))));
     }
-
-    QVector<QColor> colors = {
-        QColor(255, 0, 0, 200),   QColor(0, 255, 0, 200),
-        QColor(0, 0, 255, 200),   QColor(255, 255, 0, 200),
-        QColor(255, 0, 255, 200), QColor(0, 255, 255, 200),
-        QColor(255, 165, 0, 200), QColor(128, 0, 128, 200)};
 
     for (int i = 0; i < indexNames.size(); ++i) {
         // Столбец
@@ -43,11 +43,10 @@ void SpectralIndicesWidget::updateDisplay() {
         QVector<double> singleY = {y[i]};
         bars->setData(singleX, singleY);
         bars->setPen(QPen(Qt::NoPen));
-        bars->setBrush(QBrush(colors[i % colors.size()]));
+        bars->setBrush(QBrush(colors[i]));
         bars->setWidth(0.8);
         bars->setName(indexNames[i]);
 
-        // Надпись над столбиком - ПРАВИЛЬНЫЙ СИНТАКСИС
         QCPItemText *valueLabel = new QCPItemText(m_plot);
         valueLabel->position->setType(QCPItemPosition::ptPlotCoords);
         valueLabel->position->setCoords(x[i], y[i] + 0.08);
