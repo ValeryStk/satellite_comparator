@@ -6,6 +6,7 @@
 #include <vector>
 
 namespace sam {
+
 extern const char kSpectralIndexNDVI[];
 extern const char kSpectralIndexSWVI[];
 extern const char kSpectralIndexDSWI[];
@@ -13,6 +14,22 @@ extern const char kSpectralIndexEVI[];
 extern const char kSpectralIndexNBR[];
 extern const char kSpectralIndexNDSWIR[];
 extern const char kSpectralIndexNBRSWIR[];
+
+extern const char* kHealthClassesEnglish[];
+extern const char* kHealthClassesRussian[];
+extern const char* kHealthClassesColors[];
+
+enum HEALTH_CLASSES {
+    HEALTHY,
+    WEAKENED,
+    SEVERELY_WEAKENED,
+    DYING,
+    FRESH_DEADWOOD,
+    OLD_DEADWOOD,
+    // NUMBER_OF_CLASSES
+    NUMBER_OF_CLASSES
+};
+
 }  // namespace sam
 
 /**

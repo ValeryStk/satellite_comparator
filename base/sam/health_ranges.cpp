@@ -6,13 +6,37 @@
 
 namespace sam {
 // clang-format off
-extern const char kSpectralIndexNDVI[]     = "NDVI";
-extern const char kSpectralIndexSWVI[]     = "SWVI";
-extern const char kSpectralIndexDSWI[]     = "DSWI";
-extern const char kSpectralIndexEVI[]      = "EVI";
-extern const char kSpectralIndexNBR[]      = "NBR";
-extern const char kSpectralIndexNDSWIR[]   = "NDSWIR";
-extern const char kSpectralIndexNBRSWIR[]  = "NBRSWIR";
+const char kSpectralIndexNDVI[]     = "NDVI";
+const char kSpectralIndexSWVI[]     = "SWVI";
+const char kSpectralIndexDSWI[]     = "DSWI";
+const char kSpectralIndexEVI[]      = "EVI";
+const char kSpectralIndexNBR[]      = "NBR";
+const char kSpectralIndexNDSWIR[]   = "NDSWIR";
+const char kSpectralIndexNBRSWIR[]  = "NBRSWIR";
+
+const char* kHealthClassesEnglish[] = {
+                                      "Healthy",
+                                      "Weakened",
+                                      "Severely Weakened",
+                                      "Dying",
+                                      "Fresh Deadwood",
+                                      "Old Deadwood"};
+
+const char* kHealthClassesRussian[] = {
+                                      "Здоровые",
+                                      "Ослабленные",
+                                      "Сильно ослабленные",
+                                      "Усыхающие",
+                                      "Новый сухостой",
+                                      "Старый сухостой"};
+
+const char* kHealthClassesColors[] = {
+                                     "#008000",
+                                     "#90EE90",
+                                     "#9ACD32",
+                                     "#FFD700",
+                                     "#CD853F",
+                                     "#8B4513"};
 // clang-format on
 }  // namespace sam
 
@@ -26,22 +50,23 @@ PlantHealth::PlantHealth(const std::string& indexName)
                   << "' not found. Using NDVI as default." << std::endl;
         currentIndex = sam::kSpectralIndexNDVI;  // По умолчанию NDVI
     }
-
+    // clang-format off
     // Названия классов на английском
-    classNames[1] = "Healthy";
-    classNames[2] = "Weakened";
-    classNames[3] = "Severely Weakened";
-    classNames[4] = "Dying";
-    classNames[5] = "Fresh Deadwood";
-    classNames[6] = "Old Deadwood";
+    classNames[1] = sam::kHealthClassesEnglish[sam::HEALTHY];
+    classNames[2] = sam::kHealthClassesEnglish[sam::WEAKENED];
+    classNames[3] = sam::kHealthClassesEnglish[sam::SEVERELY_WEAKENED];
+    classNames[4] = sam::kHealthClassesEnglish[sam::DYING];
+    classNames[5] = sam::kHealthClassesEnglish[sam::FRESH_DEADWOOD];
+    classNames[6] = sam::kHealthClassesEnglish[sam::OLD_DEADWOOD];
 
     // Цвета классов в формате HEX (по Российскому лесному стандарту)
-    classColors[1] = "#008000";  // Зеленый
-    classColors[2] = "#90EE90";  // Светло-зеленый
-    classColors[3] = "#9ACD32";  // Желто-зеленый
-    classColors[4] = "#FFD700";  // Желтый
-    classColors[5] = "#CD853F";  // Оранжево-коричневый
-    classColors[6] = "#8B4513";  // Темно-коричневый
+    classColors[1] = sam::kHealthClassesColors[sam::HEALTHY];             // Зеленый
+    classColors[2] = sam::kHealthClassesColors[sam::WEAKENED];            // Светло-зеленый
+    classColors[3] = sam::kHealthClassesColors[sam::SEVERELY_WEAKENED];   // Желто-зеленый
+    classColors[4] = sam::kHealthClassesColors[sam::DYING];               // Желтый
+    classColors[5] = sam::kHealthClassesColors[sam::FRESH_DEADWOOD];      // Оранжево-коричневый
+    classColors[6] = sam::kHealthClassesColors[sam::OLD_DEADWOOD];        // Темно-коричневый
+    // clang-format on
 }
 
 void PlantHealth::initDefaultRanges() {
