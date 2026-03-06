@@ -486,8 +486,7 @@ void UasvViewWindow::on_pushButtonOpenSavingFolder_clicked() {
 
 void UasvViewWindow::on_pushButtonToMatlab_clicked() {
     // 1. Получаем список файлов спектров m_filesParser->getSpectraPathesList()
-    // 2. Конвертируем его и сохраняем в виде mat файла (подумать, мб сократить
-    // размер если отдельльно путь к папке и отдельно имя)
+    // 2. Конвертируем его и сохраняем в виде mat файла
     // 3. создаем json для запроса
     // 4. отправляем его по UDP (объект UDPJSON должен быть 1 и создан в главном
     // окне с мультиспек.изображениями)
