@@ -57,8 +57,7 @@ void SpectralIndicesWidget::updateDisplay() {
     m_plot->xAxis->setLabel("Индексы");
     m_plot->yAxis->setLabel("Значение");
     m_plot->xAxis->setRange(0.2, indexNames.size() + 0.8);
-    m_plot->yAxis->setRange(-1.6, 1.8);
-
+    m_plot->yAxis->setRange(-0.5, 2.5);
     QSharedPointer<QCPAxisTickerText> ticker(new QCPAxisTickerText);
     for (int i = 0; i < indexNames.size(); ++i) {
         ticker->addTick(i + 1, indexNames[i]);
