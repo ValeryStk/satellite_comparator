@@ -1146,7 +1146,8 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     }
 
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
-        if (!temp_metadata.sentinel_missed_channels[i]) {
+        if (!temp_metadata.sentinel_missed_channels[i] &&
+            (i == 7 || i == 11 || i == 12)) {
             availableBandNames << gui_channels[i];
             sad::BAND_DATA data;
             data.gui_name = gui_channels[i];
@@ -1177,8 +1178,16 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
             change_detection_data.append(data);
         }
     }
-
-    read_sentinel2_bands_data(change_detection_data);
+    int cd_size = change_detection_data.size();
+    qDebug() << "change detection size: " << cd_size;
+    if (cd_size == 3) {
+        qDebug() << change_detection_data[0].gui_name;
+        qDebug() << change_detection_data[1].gui_name;
+        qDebug() << change_detection_data[2].gui_name;
+        read_sentinel2_bands_data(change_detection_data);
+    } else {
+        return;
+    }
 
     QHash<QString, sad::geoTransform> sentinel_geo;
     if (finalFiles.empty() == false) {
