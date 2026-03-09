@@ -1,4 +1,3 @@
-// spectral_indices_widget.cpp
 #include "spectral_indices_widget.h"
 
 #include <QVBoxLayout>
@@ -58,8 +57,7 @@ void SpectralIndicesWidget::updateDisplay() {
     m_plot->xAxis->setLabel("Индексы");
     m_plot->yAxis->setLabel("Значение");
     m_plot->xAxis->setRange(0.2, indexNames.size() + 0.8);
-    m_plot->yAxis->setRange(-1.6, 1.8);
-
+    m_plot->yAxis->setRange(-0.5, 2.5);
     QSharedPointer<QCPAxisTickerText> ticker(new QCPAxisTickerText);
     for (int i = 0; i < indexNames.size(); ++i) {
         ticker->addTick(i + 1, indexNames[i]);
@@ -67,6 +65,8 @@ void SpectralIndicesWidget::updateDisplay() {
     m_plot->xAxis->setTicker(ticker);
 
     m_plot->legend->setVisible(true);
+    m_plot->legend->clear();
+    createLegend();
     m_plot->replot();
 }
 
@@ -84,4 +84,22 @@ void SpectralIndicesWidget::setupPlot() {
     m_plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
     m_plot->legend->setVisible(true);
     m_plot->axisRect()->setupFullAxesBox();
+    createLegend();
+}
+
+void SpectralIndicesWidget::createLegend() {
+    // Добавляем заголовок-разделитель (опционально)
+    auto *titleBars = new QCPBars(m_plot->xAxis, m_plot->yAxis);
+    titleBars->setName("── Классы здоровья ──");
+    titleBars->setPen(QPen(Qt::NoPen));
+    titleBars->setBrush(QBrush(Qt::transparent));
+    titleBars->addToLegend(m_plot->legend);
+
+    for (int i = 0; i < sam::HEALTH_CLASSES::NUMBER_OF_CLASSES; ++i) {
+        auto *legendBars = new QCPBars(m_plot->xAxis, m_plot->yAxis);
+        legendBars->setName(QString(sam::kHealthClassesRussian[i]));
+        legendBars->setBrush(QBrush(QColor(sam::kHealthClassesColors[i])));
+        legendBars->setPen(QPen(Qt::NoPen));
+        legendBars->addToLegend(m_plot->legend);
+    }
 }

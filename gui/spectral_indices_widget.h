@@ -24,6 +24,7 @@ private:
 
     void setupUI();
     void setupPlot();
+    void createLegend();
 };
 
 #endif  // SPECTRAL_INDICES_WIDGET_H
