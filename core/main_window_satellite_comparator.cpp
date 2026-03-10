@@ -1219,21 +1219,59 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     qDebug() << "NIR2" << m_sentinel_data[8].gui_name;
     qDebug() << "SWIR" << m_sentinel_data[9].gui_name;
     qDebug() << "SWIR1" << m_sentinel_data[10].gui_name;
-    int height = m_sentinel_data[0].height;
-    int width = m_sentinel_data[0].width;
+
     int intersections_counter = 0;
-    for (int i = 1000; i < 1100; ++i) {
-        for (int j = 1000; j < 1100; ++j) {
+    int nYSize = 1000;
+    int nXSize = 800;
+    uchar *data = new uchar[nYSize * nXSize * 3];
+    /*int offset = 0;
+    for (int i = 3500; i < 4500; ++i) {      // y
+        for (int j = 2200; j < 3000; ++j) {  // x
             double lat, lon;
             getGeoCoordinates(i, j, m_geo, lat, lon, false);
-            QPointF point = geoToPixel(lat, lon, change_detection_geo);
-            if (point.x() >= width || point.x() < 0) continue;
-            if (point.y() >= height || point.y() < 0) continue;
-            ++intersections_counter;
+            // QPointF point = geoToPixel(lat, lon, change_detection_geo);
+            int value = m_sentinel_data[8].data[(i * width) + j] / 128;
+            data[(i - 3500) * (j - 2200) + offset] = value;
+            data[(i - 3500) * (j - 2200) + offset + 1] = value;
+            data[(i - 3500) * (j - 2200) + offset + 2] = value;
+            offset += 3;
+
+            // if (point.x() >= width || point.x() < 0) continue;
+            // if (point.y() >= height || point.y() < 0) continue;
+            //++intersections_counter;
         }
     }
+    QImage img(data, 800, 1000, QImage::Format_RGB888);
     qDebug() << "intersections:" << intersections_counter;
-    qDebug() << "missed_points:" << (width * height) - intersections_counter;
+    qDebug() << "missed_points:" << (1000 * 800) - intersections_counter;*/
+
+    int offset = 0;
+    for (int y = 0; y < nYSize; ++y) {
+        for (int x = 0; x < nXSize; ++x) {
+            int B = 0;
+            int G = 0;
+            int R = 0;
+            B = static_cast<int>(
+                    m_sentinel_data[8]
+                        .data[(y + 3500) * m_sentinel_data[8].width +
+                              (x + 2200)] /
+                    255.0) *
+                2;
+            R = B;
+            G = B;
+            data[offset] = R;
+            data[offset + 1] = G;
+            data[offset + 2] = B;
+            offset = offset + 3;
+        }
+    }
+    auto img = QImage(data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
+    auto pixmap = QPixmap::fromImage(img);
+
+    QLabel *label = new QLabel;
+    label->setAttribute(Qt::WA_DeleteOnClose);
+    label->setPixmap(QPixmap::fromImage(img));
+    label->show();
 }
 
 QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(
