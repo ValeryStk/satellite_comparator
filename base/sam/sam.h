@@ -15,6 +15,7 @@ struct BandIndices {
     int green = -1;
     int blue  = -1;
     int nir1  = -1;
+    int nir2  = -1;
     int swir1 = -1;
     int swir2 = -1;
 };

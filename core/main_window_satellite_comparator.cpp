@@ -1070,7 +1070,6 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
         qWarning() << "Не удалось открыть файл Sentinel XML";
         return;
     }
-
     QDomDocument doc;
     if (!doc.setContent(&file)) {
         qWarning() << "Ошибка разбора XML";
@@ -1146,9 +1145,10 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
                   sad::sentinel_2B_central_wave_lengths + SENTINEL_BANDS_NUMBER,
                   central_waves);
     }
+
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         if (!temp_metadata.sentinel_missed_channels[i] &&
-            (i == 7 || i == 10 || i == 11)) {
+            (i == 8 || i == 10 || i == 11)) {
             availableBandNames << gui_channels[i];
             sad::BAND_DATA data;
             data.gui_name = gui_channels[i];
@@ -1215,6 +1215,25 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     qDebug() << "cd width" << change_detection_data[0].width;
 
     // DUBLICATED CODE CHANGE DETECTION FROM COMMON SENTINEL
+
+    qDebug() << "NIR2" << m_sentinel_data[8].gui_name;
+    qDebug() << "SWIR" << m_sentinel_data[9].gui_name;
+    qDebug() << "SWIR1" << m_sentinel_data[10].gui_name;
+    int height = m_sentinel_data[0].height;
+    int width = m_sentinel_data[0].width;
+    int intersections_counter = 0;
+    for (int i = 1000; i < 1100; ++i) {
+        for (int j = 1000; j < 1100; ++j) {
+            double lat, lon;
+            getGeoCoordinates(i, j, m_geo, lat, lon, false);
+            QPointF point = geoToPixel(lat, lon, change_detection_geo);
+            if (point.x() >= width || point.x() < 0) continue;
+            if (point.y() >= height || point.y() < 0) continue;
+            ++intersections_counter;
+        }
+    }
+    qDebug() << "intersections:" << intersections_counter;
+    qDebug() << "missed_points:" << (width * height) - intersections_counter;
 }
 
 QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(

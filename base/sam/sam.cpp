@@ -50,6 +50,7 @@ BandIndices getBandsIndexes(sk satellite) {
     indices.green = getBandIndex(sam::kGREEN, satellite);
     indices.blue = getBandIndex(sam::kBLUE, satellite);
     indices.nir1 = getBandIndex(sam::kNIR1, satellite);
+    indices.nir2 = getBandIndex(sam::kNIR2, satellite);
     indices.swir1 = getBandIndex(sam::kSWIR1, satellite);
     indices.swir2 = getBandIndex(sam::kSWIR2, satellite);
     return indices;
