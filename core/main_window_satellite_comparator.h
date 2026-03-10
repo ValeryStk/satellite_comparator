@@ -177,6 +177,8 @@ private slots:
     //!
     void updateImage();
 
+    void runChangeDetectionMethod();
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
@@ -417,5 +419,8 @@ private:
     SpectralIndicesWidget *m_spectralWidget;
     QDockWidget *m_spectralDock;
     void setUpUi();
+
+    QVector<sad::BAND_DATA> change_detection_data;
+    sad::geoTransform change_detection_geo;
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H
