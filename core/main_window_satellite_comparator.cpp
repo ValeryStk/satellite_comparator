@@ -2417,6 +2417,10 @@ MainWindowSatelliteComparator::getSentinelKsy(const int x, const int y) {
     QVector<double> ksy;
     QVector<double> waves;
     for (int i = 0; i < m_sentinel_data.size(); ++i) {
+        if (m_sentinel_data[i].height != ySize ||
+            m_sentinel_data[i].width != xSize) {
+            continue;
+        };
         uint16_t value = m_sentinel_data[i].data[(y * xSize) + x];
         // double ksy_d =
         // m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
@@ -2446,6 +2450,10 @@ QVector<double> MainWindowSatelliteComparator::getSentinelKsyValues(
     if (x < 0 || y < 0) return {};
     QVector<double> ksy;
     for (int i = 0; i < m_sentinel_data.size(); ++i) {
+        if (m_sentinel_data[i].height != ySize ||
+            m_sentinel_data[i].width != xSize) {
+            continue;
+        };
         uint16_t value = m_sentinel_data[i].data[(y * xSize) + x];
         // double ksy_d =
         // m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
