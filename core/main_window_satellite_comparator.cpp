@@ -502,51 +502,59 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         int nir1_cw = 0;
         int red_cw = 0;
         int blue_cw = 0;
-        int swir2_cw = 0;
+        int swir3_cw = 0;
         int green_cw = 0;
-        double nir1_value = 0.0;
-        double red_value = 0.0;
-        double blue_value = 0.0;
-        double swir2_value = 0.0;
-        double green_value = 0.0;
+        double nir1_value = NAN;
+        double red_value = NAN;
+        double blue_value = NAN;
+        double swir3_value = NAN;
+        double green_value = NAN;
         if (m_satelite_type == sad::SENTINEL_2A) {
             nir1_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.nir1];
             red_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.red];
             blue_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.blue];
-            swir2_cw =
-                sad::sentinel_2A_central_wave_lengths[bands_indexes.swir2];
+            swir3_cw =
+                sad::sentinel_2A_central_wave_lengths[bands_indexes.swir3];
             green_cw =
                 sad::sentinel_2A_central_wave_lengths[bands_indexes.green];
         } else {
             nir1_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.nir1];
             red_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.red];
             blue_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.blue];
-            swir2_cw =
-                sad::sentinel_2B_central_wave_lengths[bands_indexes.swir2];
+            swir3_cw =
+                sad::sentinel_2B_central_wave_lengths[bands_indexes.swir3];
             green_cw =
                 sad::sentinel_2B_central_wave_lengths[bands_indexes.green];
         }
-        qDebug() << "nir1_cw" << nir1_cw << "red_cw" << red_cw << "blue_cw"
-                 << blue_cw << "swir2" << swir2_cw;
-        for (int i = 0; i < w_k.first.size(); ++i) {
-            if (w_k.first[i] == nir1_cw) {
-                nir1_value = w_k.second[i];
-            } else if (w_k.first[i] == red_cw) {
-                red_value = w_k.second[i];
-            } else if (w_k.first[i] == blue_cw) {
-                blue_value = w_k.second[i];
-            } else if (w_k.first[i] == swir2_cw) {
-                swir2_value = w_k.second[i];
-            } else if (w_k.first[i] == green_cw) {
-                green_value = w_k.second[i];
+
+        for (int i = 0; i < waves.size(); ++i) {
+            if (waves[i] == nir1_cw) {
+                nir1_value = data[i];
+            } else if (waves[i] == red_cw) {
+                red_value = data[i];
+            } else if (waves[i] == blue_cw) {
+                blue_value = data[i];
+            } else if (waves[i] == swir3_cw) {
+                swir3_value = data[i];
+            } else if (waves[i] == green_cw) {
+                green_value = data[i];
             }
         }
 
+        // clang-format off
+        qDebug() << "blue_cw" << blue_cw  <<blue_value;
+        qDebug() << "red_cw"  << red_cw   <<red_value;
+        qDebug() << "nir1_cw" << nir1_cw  <<nir1_value;
+        qDebug() << "swir2" << swir3_cw <<swir3_value;
+        qDebug() << "----------------------";
+        // clang-format off
+
+
         double dswi =
-            sam::calculateDSWI(nir1_value, green_value, swir2_value, red_value);
+            sam::calculateDSWI(nir1_value, green_value, swir3_value, red_value);
         double evi = sam::calculateEVI(nir1_value, red_value, blue_value);
         double ndvi = sam::calculateNDVI(nir1_value, red_value);
-        double swvi = sam::calculateSWVI(nir1_value, swir2_value);
+        double swvi = sam::calculateSWVI(nir1_value, swir3_value);
 
         m_spectralWidget->setIndices({{sam::kSpectralIndexNDVI, ndvi},
                                       {{sam::kSpectralIndexSWVI}, {swvi}},
