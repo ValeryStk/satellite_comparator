@@ -863,6 +863,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
             }
         }
     }
+    qDebug() << "check files: " << filteredFiles;
     QStringList finalFiles;
     QMap<QString, QString> bestResolutionForBand;
     const QStringList priorityOrder = {"R20m", "R10m", "R60m"};
@@ -884,7 +885,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
 
     // Собираем финальный список
     finalFiles = bestResolutionForBand.values();
-    // qDebug()<<finalFiles;
+    qDebug() << "final files: " << finalFiles;
     title_satellite_name->setText(satellite_name);
 
     for (const QString &file : qAsConst(finalFiles)) {
