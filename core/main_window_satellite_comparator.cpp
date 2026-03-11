@@ -1246,17 +1246,30 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     qDebug() << "missed_points:" << (1000 * 800) - intersections_counter;*/
 
     int offset = 0;
+    int xOffset = 2200;
+    int yOffset = 3500;
     for (int y = 0; y < nYSize; ++y) {
         for (int x = 0; x < nXSize; ++x) {
             int B = 0;
             int G = 0;
             int R = 0;
-            B = static_cast<int>(
+            int xValue = x + xOffset;
+            int yValue = y + yOffset;
+            double lat, lon;
+            getGeoCoordinates(xValue, yValue, m_geo, lat, lon, false);
+            QPointF point = geoToPixel(lat, lon, change_detection_geo);
+            int cdX = point.x();
+            int cdY = point.y();
+            /*B = static_cast<int>(
                     m_sentinel_data[8]
-                        .data[(y + 3500) * m_sentinel_data[8].width +
-                              (x + 2200)] /
+                        .data[(yValue)*m_sentinel_data[8].width + (xValue)] /
                     255.0) *
-                2;
+                3;*/
+            B = static_cast<int>(
+                    change_detection_data[0]
+                        .data[(cdY)*change_detection_data[0].width + (cdX)] /
+                    255.0) *
+                3;
             R = B;
             G = B;
             data[offset] = R;

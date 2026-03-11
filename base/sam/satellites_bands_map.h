@@ -19,9 +19,9 @@ extern const char kRE3[];
 extern const char kNIR1[];
 extern const char kNIR2[];
 extern const char kWV[];
-extern const char kSWIR[];
 extern const char kSWIR1[];
 extern const char kSWIR2[];
+extern const char kSWIR3[];
 
 extern const std::unordered_map<std::string, std::unordered_map<sk, int>>
     bands_map;
