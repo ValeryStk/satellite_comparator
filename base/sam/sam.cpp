@@ -45,8 +45,8 @@ double calculate_normalized_difference(const double a, const double b) {
 }  // end namespace detail
 
 // clang-format off
-BandIndices getBandsIndexes(sk satellite) {
-    BandIndices indices;
+BandIndicesIndexes getBandsIndexes(sk satellite) {
+    BandIndicesIndexes indices;
     indices.aer   = getBandIndex(sam::kAER,   satellite); //AER    1
     indices.blue  = getBandIndex(sam::kBLUE,  satellite); //BLUE   2
     indices.green = getBandIndex(sam::kGREEN, satellite); //GREEN  3
