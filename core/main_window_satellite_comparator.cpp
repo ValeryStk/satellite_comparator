@@ -541,11 +541,12 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
                 green_value = w_k.second[i];
             }
         }
-        double ndvi = sam::calculateNDVI(nir1_value, red_value);
-        double swvi = sam::calculateSWVI(nir1_value, swir2_value);
+
         double dswi =
             sam::calculateDSWI(nir1_value, green_value, swir2_value, red_value);
         double evi = sam::calculateEVI(nir1_value, red_value, blue_value);
+        double ndvi = sam::calculateNDVI(nir1_value, red_value);
+        double swvi = sam::calculateSWVI(nir1_value, swir2_value);
 
         m_spectralWidget->setIndices({{sam::kSpectralIndexNDVI, ndvi},
                                       {{sam::kSpectralIndexSWVI}, {swvi}},
@@ -920,8 +921,9 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
 
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         if (!m_sentinel_metadata.sentinel_missed_channels[i]) {
-            availableBandNames << gui_channels[i];
             sad::BAND_DATA data;
+            if (gui_channels[i].contains("WV")) continue;
+            availableBandNames << gui_channels[i];
             data.gui_name = gui_channels[i];
             data.central_wave_length = central_waves[i];
             data.file_name = m_sentinel_metadata.files[i];
@@ -2384,10 +2386,13 @@ void MainWindowSatelliteComparator::read_sentinel2_bands_data(
             downsample_uint16(data[i].data, buffer, xS, yS);
             delete[] data[i].data;
             data[i].data = buffer;
+            data[i].width = outX;
+            data[i].height = outY;
         }
-        // qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
-        if (data[i].width != xS) qDebug() << "WRONG X";
-        if (data[i].height != yS) qDebug() << "WRONG Y";
+        qDebug() << "Sentinel band" << data[i].gui_name
+                 << "size:" << data[i].width << data[i].height;
+        // if (data[i].width != xS) qDebug() << "WRONG X";
+        // if (data[i].height != yS) qDebug() << "WRONG Y";
     }
 }
 
