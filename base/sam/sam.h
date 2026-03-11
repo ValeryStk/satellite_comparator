@@ -27,19 +27,19 @@ struct BandIndicesIndexes {
 };
 
 struct BandIndicesValues {
-    int aer   = NAN; //AER    1
-    int blue  = NAN; //BLUE   2
-    int green = NAN; //GREEN  3
-    int red   = NAN; //RED    4
-    int re1   = NAN; //RE1    5
-    int re2   = NAN; //RE2    6
-    int re3   = NAN; //RE3    7
-    int nir1  = NAN; //NIR1   8
-    int nir2  = NAN; //NIR2   9
-    int wv    = NAN; //WV     10
-    int swir1 = NAN; //SWIR1  11
-    int swir2 = NAN; //SWIR2  12
-    int swir3 = NAN; //SWIR3  13
+    double aer   = NAN; //AER    1
+    double blue  = NAN; //BLUE   2
+    double green = NAN; //GREEN  3
+    double red   = NAN; //RED    4
+    double re1   = NAN; //RE1    5
+    double re2   = NAN; //RE2    6
+    double re3   = NAN; //RE3    7
+    double nir1  = NAN; //NIR1   8
+    double nir2  = NAN; //NIR2   9
+    double wv    = NAN; //WV     10
+    double swir1 = NAN; //SWIR1  11
+    double swir2 = NAN; //SWIR2  12
+    double swir3 = NAN; //SWIR3  13
 };
 
 // clang-format on

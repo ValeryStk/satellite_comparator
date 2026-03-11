@@ -180,7 +180,77 @@ QStringList sortSentinelFilesByDateTime(const QStringList &unsortedFiles) {
 QString getPathToSentinelHeader(QWidget *context, const QString &satName) {
     return QFileDialog::getOpenFileName(context, satName, "",
                                         "файлы(MTD_MSIL2A.xml)");
-};
+}
+
+sam::BandIndicesValues getBandsValues(const QVector<double> &waves,
+                                      const QVector<double> &data,
+                                      sad::SATELLITE_TYPE sat_type) {
+    sam::BandIndicesValues biv;
+    auto bi = sam::getBandsIndexes(sam::sk::SENTINEL);
+    int blue_cw = 0;
+    int green_cw = 0;
+    int red_cw = 0;
+    int nir1_cw = 0;
+    int nir2_cw = 0;
+    int swir1_cw = 0;
+    int swir2_cw = 0;
+    int swir3_cw = 0;
+
+    switch (sat_type) {
+        case sad::LANDSAT_9:
+            break;
+        case sad::LANDSAT_8:
+            break;
+        case sad::SENTINEL_2A:
+            blue_cw = sad::sentinel_2A_central_wave_lengths[bi.blue];
+            green_cw = sad::sentinel_2A_central_wave_lengths[bi.green];
+            red_cw = sad::sentinel_2A_central_wave_lengths[bi.red];
+            nir1_cw = sad::sentinel_2A_central_wave_lengths[bi.nir1];
+            nir2_cw = sad::sentinel_2A_central_wave_lengths[bi.nir2];
+            swir1_cw = sad::sentinel_2A_central_wave_lengths[bi.swir1];
+            swir2_cw = sad::sentinel_2A_central_wave_lengths[bi.swir2];
+            swir3_cw = sad::sentinel_2A_central_wave_lengths[bi.swir3];
+            break;
+        case sad::SENTINEL_2B:
+            blue_cw = sad::sentinel_2B_central_wave_lengths[bi.blue];
+            green_cw = sad::sentinel_2B_central_wave_lengths[bi.green];
+            red_cw = sad::sentinel_2B_central_wave_lengths[bi.red];
+            nir1_cw = sad::sentinel_2B_central_wave_lengths[bi.nir1];
+            nir2_cw = sad::sentinel_2B_central_wave_lengths[bi.nir2];
+            swir1_cw = sad::sentinel_2B_central_wave_lengths[bi.swir1];
+            swir2_cw = sad::sentinel_2B_central_wave_lengths[bi.swir2];
+            swir3_cw = sad::sentinel_2B_central_wave_lengths[bi.swir3];
+            break;
+        case sad::TIME_ROW_LANDSAT_COMBINATION:
+            break;
+        case sad::TIME_ROW_SENTINEL_COMBINATION:
+            break;
+        case sad::UNKNOWN_SATELLITE:
+            break;
+    }
+
+    for (int i = 0; i < waves.size(); ++i) {
+        if (waves[i] == blue_cw) {
+            biv.blue = data[i];
+        } else if (waves[i] == green_cw) {
+            biv.green = data[i];
+        } else if (waves[i] == red_cw) {
+            biv.red = data[i];
+        } else if (waves[i] == nir1_cw) {
+            biv.nir1 = data[i];
+        } else if (waves[i] == nir2_cw) {
+            biv.nir2 = data[i];
+        } else if (waves[i] == swir1_cw) {
+            biv.swir1 = data[i];
+        } else if (waves[i] == swir2_cw) {
+            biv.swir2 = data[i];
+        } else if (waves[i] == swir3_cw) {
+            biv.swir3 = data[i];
+        }
+    }
+
+    return biv;
+}
 
 }  // end of namespace
 
@@ -498,63 +568,22 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         }
         trimmed_satellite_data = data;
 
-        auto bands_indexes = sam::getBandsIndexes(sam::sk::SENTINEL);
-        int nir1_cw = 0;
-        int red_cw = 0;
-        int blue_cw = 0;
-        int swir3_cw = 0;
-        int green_cw = 0;
-        double nir1_value = NAN;
-        double red_value = NAN;
-        double blue_value = NAN;
-        double swir3_value = NAN;
-        double green_value = NAN;
-        if (m_satelite_type == sad::SENTINEL_2A) {
-            nir1_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.nir1];
-            red_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.red];
-            blue_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.blue];
-            swir3_cw =
-                sad::sentinel_2A_central_wave_lengths[bands_indexes.swir3];
-            green_cw =
-                sad::sentinel_2A_central_wave_lengths[bands_indexes.green];
-        } else {
-            nir1_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.nir1];
-            red_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.red];
-            blue_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.blue];
-            swir3_cw =
-                sad::sentinel_2B_central_wave_lengths[bands_indexes.swir3];
-            green_cw =
-                sad::sentinel_2B_central_wave_lengths[bands_indexes.green];
-        }
-
-        for (int i = 0; i < waves.size(); ++i) {
-            if (waves[i] == nir1_cw) {
-                nir1_value = data[i];
-            } else if (waves[i] == red_cw) {
-                red_value = data[i];
-            } else if (waves[i] == blue_cw) {
-                blue_value = data[i];
-            } else if (waves[i] == swir3_cw) {
-                swir3_value = data[i];
-            } else if (waves[i] == green_cw) {
-                green_value = data[i];
-            }
-        }
+        auto bv = getBandsValues(waves, data, m_satelite_type);
 
         // clang-format off
-        qDebug() << "blue_cw" << blue_cw  <<blue_value;
+       /* qDebug() << "blue_cw" << blue_cw  <<blue_value;
         qDebug() << "red_cw"  << red_cw   <<red_value;
         qDebug() << "nir1_cw" << nir1_cw  <<nir1_value;
         qDebug() << "swir2" << swir3_cw <<swir3_value;
-        qDebug() << "----------------------";
+        qDebug() << "----------------------";*/
         // clang-format off
 
 
         double dswi =
-            sam::calculateDSWI(nir1_value, green_value, swir3_value, red_value);
-        double evi = sam::calculateEVI(nir1_value, red_value, blue_value);
-        double ndvi = sam::calculateNDVI(nir1_value, red_value);
-        double swvi = sam::calculateSWVI(nir1_value, swir3_value);
+            sam::calculateDSWI(bv.nir1, bv.green, bv.swir3, bv.red);
+        double evi = sam::calculateEVI(bv.nir1, bv.red, bv.blue);
+        double ndvi = sam::calculateNDVI(bv.nir1, bv.red);
+        double swvi = sam::calculateSWVI(bv.nir1, bv.swir3);
 
         m_spectralWidget->setIndices({{sam::kSpectralIndexNDVI, ndvi},
                                       {{sam::kSpectralIndexSWVI}, {swvi}},
