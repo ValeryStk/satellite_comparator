@@ -526,8 +526,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
             green_cw =
                 sad::sentinel_2B_central_wave_lengths[bands_indexes.green];
         }
-        // qDebug() << "nir1_cw" << nir1_cw << "red_cw" << red_cw << "blue_cw"
-        //<< blue_cw;
+        qDebug() << "nir1_cw" << nir1_cw << "red_cw" << red_cw << "blue_cw"
+                 << blue_cw << "swir2" << swir2_cw;
         for (int i = 0; i < w_k.first.size(); ++i) {
             if (w_k.first[i] == nir1_cw) {
                 nir1_value = w_k.second[i];
