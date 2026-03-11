@@ -195,7 +195,7 @@ const QString sentinel_bands_keys[SENTINEL_BANDS_NUMBER] = {
     "B07",
     "B08",
     "B8A",
-    "B09"
+    "B09",
     "B10",
     "B11",
     "B12"

@@ -502,27 +502,27 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         int nir1_cw = 0;
         int red_cw = 0;
         int blue_cw = 0;
-        int swir1_cw = 0;
+        int swir2_cw = 0;
         int green_cw = 0;
         double nir1_value = 0.0;
         double red_value = 0.0;
         double blue_value = 0.0;
-        double swir1_value = 0.0;
+        double swir2_value = 0.0;
         double green_value = 0.0;
         if (m_satelite_type == sad::SENTINEL_2A) {
             nir1_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.nir1];
             red_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.red];
             blue_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.blue];
-            swir1_cw =
-                sad::sentinel_2A_central_wave_lengths[bands_indexes.swir1];
+            swir2_cw =
+                sad::sentinel_2A_central_wave_lengths[bands_indexes.swir2];
             green_cw =
                 sad::sentinel_2A_central_wave_lengths[bands_indexes.green];
         } else {
             nir1_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.nir1];
             red_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.red];
             blue_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.blue];
-            swir1_cw =
-                sad::sentinel_2B_central_wave_lengths[bands_indexes.swir1];
+            swir2_cw =
+                sad::sentinel_2B_central_wave_lengths[bands_indexes.swir2];
             green_cw =
                 sad::sentinel_2B_central_wave_lengths[bands_indexes.green];
         }
@@ -535,16 +535,16 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
                 red_value = w_k.second[i];
             } else if (w_k.first[i] == blue_cw) {
                 blue_value = w_k.second[i];
-            } else if (w_k.first[i] == swir1_cw) {
-                swir1_value = w_k.second[i];
+            } else if (w_k.first[i] == swir2_cw) {
+                swir2_value = w_k.second[i];
             } else if (w_k.first[i] == green_cw) {
                 green_value = w_k.second[i];
             }
         }
         double ndvi = sam::calculateNDVI(nir1_value, red_value);
-        double swvi = sam::calculateSWVI(nir1_value, swir1_value);
+        double swvi = sam::calculateSWVI(nir1_value, swir2_value);
         double dswi =
-            sam::calculateDSWI(nir1_value, green_value, swir1_value, red_value);
+            sam::calculateDSWI(nir1_value, green_value, swir2_value, red_value);
         double evi = sam::calculateEVI(nir1_value, red_value, blue_value);
 
         m_spectralWidget->setIndices({{sam::kSpectralIndexNDVI, ndvi},
@@ -888,15 +888,16 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
     qDebug() << "final files: " << finalFiles;
     title_satellite_name->setText(satellite_name);
 
-    for (const QString &file : qAsConst(finalFiles)) {
-        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
-            if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
-                m_sentinel_metadata.sentinel_missed_channels[i] =
-                    false;  // Канал найден — не пропущен
-                m_sentinel_metadata.files[i] = file;
-                break;
-            }
+    for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
+        QString target = "_" + sad::sentinel_bands_keys[i] + "_";
+        QStringList list = finalFiles.filter(target);
+        if (list.size() == 1) {
+            m_sentinel_metadata.sentinel_missed_channels[i] = false;
+            m_sentinel_metadata.files[i] = list.at(0);
+        } else if (list.size() > 1) {
+            qDebug() << "DUBLICATED FILES IN FINAL FILES LIST...";
         }
+        target = "";
     }
 
     if (m_dynamic_checkboxes_widget) m_dynamic_checkboxes_widget->clear();
