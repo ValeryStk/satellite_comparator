@@ -17,6 +17,14 @@ struct BecasDataFromMatlab {
     bool isSomeErrors = false;
 };
 
+struct MultiSpecDataFromMatlab {
+    QVector<int> pixelX;
+    QVector<int> pixelY;
+    QVector<int> selectedClustIndxs;
+    QVector<QColor> colorsOfEachSpectr;
+    bool isSomeErrors = false;
+};
+
 class MatFilesOperator {
 public:
     MatFilesOperator();
@@ -39,6 +47,14 @@ public:
                                     const QVector<int> &y,
                                     const QVector<QVector<double>> &specs,
                                     const QString &fullMatPath);
+
+    //!
+    //! \brief readMultiSpecDataFromMatlab
+    //! \param fullMatPath - путь к мат файлу
+    //! \return структура с прочтенными из мат файла данными
+    //!
+    MultiSpecDataFromMatlab readMultiSpecDataFromMatlab(
+        const QString &fullMatPath);
 };
 
 #endif  // MATFILESOPERATOR_H

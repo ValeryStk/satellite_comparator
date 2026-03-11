@@ -324,6 +324,13 @@ private:
     QGraphicsTextItem *m_scene_text_item_metric_value;
     UasvViewWindow *bekas_window;
     void paintSamplePoints(const QColor &color);
+
+    //! Отрисовка точек после классификации Матлабом по данным мултиспектральног
+    //! оизображения
+    void paintMultiSpecPoints(const QVector<int> &pixelX,
+                              const QVector<int> &pixelY,
+                              const QVector<QColor> &colors);
+
     QString getGeoCoordinates(const int x, const int y,
                               const sad::geoTransform &geo, double &latitude,
                               double &longitude, bool isStringReturn);

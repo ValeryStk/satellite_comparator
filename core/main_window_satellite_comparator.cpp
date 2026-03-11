@@ -1035,6 +1035,16 @@ void MainWindowSatelliteComparator::processpClassifiedBecasSpectraMatlabRequest(
 void MainWindowSatelliteComparator::processpClassifiedMultiSpecMatlabRequest(
     const QVariantMap &params) {
     qDebug() << "зашли в processpClassifiedMultiSpecMatlabRequest";
+    QString pathMatfile = params["matFilePath"].toString();
+    MatFilesOperator reader;
+    MultiSpecDataFromMatlab dataReaded =
+        reader.readMultiSpecDataFromMatlab(pathMatfile);
+    if (dataReaded.isSomeErrors) {
+        qDebug() << "при чтении файла произошли ошибки";
+        return;
+    }
+    paintMultiSpecPoints(dataReaded.pixelX, dataReaded.pixelY,
+                         dataReaded.colorsOfEachSpectr);
 }
 
 void MainWindowSatelliteComparator::updateImage() {
@@ -1648,6 +1658,72 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor &color) {
     auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
     m_layers_search_result_items.insert(stamp, new_image_item);
     m_layer_gui_list->addItemToList(stamp, searchParams, color);
+}
+
+void MainWindowSatelliteComparator::paintMultiSpecPoints(
+    const QVector<int> &pixelX, const QVector<int> &pixelY,
+    const QVector<QColor> &colors) {
+    if (!m_image_item) {
+        qWarning() << "paintMultiSpecPoints: base image item is null";
+        return;
+    }
+
+    if (pixelX.isEmpty() || pixelY.isEmpty() || colors.isEmpty()) {
+        qWarning() << "paintMultiSpecPoints: empty input data";
+        return;
+    }
+
+    if (pixelX.size() != pixelY.size() || pixelX.size() != colors.size()) {
+        qWarning() << "paintMultiSpecPoints: size mismatch"
+                   << "pixelX =" << pixelX.size() << "pixelY =" << pixelY.size()
+                   << "colors =" << colors.size();
+        return;
+    }
+
+    const int xSize = m_satellite_image.width();
+    const int ySize = m_satellite_image.height();
+
+    if (xSize <= 0 || ySize <= 0) {
+        qWarning() << "paintMultiSpecPoints: invalid image size" << xSize
+                   << ySize;
+        return;
+    }
+
+    auto new_layer = new uchar[xSize * ySize * 4];
+    memset(new_layer, 0, xSize * ySize * 4);
+
+    for (int i = 0; i < pixelX.size(); ++i) {
+        const int x = pixelX[i];
+        const int y = pixelY[i];
+
+        if (x < 0 || y < 0 || x >= xSize || y >= ySize) {
+            qWarning() << "paintMultiSpecPoints: point out of bounds" << x << y;
+            continue;
+        }
+
+        const QColor &color = colors[i];
+        const int offset = (y * xSize + x) * 4;
+
+        new_layer[offset] = static_cast<uchar>(color.red());
+        new_layer[offset + 1] = static_cast<uchar>(color.green());
+        new_layer[offset + 2] = static_cast<uchar>(color.blue());
+        new_layer[offset + 3] = 255;
+    }
+
+    auto cleanup = [](void *info) { delete[] static_cast<uchar *>(info); };
+    QImage img(new_layer, xSize, ySize, xSize * 4, QImage::Format_RGBA8888,
+               cleanup, new_layer);
+
+    auto pixmap = QPixmap::fromImage(img);
+    auto new_image_item = new QGraphicsPixmapItem(pixmap);
+    new_image_item->setZValue(
+        ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+
+    m_scene->addItem(new_image_item);
+    auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
+    m_layers_search_result_items.insert(stamp, new_image_item);
+    m_layer_gui_list->addItemToList(stamp, "", QColor(0, 255, 0));
+    m_scene->update();
 }
 
 QString MainWindowSatelliteComparator::getGeoCoordinates(
