@@ -863,7 +863,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
             }
         }
     }
-    qDebug() << "check files: " << filteredFiles;
+    // qDebug() << "check files: " << filteredFiles;
     QStringList finalFiles;
     QMap<QString, QString> bestResolutionForBand;
     const QStringList priorityOrder = {"R20m", "R10m", "R60m"};
