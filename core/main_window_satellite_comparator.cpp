@@ -1189,7 +1189,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
 
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         if (!temp_metadata.sentinel_missed_channels[i] &&
-            (i == 8 || i == 10 || i == 11)) {
+            (i == sam::_NIR2 || i == sam::_SWIR2 || i == sam::_SWIR3)) {
             availableBandNames << gui_channels[i];
             sad::BAND_DATA data;
             data.gui_name = gui_channels[i];
@@ -1324,7 +1324,8 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
 
     QLabel *label = new QLabel;
     label->setAttribute(Qt::WA_DeleteOnClose);
-    label->setPixmap(QPixmap::fromImage(img));
+    label->setScaledContents(true);
+    label->setPixmap(pixmap);
     label->show();
 }
 
