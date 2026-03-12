@@ -1275,6 +1275,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     int offset = 0;
     int xOffset = 2200;
     int yOffset = 3500;
+    #pragma omp parallel for num_threads(std::thread::hardware_concurrency())
     for (int y = 0; y < nYSize; ++y) {
         for (int x = 0; x < nXSize; ++x) {
             double nir2 = 0;
