@@ -119,6 +119,9 @@ struct BAND_DATA {
     int width;
     QString file_name;
     uint16_t* data = nullptr;
+    ~BAND_DATA() {
+        if (data) delete[] data;
+    }
 };
 
 struct QA_MASK_DATA {

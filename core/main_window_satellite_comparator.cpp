@@ -20,7 +20,6 @@
 #include "QGraphicsProxyWidget"
 #include "QImageReader"
 #include "cpl_conv.h"
-#include "davis.h"
 #include "google_maps_url_maker.h"
 #include "health_ranges.h"
 #include "icon_generator.h"
@@ -30,20 +29,14 @@
 #include "layer_roi_list.h"
 #include "least_square_solver.h"
 #include "libs/gdal/x64/include/cpl_conv.h"
-#include "libs/gdal/x64/include/cpl_string.h"
 #include "libs/gdal/x64/include/gdal_priv.h"
-#include "libs/gdal/x64/include/geotiff.h"
-#include "libs/gdal/x64/include/geotiffio.h"
 #include "libs/gdal/x64/include/ogr_spatialref.h"
 #include "libs/gdal/x64/include/tiff.h"
-#include "libs/gdal/x64/include/tiffio.h"
-#include "libs/gdal/x64/include/xtiffio.h"
 #include "progress_informator.h"
 #include "qcustomplot.h"
 #include "sam.cpp"
 #include "satellite_xml_reader.h"
 #include "text_constants.h"
-#include "thread"
 #include "ui_main_window_satellite_comparator.h"
 #include "version.h"
 #include "view_sync_manager.h"
@@ -1099,8 +1092,7 @@ void MainWindowSatelliteComparator::updateImage() {
 }
 
 void MainWindowSatelliteComparator::runChangeDetectionMethod() {
-    QFutureWatcher<QPixmap> *change_detection_future = new QFutureWatcher<QPixmap>();
-    change_detection_data.clear();//TODO DELETE DATA
+
     QString openSatMessage =
         QString("Открыть заголовочный файл %1").arg("Sentinel");
     QString headerName = getPathToSentinelHeader(this, openSatMessage);
@@ -1159,6 +1151,9 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     finalFiles = bestResolutionForBand.values();
 
     sad::SENTINEL_METADATA temp_metadata;
+    QFutureWatcher<QPixmap>* change_detection_future = new QFutureWatcher<QPixmap>();
+    QVector<sad::BAND_DATA> change_detection_data;
+    sad::geoTransform change_detection_geo;
 
     for (const QString &file : qAsConst(finalFiles)) {
         for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
@@ -1263,8 +1258,6 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     qDebug() << "SWIR1" << m_sentinel_data[10].gui_name;
 
 
-
-
     connect(change_detection_future, &QFutureWatcher<QPixmap>::finished, [=]() {
         QLabel *label = new QLabel;
         label->setAttribute(Qt::WA_DeleteOnClose);
@@ -1273,8 +1266,6 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
         label->show();
         change_detection_future->deleteLater();
     });
-
-
 
     change_detection_future->setFuture(QtConcurrent::run([=]()->QPixmap{
     int nYSize = 1000;
