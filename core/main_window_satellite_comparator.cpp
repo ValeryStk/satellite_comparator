@@ -2515,10 +2515,10 @@ QVector<double> MainWindowSatelliteComparator::getWaves() {
 
 void MainWindowSatelliteComparator::clear_satellite_data() {
     if (m_sentinel_data.empty()) return;
-    for (int i = 0; i < m_sentinel_data.size(); ++i) {
+    /*for (int i = 0; i < m_sentinel_data.size(); ++i) {
         auto data = m_sentinel_data[i].data;
-        if (data) delete[] data;
-    }
+        //if (data) delete[] data;
+    }*/
     m_sentinel_data.clear();
 }
 

@@ -6,6 +6,7 @@
 #include <QVector>
 
 #include "QString"
+#include "qdebug.h"
 
 constexpr int LANDSAT_BANDS_NUMBER = 11;
 constexpr int SENTINEL_BANDS_NUMBER = 13;
@@ -120,7 +121,11 @@ struct BAND_DATA {
     QString file_name;
     uint16_t* data = nullptr;
     ~BAND_DATA() {
-        if (data) delete[] data;
+        if (data) {
+            qDebug() << "BAND_DATA destructor....";
+            delete[] data;
+            data = nullptr;
+        };
     }
 };
 
