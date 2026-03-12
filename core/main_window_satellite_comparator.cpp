@@ -571,10 +571,10 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         qDebug() << "----------------------";*/
         // clang-format on
 
-        double dswi = sam::calculateDSWI(bv.nir1, bv.green, bv.swir3, bv.red);
+        double dswi = sam::calculateDSWI(bv.nir1, bv.green, bv.swir2, bv.red);
         double evi = sam::calculateEVI(bv.nir1, bv.red, bv.blue);
         double ndvi = sam::calculateNDVI(bv.nir1, bv.red);
-        double swvi = sam::calculateSWVI(bv.nir1, bv.swir3);
+        double swvi = sam::calculateSWVI(bv.nir1, bv.swir2);
 
         m_spectralWidget->setIndices({{sam::kSpectralIndexNDVI, ndvi},
                                       {{sam::kSpectralIndexSWVI}, {swvi}},
@@ -1322,8 +1322,11 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
 
                 double nir2 = 0, swir3 = 0;
                 if (cdX >= 0 && cdX < cd_width && cdY >= 0 && cdY < cd_height) {
-                    nir2 = change_detection_data[0].data[cdY * cd_width + cdX];
-                    swir3 = change_detection_data[2].data[cdY * cd_width + cdX];
+                    nir2 = change_detection_data[0].data[cdY * cd_width + cdX] -
+                           1000;
+                    swir3 =
+                        change_detection_data[2].data[cdY * cd_width + cdX] -
+                        1000;
                 }
 
                 double nbr = sam::calculateNBR(nir2, swir3);
@@ -2479,7 +2482,8 @@ MainWindowSatelliteComparator::getSentinelKsy(const int x, const int y) {
             m_sentinel_data[i].width != xSize) {
             continue;
         };
-        uint16_t value = m_sentinel_data[i].data[(y * xSize) + x];
+        uint16_t value = m_sentinel_data[i].data[(y * xSize) + x] -
+                         1000;  // BOA_ADD_OFFSET TODO READ FROM MTD
         // double ksy_d =
         // m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
         ksy.append(value / 10000.0);
