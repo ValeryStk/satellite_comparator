@@ -8,6 +8,7 @@
 
 #include "QComboBox"
 #include "QDoubleSpinBox"
+#include "QtConcurrent/QtConcurrent"
 #include "bekas/GuiModules/UasvViewWindow.h"
 #include "cross_square.h"
 #include "dynamic_checkbox_widget.h"
@@ -422,5 +423,6 @@ private:
 
     QVector<sad::BAND_DATA> change_detection_data;
     sad::geoTransform change_detection_geo;
+    QFutureWatcher<QPixmap> *change_detection_future = nullptr;
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H
