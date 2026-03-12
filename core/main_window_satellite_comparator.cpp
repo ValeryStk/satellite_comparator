@@ -1327,9 +1327,9 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
                 }
 
                 double nbr = sam::calculateNBR(nir2, swir3);
-                uchar nbr_8bit = qBound(
-                    uchar(0), static_cast<uchar>((nbr + 1.0) * 127.5 * 0.5),
-                    uchar(255));
+                uchar nbr_8bit =
+                    qBound(uchar(0), static_cast<uchar>((nbr + 1.0) * 127.5),
+                           uchar(255));
 
                 int pixel_offset = row_offset + x * 3;
                 data[pixel_offset] = data[pixel_offset + 1] =
