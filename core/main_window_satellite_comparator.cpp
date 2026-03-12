@@ -1267,42 +1267,79 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     change_detection_future->setFuture(QtConcurrent::run([=]() -> QPixmap {
         int nYSize = 1000;
         int nXSize = 800;
-        uchar *data = new uchar[nYSize * nXSize * 3];
+        uchar *data = new uchar[nYSize * nXSize * 3]();
 
-        int offset = 0;
-        int xOffset = 2200;
-        int yOffset = 3500;
-#pragma omp parallel for num_threads(std::thread::hardware_concurrency())
-        for (int y = 0; y < nYSize; ++y) {
-            for (int x = 0; x < nXSize; ++x) {
-                double nir2 = 0;
-                double swir2 = 0;
-                double swir3 = 0;
-                int xValue = x + xOffset;
-                int yValue = y + yOffset;
-                double lat, lon;
-                getGeoCoordinates(xValue, yValue, m_geo, lat, lon, false);
-                QPointF point = geoToPixel(lat, lon, change_detection_geo);
-                int cdX = point.x();
-                int cdY = point.y();
-                int cd_width = change_detection_data[0].width;
-                nir2 = change_detection_data[0].data[cdY * cd_width + cdX];
-                swir2 = change_detection_data[1].data[cdY * cd_width + cdX];
-                swir3 = change_detection_data[2].data[cdY * cd_width + cdX];
-                double nbr = sam::calculateNBR(nir2, swir3);
-                uchar nbr_8bit = static_cast<uchar>(nbr * 200);
-                int B = nbr_8bit;
-                int R = B;
-                int G = B;
-                data[offset] = R;
-                data[offset + 1] = G;
-                data[offset + 2] = B;
-                offset = offset + 3;
+        const int xOffset = 2200;
+        const int yOffset = 3500;
+        int cd_width = change_detection_data[0].width;
+        int cd_height = change_detection_data[0].height;
+
+        // Сетка 5x5 для высокой точности (25 точек вместо 4)
+        const int grid_size = 5;
+        double lat_grid[grid_size][grid_size];
+        double lon_grid[grid_size][grid_size];
+
+        // Вычисление координат сетки
+        for (int gy = 0; gy < grid_size; ++gy) {
+            for (int gx = 0; gx < grid_size; ++gx) {
+                int xValue = xOffset + (gx * nXSize) / (grid_size - 1);
+                int yValue = yOffset + (gy * nYSize) / (grid_size - 1);
+                getGeoCoordinates(xValue, yValue, m_geo, lat_grid[gy][gx],
+                                  lon_grid[gy][gx], false);
             }
         }
-        auto img =
-            QImage(data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
-        auto pixmap = QPixmap::fromImage(img);
+
+#pragma omp parallel for num_threads( \
+        std::min(8, (int)std::thread::hardware_concurrency()))
+        for (int y = 0; y < nYSize; ++y) {
+            int row_offset = y * nXSize * 3;
+
+            // Определение ячейки сетки для строки y
+            int gy = (y * (grid_size - 1)) / nYSize;
+            double t = (double)y / nYSize * (grid_size - 1) - gy;
+
+            for (int x = 0; x < nXSize; ++x) {
+                // Определение ячейки сетки для столбца x
+                int gx = (x * (grid_size - 1)) / nXSize;
+                double s = (double)x / nXSize * (grid_size - 1) - gx;
+
+                // Билинейная интерполяция в ячейке сетки
+                double lat0 =
+                    lat_grid[gy][gx] * (1 - s) + lat_grid[gy][gx + 1] * s;
+                double lat1 = lat_grid[gy + 1][gx] * (1 - s) +
+                              lat_grid[gy + 1][gx + 1] * s;
+                double lon0 =
+                    lon_grid[gy][gx] * (1 - s) + lon_grid[gy][gx + 1] * s;
+                double lon1 = lon_grid[gy + 1][gx] * (1 - s) +
+                              lon_grid[gy + 1][gx + 1] * s;
+
+                double lat = lat0 * (1 - t) + lat1 * t;
+                double lon = lon0 * (1 - t) + lon1 * t;
+
+                QPointF point = geoToPixel(lat, lon, change_detection_geo);
+                int cdX = qBound(0, static_cast<int>(point.x()), cd_width - 1);
+                int cdY = qBound(0, static_cast<int>(point.y()), cd_height - 1);
+
+                double nir2 = 0, swir3 = 0;
+                if (cdX >= 0 && cdX < cd_width && cdY >= 0 && cdY < cd_height) {
+                    nir2 = change_detection_data[0].data[cdY * cd_width + cdX];
+                    swir3 = change_detection_data[2].data[cdY * cd_width + cdX];
+                }
+
+                double nbr = sam::calculateNBR(nir2, swir3);
+                uchar nbr_8bit = qBound(
+                    uchar(0), static_cast<uchar>((nbr + 1.0) * 127.5 * 0.5),
+                    uchar(255));
+
+                int pixel_offset = row_offset + x * 3;
+                data[pixel_offset] = data[pixel_offset + 1] =
+                    data[pixel_offset + 2] = nbr_8bit;
+            }
+        }
+
+        QImage img(data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
+        QPixmap pixmap = QPixmap::fromImage(img);
+        delete[] data;
         return pixmap;
     }));
 }
