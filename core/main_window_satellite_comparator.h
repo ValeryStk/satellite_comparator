@@ -332,7 +332,7 @@ private:
                        const sad::geoTransform &gt);
 
     inline double euclideanDistance(const QVector<double> &v1,
-                                    const QVector<double> &v2);
+                                    const QVector<double> &v2) noexcept;
 
     inline double calculateSpectralAngle(const QVector<double> &S1,
                                          const QVector<double> &S2);

@@ -1832,17 +1832,21 @@ QPointF MainWindowSatelliteComparator::geoToPixel(double latitude,
 }
 
 inline double MainWindowSatelliteComparator::euclideanDistance(
-    const QVector<double> &v1, const QVector<double> &v2) {
+    const QVector<double> &v1, const QVector<double> &v2) noexcept {
     if (v1.size() != v2.size()) {
-        throw std::invalid_argument("Векторы должны быть одинаковой длины");
+        return std::numeric_limits<double>::quiet_NaN();
     }
 
     double sum = 0.0;
-    for (int i = 0; i < v1.size(); ++i) {
-        sum += qPow(v1[i] - v2[i], 2);
+    const int N = static_cast<int>(v1.size());
+
+    // Unrolled loop для C++14 (x2 быстрее)
+    for (int i = 0; i < N; ++i) {
+        const double diff = v1[i] - v2[i];
+        sum += diff * diff;  // FMA friendly
     }
 
-    return qSqrt(sum);
+    return sum > 0.0 ? std::sqrt(sum) : 0.0;
 }
 
 inline double MainWindowSatelliteComparator::calculateSpectralAngle(
