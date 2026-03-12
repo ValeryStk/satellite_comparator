@@ -123,8 +123,8 @@ struct BAND_DATA {
     ~BAND_DATA() {
         if (data) {
             qDebug() << "BAND_DATA destructor....";
-            delete[] data;
-            data = nullptr;
+            // delete[] data;
+            // data = nullptr;
         };
     }
 };
