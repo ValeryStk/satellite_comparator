@@ -569,11 +569,9 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         qDebug() << "nir1_cw" << nir1_cw  <<nir1_value;
         qDebug() << "swir2" << swir3_cw <<swir3_value;
         qDebug() << "----------------------";*/
-        // clang-format off
+        // clang-format on
 
-
-        double dswi =
-            sam::calculateDSWI(bv.nir1, bv.green, bv.swir3, bv.red);
+        double dswi = sam::calculateDSWI(bv.nir1, bv.green, bv.swir3, bv.red);
         double evi = sam::calculateEVI(bv.nir1, bv.red, bv.blue);
         double ndvi = sam::calculateNDVI(bv.nir1, bv.red);
         double swvi = sam::calculateSWVI(bv.nir1, bv.swir3);
@@ -1092,7 +1090,6 @@ void MainWindowSatelliteComparator::updateImage() {
 }
 
 void MainWindowSatelliteComparator::runChangeDetectionMethod() {
-
     QString openSatMessage =
         QString("Открыть заголовочный файл %1").arg("Sentinel");
     QString headerName = getPathToSentinelHeader(this, openSatMessage);
@@ -1151,7 +1148,8 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     finalFiles = bestResolutionForBand.values();
 
     sad::SENTINEL_METADATA temp_metadata;
-    QFutureWatcher<QPixmap>* change_detection_future = new QFutureWatcher<QPixmap>();
+    QFutureWatcher<QPixmap> *change_detection_future =
+        new QFutureWatcher<QPixmap>();
     QVector<sad::BAND_DATA> change_detection_data;
     sad::geoTransform change_detection_geo;
 
@@ -1257,7 +1255,6 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     qDebug() << "SWIR" << m_sentinel_data[9].gui_name;
     qDebug() << "SWIR1" << m_sentinel_data[10].gui_name;
 
-
     connect(change_detection_future, &QFutureWatcher<QPixmap>::finished, [=]() {
         QLabel *label = new QLabel;
         label->setAttribute(Qt::WA_DeleteOnClose);
@@ -1267,50 +1264,47 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
         change_detection_future->deleteLater();
     });
 
-    change_detection_future->setFuture(QtConcurrent::run([=]()->QPixmap{
-    int nYSize = 1000;
-    int nXSize = 800;
-    uchar *data = new uchar[nYSize * nXSize * 3];
+    change_detection_future->setFuture(QtConcurrent::run([=]() -> QPixmap {
+        int nYSize = 1000;
+        int nXSize = 800;
+        uchar *data = new uchar[nYSize * nXSize * 3];
 
-    int offset = 0;
-    int xOffset = 2200;
-    int yOffset = 3500;
-    #pragma omp parallel for num_threads(std::thread::hardware_concurrency())
-    for (int y = 0; y < nYSize; ++y) {
-        for (int x = 0; x < nXSize; ++x) {
-            double nir2 = 0;
-            double swir2 = 0;
-            double swir3 = 0;
-            int xValue = x + xOffset;
-            int yValue = y + yOffset;
-            double lat, lon;
-            getGeoCoordinates(xValue, yValue, m_geo, lat, lon, false);
-            QPointF point = geoToPixel(lat, lon, change_detection_geo);
-            int cdX = point.x();
-            int cdY = point.y();
-            int cd_width = change_detection_data[0].width;
-            nir2 = change_detection_data[0].data[cdY * cd_width + cdX];
-            swir2 = change_detection_data[1].data[cdY * cd_width + cdX];
-            swir3 = change_detection_data[2].data[cdY * cd_width + cdX];
-            double nbr = sam::calculateNBR(nir2,swir3);
-            uchar nbr_8bit = static_cast<uchar>(nbr*200);
-            int B = nbr_8bit;
-            int R = B;
-            int G = B;
-            data[offset] = R;
-            data[offset + 1] = G;
-            data[offset + 2] = B;
-            offset = offset + 3;
+        int offset = 0;
+        int xOffset = 2200;
+        int yOffset = 3500;
+#pragma omp parallel for num_threads(std::thread::hardware_concurrency())
+        for (int y = 0; y < nYSize; ++y) {
+            for (int x = 0; x < nXSize; ++x) {
+                double nir2 = 0;
+                double swir2 = 0;
+                double swir3 = 0;
+                int xValue = x + xOffset;
+                int yValue = y + yOffset;
+                double lat, lon;
+                getGeoCoordinates(xValue, yValue, m_geo, lat, lon, false);
+                QPointF point = geoToPixel(lat, lon, change_detection_geo);
+                int cdX = point.x();
+                int cdY = point.y();
+                int cd_width = change_detection_data[0].width;
+                nir2 = change_detection_data[0].data[cdY * cd_width + cdX];
+                swir2 = change_detection_data[1].data[cdY * cd_width + cdX];
+                swir3 = change_detection_data[2].data[cdY * cd_width + cdX];
+                double nbr = sam::calculateNBR(nir2, swir3);
+                uchar nbr_8bit = static_cast<uchar>(nbr * 200);
+                int B = nbr_8bit;
+                int R = B;
+                int G = B;
+                data[offset] = R;
+                data[offset + 1] = G;
+                data[offset + 2] = B;
+                offset = offset + 3;
+            }
         }
-    }
-    auto img = QImage(data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
-    auto pixmap = QPixmap::fromImage(img);
-    return pixmap;
-}));
-
-
-
-
+        auto img =
+            QImage(data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
+        auto pixmap = QPixmap::fromImage(img);
+        return pixmap;
+    }));
 }
 
 QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(
