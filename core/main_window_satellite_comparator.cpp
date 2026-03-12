@@ -1099,9 +1099,7 @@ void MainWindowSatelliteComparator::updateImage() {
 }
 
 void MainWindowSatelliteComparator::runChangeDetectionMethod() {
-if(change_detection_future){
-if(change_detection_future->isRunning())return;
-}
+    QFutureWatcher<QPixmap> *change_detection_future = new QFutureWatcher<QPixmap>();
     change_detection_data.clear();//TODO DELETE DATA
     QString openSatMessage =
         QString("Открыть заголовочный файл %1").arg("Sentinel");
@@ -1265,7 +1263,7 @@ if(change_detection_future->isRunning())return;
     qDebug() << "SWIR1" << m_sentinel_data[10].gui_name;
 
 
-    change_detection_future = new QFutureWatcher<QPixmap>();
+
 
     connect(change_detection_future, &QFutureWatcher<QPixmap>::finished, [=]() {
         QLabel *label = new QLabel;
