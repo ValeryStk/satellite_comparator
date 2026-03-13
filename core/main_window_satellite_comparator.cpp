@@ -2923,6 +2923,7 @@ MainWindowSatelliteComparator::getDataForSentinel_TimeRow(
 
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         if (!metadata.sentinel_missed_channels[i]) {
+            if (gui_channels[i].contains("WV")) continue;
             availableBandNames << gui_channels[i];
             sad::BAND_DATA data;
             data.gui_name = gui_channels[i];
@@ -2944,9 +2945,6 @@ MainWindowSatelliteComparator::getDataForSentinel_TimeRow(
                 };
             }
             if (isResolutionMissed) {
-                // TODO EXCEPTION
-                // Мы обязательно должны знать разрешение
-                //  Выбросить исключение
                 qDebug() << "<--------------------- NO RESOLUTION EXCEPTION "
                             "!!!------------------>";
                 continue;
