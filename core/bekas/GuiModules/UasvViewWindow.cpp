@@ -3,14 +3,15 @@
 #include <bekas/BaseTools/IniFileLoader.h>
 #include <bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.h>
 #include <bekas/ProcessingModules/SpectrDataSaver.h>
-#include <tlhelp32.h>
 #include <windows.h>
+//
+#include <tlhelp32.h>  // обязатолено после #include <windows.h>
 
 #include <QMessageBox>
-#include <QProcess>
 
 #include "MatFilesOperator.h"
 #include "bekas/version.h"
+#include "matlab_app_controller.h"
 #include "text_constants.h"
 #include "ui_UasvViewWindow.h"
 
@@ -492,52 +493,32 @@ void UasvViewWindow::on_pushButtonToMatlab_clicked() {
     // окне с мультиспек.изображениями)
 
     // 1, 2 - поменять потом на относительный путь
-    MatFilesOperator matOper;
-    QString exeDir = QCoreApplication::applicationDirPath();
-    QString fullMatPath =
-        exeDir + "/" + matlabAppDirRelativeName + "/" + matFileName;
 
-    bool isReflectance = ui->pushButtonShowRfl->isChecked();
+    MatlabAppController matlabApp;
+    if (matlabApp.isRunning()) {
+        MatFilesOperator matOper;
+        QString exeDir = QCoreApplication::applicationDirPath();
+        QString fullMatPath =
+            exeDir + "/" + matlabAppDirRelativeName + "/" + matFileName;
 
-    matOper.saveBecasDataToMatFile(
-        m_filesParser->getSpectraNamesWithExtensionList(),
-        m_filesParser->getInputDirPathWithSlash(), isReflectance, fullMatPath);
-    // 3
-    QJsonObject params;
-    params["matFilePath"] = fullMatPath;
-    // 4
-    m_rpc->call("processBecasSpectra", QJsonValue(params));
-}
+        bool isReflectance = ui->pushButtonShowRfl->isChecked();
 
-bool UasvViewWindow::isProcessRunning(const QString &processName) {
-    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (hSnapshot == INVALID_HANDLE_VALUE) return false;
-
-    PROCESSENTRY32 pe;
-    pe.dwSize = sizeof(PROCESSENTRY32);
-
-    if (Process32First(hSnapshot, &pe)) {
-        do {
-            QString exe = QString::fromWCharArray(pe.szExeFile);
-            if (exe.compare(processName, Qt::CaseInsensitive) == 0) {
-                CloseHandle(hSnapshot);
-                return true;
-            }
-        } while (Process32Next(hSnapshot, &pe));
+        matOper.saveBecasDataToMatFile(
+            m_filesParser->getSpectraNamesWithExtensionList(),
+            m_filesParser->getInputDirPathWithSlash(), isReflectance,
+            fullMatPath);
+        // 3
+        QJsonObject params;
+        params["matFilePath"] = fullMatPath;
+        // 4
+        m_rpc->call("processBecasSpectra", QJsonValue(params));
+    } else {
+        QMessageBox::information(nullptr, "Info",
+                                 "Please run SpectraClassifier first");
     }
-    CloseHandle(hSnapshot);
-    return false;
 }
 
 void UasvViewWindow::on_pushButtonRunMatlabApp_clicked() {
-    QString exeDir = QCoreApplication::applicationDirPath();
-    QString fullExePath =
-        exeDir + "/" + matlabAppDirRelativeName + "/" + matlabAppExeFile;
-
-    if (!isProcessRunning(matlabAppExeFile)) {
-        QProcess::startDetached(fullExePath);
-    } else {
-        QMessageBox::information(nullptr, "Info",
-                                 "Application is already running");
-    }
+    MatlabAppController matlabApp;
+    matlabApp.runIfNotRunning();
 }

@@ -30,6 +30,7 @@ SOURCES += \
     main.cpp \
     main_window_satellite_comparator.cpp \
     MatFilesOperator.cpp \
+    matlab_app_controller.cpp \
     message_reporter.cpp \
     progress_informator.cpp \
     qcustomplot.cpp \
@@ -51,6 +52,7 @@ HEADERS += \
     layer_roi_list.h \
     main_window_satellite_comparator.h \
     MatFilesOperator.h \
+    matlab_app_controller.h \
     message_reporter.h \
     progress_informator.h \
     qcustomplot.h \

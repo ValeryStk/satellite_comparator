@@ -38,6 +38,7 @@
 #include "libs/gdal/x64/include/tiff.h"
 #include "libs/gdal/x64/include/tiffio.h"
 #include "libs/gdal/x64/include/xtiffio.h"
+#include "matlab_app_controller.h"
 #include "progress_informator.h"
 #include "qcustomplot.h"
 #include "sam.cpp"
@@ -2045,6 +2046,17 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id) {
 void MainWindowSatelliteComparator::send_roi_spectrs_to_matlab(
     const QString &id) {
     qDebug() << "слот для отправки спектрво в матлаб";
+
+    MatlabAppController matlabApp;
+
+    if (!matlabApp.isRunning()) {
+        matlabApp.runIfNotRunning();
+        uts::showWarnigMessage(
+            "Внимание!",
+            "Spectra classifier не был запущен. Дождитесь окончания его "
+            "загрузки и повторите отправку спектров ");
+        return;
+    }
 
     // формируем спектры полигона
     auto polItem = ui->graphicsView_satellite_image->getPolygonById(id);

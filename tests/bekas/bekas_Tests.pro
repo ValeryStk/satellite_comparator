@@ -15,9 +15,11 @@ HEADERS += bekas_UnitTests.h\
            $$CORE_DIR/qcustomplot.h\
            $$CORE_DIR/text_constants.h\
            $$CORE_DIR/MatFilesOperator.h\
+           $$CORE_DIR/matlab_app_controller.h\
 
 SOURCES += bekas_UnitTests.cpp\
            $$CORE_DIR/udpjsonrpc.cpp\
            $$CORE_DIR/qcustomplot.cpp\
            $$CORE_DIR/text_constants.cpp\
            $$CORE_DIR/MatFilesOperator.cpp\
+           $$CORE_DIR/matlab_app_controller.cpp\

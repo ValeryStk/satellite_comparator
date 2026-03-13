@@ -14,6 +14,9 @@ SOURCES += \
     $$BEKAS_DIR/GuiModules/UasvViewWindow.cpp \
     $$BEKAS_DIR/ProcessingModules/FilesParser.cpp\
     $$BEKAS_DIR/ProcessingModules/SpectrDataSaver.cpp\
+    $$CORE_DIR/matlab_app_controller.cpp\
+    $$CORE_DIR/MatFilesOperator.cpp\
+
 
 
 HEADERS += \
@@ -26,6 +29,8 @@ HEADERS += \
     $$BEKAS_DIR/GuiModules/UasvViewWindow.h\
     $$BEKAS_DIR/ProcessingModules/SpectrDataSaver.h\
     $$BEKAS_DIR/ProcessingModules/FilesParser.h\
+    $$CORE_DIR/matlab_app_controller.h\
+    $$CORE_DIR/MatFilesOperator.h\
 
 FORMS += \
     $$BEKAS_DIR/GuiModules/SpectrumWidgets/WavesRangeDialog.ui\

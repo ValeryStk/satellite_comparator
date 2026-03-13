@@ -99,8 +99,6 @@ private slots:
 
     void on_pushButtonRunMatlabApp_clicked();
 
-    bool isProcessRunning(const QString &processName);
-
 signals:
     void sendSampleForSatelliteComparator(QVector<double> x, QVector<double> y);
 
