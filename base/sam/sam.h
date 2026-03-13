@@ -56,15 +56,14 @@ enum class STATUS_CODE {
 struct ProcessingResult {
     STATUS_CODE status;
     std::string message;
+    double value;
 };
 
 ProcessingResult calculateEuclideanDistance(const std::vector<double> &v1,
-                                            const std::vector<double> &v2,
-                                            double &result);
+                                            const std::vector<double> &v2);
 
 ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
-                                            const QVector<double> &v2,
-                                            double &result);
+                                            const QVector<double> &v2);
 
 inline double calculateNDVI(const double nir1, const double red);
 
