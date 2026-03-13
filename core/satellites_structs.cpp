@@ -80,10 +80,10 @@ const QString landsat_bands_gui_names[LANDSAT_BANDS_NUMBER] = {
     "B03 - 562   nm GREEN",
     "B04 - 655   nm RED",
     "B05 - 865   nm NIR1",
-    "B06 - 1610  nm SWIR1",
-    "B07 - 2200  nm SWIR2",
+    "B06 - 1610  nm SWIR2",
+    "B07 - 2200  nm SWIR3",
     "B08 - 590   nm PAN",
-    "B09 - 1375  nm SWIR",
+    "B09 - 1375  nm SWIR1",
     "B10 - 10800 nm TIRS1",
     "B11 - 12000 nm TIRS2"
 };
@@ -130,9 +130,9 @@ const QString sentinel_2A_gui_band_names[SENTINEL_BANDS_NUMBER] = {
     "B08 - 833  nm NIR1",
     "B8A - 865  nm NIR2",
     "B09 - 945  nm WV",
-    "B10 - 1374 nm SWIR",
-    "B11 - 1614 nm SWIR1",
-    "B12 - 2202 nm SWIR2"
+    "B10 - 1374 nm SWIR1",
+    "B11 - 1614 nm SWIR2",
+    "B12 - 2202 nm SWIR3"
 };
 
 const double sentinel_2A_central_wave_lengths[SENTINEL_BANDS_NUMBER] = {
@@ -163,9 +163,9 @@ const QString sentinel_2B_gui_band_names[SENTINEL_BANDS_NUMBER] = {
     "B08 - 833  nm NIR1",
     "B8A - 864  nm NIR2",
     "B09 - 943  nm WV",
-    "B10 - 1377 nm SWIR",
-    "B11 - 1610 nm SWIR1",
-    "B12 - 2186 nm SWIR2"
+    "B10 - 1377 nm SWIR1",
+    "B11 - 1610 nm SWIR2",
+    "B12 - 2186 nm SWIR3"
 };
 
 const double sentinel_2B_central_wave_lengths[SENTINEL_BANDS_NUMBER] = {
@@ -195,7 +195,7 @@ const QString sentinel_bands_keys[SENTINEL_BANDS_NUMBER] = {
     "B07",
     "B08",
     "B8A",
-    "B09"
+    "B09",
     "B10",
     "B11",
     "B12"

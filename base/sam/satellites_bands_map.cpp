@@ -17,24 +17,24 @@ namespace sam {
     const char kNIR1[]  = "NIR1";
     const char kNIR2[]  = "NIR2";
     const char kWV[]    = "WV";
-    const char kSWIR[]  = "SWIR";
     const char kSWIR1[] = "SWIR1";
     const char kSWIR2[] = "SWIR2";
+    const char kSWIR3[] = "SWIR3";
 
 const std::unordered_map<std::string, std::unordered_map<sk, int>> bands_map = {
-    {std::string(kAER),   {{sk::SENTINEL, 0},  {sk::LANDSAT, 0}}},
-    {std::string(kBLUE),  {{sk::SENTINEL, 1},  {sk::LANDSAT, 1}}},
-    {std::string(kGREEN), {{sk::SENTINEL, 2},  {sk::LANDSAT, 2}}},
-    {std::string(kRED),   {{sk::SENTINEL, 3},  {sk::LANDSAT, 3}}},
+    {std::string(kAER),   {{sk::SENTINEL, 0},  {sk::LANDSAT,  0}}},
+    {std::string(kBLUE),  {{sk::SENTINEL, 1},  {sk::LANDSAT,  1}}},
+    {std::string(kGREEN), {{sk::SENTINEL, 2},  {sk::LANDSAT,  2}}},
+    {std::string(kRED),   {{sk::SENTINEL, 3},  {sk::LANDSAT,  3}}},
     {std::string(kRE1),   {{sk::SENTINEL, 4},  {sk::LANDSAT, -1}}},
     {std::string(kRE2),   {{sk::SENTINEL, 5},  {sk::LANDSAT, -1}}},
     {std::string(kRE3),   {{sk::SENTINEL, 6},  {sk::LANDSAT, -1}}},
-    {std::string(kNIR1),  {{sk::SENTINEL, 7},  {sk::LANDSAT, 4}}},
-    {std::string(kNIR2),  {{sk::SENTINEL, 8},  {sk::LANDSAT, 4}}},
-    {std::string(kWV),    {{sk::SENTINEL, 9}, {sk::LANDSAT, -1}}},
-    {std::string(kSWIR),  {{sk::SENTINEL, 10}, {sk::LANDSAT, 8}}},
-    {std::string(kSWIR1), {{sk::SENTINEL, 11}, {sk::LANDSAT, 5}}},
-    {std::string(kSWIR2), {{sk::SENTINEL, 12}, {sk::LANDSAT, 6}}},
+    {std::string(kNIR1),  {{sk::SENTINEL, 7},  {sk::LANDSAT,  4}}},
+    {std::string(kNIR2),  {{sk::SENTINEL, 8},  {sk::LANDSAT,  4}}},
+    {std::string(kWV),    {{sk::SENTINEL, 9},  {sk::LANDSAT, -1}}},
+    {std::string(kSWIR1), {{sk::SENTINEL, 10}, {sk::LANDSAT,  8}}},
+    {std::string(kSWIR2), {{sk::SENTINEL, 11}, {sk::LANDSAT,  5}}},
+    {std::string(kSWIR3), {{sk::SENTINEL, 12}, {sk::LANDSAT,  6}}},
 };
 // clang-format on
 

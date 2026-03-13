@@ -44,18 +44,25 @@ double calculate_normalized_difference(const double a, const double b) {
 
 }  // end namespace detail
 
-BandIndices getBandsIndexes(sk satellite) {
-    BandIndices indices;
-    indices.red = getBandIndex(sam::kRED, satellite);
-    indices.green = getBandIndex(sam::kGREEN, satellite);
-    indices.blue = getBandIndex(sam::kBLUE, satellite);
-    indices.nir1 = getBandIndex(sam::kNIR1, satellite);
-    indices.nir2 = getBandIndex(sam::kNIR2, satellite);
-    indices.swir1 = getBandIndex(sam::kSWIR1, satellite);
-    indices.swir2 = getBandIndex(sam::kSWIR2, satellite);
+// clang-format off
+BandIndicesIndexes getBandsIndexes(sk satellite) {
+    BandIndicesIndexes indices;
+    indices.aer   = getBandIndex(sam::kAER,   satellite); //AER    1
+    indices.blue  = getBandIndex(sam::kBLUE,  satellite); //BLUE   2
+    indices.green = getBandIndex(sam::kGREEN, satellite); //GREEN  3
+    indices.red   = getBandIndex(sam::kRED,   satellite); //RED    4
+    indices.re1   = getBandIndex(sam::kRE1,   satellite); //RE1    5
+    indices.re2   = getBandIndex(sam::kRE2,   satellite); //RE2    6
+    indices.re3   = getBandIndex(sam::kRE3,   satellite); //RE3    7
+    indices.nir1  = getBandIndex(sam::kNIR1,  satellite); //NIR1   8
+    indices.nir2  = getBandIndex(sam::kNIR2,  satellite); //NIR2   9
+    indices.wv    = getBandIndex(sam::kWV,    satellite); //WV     10
+    indices.swir1 = getBandIndex(sam::kSWIR1, satellite); //SWIR1  11
+    indices.swir2 = getBandIndex(sam::kSWIR2, satellite); //SWIR2  12
+    indices.swir3 = getBandIndex(sam::kSWIR3, satellite); //SWIR3  13
     return indices;
 }
-
+// clang-format on
 ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
                                             const QVector<double> &v2,
                                             double &result) {
@@ -80,9 +87,9 @@ double calculateSWVI(const double nir1, const double swir1) {
     return detail::calculate_normalized_difference(nir1, swir1);
 }
 
-double calculateDSWI(const double nir1, const double green, const double swir1,
+double calculateDSWI(const double nir1, const double green, const double swir2,
                      const double red) {
-    return (nir1 - green) / (swir1 + red);
+    return (nir1 - green) / (swir2 + red);
 }
 
 double calculateEVI(const double nir1, double red, const double blue) {
@@ -94,16 +101,16 @@ double calculateEVI(const double nir1, double red, const double blue) {
     return G * (nir1 - red) / (nir1 + (C1 * red - C2 * blue) + L);
 }
 
-double calculateNBR(const double nir1, const double swir2) {
-    return detail::calculate_normalized_difference(nir1, swir2);
+double calculateNBR(const double nir2, const double swir3) {
+    return detail::calculate_normalized_difference(nir2, swir3);
 }
 
-double calculateNDSWIR(const double nir1, const double swir1) {
-    return detail::calculate_normalized_difference(nir1, swir1);
+double calculateNDSWIR(const double nir2, const double swir2) {
+    return detail::calculate_normalized_difference(nir2, swir2);
 }
 
-double calculateNBRSWIR(const double swir2, const double swir1) {
-    return (swir2 - swir1 - 0.02) / (swir2 + swir1 + 0.1);
+double calculateNBRSWIR(const double swir3, const double swir2) {
+    return (swir3 - swir2 - 0.02) / (swir3 + swir2 + 0.1);
 }
 
 }  // end namespace sam

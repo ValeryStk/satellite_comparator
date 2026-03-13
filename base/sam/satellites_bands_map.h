@@ -19,9 +19,27 @@ extern const char kRE3[];
 extern const char kNIR1[];
 extern const char kNIR2[];
 extern const char kWV[];
-extern const char kSWIR[];
 extern const char kSWIR1[];
 extern const char kSWIR2[];
+extern const char kSWIR3[];
+
+// clang-format off
+enum BANDS_INDEX {
+    _AER,
+    _BLUE,
+    _GREEN,
+    _RED,
+    _RE1,
+    _RE2,
+    _RE3,
+    _NIR1,
+    _NIR2,
+    _WV,
+    _SWIR1,
+    _SWIR2,
+    _SWIR3
+};
+// clang-format on
 
 extern const std::unordered_map<std::string, std::unordered_map<sk, int>>
     bands_map;

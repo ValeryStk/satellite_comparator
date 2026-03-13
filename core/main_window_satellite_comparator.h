@@ -8,6 +8,7 @@
 
 #include "QComboBox"
 #include "QDoubleSpinBox"
+#include "QtConcurrent/QtConcurrent"
 #include "bekas/GuiModules/UasvViewWindow.h"
 #include "cross_square.h"
 #include "dynamic_checkbox_widget.h"
@@ -338,7 +339,7 @@ private:
                        const sad::geoTransform &gt);
 
     inline double euclideanDistance(const QVector<double> &v1,
-                                    const QVector<double> &v2);
+                                    const QVector<double> &v2) noexcept;
 
     inline double calculateSpectralAngle(const QVector<double> &S1,
                                          const QVector<double> &S2);
@@ -426,8 +427,5 @@ private:
     SpectralIndicesWidget *m_spectralWidget;
     QDockWidget *m_spectralDock;
     void setUpUi();
-
-    QVector<sad::BAND_DATA> change_detection_data;
-    sad::geoTransform change_detection_geo;
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H

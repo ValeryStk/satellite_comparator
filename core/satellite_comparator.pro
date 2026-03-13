@@ -1,4 +1,4 @@
-QT       += core gui xml multimedia multimediawidgets svg testlib
+QT       += core gui concurrent xml multimedia multimediawidgets svg testlib
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 RC_FILE = resource.rc

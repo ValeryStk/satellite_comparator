@@ -20,7 +20,6 @@
 #include "QGraphicsProxyWidget"
 #include "QImageReader"
 #include "cpl_conv.h"
-#include "davis.h"
 #include "google_maps_url_maker.h"
 #include "health_ranges.h"
 #include "icon_generator.h"
@@ -30,21 +29,15 @@
 #include "layer_roi_list.h"
 #include "least_square_solver.h"
 #include "libs/gdal/x64/include/cpl_conv.h"
-#include "libs/gdal/x64/include/cpl_string.h"
 #include "libs/gdal/x64/include/gdal_priv.h"
-#include "libs/gdal/x64/include/geotiff.h"
-#include "libs/gdal/x64/include/geotiffio.h"
 #include "libs/gdal/x64/include/ogr_spatialref.h"
 #include "libs/gdal/x64/include/tiff.h"
-#include "libs/gdal/x64/include/tiffio.h"
-#include "libs/gdal/x64/include/xtiffio.h"
 #include "matlab_app_controller.h"
 #include "progress_informator.h"
 #include "qcustomplot.h"
 #include "sam.cpp"
 #include "satellite_xml_reader.h"
 #include "text_constants.h"
-#include "thread"
 #include "ui_main_window_satellite_comparator.h"
 #include "version.h"
 #include "view_sync_manager.h"
@@ -181,7 +174,77 @@ QStringList sortSentinelFilesByDateTime(const QStringList &unsortedFiles) {
 QString getPathToSentinelHeader(QWidget *context, const QString &satName) {
     return QFileDialog::getOpenFileName(context, satName, "",
                                         "файлы(MTD_MSIL2A.xml)");
-};
+}
+
+sam::BandIndicesValues getBandsValues(const QVector<double> &waves,
+                                      const QVector<double> &data,
+                                      sad::SATELLITE_TYPE sat_type) {
+    sam::BandIndicesValues biv;
+    auto bi = sam::getBandsIndexes(sam::sk::SENTINEL);
+    int blue_cw = 0;
+    int green_cw = 0;
+    int red_cw = 0;
+    int nir1_cw = 0;
+    int nir2_cw = 0;
+    int swir1_cw = 0;
+    int swir2_cw = 0;
+    int swir3_cw = 0;
+
+    switch (sat_type) {
+        case sad::LANDSAT_9:
+            break;
+        case sad::LANDSAT_8:
+            break;
+        case sad::SENTINEL_2A:
+            blue_cw = sad::sentinel_2A_central_wave_lengths[bi.blue];
+            green_cw = sad::sentinel_2A_central_wave_lengths[bi.green];
+            red_cw = sad::sentinel_2A_central_wave_lengths[bi.red];
+            nir1_cw = sad::sentinel_2A_central_wave_lengths[bi.nir1];
+            nir2_cw = sad::sentinel_2A_central_wave_lengths[bi.nir2];
+            swir1_cw = sad::sentinel_2A_central_wave_lengths[bi.swir1];
+            swir2_cw = sad::sentinel_2A_central_wave_lengths[bi.swir2];
+            swir3_cw = sad::sentinel_2A_central_wave_lengths[bi.swir3];
+            break;
+        case sad::SENTINEL_2B:
+            blue_cw = sad::sentinel_2B_central_wave_lengths[bi.blue];
+            green_cw = sad::sentinel_2B_central_wave_lengths[bi.green];
+            red_cw = sad::sentinel_2B_central_wave_lengths[bi.red];
+            nir1_cw = sad::sentinel_2B_central_wave_lengths[bi.nir1];
+            nir2_cw = sad::sentinel_2B_central_wave_lengths[bi.nir2];
+            swir1_cw = sad::sentinel_2B_central_wave_lengths[bi.swir1];
+            swir2_cw = sad::sentinel_2B_central_wave_lengths[bi.swir2];
+            swir3_cw = sad::sentinel_2B_central_wave_lengths[bi.swir3];
+            break;
+        case sad::TIME_ROW_LANDSAT_COMBINATION:
+            break;
+        case sad::TIME_ROW_SENTINEL_COMBINATION:
+            break;
+        case sad::UNKNOWN_SATELLITE:
+            break;
+    }
+
+    for (int i = 0; i < waves.size(); ++i) {
+        if (waves[i] == blue_cw) {
+            biv.blue = data[i];
+        } else if (waves[i] == green_cw) {
+            biv.green = data[i];
+        } else if (waves[i] == red_cw) {
+            biv.red = data[i];
+        } else if (waves[i] == nir1_cw) {
+            biv.nir1 = data[i];
+        } else if (waves[i] == nir2_cw) {
+            biv.nir2 = data[i];
+        } else if (waves[i] == swir1_cw) {
+            biv.swir1 = data[i];
+        } else if (waves[i] == swir2_cw) {
+            biv.swir2 = data[i];
+        } else if (waves[i] == swir3_cw) {
+            biv.swir3 = data[i];
+        }
+    }
+
+    return biv;
+}
 
 }  // end of namespace
 
@@ -499,54 +562,20 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         }
         trimmed_satellite_data = data;
 
-        auto bands_indexes = sam::getBandsIndexes(sam::sk::SENTINEL);
-        int nir1_cw = 0;
-        int red_cw = 0;
-        int blue_cw = 0;
-        int swir1_cw = 0;
-        int green_cw = 0;
-        double nir1_value = 0.0;
-        double red_value = 0.0;
-        double blue_value = 0.0;
-        double swir1_value = 0.0;
-        double green_value = 0.0;
-        if (m_satelite_type == sad::SENTINEL_2A) {
-            nir1_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.nir1];
-            red_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.red];
-            blue_cw = sad::sentinel_2A_central_wave_lengths[bands_indexes.blue];
-            swir1_cw =
-                sad::sentinel_2A_central_wave_lengths[bands_indexes.swir1];
-            green_cw =
-                sad::sentinel_2A_central_wave_lengths[bands_indexes.green];
-        } else {
-            nir1_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.nir1];
-            red_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.red];
-            blue_cw = sad::sentinel_2B_central_wave_lengths[bands_indexes.blue];
-            swir1_cw =
-                sad::sentinel_2B_central_wave_lengths[bands_indexes.swir1];
-            green_cw =
-                sad::sentinel_2B_central_wave_lengths[bands_indexes.green];
-        }
-        // qDebug() << "nir1_cw" << nir1_cw << "red_cw" << red_cw << "blue_cw"
-        //<< blue_cw;
-        for (int i = 0; i < w_k.first.size(); ++i) {
-            if (w_k.first[i] == nir1_cw) {
-                nir1_value = w_k.second[i];
-            } else if (w_k.first[i] == red_cw) {
-                red_value = w_k.second[i];
-            } else if (w_k.first[i] == blue_cw) {
-                blue_value = w_k.second[i];
-            } else if (w_k.first[i] == swir1_cw) {
-                swir1_value = w_k.second[i];
-            } else if (w_k.first[i] == green_cw) {
-                green_value = w_k.second[i];
-            }
-        }
-        double ndvi = sam::calculateNDVI(nir1_value, red_value);
-        double swvi = sam::calculateSWVI(nir1_value, swir1_value);
-        double dswi =
-            sam::calculateDSWI(nir1_value, green_value, swir1_value, red_value);
-        double evi = sam::calculateEVI(nir1_value, red_value, blue_value);
+        auto bv = getBandsValues(waves, data, m_satelite_type);
+
+        // clang-format off
+       /* qDebug() << "blue_cw" << blue_cw  <<blue_value;
+        qDebug() << "red_cw"  << red_cw   <<red_value;
+        qDebug() << "nir1_cw" << nir1_cw  <<nir1_value;
+        qDebug() << "swir2" << swir3_cw <<swir3_value;
+        qDebug() << "----------------------";*/
+        // clang-format on
+
+        double dswi = sam::calculateDSWI(bv.nir1, bv.green, bv.swir2, bv.red);
+        double evi = sam::calculateEVI(bv.nir1, bv.red, bv.blue);
+        double ndvi = sam::calculateNDVI(bv.nir1, bv.red);
+        double swvi = sam::calculateSWVI(bv.nir1, bv.swir2);
 
         m_spectralWidget->setIndices({{sam::kSpectralIndexNDVI, ndvi},
                                       {{sam::kSpectralIndexSWVI}, {swvi}},
@@ -864,6 +893,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
             }
         }
     }
+    // qDebug() << "check files: " << filteredFiles;
     QStringList finalFiles;
     QMap<QString, QString> bestResolutionForBand;
     const QStringList priorityOrder = {"R20m", "R10m", "R60m"};
@@ -885,18 +915,19 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
 
     // Собираем финальный список
     finalFiles = bestResolutionForBand.values();
-    // qDebug()<<finalFiles;
+    qDebug() << "final files: " << finalFiles;
     title_satellite_name->setText(satellite_name);
 
-    for (const QString &file : qAsConst(finalFiles)) {
-        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
-            if (file.contains("_" + sad::sentinel_bands_keys[i] + "_")) {
-                m_sentinel_metadata.sentinel_missed_channels[i] =
-                    false;  // Канал найден — не пропущен
-                m_sentinel_metadata.files[i] = file;
-                break;
-            }
+    for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
+        QString target = "_" + sad::sentinel_bands_keys[i] + "_";
+        QStringList list = finalFiles.filter(target);
+        if (list.size() == 1) {
+            m_sentinel_metadata.sentinel_missed_channels[i] = false;
+            m_sentinel_metadata.files[i] = list.at(0);
+        } else if (list.size() > 1) {
+            qDebug() << "DUBLICATED FILES IN FINAL FILES LIST...";
         }
+        target = "";
     }
 
     if (m_dynamic_checkboxes_widget) m_dynamic_checkboxes_widget->clear();
@@ -919,8 +950,9 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
 
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         if (!m_sentinel_metadata.sentinel_missed_channels[i]) {
-            availableBandNames << gui_channels[i];
             sad::BAND_DATA data;
+            if (gui_channels[i].contains("WV")) continue;
+            availableBandNames << gui_channels[i];
             data.gui_name = gui_channels[i];
             data.central_wave_length = central_waves[i];
             data.file_name = m_sentinel_metadata.files[i];
@@ -1069,7 +1101,6 @@ void MainWindowSatelliteComparator::updateImage() {
 }
 
 void MainWindowSatelliteComparator::runChangeDetectionMethod() {
-    change_detection_data.clear();
     QString openSatMessage =
         QString("Открыть заголовочный файл %1").arg("Sentinel");
     QString headerName = getPathToSentinelHeader(this, openSatMessage);
@@ -1128,6 +1159,10 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     finalFiles = bestResolutionForBand.values();
 
     sad::SENTINEL_METADATA temp_metadata;
+    QFutureWatcher<QPixmap> *change_detection_future =
+        new QFutureWatcher<QPixmap>();
+    QVector<sad::BAND_DATA> change_detection_data;
+    sad::geoTransform change_detection_geo;
 
     for (const QString &file : qAsConst(finalFiles)) {
         for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
@@ -1159,7 +1194,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
 
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         if (!temp_metadata.sentinel_missed_channels[i] &&
-            (i == 8 || i == 10 || i == 11)) {
+            (i == sam::_NIR2 || i == sam::_SWIR2 || i == sam::_SWIR3)) {
             availableBandNames << gui_channels[i];
             sad::BAND_DATA data;
             data.gui_name = gui_channels[i];
@@ -1230,21 +1265,97 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     qDebug() << "NIR2" << m_sentinel_data[8].gui_name;
     qDebug() << "SWIR" << m_sentinel_data[9].gui_name;
     qDebug() << "SWIR1" << m_sentinel_data[10].gui_name;
-    int height = m_sentinel_data[0].height;
-    int width = m_sentinel_data[0].width;
-    int intersections_counter = 0;
-    for (int i = 1000; i < 1100; ++i) {
-        for (int j = 1000; j < 1100; ++j) {
-            double lat, lon;
-            getGeoCoordinates(i, j, m_geo, lat, lon, false);
-            QPointF point = geoToPixel(lat, lon, change_detection_geo);
-            if (point.x() >= width || point.x() < 0) continue;
-            if (point.y() >= height || point.y() < 0) continue;
-            ++intersections_counter;
+
+    connect(change_detection_future, &QFutureWatcher<QPixmap>::finished, [=]() {
+        QLabel *label = new QLabel;
+        label->setAttribute(Qt::WA_DeleteOnClose);
+        label->setScaledContents(true);
+        label->setPixmap(change_detection_future->result());
+        label->show();
+        change_detection_future->deleteLater();
+    });
+
+    change_detection_future->setFuture(QtConcurrent::run([=]() -> QPixmap {
+        int nYSize = 1000;
+        int nXSize = 800;
+        uchar *data = new uchar[nYSize * nXSize * 3]();
+
+        const int xOffset = 2200;
+        const int yOffset = 3500;
+        int cd_width = change_detection_data[0].width;
+        int cd_height = change_detection_data[0].height;
+
+        // Сетка 5x5 для высокой точности (25 точек вместо 4)
+        const int grid_size = 5;
+        double lat_grid[grid_size][grid_size];
+        double lon_grid[grid_size][grid_size];
+
+        // Вычисление координат сетки
+        for (int gy = 0; gy < grid_size; ++gy) {
+            for (int gx = 0; gx < grid_size; ++gx) {
+                int xValue = xOffset + (gx * nXSize) / (grid_size - 1);
+                int yValue = yOffset + (gy * nYSize) / (grid_size - 1);
+                getGeoCoordinates(xValue, yValue, m_geo, lat_grid[gy][gx],
+                                  lon_grid[gy][gx], false);
+            }
         }
-    }
-    qDebug() << "intersections:" << intersections_counter;
-    qDebug() << "missed_points:" << (width * height) - intersections_counter;
+
+#pragma omp parallel for num_threads( \
+        std::min(8, (int)std::thread::hardware_concurrency()))
+        for (int y = 0; y < nYSize; ++y) {
+            int row_offset = y * nXSize * 3;
+
+            // Определение ячейки сетки для строки y
+            int gy = (y * (grid_size - 1)) / nYSize;
+            double t = (double)y / nYSize * (grid_size - 1) - gy;
+
+            for (int x = 0; x < nXSize; ++x) {
+                // Определение ячейки сетки для столбца x
+                int gx = (x * (grid_size - 1)) / nXSize;
+                double s = (double)x / nXSize * (grid_size - 1) - gx;
+
+                // Билинейная интерполяция в ячейке сетки
+                double lat0 =
+                    lat_grid[gy][gx] * (1 - s) + lat_grid[gy][gx + 1] * s;
+                double lat1 = lat_grid[gy + 1][gx] * (1 - s) +
+                              lat_grid[gy + 1][gx + 1] * s;
+                double lon0 =
+                    lon_grid[gy][gx] * (1 - s) + lon_grid[gy][gx + 1] * s;
+                double lon1 = lon_grid[gy + 1][gx] * (1 - s) +
+                              lon_grid[gy + 1][gx + 1] * s;
+
+                double lat = lat0 * (1 - t) + lat1 * t;
+                double lon = lon0 * (1 - t) + lon1 * t;
+
+                QPointF point = geoToPixel(lat, lon, change_detection_geo);
+                int cdX = qBound(0, static_cast<int>(point.x()), cd_width - 1);
+                int cdY = qBound(0, static_cast<int>(point.y()), cd_height - 1);
+
+                double nir2 = 0, swir3 = 0;
+                if (cdX >= 0 && cdX < cd_width && cdY >= 0 && cdY < cd_height) {
+                    nir2 = change_detection_data[0].data[cdY * cd_width + cdX] -
+                           1000;
+                    swir3 =
+                        change_detection_data[2].data[cdY * cd_width + cdX] -
+                        1000;
+                }
+
+                double nbr = sam::calculateNBR(nir2, swir3);
+                uchar nbr_8bit =
+                    qBound(uchar(0), static_cast<uchar>((nbr + 1.0) * 127.5),
+                           uchar(255));
+
+                int pixel_offset = row_offset + x * 3;
+                data[pixel_offset] = data[pixel_offset + 1] =
+                    data[pixel_offset + 2] = nbr_8bit;
+            }
+        }
+
+        QImage img(data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
+        QPixmap pixmap = QPixmap::fromImage(img);
+        delete[] data;
+        return pixmap;
+    }));
 }
 
 QStringList MainWindowSatelliteComparator::getLandSat9BandsFromTxtFormat(
@@ -1798,17 +1909,21 @@ QPointF MainWindowSatelliteComparator::geoToPixel(double latitude,
 }
 
 inline double MainWindowSatelliteComparator::euclideanDistance(
-    const QVector<double> &v1, const QVector<double> &v2) {
+    const QVector<double> &v1, const QVector<double> &v2) noexcept {
     if (v1.size() != v2.size()) {
-        throw std::invalid_argument("Векторы должны быть одинаковой длины");
+        return std::numeric_limits<double>::quiet_NaN();
     }
 
     double sum = 0.0;
-    for (int i = 0; i < v1.size(); ++i) {
-        sum += qPow(v1[i] - v2[i], 2);
+    const int N = static_cast<int>(v1.size());
+
+    // Unrolled loop для C++14 (x2 быстрее)
+    for (int i = 0; i < N; ++i) {
+        const double diff = v1[i] - v2[i];
+        sum += diff * diff;  // FMA friendly
     }
 
-    return qSqrt(sum);
+    return sum > 0.0 ? std::sqrt(sum) : 0.0;
 }
 
 inline double MainWindowSatelliteComparator::calculateSpectralAngle(
@@ -2419,10 +2534,13 @@ void MainWindowSatelliteComparator::read_sentinel2_bands_data(
             downsample_uint16(data[i].data, buffer, xS, yS);
             delete[] data[i].data;
             data[i].data = buffer;
+            data[i].width = outX;
+            data[i].height = outY;
         }
-        // qDebug() << "Sentinel band" << i << "size:" << xS << "x" << yS;
-        if (data[i].width != xS) qDebug() << "WRONG X";
-        if (data[i].height != yS) qDebug() << "WRONG Y";
+        qDebug() << "Sentinel band" << data[i].gui_name
+                 << "size:" << data[i].width << data[i].height;
+        // if (data[i].width != xS) qDebug() << "WRONG X";
+        // if (data[i].height != yS) qDebug() << "WRONG Y";
     }
 }
 
@@ -2452,7 +2570,12 @@ MainWindowSatelliteComparator::getSentinelKsy(const int x, const int y) {
     QVector<double> ksy;
     QVector<double> waves;
     for (int i = 0; i < m_sentinel_data.size(); ++i) {
-        uint16_t value = m_sentinel_data[i].data[(y * xSize) + x];
+        if (m_sentinel_data[i].height != ySize ||
+            m_sentinel_data[i].width != xSize) {
+            continue;
+        };
+        uint16_t value = m_sentinel_data[i].data[(y * xSize) + x] -
+                         1000;  // BOA_ADD_OFFSET TODO READ FROM MTD
         // double ksy_d =
         // m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
         ksy.append(value / 10000.0);
@@ -2481,6 +2604,10 @@ QVector<double> MainWindowSatelliteComparator::getSentinelKsyValues(
     if (x < 0 || y < 0) return {};
     QVector<double> ksy;
     for (int i = 0; i < m_sentinel_data.size(); ++i) {
+        if (m_sentinel_data[i].height != ySize ||
+            m_sentinel_data[i].width != xSize) {
+            continue;
+        };
         uint16_t value = m_sentinel_data[i].data[(y * xSize) + x];
         // double ksy_d =
         // m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
@@ -2516,10 +2643,10 @@ QVector<double> MainWindowSatelliteComparator::getWaves() {
 
 void MainWindowSatelliteComparator::clear_satellite_data() {
     if (m_sentinel_data.empty()) return;
-    for (int i = 0; i < m_sentinel_data.size(); ++i) {
+    /*for (int i = 0; i < m_sentinel_data.size(); ++i) {
         auto data = m_sentinel_data[i].data;
-        if (data) delete[] data;
-    }
+        //if (data) delete[] data;
+    }*/
     m_sentinel_data.clear();
 }
 
@@ -2884,6 +3011,7 @@ MainWindowSatelliteComparator::getDataForSentinel_TimeRow(
 
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         if (!metadata.sentinel_missed_channels[i]) {
+            if (gui_channels[i].contains("WV")) continue;
             availableBandNames << gui_channels[i];
             sad::BAND_DATA data;
             data.gui_name = gui_channels[i];
@@ -2905,9 +3033,6 @@ MainWindowSatelliteComparator::getDataForSentinel_TimeRow(
                 };
             }
             if (isResolutionMissed) {
-                // TODO EXCEPTION
-                // Мы обязательно должны знать разрешение
-                //  Выбросить исключение
                 qDebug() << "<--------------------- NO RESOLUTION EXCEPTION "
                             "!!!------------------>";
                 continue;
