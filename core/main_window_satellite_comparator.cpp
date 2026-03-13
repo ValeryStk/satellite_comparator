@@ -506,6 +506,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
     }
     m_time_row_widget.setLayout(layout);
     m_time_row_widget.setWindowTitle("Временной ряд");
+
     m_time_row_widget.show();
     // paintTimeRowBadForest(Qt::black);
 }
@@ -1343,6 +1344,10 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
         QImage img(data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
         QPixmap pixmap = QPixmap::fromImage(img);
         delete[] data;
+        for (int i = 0; i < change_detection_data.size(); ++i) {
+            if (change_detection_data[i].data)
+                delete[] change_detection_data[i].data;
+        }
         return pixmap;
     }));
 }
@@ -1874,6 +1879,11 @@ inline double MainWindowSatelliteComparator::calculateSpectralAngle(
 }
 
 void MainWindowSatelliteComparator::showGoogleMap() {
+    if (std::isnan(m_lattitude) || std::isnan(m_longitude)) {
+        uts::showWarnigMessage("Точка на карте не выбрана.",
+                               "Выберите точку на карте.");
+        return;
+    };
     std::string command = "start ";
     command.append(maps_utility::makeGoogleUrl(m_lattitude, m_longitude));
     system(command.c_str());
@@ -2414,6 +2424,14 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
             });
     connect(ui->action_change_detection_CD, &QAction::triggered, this,
             &MainWindowSatelliteComparator::runChangeDetectionMethod);
+    connect(ui->actionTimeRowIndices, &QAction::triggered, this,
+            [this](bool checked) {
+                if (checked) {
+                    m_time_row_spectralIndicesDock.show();
+                } else {
+                    m_time_row_spectralIndicesDock.hide();
+                }
+            });
 }
 
 void MainWindowSatelliteComparator::addBaseItemsToScene() {
@@ -2555,10 +2573,10 @@ QVector<double> MainWindowSatelliteComparator::getWaves() {
 
 void MainWindowSatelliteComparator::clear_satellite_data() {
     if (m_sentinel_data.empty()) return;
-    /*for (int i = 0; i < m_sentinel_data.size(); ++i) {
+    for (int i = 0; i < m_sentinel_data.size(); ++i) {
         auto data = m_sentinel_data[i].data;
-        //if (data) delete[] data;
-    }*/
+        if (data) delete[] data;
+    }
     m_sentinel_data.clear();
 }
 
@@ -3059,7 +3077,7 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(
     if (time_row_indexes_plot->graphCount() == 0) {
         qcpg_ndvi = time_row_indexes_plot->addGraph();
         qcpg_ndwi = time_row_indexes_plot->addGraph();
-        QColor ndvi_color(QColor("#228B22"));
+        QColor ndvi_color(Qt::green);
         QColor ndwi_color(Qt::blue);
         qcpg_ndvi->setPen(QPen(ndvi_color));
         qcpg_ndwi->setPen(QPen(ndwi_color));
@@ -3069,14 +3087,7 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(
         qcpg_ndwi->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle,
                                                    QPen(ndwi_color),
                                                    QBrush(ndwi_color), 10));
-        time_row_indexes_plot->setMinimumSize(QSize(400, 100));
-        time_row_indexes_plot->setWindowTitle("Индексы NDVI, NDWI");
-        time_row_indexes_plot->legend->setVisible(true);
-        time_row_indexes_plot->yAxis->setLabel("Значение индексов");
-        time_row_indexes_plot->xAxis->setLabel("Дата съёмки");
-        time_row_indexes_plot->plotLayout()->setMargins(
-            QMargins(0, 10, 50, 10));  // left, top, right, bottom
-        time_row_indexes_plot->yAxis->setRange(-1, 1);
+
         qcpg_ndwi->setName("NDWI");
         qcpg_ndvi->setName("NDVI");
         QSharedPointer<QCPAxisTickerText> dateTicker(new QCPAxisTickerText);
@@ -3306,4 +3317,17 @@ void MainWindowSatelliteComparator::setUpUi() {
 
     setWindowTitle("Спектральный анализатор");
     resize(1200, 800);
+
+    time_row_indexes_plot->setMinimumSize(QSize(400, 150));
+    time_row_indexes_plot->setWindowTitle("Индексы NDVI, NDWI");
+    time_row_indexes_plot->legend->setVisible(true);
+    time_row_indexes_plot->yAxis->setLabel("Значение индексов");
+    time_row_indexes_plot->xAxis->setLabel("Дата съёмки");
+    time_row_indexes_plot->plotLayout()->setMargins(
+        QMargins(0, 10, 50, 10));  // left, top, right, bottom
+    time_row_indexes_plot->yAxis->setRange(-1, 1);
+    m_time_row_spectralIndicesDock.setAllowedAreas(Qt::RightDockWidgetArea);
+    m_time_row_spectralIndicesDock.setWidget(time_row_indexes_plot);
+    m_time_row_spectralIndicesDock.setWindowTitle("Временной ряд индексов");
+    addDockWidget(Qt::RightDockWidgetArea, &m_time_row_spectralIndicesDock);
 }

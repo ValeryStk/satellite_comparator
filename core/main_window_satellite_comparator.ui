@@ -124,7 +124,7 @@
      <x>0</x>
      <y>0</y>
      <width>811</width>
-     <height>26</height>
+     <height>32</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -149,6 +149,7 @@
      <string>Вид</string>
     </property>
     <addaction name="action_spectral_indicies"/>
+    <addaction name="actionTimeRowIndices"/>
    </widget>
    <widget class="QMenu" name="menu_4">
     <property name="title">
@@ -205,6 +206,17 @@
   <action name="action_change_detection_CD">
    <property name="text">
     <string>метод &quot;change detection&quot; (CD)</string>
+   </property>
+  </action>
+  <action name="actionTimeRowIndices">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Временной ряд индексов</string>
    </property>
   </action>
  </widget>

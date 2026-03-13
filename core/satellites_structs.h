@@ -122,7 +122,7 @@ struct BAND_DATA {
     uint16_t* data = nullptr;
     ~BAND_DATA() {
         if (data) {
-            qDebug() << "BAND_DATA destructor....";
+            qDebug() << "BAND_DATA destructor...." << gui_name;
             // delete[] data;
             // data = nullptr;
         };
