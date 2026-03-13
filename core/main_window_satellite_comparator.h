@@ -422,5 +422,6 @@ private:
     SpectralIndicesWidget *m_spectralWidget;
     QDockWidget *m_spectralDock;
     void setUpUi();
+    void deleteTimeRowData();
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H

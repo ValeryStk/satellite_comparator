@@ -359,7 +359,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
         uts::showWarnigMessage("Нет данных", "Данные отсутсвуют");
         return;
     }
-
+    deleteTimeRowData();
     QVector<sad::LANDSAT_METADATA_FILE> meta_datas;
     QVector<QString> date_time_row_stamps;
 
@@ -693,6 +693,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
     clearLandsat9DataBands();
     clear_satellite_data();
     clear_all_layers();
+    deleteTimeRowData();
     m_scene_cross_square_item->setVisible(false);
     QFile file(headerName);
     static bool isHeaderValid = false;
@@ -869,6 +870,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
         return;
     }
     file.close();
+    deleteTimeRowData();
     QFileInfo fi(headerName);
     m_root_path = fi.path();
     QString dataLoadingMessage =
@@ -3330,4 +3332,15 @@ void MainWindowSatelliteComparator::setUpUi() {
     m_time_row_spectralIndicesDock.setWidget(time_row_indexes_plot);
     m_time_row_spectralIndicesDock.setWindowTitle("Временной ряд индексов");
     addDockWidget(Qt::RightDockWidgetArea, &m_time_row_spectralIndicesDock);
+}
+
+void MainWindowSatelliteComparator::deleteTimeRowData() {
+    if (m_time_row.empty()) return;
+    for (int i = 0; i < m_time_row.size(); ++i) {
+        for (int j = 0; j < m_time_row[i].size(); ++j) {
+            auto data = m_time_row[i][j].data;
+            if (data) delete[] data;
+        }
+    }
+    m_time_row.clear();
 }
