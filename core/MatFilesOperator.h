@@ -55,6 +55,19 @@ public:
     //!
     MultiSpecDataFromMatlab readMultiSpecDataFromMatlab(
         const QString &fullMatPath);
+
+    //!
+    //! \brief saveSingleSpectrToMatFile — сохраняет один спектр в .mat файл.
+    //!        Используется для отправки зафиксированного образца (satellite
+    //!        sample) и спектров БЕКАС. Длины волн могут отличаться от каналов
+    //!        снимка.
+    //! \param waves  - длины волн, нм (размер N)
+    //! \param spectr - значения КСЯ/отражения (размер N)
+    //! \param fullMatPath - полный путь к .mat файлу
+    //!
+    void saveSingleSpectrToMatFile(const QVector<double> &waves,
+                                   const QVector<double> &spectr,
+                                   const QString &fullMatPath);
 };
 
 #endif  // MATFILESOPERATOR_H

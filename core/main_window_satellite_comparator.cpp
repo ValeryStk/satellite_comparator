@@ -3438,21 +3438,37 @@ void MainWindowSatelliteComparator::deleteTimeRowData() {
 void MainWindowSatelliteComparator::sendSpectrToMatlab() {
     if (!m_preview_plot || m_preview_plot->graphCount() <= 1) return;
 
-    const QCPGraph *graph = m_preview_plot->graph(1);
+    const QCPGraph *graph =
+        m_preview_plot->graph(1);  // зафиксированный образец
     if (!graph || graph->dataCount() == 0) return;
 
-    const auto data = graph->data();
-    const int pointsCount = graph->dataCount();
-
-    QVector<double> specX;
-    QVector<double> specY;
-    specX.reserve(pointsCount);
-    specY.reserve(pointsCount);
-
-    for (auto it = data->constBegin(); it != data->constEnd(); ++it) {
-        specX.append(it->key);
-        specY.append(it->value);
+    MatlabAppController matlabApp;
+    if (!matlabApp.isRunning()) {
+        matlabApp.runIfNotRunning();
+        uts::showWarnigMessage(
+            "Внимание!",
+            "Spectra classifier не был запущен. Дождитесь окончания его "
+            "загрузки и повторите отправку спектра.");
+        return;
     }
 
-    // дальше отправка в Matlab
+    QVector<double> waves, spectr;
+    waves.reserve(graph->dataCount());
+    spectr.reserve(graph->dataCount());
+
+    for (auto it = graph->data()->constBegin(); it != graph->data()->constEnd();
+         ++it) {
+        waves.append(it->key);
+        spectr.append(it->value);
+    }
+
+    QString fullMatPath = QCoreApplication::applicationDirPath() + "/" +
+                          matlabAppDirRelativeName + "/" + matFileName;
+
+    MatFilesOperator mat;
+    mat.saveSingleSpectrToMatFile(waves, spectr, fullMatPath);
+
+    QJsonObject params;
+    params["matFilePath"] = fullMatPath;
+    m_rpc->call("processSingleSpectr", QJsonValue(params));
 }

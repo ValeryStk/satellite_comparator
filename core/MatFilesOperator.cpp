@@ -470,3 +470,40 @@ MultiSpecDataFromMatlab MatFilesOperator::readMultiSpecDataFromMatlab(
 
     return answerStruct;
 }
+
+void MatFilesOperator::saveSingleSpectrToMatFile(const QVector<double> &waves,
+                                                 const QVector<double> &spectr,
+                                                 const QString &fullMatPath) {
+    if (waves.size() != spectr.size() || waves.isEmpty()) {
+        qWarning()
+            << "saveSingleSpectrToMatFile: waves/spectr size mismatch or empty"
+            << "waves=" << waves.size() << "spectr=" << spectr.size();
+        return;
+    }
+
+    mat_t *matfp =
+        Mat_CreateVer(fullMatPath.toUtf8().constData(), nullptr, MAT_FT_MAT5);
+    if (!matfp) {
+        qWarning() << "Не удалось создать MAT-файл:" << fullMatPath;
+        return;
+    }
+
+    auto writeRowVector = [&](const char *name, const QVector<double> &v) {
+        size_t dims[2] = {1, static_cast<size_t>(v.size())};
+        matvar_t *var = Mat_VarCreate(name, MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dims,
+                                      const_cast<double *>(v.constData()), 0);
+        if (!var) {
+            qWarning() << "Mat_VarCreate failed for" << name;
+            return;
+        }
+        Mat_VarWrite(matfp, var, MAT_COMPRESSION_NONE);
+        Mat_VarFree(var);
+    };
+
+    writeRowVector("waves", waves);
+    writeRowVector("spectr", spectr);
+
+    Mat_Close(matfp);
+    qDebug() << "Saved single spectr mat:" << fullMatPath
+             << "nPoints=" << waves.size();
+}
