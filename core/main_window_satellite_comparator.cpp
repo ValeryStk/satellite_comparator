@@ -3436,20 +3436,23 @@ void MainWindowSatelliteComparator::deleteTimeRowData() {
 }
 
 void MainWindowSatelliteComparator::sendSpectrToMatlab() {
-    auto numGraphs = m_preview_plot->graphCount();
-    if (numGraphs != 2) return;
-    int pontsNum = m_preview_plot->graph(1)->dataCount();
-    if (pontsNum <= 0) return;
+    if (!m_preview_plot || m_preview_plot->graphCount() <= 1) return;
 
-    QCPGraph *graph = m_preview_plot->graph(1);
-    auto data = graph->data();
+    const QCPGraph *graph = m_preview_plot->graph(1);
+    if (!graph || graph->dataCount() == 0) return;
 
-    QVector<double> waves(pontsNum);
-    QVector<double> waves(pontsNum);
+    const auto data = graph->data();
+    const int pointsCount = graph->dataCount();
+
+    QVector<double> specX;
+    QVector<double> specY;
+    specX.reserve(pointsCount);
+    specY.reserve(pointsCount);
 
     for (auto it = data->constBegin(); it != data->constEnd(); ++it) {
-        double x = it->key;
-        double y = it->value;
-        qDebug() << x << y;
+        specX.append(it->key);
+        specY.append(it->value);
     }
+
+    // дальше отправка в Matlab
 }
