@@ -289,6 +289,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             SLOT(add_roi_to_gui_list(const QString)));
     connect(ui->widget_image_saturation_light_corrector,
             SIGNAL(slidersWereChanged()), SLOT(updateImage()));
+    connect(ui->action_SpectraClassifer, SIGNAL(triggered()), this,
+            SLOT(sendSpectrToMatlab()));
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
@@ -3431,4 +3433,23 @@ void MainWindowSatelliteComparator::deleteTimeRowData() {
         }
     }
     m_time_row.clear();
+}
+
+void MainWindowSatelliteComparator::sendSpectrToMatlab() {
+    auto numGraphs = m_preview_plot->graphCount();
+    if (numGraphs != 2) return;
+    int pontsNum = m_preview_plot->graph(1)->dataCount();
+    if (pontsNum <= 0) return;
+
+    QCPGraph *graph = m_preview_plot->graph(1);
+    auto data = graph->data();
+
+    QVector<double> waves(pontsNum);
+    QVector<double> waves(pontsNum);
+
+    for (auto it = data->constBegin(); it != data->constEnd(); ++it) {
+        double x = it->key;
+        double y = it->value;
+        qDebug() << x << y;
+    }
 }

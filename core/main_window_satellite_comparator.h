@@ -180,6 +180,8 @@ private slots:
 
     void runChangeDetectionMethod();
 
+    void sendSpectrToMatlab();
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
