@@ -64,18 +64,16 @@ BandIndicesIndexes getBandsIndexes(sk satellite) {
 }
 // clang-format on
 ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
-                                            const QVector<double> &v2,
-                                            double &result) {
+                                            const QVector<double> &v2) {
     ProcessingResult pr;
-    detail::euclideanDistanceImpl(v1, v2, result, pr);
+    detail::euclideanDistanceImpl(v1, v2, pr.value, pr);
     return pr;
 }
 
 ProcessingResult calculateEuclideanDistance(const std::vector<double> &v1,
-                                            const std::vector<double> &v2,
-                                            double &result) {
+                                            const std::vector<double> &v2) {
     ProcessingResult pr;
-    detail::euclideanDistanceImpl(v1, v2, result, pr);
+    detail::euclideanDistanceImpl(v1, v2, pr.value, pr);
     return pr;
 }
 

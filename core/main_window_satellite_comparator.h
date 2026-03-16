@@ -187,6 +187,7 @@ private:
 
     //! \brief Виджет временного ряда
     QWidget m_time_row_widget;
+    QDockWidget m_time_row_spectralIndicesDock;
 
     //! \brief Текстовое поле для оотображения географических координат
     QLabel *m_label_scene_coord;
@@ -290,7 +291,7 @@ private:
     QVector<double> getLandsat8Speya(const int x, const int y);
     inline QVector<double> getLandsat8Ksy(const int x, const int y);
 
-    QString m_root_path;  //!< Путьк открытой корневой директории
+    QString m_root_path;  //!< Путь к открытой корневой директории
     QImage m_satellite_image;  //!< Базовое RGB изображение спутника
     uint16_t *m_landsat9_data_bands[LANDSAT_BANDS_NUMBER] = {
         nullptr};  //!< Данные каналов для каждого канала
@@ -306,8 +307,9 @@ private:
     double m_reflectance_mult_add_arrays[LANDSAT_BANDS_NUMBER]
                                         [2];  //!< Коэффициенты привидения
                                               //!< значений АЦП в КСЯ
-    double m_lattitude;  //!< географическая широта для выбранного пикселя
-    double m_longitude;  //!< географическая долгота для выбранного пикселя
+    double m_lattitude = NAN;  //!< географическая широта для выбранного пикселя
+    double m_longitude =
+        NAN;  //!< географическая долгота для выбранного пикселя
 
     bool m_is_image_created;  //!< флаг созданного базового изображения
     bool m_is_bekas;  //!< флаг использования образца БЕКАС
@@ -427,5 +429,6 @@ private:
     SpectralIndicesWidget *m_spectralWidget;
     QDockWidget *m_spectralDock;
     void setUpUi();
+    void deleteTimeRowData();
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H
