@@ -16,6 +16,7 @@ SOURCES += \
     $$BEKAS_DIR/ProcessingModules/SpectrDataSaver.cpp\
     $$CORE_DIR/matlab_app_controller.cpp\
     $$CORE_DIR/MatFilesOperator.cpp\
+    $$PWD/../message_reporter.cpp
 
 
 
@@ -31,6 +32,7 @@ HEADERS += \
     $$BEKAS_DIR/ProcessingModules/FilesParser.h\
     $$CORE_DIR/matlab_app_controller.h\
     $$CORE_DIR/MatFilesOperator.h\
+    $$PWD/../message_reporter.h
 
 FORMS += \
     $$BEKAS_DIR/GuiModules/SpectrumWidgets/WavesRangeDialog.ui\

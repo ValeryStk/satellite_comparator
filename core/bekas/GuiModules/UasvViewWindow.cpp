@@ -12,6 +12,7 @@
 #include "MatFilesOperator.h"
 #include "bekas/version.h"
 #include "matlab_app_controller.h"
+#include "message_reporter.h"
 #include "text_constants.h"
 #include "ui_UasvViewWindow.h"
 
@@ -119,6 +120,19 @@ UasvViewWindow::UasvViewWindow(QWidget *parent)
             m_filesParser->getRflSpectrumValues(maxInSpectrum);
         emit sendSampleForSatelliteComparator(waves, values);
     });
+
+    QAction *send1spectToMatlab =
+        new QAction(satc::action_send_1_spec_matlab, this);
+    connect(send1spectToMatlab, &QAction::triggered, this, [this]() {
+        double maxInSpectrum;
+        QVector<double> waves = m_filesParser->getRflWaves();
+        QVector<double> values =
+            m_filesParser->getRflSpectrumValues(maxInSpectrum);
+        emit sendSampleForMatlab(waves, values);  //
+    });
+    connect(this, &UasvViewWindow::sendSampleForMatlab, this,
+            &UasvViewWindow::sendSampleForMatlab_slot);
+
     connect(ui->widgetSpectra, &QCustomPlot::customContextMenuRequested, this,
             [menu](const QPoint &pos) { menu->exec(QCursor::pos()); });
 
@@ -521,4 +535,27 @@ void UasvViewWindow::on_pushButtonToMatlab_clicked() {
 void UasvViewWindow::on_pushButtonRunMatlabApp_clicked() {
     MatlabAppController matlabApp;
     matlabApp.runIfNotRunning();
+}
+
+void UasvViewWindow::sendSampleForMatlab_slot(QVector<double> waves,
+                                              QVector<double> spectr) {
+    MatlabAppController matlabApp;
+    if (!matlabApp.isRunning()) {
+        matlabApp.runIfNotRunning();
+        uts::showWarnigMessage(
+            "Внимание!",
+            "Spectra classifier не был запущен. Дождитесь окончания его "
+            "загрузки и повторите отправку спектра.");
+        return;
+    }
+
+    QString fullMatPath = QCoreApplication::applicationDirPath() + "/" +
+                          matlabAppDirRelativeName + "/" + matFileName;
+
+    MatFilesOperator mat;
+    mat.saveSingleSpectrToMatFile(waves, spectr, fullMatPath);
+
+    QJsonObject params;
+    params["matFilePath"] = fullMatPath;
+    m_rpc->call("processSingleSpectr", QJsonValue(params));
 }
