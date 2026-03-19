@@ -1,5 +1,6 @@
 ### ROOT_DIRS ###
 ROOT_PROJECT_DIR = $$PWD
+ATM_CORR_DIR     = $$PWD/atm_correction
 BASE_DIR         = $$PWD/base
 CORE_DIR         = $$PWD/core
 GUI_DIR          = $$PWD/gui

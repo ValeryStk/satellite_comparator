@@ -19,3 +19,6 @@ MPFIT_wrapper.file = MPFIT_wrapper/MPFIT_wrapper_Tests.pro
 
 SUBDIRS += message_reporter
 message_reporter.file = message_reporter/message_reporter_Tests.pro
+
+SUBDIRS += atm_correction
+atm_correction.file = atm_correction/atm_correction_Tests.pro
