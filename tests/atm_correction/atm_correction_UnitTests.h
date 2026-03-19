@@ -15,6 +15,7 @@ private slots:
     void cleanupTestCase();
     void init();
     void cleanup();
+    void loadSattelitesData();
 };
 
 #endif  // UNITTESTS_H

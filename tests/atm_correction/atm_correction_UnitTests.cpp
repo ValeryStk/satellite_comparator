@@ -2,6 +2,8 @@
 
 #include <QDebug>
 
+#include "atm_correction.cpp"
+
 namespace {}  // end namespace
 
 atm_correction_UnitTests::atm_correction_UnitTests() {}
@@ -20,6 +22,11 @@ void atm_correction_UnitTests::init() {
 
 void atm_correction_UnitTests::cleanup() {
     // Очистка после каждого теста
+}
+
+void atm_correction_UnitTests::loadSattelitesData() {
+    qDebug() << "atm correction test...";
+    lss::optimize("", {});
 }
 
 QTEST_MAIN(atm_correction_UnitTests)

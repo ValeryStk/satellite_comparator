@@ -53,8 +53,6 @@ void calculDividerList(vector<vector<double>>& responses);
 inline vector<double> compute_tau_m(const vector<double>& list);
 
 void loadAllLists() {
-    // sentinel2a-10m
-    // cat::add_new_satellite("kanopus-b");
     if (!is_first_run) return;
     is_first_run = false;
     jsn::getJsonArrayFromFile("sdb.json", sdb);
@@ -82,28 +80,6 @@ void loadAllLists() {
     qDebug() << "Responses: " << S_lambda_lists[0].size();
     calculDividerList(S_lambda_lists);
     tau_m = compute_tau_m(lambda_list);
-
-    // This is a draft for editing sdb.json
-    /*auto sats5 = satellites.value("5").toArray();
-    for (int i = 0; i < sats5.size(); ++i) {
-      satellites_list.append(sats5[i].toString());
-    }
-    QJsonArray sats_array;
-    for(int j=0;j<sdb.size();++j){
-    QJsonObject object;
-    for(int i=0;i<satellites_list.size();++i){
-        auto sat_array = sdb[j].toObject()[satellites_list[i]].toArray();
-        QStringRef newKey(&satellites_list[i],1,satellites_list[i].size()-1);
-        object[newKey] = sat_array;
-    }
-    object["h2o"] = sdb[j].toObject()["h2o"];
-    object["o2"] = sdb[j].toObject()["o2"];
-    object["o3"] = sdb[j].toObject()["o3"];
-    object["sun"] = sdb[j].toObject()["sun"];
-    object["wavelength"] = sdb[j].toObject()["wavelength"];
-    sats_array.append(object);
-    }
-    db_json::saveJsonArrayToFile("sdb.json",sats_array,QJsonDocument::Compact);*/
 }
 
 void calculDividerList(vector<vector<double>>& responses) {
@@ -493,7 +469,6 @@ void updateSatelliteResponses(const QString& satellite_name) {
     qDebug() << "Update satellite name...." << satellite_name;
 
     auto a1 = satellites["4"].toArray();
-    // auto a2 = satellites["5"].toArray();
     bool isExists = false;
     for (int i = 0; i < a1.size(); ++i) {
         if (a1[i] == satellite_name) {
@@ -501,22 +476,12 @@ void updateSatelliteResponses(const QString& satellite_name) {
             break;
         }
     }
-    /*if(!isExists){
-      for(int i=0;i<a2.size();++i){
-         if(i==satellite_name){
-           isExists = true;
-           break;
-         }
-      }
-    }*/
     if (!isExists) {
         return;
     }
-    // qDebug()<<"SDB size: "<<sdb.size();
     satellite_name_key = satellite_name;
     for (int i = 0; i < sdb.size(); ++i) {
         auto response = sdb[i].toObject()[satellite_name_key].toArray();
-        // qDebug() <<"RESPONSE SIZE: "<<response.size();
         for (int j = 0; j < response.size(); ++j) {
             S_lambda_lists[j][i] = response[j].toDouble();
         }

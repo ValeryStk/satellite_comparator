@@ -12,8 +12,8 @@ struct ro_final {
     double band_number = 0.0;
     double band_value = 0.0;
 } ro_fin;
-vector<vector<double>> S_lambda_lists(
-    4);  // TODO adopt this container for 5 channels
+
+vector<vector<double>> S_lambda_lists(4);
 vector<double> lambda_waves;
 vector<double> T_H2O_list;
 vector<double> lambda_list;
