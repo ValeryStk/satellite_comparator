@@ -123,6 +123,7 @@ UasvViewWindow::UasvViewWindow(QWidget *parent)
 
     QAction *send1spectToMatlab =
         new QAction(satc::action_send_1_spec_matlab, this);
+    menu->addAction(send1spectToMatlab);
     connect(send1spectToMatlab, &QAction::triggered, this, [this]() {
         double maxInSpectrum;
         QVector<double> waves = m_filesParser->getRflWaves();

@@ -427,15 +427,14 @@ void MatFilesOperator::saveMultiSpecDataToMatFile(
 MultiSpecDataFromMatlab MatFilesOperator::readMultiSpecDataFromMatlab(
     const QString &fullMatPath) {
     MultiSpecDataFromMatlab answerStruct;
-
+    qDebug() << "Matlab app отправил multispec файл:" << fullMatPath;
     mat_t *matfp = Mat_Open(fullMatPath.toUtf8().constData(), MAT_ACC_RDONLY);
     if (!matfp) {
         qWarning() << "Failed to open MAT file:" << fullMatPath;
         answerStruct.isSomeErrors = true;
         return answerStruct;
     }
-
-    qDebug() << "Matlab app отправил multispec файл:" << fullMatPath;
+    qDebug() << "Прочитали его";
 
     QVector<int> pixelX = readIntVector(matfp, "pixelsX");
     QVector<int> pixelY = readIntVector(matfp, "pixelsY");
