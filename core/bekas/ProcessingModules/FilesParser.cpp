@@ -82,6 +82,7 @@ QVector<double> FilesParser::getBrightTemplWaves() {
 }
 
 QString FilesParser::getImagePath(QVector<QPair<int, int> > &spFov) {
+    if (m_spectrum.md.images.empty()) return "";
     QString path = m_inputDirPath + "/" +
                    m_spectrum.md.images.first().pathToFile.split(".").first() +
                    ".png";

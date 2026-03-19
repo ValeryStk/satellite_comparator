@@ -1,4 +1,4 @@
-﻿#include "UasvViewWindow.h"
+#include "UasvViewWindow.h"
 
 #include <bekas/BaseTools/IniFileLoader.h>
 #include <bekas/GuiModules/SpectrumWidgets/WavesRangeDialog.h>
