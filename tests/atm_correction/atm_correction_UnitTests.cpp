@@ -26,7 +26,25 @@ void atm_correction_UnitTests::cleanup() {
 
 void atm_correction_UnitTests::loadSattelitesData() {
     qDebug() << "atm correction test...";
-    lss::optimize("", {});
+    // lss::optimize("", {});
+    QJsonArray jar;
+    QJsonArray out_jar;
+    jsn::getJsonArrayFromFile("sdb.json", jar);
+    for (int i = 0; i < jar.size(); ++i) {
+        QJsonObject obj = jar[i].toObject();
+        QJsonObject out_obj;
+        QJsonArray response;
+
+        out_obj["h2o"] = obj["h2o"].toDouble();
+        out_obj["o2"] = obj["o2"].toDouble();
+        out_obj["o3"] = obj["o3"].toDouble();
+        out_obj["sun"] = obj["sun"].toDouble();
+        out_obj["wavelength"] = obj["wavelength"].toDouble() * 1000;
+        out_obj["sentinel2a"] = obj["sentinel2a-20m"].toArray();
+        out_obj["sentinel2b"] = obj["sentinel2b-20m"].toArray();
+        out_jar.append(out_obj);
+    }
+    jsn::saveJsonArrayToFile("test.json", out_jar, QJsonDocument::Indented);
 }
 
 QTEST_MAIN(atm_correction_UnitTests)
