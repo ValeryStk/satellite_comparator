@@ -95,10 +95,6 @@ QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443, 482, 562, 655, 865, 1610, 2200};
 QVector<double> waves_landsat9_5 = {443, 482, 562, 655, 865};
 
-// C++ слушает порт 5001, MATLAB — 5000
-constexpr int LOCAL_PORT = 5001;
-constexpr int MATLAB_PORT = 5000;
-
 QList<QColor> distinctColors = {
     QColor(255, 0, 0),    // Красный
     QColor(0, 255, 0),    // Зеленый
@@ -2810,8 +2806,17 @@ QImage MainWindowSatelliteComparator::createModifiedImage(const QImage &img,
 }
 
 void MainWindowSatelliteComparator::initUdpRpcConnection() {
-    m_rpc =
-        new UdpJsonRpc(LOCAL_PORT, QHostAddress::LocalHost, MATLAB_PORT, this);
+    // Читаем конфиг рядом с exe
+    QString configPath = "network_config.ini";
+    qDebug() << "Config path:" << configPath;
+    qDebug() << "File exists:" << QFile::exists(configPath);
+    QSettings settings(configPath, QSettings::IniFormat);
+
+    quint16 localPort = settings.value("Network/cpp_local_port", 5001).toUInt();
+    quint16 matlabPort = settings.value("Network/matlab_port", 5000).toUInt();
+    QString host = settings.value("Network/host", "127.0.0.1").toString();
+
+    m_rpc = new UdpJsonRpc(localPort, QHostAddress(host), matlabPort, this);
 
     // Регистрируем методы, которые может вызывать Matlab app.
     m_rpc->registerMethod("processClassifiedBecasSpectra",
