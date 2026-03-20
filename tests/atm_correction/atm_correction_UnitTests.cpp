@@ -3,6 +3,7 @@
 #include <QDebug>
 
 #include "calculation_solver.h"
+#include "davis.h"
 #include "json_utils.h"
 
 namespace {}  // end namespace
@@ -26,9 +27,9 @@ void atm_correction_UnitTests::cleanup() {
 }
 
 void atm_correction_UnitTests::loadSattelitesData() {
-    qDebug() << "atm correction test...";
-    calculation_solver cs;
-    // cs.updateCurrentSatellite("sentinel2a-20m");
+    // qDebug() << "atm correction test...";
+    // calculation_solver cs;
+    //  cs.updateCurrentSatellite("sentinel2a-20m");
     /*QJsonArray jar;
     QJsonArray out_jar;
     jsn::getJsonArrayFromFile("sdb.json", jar);
@@ -46,6 +47,26 @@ void atm_correction_UnitTests::loadSattelitesData() {
         out_jar.append(out_obj);
     }
     jsn::saveJsonArrayToFile("test.json", out_jar, QJsonDocument::Indented);*/
+    QJsonArray jar;
+    jsn::getJsonArrayFromFile(
+        QCoreApplication::applicationDirPath() + "/sentinel2B_responses.json",
+        jar);
+
+    for (int j = 0; j < jar.size(); ++j) {
+        auto arr1 = jar[j].toObject()["spectral_response"].toArray();
+        int wave_offset = jar[j].toObject()["wavelength_MIN_nm"].toInt();
+        QString name = jar[j].toObject()["physicalBand"].toString();
+        QVector<double> waves;
+        QVector<double> resp;
+        for (int i = 0; i < arr1.size(); ++i) {
+            resp.append(arr1[i].toDouble());
+            waves.append(wave_offset + i);
+        }
+        dv::Config cfg;
+        cfg.chart.title = name.toStdString();
+        cfg.chart.xLabel = "wavelengths, nm";
+        dv::show(waves, resp, name.toStdString(), cfg);
+    }
 }
 
 void atm_correction_UnitTests::calculateCosSunZenitAngle() {}

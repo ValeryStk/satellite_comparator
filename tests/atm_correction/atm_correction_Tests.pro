@@ -2,6 +2,7 @@ QT += testlib core
 
 include(../../pathes.pri)
 include ($$ATM_CORR_DIR/atm_correction.pri)
+include($$DAVIS_DIR/davis.pri)
 
 INCLUDEPATH += $$CORE_DIR
 
