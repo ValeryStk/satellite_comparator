@@ -2807,7 +2807,7 @@ QImage MainWindowSatelliteComparator::createModifiedImage(const QImage &img,
 
 void MainWindowSatelliteComparator::initUdpRpcConnection() {
     // Читаем конфиг рядом с exe
-    QString configPath = "network_config.ini";
+    QString configPath = NETWORK_CONFIG_FILE_NAME;
     qDebug() << "Config path:" << configPath;
     qDebug() << "File exists:" << QFile::exists(configPath);
     QSettings settings(configPath, QSettings::IniFormat);

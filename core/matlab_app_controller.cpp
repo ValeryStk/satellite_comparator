@@ -10,7 +10,8 @@
 
 #include "MatFilesOperator.h"
 
-constexpr bool IS_NEED_CHECK_RUNNING_EXE = false;
+const bool IS_NEED_CHECK_RUNNING_EXE = true;
+const QString NETWORK_CONFIG_FILE_NAME = "network_config.ini";
 
 MatlabAppController::MatlabAppController(QObject *parent) : QObject(parent) {
     exeDir = QCoreApplication::applicationDirPath();
@@ -20,7 +21,16 @@ MatlabAppController::MatlabAppController(QObject *parent) : QObject(parent) {
 
 bool MatlabAppController::runIfNotRunning() {
     if (!isRunning()) {
-        return QProcess::startDetached(fullExePath, {});
+        QString configPath = exeDir + "/" + NETWORK_CONFIG_FILE_NAME;
+        // Передаём через переменную окружения
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("FOREST_GUARD_CONFIG", configPath);
+
+        QProcess *process = new QProcess(this);
+        process->setProcessEnvironment(env);
+        process->startDetached(fullExePath, {});
+        return true;
+
     } else {
         QMessageBox::information(nullptr, "Info",
                                  "Spectra classifier is already running");
