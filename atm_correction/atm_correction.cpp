@@ -58,13 +58,8 @@ void loadAllLists() {
     jsn::getJsonArrayFromFile("sdb.json", sdb);
     jsn::getJsonObjectFromFile("satellites.json", satellites);
     qDebug() << "sdb size: " << sdb.size();
-    qDebug() << "satellites: " << satellites["4"].toArray().size();
 
-    auto sats = satellites.value("4").toArray();
-    for (int i = 0; i < sats.size(); ++i) {
-        satellites_list.append(sats[i].toString());
-    }
-    satellite_name_key = "sentinel2a-20m";
+    satellite_name_key = "sentinel2a-10m";
     qDebug() << "initial satellite:" << satellite_name_key;
     for (int i = 0; i < sdb.size(); ++i) {
         T_H2O_list.push_back(sdb[i].toObject()["h2o"].toDouble());

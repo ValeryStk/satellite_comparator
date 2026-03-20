@@ -2,3 +2,4 @@
 *.pro.user.*
 *.autosave
 /.qtc_clangd
+/__pycache__
