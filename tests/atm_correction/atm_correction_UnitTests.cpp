@@ -2,7 +2,8 @@
 
 #include <QDebug>
 
-#include "atm_correction.cpp"
+#include "calculation_solver.h"
+#include "json_utils.h"
 
 namespace {}  // end namespace
 
@@ -26,14 +27,14 @@ void atm_correction_UnitTests::cleanup() {
 
 void atm_correction_UnitTests::loadSattelitesData() {
     qDebug() << "atm correction test...";
-    // lss::optimize("", {});
-    QJsonArray jar;
+    calculation_solver cs;
+    // cs.updateCurrentSatellite("sentinel2a-20m");
+    /*QJsonArray jar;
     QJsonArray out_jar;
     jsn::getJsonArrayFromFile("sdb.json", jar);
     for (int i = 0; i < jar.size(); ++i) {
         QJsonObject obj = jar[i].toObject();
         QJsonObject out_obj;
-        QJsonArray response;
 
         out_obj["h2o"] = obj["h2o"].toDouble();
         out_obj["o2"] = obj["o2"].toDouble();
@@ -44,7 +45,9 @@ void atm_correction_UnitTests::loadSattelitesData() {
         out_obj["sentinel2b"] = obj["sentinel2b-20m"].toArray();
         out_jar.append(out_obj);
     }
-    jsn::saveJsonArrayToFile("test.json", out_jar, QJsonDocument::Indented);
+    jsn::saveJsonArrayToFile("test.json", out_jar, QJsonDocument::Indented);*/
 }
+
+void atm_correction_UnitTests::calculateCosSunZenitAngle() {}
 
 QTEST_MAIN(atm_correction_UnitTests)

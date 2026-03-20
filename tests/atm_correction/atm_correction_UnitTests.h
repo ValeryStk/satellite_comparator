@@ -16,6 +16,7 @@ private slots:
     void init();
     void cleanup();
     void loadSattelitesData();
+    void calculateCosSunZenitAngle();
 };
 
 #endif  // UNITTESTS_H

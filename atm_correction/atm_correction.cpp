@@ -64,7 +64,7 @@ void loadAllLists() {
     for (int i = 0; i < sats.size(); ++i) {
         satellites_list.append(sats[i].toString());
     }
-    satellite_name_key = satellites_list[0];
+    satellite_name_key = "sentinel2a-20m";
     qDebug() << "initial satellite:" << satellite_name_key;
     for (int i = 0; i < sdb.size(); ++i) {
         T_H2O_list.push_back(sdb[i].toObject()["h2o"].toDouble());
@@ -460,8 +460,8 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
 namespace lss {
 
 void setElevationAngle(const double& elAngle) {
-    mu_0 = qCos(qDegreesToRadians(90 - elAngle));
-    qDebug() << "elevation angle: " << elAngle;
+    mu_0 = qCos(qDegreesToRadians(elAngle));
+    qDebug() << "sun zenit angle: " << elAngle;
     qDebug() << "cos mu_0: " << mu_0;
 }
 
