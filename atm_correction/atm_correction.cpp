@@ -59,7 +59,7 @@ void loadAllLists() {
     jsn::getJsonObjectFromFile("satellites.json", satellites);
     qDebug() << "sdb size: " << sdb.size();
 
-    satellite_name_key = "sentinel2a-10m";
+    satellite_name_key = "sentinel2b-10m";
     qDebug() << "initial satellite:" << satellite_name_key;
     for (int i = 0; i < sdb.size(); ++i) {
         T_H2O_list.push_back(sdb[i].toObject()["h2o"].toDouble());
@@ -101,19 +101,6 @@ void calculDividerList(vector<vector<double>>& responses) {
             }
         }
     }
-
-    /*for (size_t j = 0; j < sizeList; ++j) {
-           for(size_t i=0;i<responses.size();++i){
-               responses_txt.append(QString::number(responses[i][j]));
-               responses_txt.append("\t");
-           }
-           responses_txt.append("\n");
-       }
-
-    QFile file("sat_responses.txt");
-    file.open(QIODevice::WriteOnly);
-    file.write(responses_txt.toLatin1());
-    file.close();*/
 
     divider_list = {sum1, sum2, sum3, sum4};
     qDebug() << "DIVIDED: " << sum1 << sum2 << sum3 << sum4;
