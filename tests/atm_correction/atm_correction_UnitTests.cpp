@@ -51,22 +51,23 @@ void atm_correction_UnitTests::loadSattelitesData() {
     jsn::getJsonArrayFromFile(
         QCoreApplication::applicationDirPath() + "/sentinel2B_responses.json",
         jar);
-
+    dv::holdOn();
+    QVector<double> full_waverange(601);
+    std::iota(full_waverange.begin(), full_waverange.end(), 400);
     for (int j = 0; j < jar.size(); ++j) {
+        QVector<double> full_values(601, 0);
         auto arr1 = jar[j].toObject()["spectral_response"].toArray();
         int wave_offset = jar[j].toObject()["wavelength_MIN_nm"].toInt();
         QString name = jar[j].toObject()["physicalBand"].toString();
-        QVector<double> waves;
-        QVector<double> resp;
+
         for (int i = 0; i < arr1.size(); ++i) {
-            resp.append(arr1[i].toDouble());
-            waves.append(wave_offset + i);
+            if (wave_offset > 1000) break;
+            int index = wave_offset - 400 + i;
+            full_values[index] = arr1[i].toDouble();
         }
-        dv::Config cfg;
-        cfg.chart.title = name.toStdString();
-        cfg.chart.xLabel = "wavelengths, nm";
-        dv::show(waves, resp, name.toStdString(), cfg);
+        dv::show(full_waverange, full_values, name.toStdString());
     }
+    dv::holdOff();
 }
 
 void atm_correction_UnitTests::calculateCosSunZenitAngle() {}
