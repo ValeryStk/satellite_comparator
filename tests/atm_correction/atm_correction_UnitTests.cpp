@@ -28,8 +28,8 @@ void atm_correction_UnitTests::cleanup() {
 
 void atm_correction_UnitTests::loadSattelitesData() {
     // qDebug() << "atm correction test...";
-    // calculation_solver cs;
-    //  cs.updateCurrentSatellite("sentinel2a-20m");
+    //  calculation_solver cs;
+    //   cs.updateCurrentSatellite("sentinel2a-20m");
     /*QJsonArray jar;
     QJsonArray out_jar;
     jsn::getJsonArrayFromFile("sdb.json", jar);
@@ -65,7 +65,7 @@ void atm_correction_UnitTests::loadSattelitesData() {
             int index = wave_offset - 400 + i;
             full_values[index] = arr1[i].toDouble();
         }
-        dv::show(full_waverange, full_values, name.toStdString());
+        dv::show(full_waverange, full_values);
     }
     dv::holdOff();
 }
