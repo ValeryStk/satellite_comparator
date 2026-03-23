@@ -395,7 +395,7 @@ var config = {
   plotlyServerURL: "https://chart-studio.plotly.com"
 };
 
-Plotly.newPlot('gd', data);
+Plotly.newPlot('gd', data, layout, config);
 %13
 </script>
 </body>
@@ -584,7 +584,7 @@ function updateBackground(select) {
             default: console.log('uknown option');
             }
            }
-           Plotly.newPlot('gd', data);
+           Plotly.newPlot('gd', data, layout, config);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -752,7 +752,7 @@ const char kAverageButtonJsFooBlock[] = R"davis_delimeter(
             const isActive = toggleButton.classList.contains('active');
             stateText.textContent = `Average: ${isActive ? 'ON' : 'OFF'}`;
             if(isActive){temp = data; data = average;}else{data = temp;};
-            Plotly.newPlot('gd', data);
+            Plotly.newPlot('gd', data, layout, config);
             console.log('Toggle button state:', isActive);
         });
 )davis_delimeter";
@@ -1100,17 +1100,23 @@ string vectorToString(const vector<double>& vec) {
   return oss.str();
 }
 
-string makeUniqueDavisHtmlName() {
+std::string makeUniqueDavisHtmlName() {
   sleepMicroSec(1);
-
-  auto now = std::chrono::system_clock::now();
-  auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
-  auto in_time_t = std::chrono::system_clock::to_time_t(now);
-  std::stringstream ss;
-  ss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d_%H_%M_%S");
-  ss << '_' << std::setfill('0')
-     << std::setw(3)
-     << milliseconds.count();
+  using namespace std::chrono;
+  auto now = system_clock::now();
+  auto ms_since_epoch = duration_cast<milliseconds>(now.time_since_epoch()).count();
+  int ms = static_cast<int>(ms_since_epoch % 1000);
+  std::time_t in_time_t = system_clock::to_time_t(now);
+  std::tm tm{};
+#if defined(_MSC_VER)
+  localtime_s(&tm, &in_time_t);
+#else
+  if (std::tm* p = std::localtime(&in_time_t))
+    tm = *p;
+#endif
+  std::ostringstream ss;
+  ss << std::put_time(&tm, "%Y-%m-%d_%H_%M_%S")
+     << '_' << std::setfill('0') << std::setw(3) << ms;
   return ss.str();
 }
 
@@ -1329,6 +1335,7 @@ bool createHtmlPageHeatmap(const std::vector<std::vector<double>>& values,
   args[ARG_TITLE] = configuration.heatmap.title;
   args[ARG_TITLE_X] = configuration.heatmap.xLabel;
   args[ARG_TITLE_Y] = configuration.heatmap.yLabel;
+  args[ARG_TITLE_Z] = configuration.heatmap.zLabel;
   args[ARG_ASPECT_RATIO_WIDTH] = dvs::toStringDotSeparator(configuration.heatmap.aspectRatioWidth);
   args[ARG_ASPECT_RATIO_HEIGHT] = dvs::toStringDotSeparator(configuration.heatmap.aspectRatioHeight);
   string paramWH;
@@ -1774,7 +1781,7 @@ void showMultiChart(const std::string& date_time_values,
 namespace dvs {
 
 bool isHold = false;
-vector<string> allChartBlocks = {};
+std::vector<std::string> allChartBlocks = {};
 
 
 } // namespace dvs end
@@ -1792,25 +1799,25 @@ void holdOff(const Config& configuration) {
   if (dvs::allChartBlocks.empty()) {
     return;
   }
-  string allTracesNames_str;
-  string allChartBlocks_str;
-  const string trace_name_part = "trace";
+  std::string allTracesNames_str;
+  std::string allChartBlocks_str;
+  const std::string trace_name_part = "trace";
   for (int i = 0; i < dvs::allChartBlocks.size(); ++i) {
-    string str_numTrace = std::to_string(i + 1);
-    string filled_trace_name_part = trace_name_part + str_numTrace;
+    std::string str_numTrace = std::to_string(i + 1);
+    std::string filled_trace_name_part = trace_name_part + str_numTrace;
     if (i < dvs::allChartBlocks.size() - 1) {
       filled_trace_name_part.append(",");
     }
     allTracesNames_str.append(filled_trace_name_part);
     allChartBlocks_str.append(dvs::allChartBlocks[i]);
   }
-  string paramWH;
+  std::string paramWH;
   if (configuration.chart.aspectRatioWidth > configuration.chart.aspectRatioHeight) {
     paramWH = "width";
   } else {
     paramWH = "height";
   }
-  string paramWHsecond;
+  std::string paramWHsecond;
   if (configuration.chart.isFitPlotToWindow) {
     if (paramWH == "width") {
       paramWHsecond = "height";
@@ -1820,27 +1827,32 @@ void holdOff(const Config& configuration) {
   } else {
     paramWHsecond = paramWH;
   }
-  vector<string> args = {dvs::kPlotlyJsName,
-                         allChartBlocks_str,
-                         allTracesNames_str,
-                         configuration.chart.title,
-                         configuration.chart.xLabel,
-                         configuration.chart.yLabel,
-                         dvs::toStringDotSeparator(configuration.chart.aspectRatioWidth),
-                         dvs::toStringDotSeparator(configuration.chart.aspectRatioHeight),
-                         paramWH,
-                         paramWHsecond,
-                         dvs::kHtmlComboboxStyleBlock,
-                         dvs::kHtmlComboboxSelectBlock,
-                         dvs::kHtmlComboboxUpdateFooBlock,
-                         dvs::kHtmlDavisLogoHyperlinkBlock
-                        };
-  string multichartPage = dvs::kHtmlMultiChartModel;
-  string filled_multichartPage = "";
+  std::vector<std::string> args = {dvs::kPlotlyJsName,
+                                   allChartBlocks_str,
+                                   allTracesNames_str,
+                                   configuration.chart.title,
+                                   configuration.chart.xLabel,
+                                   configuration.chart.yLabel,
+                                   dvs::toStringDotSeparator(configuration.chart.aspectRatioWidth),
+                                   dvs::toStringDotSeparator(configuration.chart.aspectRatioHeight),
+                                   paramWH,
+                                   paramWHsecond,
+                                   dvs::kHtmlComboboxStyleBlock,
+                                   dvs::kHtmlComboboxSelectBlock,
+                                   dvs::kHtmlComboboxUpdateFooBlock,
+                                   dvs::kHtmlDavisLogoHyperlinkBlock
+                                  };
+  std::string multichartPage = dvs::kHtmlMultiChartModel;
+  std::string filled_multichartPage = "";
   dvs::make_string(multichartPage, args, filled_multichartPage);
-  string htmlFullName = dvs::makeUniqueDavisHtmlRelativePath();
+  std::string htmlFullName = dvs::makeUniqueDavisHtmlRelativePath();
+  dvs::mayBeCreateJsWorkingFolder();
   dvs::saveStringToFile(htmlFullName, filled_multichartPage);
-  dvs::openFileBySystem(htmlFullName);
+  if (dvs::isPlotlyScriptExists()) {
+    dvs::openPlotlyHtml(htmlFullName);
+  } else {
+    dvs::showWarningJsAbsentPage();
+  }
   dvs::allChartBlocks.clear();
 }
 

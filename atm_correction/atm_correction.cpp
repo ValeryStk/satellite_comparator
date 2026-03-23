@@ -56,7 +56,7 @@ void loadAllLists() {
     if (!is_first_run) return;
     is_first_run = false;
     jsn::getJsonArrayFromFile("sdb.json", sdb);
-    jsn::getJsonObjectFromFile("satellites.json", satellites);
+    // jsn::getJsonObjectFromFile("satellites.json", satellites);
     qDebug() << "sdb size: " << sdb.size();
 
     satellite_name_key = "sentinel2b-10m";

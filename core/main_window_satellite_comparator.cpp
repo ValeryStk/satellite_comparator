@@ -1342,6 +1342,14 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
                 }
 
                 double nbr = sam::calculateNBR(nir2, swir3);
+
+                auto values = getKsyValues(x + xOffset, y + yOffset);
+                auto waves = getWaves();
+                auto bv = getBandsValues(waves, values, m_satelite_type);
+                double nbr_loaded = sam::calculateNBR(bv.nir2, bv.swir3);
+
+                nbr = nbr_loaded - nbr;
+
                 uchar nbr_8bit =
                     qBound(uchar(0), static_cast<uchar>((nbr + 1.0) * 127.5),
                            uchar(255));

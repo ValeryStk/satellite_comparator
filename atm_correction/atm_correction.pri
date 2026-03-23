@@ -1,5 +1,6 @@
 include(../pathes.pri)
 include($$MPFIT_DIR/mpfit_wrapper.pri)
+include(resources.pri)
 
 INCLUDEPATH += $$PWD
 
@@ -13,3 +14,4 @@ HEADERS += \
     $$PWD/common_types.h \
     $$PWD/satellite_adder.h \
     $$PWD/calculation_solver.h \
+

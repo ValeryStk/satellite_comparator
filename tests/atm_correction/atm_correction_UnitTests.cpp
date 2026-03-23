@@ -3,6 +3,7 @@
 #include <QDebug>
 
 #include "calculation_solver.h"
+#include "davis.h"
 #include "json_utils.h"
 
 namespace {}  // end namespace
@@ -26,9 +27,9 @@ void atm_correction_UnitTests::cleanup() {
 }
 
 void atm_correction_UnitTests::loadSattelitesData() {
-    qDebug() << "atm correction test...";
-    calculation_solver cs;
-    // cs.updateCurrentSatellite("sentinel2a-20m");
+    // qDebug() << "atm correction test...";
+    //  calculation_solver cs;
+    //   cs.updateCurrentSatellite("sentinel2a-20m");
     /*QJsonArray jar;
     QJsonArray out_jar;
     jsn::getJsonArrayFromFile("sdb.json", jar);
@@ -46,6 +47,41 @@ void atm_correction_UnitTests::loadSattelitesData() {
         out_jar.append(out_obj);
     }
     jsn::saveJsonArrayToFile("test.json", out_jar, QJsonDocument::Indented);*/
+    QJsonArray sentinel2B_jar;
+    QJsonArray sentinel2A_jar;
+    jsn::getJsonArrayFromFile(
+        ":/responses/sentinel2B/sentinel2B_responses.json", sentinel2B_jar);
+    jsn::getJsonArrayFromFile(
+        ":/responses/sentinel2A/sentinel2A_responses.json", sentinel2A_jar);
+    QVector<QJsonArray> jarrs = {sentinel2A_jar, sentinel2B_jar};
+
+    QVector<double> full_waverange(601);
+    std::iota(full_waverange.begin(), full_waverange.end(), 400);
+    dv::Config cfg;
+
+    for (int s = 0; s < jarrs.size(); ++s) {
+        dv::holdOn();
+        if (s == 0)
+            cfg.chart.title = "sentinel2A";
+        else
+            cfg.chart.title = "sentinel2B";
+        for (int j = 0; j < jarrs[s].size(); ++j) {
+            QVector<double> full_values(601, 0);
+            auto arr1 = jarrs[s][j].toObject()["spectral_response"].toArray();
+            int wave_offset =
+                jarrs[s][j].toObject()["wavelength_MIN_nm"].toInt();
+            QString name = jarrs[s][j].toObject()["physicalBand"].toString();
+
+            for (int i = 0; i < arr1.size(); ++i) {
+                if (wave_offset > 1000) break;
+                int index = wave_offset - 400 + i;
+                full_values[index] = arr1[i].toDouble();
+            }
+            dv::show(full_waverange, full_values,
+                     QString::number(wave_offset).toStdString());
+        }
+        dv::holdOff(cfg);
+    }
 }
 
 void atm_correction_UnitTests::calculateCosSunZenitAngle() {}
