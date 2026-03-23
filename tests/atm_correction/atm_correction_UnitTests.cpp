@@ -57,9 +57,14 @@ void atm_correction_UnitTests::loadSattelitesData() {
 
     QVector<double> full_waverange(601);
     std::iota(full_waverange.begin(), full_waverange.end(), 400);
+    dv::Config cfg;
 
     for (int s = 0; s < jarrs.size(); ++s) {
         dv::holdOn();
+        if (s == 0)
+            cfg.chart.title = "sentinel2A";
+        else
+            cfg.chart.title = "sentinel2B";
         for (int j = 0; j < jarrs[s].size(); ++j) {
             QVector<double> full_values(601, 0);
             auto arr1 = jarrs[s][j].toObject()["spectral_response"].toArray();
@@ -72,9 +77,10 @@ void atm_correction_UnitTests::loadSattelitesData() {
                 int index = wave_offset - 400 + i;
                 full_values[index] = arr1[i].toDouble();
             }
-            dv::show(full_waverange, full_values);
+            dv::show(full_waverange, full_values,
+                     QString::number(wave_offset).toStdString());
         }
-        dv::holdOff();
+        dv::holdOff(cfg);
     }
 }
 
