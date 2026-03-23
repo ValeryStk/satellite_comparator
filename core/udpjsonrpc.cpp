@@ -7,6 +7,8 @@
 UdpJsonRpc::UdpJsonRpc(quint16 localPort, const QHostAddress &peerHost,
                        quint16 peerPort, QObject *parent)
     : QObject(parent), m_peerHost(peerHost), m_peerPort(peerPort) {
+    qDebug() << "localPort:" << localPort << "\n peerPort: " << peerPort;
+
     m_sock.bind(QHostAddress::LocalHost, localPort);
     connect(&m_sock, &QUdpSocket::readyRead, this, &UdpJsonRpc::onReadyRead);
 }

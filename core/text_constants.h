@@ -15,6 +15,8 @@ extern const char
     action_send_sample_text[];  //!< Константа текст - сообщение об изменении
                                 //!< спектрального образца
 
+extern const char action_send_1_spec_matlab[];
+
 extern const char
     satellite_name_landsat_9[];  //!< Константа текст - имя спутника LANDSAT 9
 extern const char

@@ -32,6 +32,7 @@
 #include "libs/gdal/x64/include/gdal_priv.h"
 #include "libs/gdal/x64/include/ogr_spatialref.h"
 #include "libs/gdal/x64/include/tiff.h"
+#include "matlab_app_controller.h"
 #include "progress_informator.h"
 #include "qcustomplot.h"
 #include "sam.cpp"
@@ -93,10 +94,6 @@ constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER = 11000 * 11000 * 3;
 QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443, 482, 562, 655, 865, 1610, 2200};
 QVector<double> waves_landsat9_5 = {443, 482, 562, 655, 865};
-
-// C++ слушает порт 5001, MATLAB — 5000
-constexpr int LOCAL_PORT = 5001;
-constexpr int MATLAB_PORT = 5000;
 
 QList<QColor> distinctColors = {
     QColor(255, 0, 0),    // Красный
@@ -288,6 +285,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             SLOT(add_roi_to_gui_list(const QString)));
     connect(ui->widget_image_saturation_light_corrector,
             SIGNAL(slidersWereChanged()), SLOT(updateImage()));
+    connect(ui->action_SpectraClassifer, SIGNAL(triggered()), this,
+            SLOT(sendSpectrToMatlab()));
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
@@ -1070,6 +1069,16 @@ void MainWindowSatelliteComparator::processpClassifiedBecasSpectraMatlabRequest(
 void MainWindowSatelliteComparator::processpClassifiedMultiSpecMatlabRequest(
     const QVariantMap &params) {
     qDebug() << "зашли в processpClassifiedMultiSpecMatlabRequest";
+    QString pathMatfile = params["matFilePath"].toString();
+    MatFilesOperator reader;
+    MultiSpecDataFromMatlab dataReaded =
+        reader.readMultiSpecDataFromMatlab(pathMatfile);
+    if (dataReaded.isSomeErrors) {
+        qDebug() << "при чтении файла произошли ошибки";
+        return;
+    }
+    paintMultiSpecPoints(dataReaded.pixelX, dataReaded.pixelY,
+                         dataReaded.colorsOfEachSpectr);
 }
 
 void MainWindowSatelliteComparator::updateImage() {
@@ -1776,6 +1785,72 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor &color) {
     m_layer_gui_list->addItemToList(stamp, searchParams, color);
 }
 
+void MainWindowSatelliteComparator::paintMultiSpecPoints(
+    const QVector<int> &pixelX, const QVector<int> &pixelY,
+    const QVector<QColor> &colors) {
+    if (!m_image_item) {
+        qWarning() << "paintMultiSpecPoints: base image item is null";
+        return;
+    }
+
+    if (pixelX.isEmpty() || pixelY.isEmpty() || colors.isEmpty()) {
+        qWarning() << "paintMultiSpecPoints: empty input data";
+        return;
+    }
+
+    if (pixelX.size() != pixelY.size() || pixelX.size() != colors.size()) {
+        qWarning() << "paintMultiSpecPoints: size mismatch"
+                   << "pixelX =" << pixelX.size() << "pixelY =" << pixelY.size()
+                   << "colors =" << colors.size();
+        return;
+    }
+
+    const int xSize = m_satellite_image.width();
+    const int ySize = m_satellite_image.height();
+
+    if (xSize <= 0 || ySize <= 0) {
+        qWarning() << "paintMultiSpecPoints: invalid image size" << xSize
+                   << ySize;
+        return;
+    }
+
+    auto new_layer = new uchar[xSize * ySize * 4];
+    memset(new_layer, 0, xSize * ySize * 4);
+
+    for (int i = 0; i < pixelX.size(); ++i) {
+        const int x = pixelX[i];
+        const int y = pixelY[i];
+
+        if (x < 0 || y < 0 || x >= xSize || y >= ySize) {
+            qWarning() << "paintMultiSpecPoints: point out of bounds" << x << y;
+            continue;
+        }
+
+        const QColor &color = colors[i];
+        const int offset = (y * xSize + x) * 4;
+
+        new_layer[offset] = static_cast<uchar>(color.red());
+        new_layer[offset + 1] = static_cast<uchar>(color.green());
+        new_layer[offset + 2] = static_cast<uchar>(color.blue());
+        new_layer[offset + 3] = 255;
+    }
+
+    auto cleanup = [](void *info) { delete[] static_cast<uchar *>(info); };
+    QImage img(new_layer, xSize, ySize, xSize * 4, QImage::Format_RGBA8888,
+               cleanup, new_layer);
+
+    auto pixmap = QPixmap::fromImage(img);
+    auto new_image_item = new QGraphicsPixmapItem(pixmap);
+    new_image_item->setZValue(
+        ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+
+    m_scene->addItem(new_image_item);
+    auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
+    m_layers_search_result_items.insert(stamp, new_image_item);
+    m_layer_gui_list->addItemToList(stamp, "", QColor(0, 255, 0));
+    m_scene->update();
+}
+
 QString MainWindowSatelliteComparator::getGeoCoordinates(
     const int x, const int y, const sad::geoTransform &geo, double &latitude,
     double &longitude, bool isStringReturn) {
@@ -2104,6 +2179,17 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id) {
 void MainWindowSatelliteComparator::send_roi_spectrs_to_matlab(
     const QString &id) {
     qDebug() << "слот для отправки спектрво в матлаб";
+
+    MatlabAppController matlabApp;
+
+    if (!matlabApp.isRunning()) {
+        matlabApp.runIfNotRunning();
+        uts::showWarnigMessage(
+            "Внимание!",
+            "Spectra classifier не был запущен. Дождитесь окончания его "
+            "загрузки и повторите отправку спектров ");
+        return;
+    }
 
     // формируем спектры полигона
     auto polItem = ui->graphicsView_satellite_image->getPolygonById(id);
@@ -2728,8 +2814,17 @@ QImage MainWindowSatelliteComparator::createModifiedImage(const QImage &img,
 }
 
 void MainWindowSatelliteComparator::initUdpRpcConnection() {
-    m_rpc =
-        new UdpJsonRpc(LOCAL_PORT, QHostAddress::LocalHost, MATLAB_PORT, this);
+    // Читаем конфиг рядом с exe
+    QString configPath = NETWORK_CONFIG_FILE_NAME;
+    qDebug() << "Config path:" << configPath;
+    qDebug() << "File exists:" << QFile::exists(configPath);
+    QSettings settings(configPath, QSettings::IniFormat);
+
+    quint16 localPort = settings.value("Network/cpp_local_port", 5001).toUInt();
+    quint16 matlabPort = settings.value("Network/matlab_port", 5000).toUInt();
+    QString host = settings.value("Network/host", "127.0.0.1").toString();
+
+    m_rpc = new UdpJsonRpc(localPort, QHostAddress(host), matlabPort, this);
 
     // Регистрируем методы, которые может вызывать Matlab app.
     m_rpc->registerMethod("processClassifiedBecasSpectra",
@@ -3351,4 +3446,42 @@ void MainWindowSatelliteComparator::deleteTimeRowData() {
         }
     }
     m_time_row.clear();
+}
+
+void MainWindowSatelliteComparator::sendSpectrToMatlab() {
+    if (!m_preview_plot || m_preview_plot->graphCount() <= 1) return;
+
+    const QCPGraph *graph =
+        m_preview_plot->graph(1);  // зафиксированный образец
+    if (!graph || graph->dataCount() == 0) return;
+
+    MatlabAppController matlabApp;
+    if (!matlabApp.isRunning()) {
+        matlabApp.runIfNotRunning();
+        uts::showWarnigMessage(
+            "Внимание!",
+            "Spectra classifier не был запущен. Дождитесь окончания его "
+            "загрузки и повторите отправку спектра.");
+        return;
+    }
+
+    QVector<double> waves, spectr;
+    waves.reserve(graph->dataCount());
+    spectr.reserve(graph->dataCount());
+
+    for (auto it = graph->data()->constBegin(); it != graph->data()->constEnd();
+         ++it) {
+        waves.append(it->key);
+        spectr.append(it->value);
+    }
+
+    QString fullMatPath = QCoreApplication::applicationDirPath() + "/" +
+                          matlabAppDirRelativeName + "/" + matFileName;
+
+    MatFilesOperator mat;
+    mat.saveSingleSpectrToMatFile(waves, spectr, fullMatPath);
+
+    QJsonObject params;
+    params["matFilePath"] = fullMatPath;
+    m_rpc->call("processSingleSpectr", QJsonValue(params));
 }

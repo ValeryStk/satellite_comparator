@@ -211,6 +211,42 @@ QVector<QColor> readSelectedPointsRGB(mat_t *matfp, const QString &varName) {
     return colors;
 }
 
+QVector<int> readIntVector(mat_t *matfp, const QString &varName) {
+    QVector<int> values;
+
+    matvar_t *var = Mat_VarRead(matfp, varName.toUtf8().constData());
+    if (!var) {
+        qWarning() << "Variable" << varName << "not found";
+        return values;
+    }
+
+    size_t nElems = 1;
+    for (int i = 0; i < var->rank; ++i) {
+        nElems *= var->dims[i];
+    }
+
+    values.reserve(int(nElems));
+
+    if (var->class_type == MAT_C_DOUBLE && var->data_type == MAT_T_DOUBLE) {
+        double *data = static_cast<double *>(var->data);
+        for (size_t i = 0; i < nElems; ++i) values.append(int(data[i]));
+    } else if (var->class_type == MAT_C_INT32 &&
+               var->data_type == MAT_T_INT32) {
+        qint32 *data = static_cast<qint32 *>(var->data);
+        for (size_t i = 0; i < nElems; ++i) values.append(int(data[i]));
+    } else if (var->class_type == MAT_C_UINT32 &&
+               var->data_type == MAT_T_UINT32) {
+        quint32 *data = static_cast<quint32 *>(var->data);
+        for (size_t i = 0; i < nElems; ++i) values.append(int(data[i]));
+    } else {
+        qWarning() << "Unsupported type for" << varName
+                   << "class_type =" << var->class_type
+                   << "data_type =" << var->data_type;
+    }
+
+    Mat_VarFree(var);
+    return values;
+}
 }  // namespace
 
 MatFilesOperator::MatFilesOperator() {}
@@ -386,4 +422,87 @@ void MatFilesOperator::saveMultiSpecDataToMatFile(
 
     qDebug() << "Saved multispec mat:" << fullMatPath << "nSpec=" << nSpec
              << "nChan=" << nChan << "x=" << nX << "y=" << nY;
+}
+
+MultiSpecDataFromMatlab MatFilesOperator::readMultiSpecDataFromMatlab(
+    const QString &fullMatPath) {
+    MultiSpecDataFromMatlab answerStruct;
+    qDebug() << "Matlab app отправил multispec файл:" << fullMatPath;
+    mat_t *matfp = Mat_Open(fullMatPath.toUtf8().constData(), MAT_ACC_RDONLY);
+    if (!matfp) {
+        qWarning() << "Failed to open MAT file:" << fullMatPath;
+        answerStruct.isSomeErrors = true;
+        return answerStruct;
+    }
+    qDebug() << "Прочитали его";
+
+    QVector<int> pixelX = readIntVector(matfp, "pixelsX");
+    QVector<int> pixelY = readIntVector(matfp, "pixelsY");
+    QVector<int> classIndexes =
+        readSelectedClustIndxs(matfp, "selectedClustIndxs");
+    QVector<QColor> colors = readSelectedPointsRGB(matfp, "selectedPointsRGB");
+
+    Mat_Close(matfp);
+
+    if (pixelX.isEmpty() || pixelY.isEmpty() || classIndexes.isEmpty() ||
+        colors.isEmpty()) {
+        answerStruct.isSomeErrors = true;
+        return answerStruct;
+    }
+
+    if (pixelX.size() != pixelY.size() ||
+        pixelX.size() != classIndexes.size() ||
+        pixelX.size() != colors.size()) {
+        qWarning() << "Multispec arrays size mismatch:"
+                   << "pixelsX =" << pixelX.size()
+                   << "pixelsY =" << pixelY.size()
+                   << "selectedClustIndxs =" << classIndexes.size()
+                   << "selectedPointsRGB =" << colors.size();
+        answerStruct.isSomeErrors = true;
+        return answerStruct;
+    }
+
+    answerStruct.pixelX = pixelX;
+    answerStruct.pixelY = pixelY;
+    answerStruct.selectedClustIndxs = classIndexes;
+    answerStruct.colorsOfEachSpectr = colors;
+
+    return answerStruct;
+}
+
+void MatFilesOperator::saveSingleSpectrToMatFile(const QVector<double> &waves,
+                                                 const QVector<double> &spectr,
+                                                 const QString &fullMatPath) {
+    if (waves.size() != spectr.size() || waves.isEmpty()) {
+        qWarning()
+            << "saveSingleSpectrToMatFile: waves/spectr size mismatch or empty"
+            << "waves=" << waves.size() << "spectr=" << spectr.size();
+        return;
+    }
+
+    mat_t *matfp =
+        Mat_CreateVer(fullMatPath.toUtf8().constData(), nullptr, MAT_FT_MAT5);
+    if (!matfp) {
+        qWarning() << "Не удалось создать MAT-файл:" << fullMatPath;
+        return;
+    }
+
+    auto writeRowVector = [&](const char *name, const QVector<double> &v) {
+        size_t dims[2] = {1, static_cast<size_t>(v.size())};
+        matvar_t *var = Mat_VarCreate(name, MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dims,
+                                      const_cast<double *>(v.constData()), 0);
+        if (!var) {
+            qWarning() << "Mat_VarCreate failed for" << name;
+            return;
+        }
+        Mat_VarWrite(matfp, var, MAT_COMPRESSION_NONE);
+        Mat_VarFree(var);
+    };
+
+    writeRowVector("waves", waves);
+    writeRowVector("spectr", spectr);
+
+    Mat_Close(matfp);
+    qDebug() << "Saved single spectr mat:" << fullMatPath
+             << "nPoints=" << waves.size();
 }

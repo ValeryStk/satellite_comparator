@@ -12,6 +12,8 @@ const char message_changing_bands[] = "Изменение отображения
 const char action_send_sample_text[] =
     "Выбрать как образец\n для сравнения со спутниковыми данными";
 
+const char action_send_1_spec_matlab[] = "Отправить спектр в SpectraClassifier";
+
 const char satellite_name_landsat_9[] = "LANDSAT 9";
 const char satellite_name_landsat_8[] = "LANDSAT 8";
 const char satellite_name_sentinel_2A[] = "SENTINEL-2A";

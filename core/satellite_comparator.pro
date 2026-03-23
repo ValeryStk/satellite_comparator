@@ -30,6 +30,7 @@ SOURCES += \
     main.cpp \
     main_window_satellite_comparator.cpp \
     MatFilesOperator.cpp \
+    matlab_app_controller.cpp \
     message_reporter.cpp \
     progress_informator.cpp \
     qcustomplot.cpp \
@@ -51,6 +52,7 @@ HEADERS += \
     layer_roi_list.h \
     main_window_satellite_comparator.h \
     MatFilesOperator.h \
+    matlab_app_controller.h \
     message_reporter.h \
     progress_informator.h \
     qcustomplot.h \
@@ -66,4 +68,8 @@ HEADERS += \
 FORMS += \
     main_window_satellite_comparator.ui \
     sliders_of_image_corrector.ui
+
+# Копируем network_config.ini в папку с exe после сборки
+CONFIG_FILE = $$PWD/../config/network_config.ini
+QMAKE_POST_LINK += $$QMAKE_COPY \"$$shell_path($$CONFIG_FILE)\" \"$$shell_path($$OUT_PWD)\"
 
