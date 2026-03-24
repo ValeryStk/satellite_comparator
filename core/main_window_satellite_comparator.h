@@ -432,5 +432,7 @@ private:
     QDockWidget *m_spectralDock;
     void setUpUi();
     void deleteTimeRowData();
+    void loadMaskForSentinelMenu();
+    uint16_t *loadMaskForSentinel(int &width, int &height);
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H

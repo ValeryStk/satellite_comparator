@@ -4,12 +4,14 @@
 #include <matio.h>
 
 #include <QByteArray>
+#include <QDesktopServices>
 #include <QDomDocument>
 #include <QFile>
 #include <QFileDialog>
 #include <QSpacerItem>
 #include <QTextCodec>
 #include <QTextStream>
+#include <QUrl>
 #include <algorithm>
 
 #include "MatFilesOperator.h"
@@ -1120,6 +1122,8 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
         return;
     }
     file.close();
+    int wCloudM, hCloudM;
+    auto dataCloudMask = loadMaskForSentinel(wCloudM, hCloudM);
     QFileInfo fi(headerName);
     m_root_path = fi.path();
 
@@ -1301,8 +1305,8 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
             }
         }
 
-#pragma omp parallel for num_threads( \
-        std::min(8, (int)std::thread::hardware_concurrency()))
+        //#pragma omp parallel for num_threads( \
+        //std::min(8, (int)std::thread::hardware_concurrency()))
         for (int y = 0; y < nYSize; ++y) {
             int row_offset = y * nXSize * 3;
 
@@ -1341,22 +1345,32 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
                         1000;
                 }
 
-                double nbr = sam::calculateNBR(nir2, swir3);
+                float valueCloudMask =
+                    dataCloudMask[((y + yOffset) * wCloudM) + x + xOffset];
+                if (valueCloudMask > 0) qDebug() << "--vcm->" << valueCloudMask;
+                if (valueCloudMask < 10) {
+                    double nbr = sam::calculateNBR(nir2, swir3);
 
-                auto values = getKsyValues(x + xOffset, y + yOffset);
-                auto waves = getWaves();
-                auto bv = getBandsValues(waves, values, m_satelite_type);
-                double nbr_loaded = sam::calculateNBR(bv.nir2, bv.swir3);
+                    auto values = getKsyValues(x + xOffset, y + yOffset);
+                    auto waves = getWaves();
+                    auto bv = getBandsValues(waves, values, m_satelite_type);
+                    double nbr_loaded = sam::calculateNBR(bv.nir2, bv.swir3);
 
-                nbr = nbr_loaded - nbr;
+                    nbr = nbr_loaded - nbr;
 
-                uchar nbr_8bit =
-                    qBound(uchar(0), static_cast<uchar>((nbr + 1.0) * 127.5),
-                           uchar(255));
+                    uchar nbr_8bit = qBound(
+                        uchar(0), static_cast<uchar>((nbr + 1.0) * 127.5),
+                        uchar(255));
 
-                int pixel_offset = row_offset + x * 3;
-                data[pixel_offset] = data[pixel_offset + 1] =
-                    data[pixel_offset + 2] = nbr_8bit;
+                    int pixel_offset = row_offset + x * 3;
+                    data[pixel_offset] = data[pixel_offset + 1] =
+                        data[pixel_offset + 2] = nbr_8bit;
+                } else {
+                    int pixel_offset = row_offset + x * 3;
+                    data[pixel_offset] = 0;
+                    data[pixel_offset + 1] = 0;
+                    data[pixel_offset + 2] = 255;
+                }
             }
         }
 
@@ -2528,6 +2542,8 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
                     m_time_row_spectralIndicesDock.hide();
                 }
             });
+    connect(ui->action_Sentinel2_loadCloudMask, &QAction::triggered, this,
+            &MainWindowSatelliteComparator::loadMaskForSentinelMenu);
 }
 
 void MainWindowSatelliteComparator::addBaseItemsToScene() {
@@ -3446,6 +3462,84 @@ void MainWindowSatelliteComparator::deleteTimeRowData() {
         }
     }
     m_time_row.clear();
+}
+
+uint16_t *MainWindowSatelliteComparator::loadMaskForSentinel(int &width,
+                                                             int &height) {
+    qDebug() << m_root_path;
+    // Проверка: существует ли папка
+    if (!QDir(m_root_path).exists() || m_root_path.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка",
+                             "Папка не найдена: " + m_root_path);
+        return nullptr;
+    }
+    // MSK_CLDPRB_20m.jp2
+
+    // QDesktopServices::openUrl(QUrl::fromLocalFile(m_root_path));
+    QString pathToCloudMsk =
+        satc::getPathToCloudMaskForSentinel(m_root_path + "/manifest.safe");
+    if (pathToCloudMsk.isEmpty()) {
+        qDebug() << "файл маски не найден...";
+        return nullptr;
+    }
+    qDebug() << "--->CLOUDMASK_FILE: " << pathToCloudMsk;
+
+    pathToCloudMsk.replace(0, 1, m_root_path);
+    auto data = readTiff(pathToCloudMsk, width, height);
+    qDebug() << "CLOUD MASK" << width << "--" << height;
+    return data;
+}
+
+void MainWindowSatelliteComparator::loadMaskForSentinelMenu() {
+    int width, height;
+    if (m_root_path.isEmpty())
+        m_root_path =
+            "D:/_sat_data/Гари "
+            "Италия/S2B_MSIL2A_20250819T095029_N0511_R079_T33TVF_"
+            "20250819T120823.SAFE";
+    auto raster = loadMaskForSentinel(width, height);
+
+    qDebug() << "Cloud mask: " << width << " -- " << height;
+    // Создаём QImage (Format_Grayscale8)
+    QImage image(width, height, QImage::Format_Grayscale8);
+    uchar *scanline = image.bits();
+    int bytesPerLine = image.bytesPerLine();
+
+    for (int y = 0; y < height; ++y) {
+        uchar *line = scanline + y * bytesPerLine;
+        const uint16_t *srcRow = raster + y * width;
+
+        for (int x = 0; x < width; ++x) {
+            uint16_t val = srcRow[x];
+            if (val != 0) qDebug() << val;
+            // Ограничиваем диапазон [0, 100]
+            if (val > 100) {
+                val = 100;
+                qDebug() << "More Than 100";
+            }
+
+            // Конвертируем 0–100 → 0–255
+            line[x] = static_cast<uchar>((val * 255) / 100);
+        }
+    }
+
+    // Передаём создание виджета в GUI поток
+    QMetaObject::invokeMethod(
+        this,
+        [image]() {
+            QLabel *label = new QLabel;
+            label->setPixmap(QPixmap::fromImage(image));
+            label->setAttribute(Qt::WA_DeleteOnClose);
+            label->setWindowTitle("Маска облаков");
+            label->setScaledContents(true);
+            QSize targetSize(800, 600);
+            QSize scaledSize =
+                image.size().scaled(targetSize, Qt::KeepAspectRatio);
+
+            label->resize(scaledSize);
+            label->show();
+        },
+        Qt::QueuedConnection);
 }
 
 void MainWindowSatelliteComparator::sendSpectrToMatlab() {

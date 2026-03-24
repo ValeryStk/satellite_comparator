@@ -125,4 +125,41 @@ sad::LANDSAT_METADATA_FILE readLandsatXmlHeader(
     return lmd;
 }
 
+QString getPathToCloudMaskForSentinel(const QString& xmlFilePath) {
+    QFile file(xmlFilePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Не удалось открыть файл:" << xmlFilePath;
+        return {};
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "Ошибка парсинга XML";
+        file.close();
+        return {};
+    }
+    file.close();
+
+    // Ищем dataObject с ID="CloudPrbMask_Tile1_Data"
+    QDomNodeList dataObjects = doc.elementsByTagName("dataObject");
+    for (int i = 0; i < dataObjects.size(); ++i) {
+        QDomElement dataObj = dataObjects.at(i).toElement();
+        if (dataObj.attribute("ID") == "CloudPrbMask_Tile1_Data") {
+            QDomNodeList fileLocations =
+                dataObj.elementsByTagName("fileLocation");
+            if (!fileLocations.isEmpty()) {
+                QString href =
+                    fileLocations.at(0).toElement().attribute("href");
+                if (!href.isEmpty()) {
+                    return href;  // Например:
+                                  // "./GRANULE/.../MSK_CLDPRB_20m.jp2"
+                }
+            }
+        }
+    }
+
+    qWarning() << "Путь к MSK_CLDPRB_20m.jp2 не найден в XML";
+    return {};
+}
+
 }  // end namespace satc

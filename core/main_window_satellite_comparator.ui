@@ -124,7 +124,7 @@
      <x>0</x>
      <y>0</y>
      <width>811</width>
-     <height>26</height>
+     <height>32</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -140,9 +140,16 @@
      <addaction name="actionSentinel_2A"/>
      <addaction name="actionSentinel_2B"/>
     </widget>
+    <widget class="QMenu" name="menu_5">
+     <property name="title">
+      <string>Загрузка масок</string>
+     </property>
+     <addaction name="action_Sentinel2_loadCloudMask"/>
+    </widget>
     <addaction name="menu_2"/>
     <addaction name="actionBekas"/>
     <addaction name="action_LoadTimeRow"/>
+    <addaction name="menu_5"/>
    </widget>
    <widget class="QMenu" name="menu_3">
     <property name="title">
@@ -223,6 +230,11 @@
   <action name="action_SpectraClassifer">
    <property name="text">
     <string>Отправить &quot;Образец для поиска&quot; в SpectraClassifer</string>
+   </property>
+  </action>
+  <action name="action_Sentinel2_loadCloudMask">
+   <property name="text">
+    <string>Загрузить маску облачности Sentinel2</string>
    </property>
   </action>
  </widget>
