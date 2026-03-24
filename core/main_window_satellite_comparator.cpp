@@ -113,6 +113,9 @@ QList<QColor> distinctColors = {
 ViewSyncManager *syncManager;
 QVector<ImageViewer *> m_viewers;
 
+uint16_t *dataCloudMask = nullptr;
+uint16_t *dataCloudMask2 = nullptr;
+
 namespace {
 
 void downsample_uint16(const uint16_t *input, uint16_t *output, const int width,
@@ -1123,9 +1126,12 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     }
     file.close();
     int wCloudM, hCloudM;
-    auto dataCloudMask = loadMaskForSentinel(wCloudM, hCloudM);
+    dataCloudMask = loadMaskForSentinel(wCloudM, hCloudM, m_root_path);
+
     QFileInfo fi(headerName);
     m_root_path = fi.path();
+    int wCloudM2, hCloudM2;
+    dataCloudMask2 = loadMaskForSentinel(wCloudM2, hCloudM2, fi.path());
 
     QStringList imageFiles;
     QDomNodeList imageNodes = doc.elementsByTagName("IMAGE_FILE");
@@ -1335,7 +1341,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
                 QPointF point = geoToPixel(lat, lon, change_detection_geo);
                 int cdX = qBound(0, static_cast<int>(point.x()), cd_width - 1);
                 int cdY = qBound(0, static_cast<int>(point.y()), cd_height - 1);
-
+                float valueCloudMask2 = 0;
                 double nir2 = 0, swir3 = 0;
                 if (cdX >= 0 && cdX < cd_width && cdY >= 0 && cdY < cd_height) {
                     nir2 = change_detection_data[0].data[cdY * cd_width + cdX] -
@@ -1343,12 +1349,13 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
                     swir3 =
                         change_detection_data[2].data[cdY * cd_width + cdX] -
                         1000;
+                    valueCloudMask2 = dataCloudMask2[cdY * cd_width + cdX];
                 }
 
                 float valueCloudMask =
                     dataCloudMask[((y + yOffset) * wCloudM) + x + xOffset];
                 if (valueCloudMask > 0) qDebug() << "--vcm->" << valueCloudMask;
-                if (valueCloudMask < 10) {
+                if (valueCloudMask < 10 && valueCloudMask2 < 10) {
                     double nbr = sam::calculateNBR(nir2, swir3);
 
                     auto values = getKsyValues(x + xOffset, y + yOffset);
@@ -1377,6 +1384,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
         QImage img(data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
         QPixmap pixmap = QPixmap::fromImage(img);
         delete[] data;
+        delete[] dataCloudMask;
         for (int i = 0; i < change_detection_data.size(); ++i) {
             if (change_detection_data[i].data)
                 delete[] change_detection_data[i].data;
@@ -3464,27 +3472,26 @@ void MainWindowSatelliteComparator::deleteTimeRowData() {
     m_time_row.clear();
 }
 
-uint16_t *MainWindowSatelliteComparator::loadMaskForSentinel(int &width,
-                                                             int &height) {
-    qDebug() << m_root_path;
+uint16_t *MainWindowSatelliteComparator::loadMaskForSentinel(
+    int &width, int &height, const QString &rootPath) {
+    qDebug() << rootPath;
     // Проверка: существует ли папка
-    if (!QDir(m_root_path).exists() || m_root_path.isEmpty()) {
-        QMessageBox::warning(this, "Ошибка",
-                             "Папка не найдена: " + m_root_path);
+    if (!QDir(rootPath).exists() || m_root_path.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Папка не найдена: " + rootPath);
         return nullptr;
     }
     // MSK_CLDPRB_20m.jp2
 
     // QDesktopServices::openUrl(QUrl::fromLocalFile(m_root_path));
     QString pathToCloudMsk =
-        satc::getPathToCloudMaskForSentinel(m_root_path + "/manifest.safe");
+        satc::getPathToCloudMaskForSentinel(rootPath + "/manifest.safe");
     if (pathToCloudMsk.isEmpty()) {
         qDebug() << "файл маски не найден...";
         return nullptr;
     }
     qDebug() << "--->CLOUDMASK_FILE: " << pathToCloudMsk;
 
-    pathToCloudMsk.replace(0, 1, m_root_path);
+    pathToCloudMsk.replace(0, 1, rootPath);
     auto data = readTiff(pathToCloudMsk, width, height);
     qDebug() << "CLOUD MASK" << width << "--" << height;
     return data;
@@ -3492,12 +3499,9 @@ uint16_t *MainWindowSatelliteComparator::loadMaskForSentinel(int &width,
 
 void MainWindowSatelliteComparator::loadMaskForSentinelMenu() {
     int width, height;
-    if (m_root_path.isEmpty())
-        m_root_path =
-            "D:/_sat_data/Гари "
-            "Италия/S2B_MSIL2A_20250819T095029_N0511_R079_T33TVF_"
-            "20250819T120823.SAFE";
-    auto raster = loadMaskForSentinel(width, height);
+    uint16_t *raster = nullptr;
+    if (m_root_path.isEmpty()) return;
+    raster = loadMaskForSentinel(width, height, m_root_path);
 
     qDebug() << "Cloud mask: " << width << " -- " << height;
     // Создаём QImage (Format_Grayscale8)
