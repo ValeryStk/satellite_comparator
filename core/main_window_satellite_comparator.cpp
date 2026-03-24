@@ -1385,10 +1385,12 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
         QPixmap pixmap = QPixmap::fromImage(img);
         delete[] data;
         delete[] dataCloudMask;
+        delete[] dataCloudMask2;
         for (int i = 0; i < change_detection_data.size(); ++i) {
             if (change_detection_data[i].data)
                 delete[] change_detection_data[i].data;
         }
+
         return pixmap;
     }));
 }
