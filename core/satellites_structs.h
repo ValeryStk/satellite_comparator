@@ -104,6 +104,7 @@ struct SENTINEL_KSY_ADD_MULT {
 struct SENTINEL_METADATA {
     bool isHeaderValid = false;
     bool sentinel_missed_channels[SENTINEL_BANDS_NUMBER];
+    QString root_path;
     QString files[SENTINEL_BANDS_NUMBER];
     IMAGE_ATTRIBUTES image_attributes;
     PROJECTION_ATTRIBUTES projection_attributes;

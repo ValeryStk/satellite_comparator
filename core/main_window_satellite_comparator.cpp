@@ -877,6 +877,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
     deleteTimeRowData();
     QFileInfo fi(headerName);
     m_root_path = fi.path();
+    m_sentinel_metadata.root_path = fi.path();
     QString dataLoadingMessage =
         QString("Загрузка данных %1...").arg(satellite_name);
     ui->statusbar->showMessage(dataLoadingMessage);
@@ -1017,6 +1018,14 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
         m_geo.ulY = sentinel_geo["20"].ulY;
         m_geo.resX = 20;
         m_geo.resY = -20;
+
+        QString date_time = getDateTimeFromXML(xml_doc);
+        QDate date = QDate::fromString(date_time.mid(0, 10), "yyyy-MM-dd");
+        QString timePart = date_time.mid(11, 12);
+        QTime time = QTime::fromString(timePart, "HH:mm:ss.zzz");
+        QDateTime dt(date, time);
+        m_sentinel_metadata.image_attributes.date_acquired =
+            dt.toString("yyyy/MM/dd hh:mm:ss");
     }
 }
 
@@ -1126,7 +1135,9 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     }
     file.close();
     int wCloudM, hCloudM;
-    dataCloudMask = loadMaskForSentinel(wCloudM, hCloudM, m_root_path);
+
+    dataCloudMask =
+        loadMaskForSentinel(wCloudM, hCloudM, m_sentinel_metadata.root_path);
 
     QFileInfo fi(headerName);
     m_root_path = fi.path();
@@ -1283,12 +1294,14 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     // DUBLICATED CODE CHANGE DETECTION FROM COMMON SENTINEL
 
     qDebug() << "NIR2" << m_sentinel_data[8].gui_name;
-    qDebug() << "SWIR" << m_sentinel_data[9].gui_name;
-    qDebug() << "SWIR1" << m_sentinel_data[10].gui_name;
+    qDebug() << "SWIR2" << m_sentinel_data[9].gui_name;
+    qDebug() << "SWIR3" << m_sentinel_data[10].gui_name;
 
     connect(change_detection_future, &QFutureWatcher<QPixmap>::finished, [=]() {
         QLabel *label = new QLabel;
-        label->setWindowTitle(date_time_str);
+        label->setWindowTitle(
+            date_time_str + " --- " +
+            m_sentinel_metadata.image_attributes.date_acquired);
         label->setAttribute(Qt::WA_DeleteOnClose);
         label->setScaledContents(true);
         label->setPixmap(change_detection_future->result());
