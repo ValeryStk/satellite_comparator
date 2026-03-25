@@ -266,7 +266,9 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 {
     ui->setupUi(this);
     m_label_scene_coord = new QLabel;
+    m_label_date_time = new QLabel;
     ui->statusbar->addPermanentWidget(m_label_scene_coord);
+    ui->statusbar->addPermanentWidget(m_label_date_time);
     initUdpRpcConnection();
     setUpUi();
     QString app_title_version = "%1 %2 %3";
@@ -1026,6 +1028,8 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
         QDateTime dt(date, time);
         m_sentinel_metadata.image_attributes.date_acquired =
             dt.toString("yyyy/MM/dd hh:mm:ss");
+        m_label_date_time->setText(
+            m_sentinel_metadata.image_attributes.date_acquired);
     }
 }
 

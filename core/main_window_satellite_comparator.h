@@ -194,6 +194,8 @@ private:
     //! \brief Текстовое поле для оотображения географических координат
     QLabel *m_label_scene_coord;
 
+    QLabel *m_label_date_time;
+
     //! \brief Графическая сцена
     QGraphicsScene *m_scene;
 
@@ -433,6 +435,7 @@ private:
     void setUpUi();
     void deleteTimeRowData();
     void loadMaskForSentinelMenu();
-    uint16_t *loadMaskForSentinel(int &width, int &height, const QString &rootPath);
+    uint16_t *loadMaskForSentinel(int &width, int &height,
+                                  const QString &rootPath);
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H
