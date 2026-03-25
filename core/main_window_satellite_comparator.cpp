@@ -1398,6 +1398,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
         }
 
         QImage img(data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
+        img.save("last_change_detection.png", "PNG");
         QPixmap pixmap = QPixmap::fromImage(img);
         delete[] data;
         delete[] dataCloudMask;

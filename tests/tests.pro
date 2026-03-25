@@ -22,3 +22,5 @@ message_reporter.file = message_reporter/message_reporter_Tests.pro
 
 SUBDIRS += atm_correction
 atm_correction.file = atm_correction/atm_correction_Tests.pro
+
+SUBDIRS += contrast_image_test
