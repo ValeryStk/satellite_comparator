@@ -1251,7 +1251,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
     } else {
         return;
     }
-
+    QString date_time_str;
     QHash<QString, sad::geoTransform> sentinel_geo;
     if (finalFiles.empty() == false) {
         QFileInfo finfo(m_root_path + "/" + finalFiles[0] + ".jp2");
@@ -1262,6 +1262,15 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
         fi.setFile(geo_file);
         auto xml_doc = fi.absoluteFilePath();
         change_detection_geo.utmZone = extractUTMZoneFromXML(xml_doc);
+        QString date_time = getDateTimeFromXML(xml_doc);
+        QDate date = QDate::fromString(date_time.mid(0, 10), "yyyy-MM-dd");
+        qDebug() << "date: " << date.toString("yyyy-MM-dd");
+        QString timePart = date_time.mid(11, 12);  // "09:25:54.344"
+        qDebug() << "time_part -->" << timePart;
+        QTime time = QTime::fromString(timePart, "HH:mm:ss.zzz");
+
+        QDateTime dt(date, time);
+        date_time_str = dt.toString("yyyy/MM/dd hh:mm:s");
         sentinel_geo = extractGeoPositions(xml_doc);
         change_detection_geo.ulX = sentinel_geo["20"].ulX;
         change_detection_geo.ulY = sentinel_geo["20"].ulY;
@@ -1279,6 +1288,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
 
     connect(change_detection_future, &QFutureWatcher<QPixmap>::finished, [=]() {
         QLabel *label = new QLabel;
+        label->setWindowTitle(date_time_str);
         label->setAttribute(Qt::WA_DeleteOnClose);
         label->setScaledContents(true);
         label->setPixmap(change_detection_future->result());
@@ -1354,7 +1364,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
 
                 float valueCloudMask =
                     dataCloudMask[((y + yOffset) * wCloudM) + x + xOffset];
-                if (valueCloudMask > 0) qDebug() << "--vcm->" << valueCloudMask;
+
                 if (valueCloudMask < 10 && valueCloudMask2 < 10) {
                     double nbr = sam::calculateNBR(nir2, swir3);
 
