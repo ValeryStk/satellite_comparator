@@ -1021,15 +1021,11 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
         m_geo.resX = 20;
         m_geo.resY = -20;
 
-        QString date_time = getDateTimeFromXML(xml_doc);
-        QDate date = QDate::fromString(date_time.mid(0, 10), "yyyy-MM-dd");
-        QString timePart = date_time.mid(11, 12);
-        QTime time = QTime::fromString(timePart, "HH:mm:ss.zzz");
-        QDateTime dt(date, time);
-        m_sentinel_metadata.image_attributes.date_acquired =
-            dt.toString("yyyy/MM/dd hh:mm:ss");
-        m_label_date_time->setText(
-            m_sentinel_metadata.image_attributes.date_acquired);
+        QString date_time =
+            getDateTimeFromXML(xml_doc).toString("yyyy/MM/dd hh:mm:ss");
+
+        m_sentinel_metadata.image_attributes.date_acquired = date_time;
+        m_label_date_time->setText(date_time);
     }
 }
 
@@ -1277,15 +1273,8 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
         fi.setFile(geo_file);
         auto xml_doc = fi.absoluteFilePath();
         change_detection_geo.utmZone = extractUTMZoneFromXML(xml_doc);
-        QString date_time = getDateTimeFromXML(xml_doc);
-        QDate date = QDate::fromString(date_time.mid(0, 10), "yyyy-MM-dd");
-        qDebug() << "date: " << date.toString("yyyy-MM-dd");
-        QString timePart = date_time.mid(11, 12);  // "09:25:54.344"
-        qDebug() << "time_part -->" << timePart;
-        QTime time = QTime::fromString(timePart, "HH:mm:ss.zzz");
-
-        QDateTime dt(date, time);
-        date_time_str = dt.toString("yyyy/MM/dd hh:mm:s");
+        date_time_str =
+            getDateTimeFromXML(xml_doc).toString("yyyy/MM/dd hh:mm:s");
         sentinel_geo = extractGeoPositions(xml_doc);
         change_detection_geo.ulX = sentinel_geo["20"].ulX;
         change_detection_geo.ulY = sentinel_geo["20"].ulY;
@@ -2806,24 +2795,30 @@ int MainWindowSatelliteComparator::extractUTMZoneFromXML(
     return -1;
 }
 
-QString MainWindowSatelliteComparator::getDateTimeFromXML(
+QDateTime MainWindowSatelliteComparator::getDateTimeFromXML(
     const QString &xmlFilePath) {
     QFile file(xmlFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Не удалось открыть файл:" << xmlFilePath;
-        return "";
+        return QDateTime();
     }
     QDomDocument doc;
     if (!doc.setContent(&file)) {
         qWarning() << "Ошибка парсинга XML";
         file.close();
-        return "";
+        return QDateTime();
     }
     file.close();
 
     QDomNodeList nodes = doc.elementsByTagName("SENSING_TIME");
     QString date_time = nodes.at(0).toElement().text();
-    return date_time;
+
+    QDate date = QDate::fromString(date_time.mid(0, 10), "yyyy-MM-dd");
+    QString timePart = date_time.mid(11, 12);
+    QTime time = QTime::fromString(timePart, "HH:mm:ss.zzz");
+    QDateTime dt(date, time);
+
+    return dt;
 }
 
 void MainWindowSatelliteComparator::getKSY(const QPointF &pos,
@@ -3143,19 +3138,12 @@ MainWindowSatelliteComparator::getDataForSentinel_TimeRow(
         // qDebug()<<xml_doc<<"--->"<<fi.exists();
         gt.utmZone = extractUTMZoneFromXML(xml_doc);
         sentinel_geo = extractGeoPositions(xml_doc);
-        QString date_time = getDateTimeFromXML(xml_doc);
+        QDateTime dt = getDateTimeFromXML(xml_doc);
 
-        QDate date = QDate::fromString(date_time.mid(0, 10), "yyyy-MM-dd");
-        qDebug() << "date: " << date.toString("yyyy-MM-dd");
-        QString timePart = date_time.mid(11, 12);  // "09:25:54.344"
-        qDebug() << "time_part -->" << timePart;
-        QTime time = QTime::fromString(timePart, "HH:mm:ss.zzz");
-
-        QDateTime dt(date, time);
-        metadata.image_attributes.date_acquired = date_time;
+        metadata.image_attributes.date_acquired =
+            dt.toString("yyyy/MM/dd hh:mm:s");
         m_time_row_dates_unix_time.first.push_back(dt.toSecsSinceEpoch());
-        m_time_row_dates_unix_time.second.push_back(
-            date.toString("yyyy_MM_dd"));
+        m_time_row_dates_unix_time.second.push_back(dt.toString("yyyy_MM_dd"));
 
         gt.ulX = sentinel_geo["20"].ulX;
         gt.ulY = sentinel_geo["20"].ulY;
