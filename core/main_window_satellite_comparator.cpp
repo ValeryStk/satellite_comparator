@@ -25,6 +25,7 @@
 #include "google_maps_url_maker.h"
 #include "health_ranges.h"
 #include "icon_generator.h"
+#include "image_utils.h"
 #include "image_viewer.h"
 #include "json_utils.h"
 #include "layer_list.h"
@@ -1399,6 +1400,10 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
 
         QImage img(data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
         img.save("last_change_detection.png", "PNG");
+        QImage imgCopy = img;
+        applyContrast(imgCopy, 0.6);
+        imgCopy.save(QApplication::applicationDirPath() + "/cd_contrasted.png");
+        openImageByDesktop("cd_contrasted.png");
         QPixmap pixmap = QPixmap::fromImage(img);
         delete[] data;
         delete[] dataCloudMask;
