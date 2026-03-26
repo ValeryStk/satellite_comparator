@@ -212,6 +212,9 @@
    </property>
   </action>
   <action name="action_change_detection_CD">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>метод &quot;change detection&quot; (CD)</string>
    </property>
