@@ -1116,7 +1116,8 @@ void MainWindowSatelliteComparator::updateImage() {
     }
 }
 
-void MainWindowSatelliteComparator::runChangeDetectionMethod() {
+void MainWindowSatelliteComparator::runChangeDetectionMethod(
+    const QString &polygonId) {
     QString openSatMessage =
         QString("Открыть заголовочный файл %1").arg("Sentinel");
     QString headerName = getPathToSentinelHeader(this, openSatMessage);
@@ -1303,13 +1304,18 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod() {
         change_detection_future->deleteLater();
     });
 
+    auto polItem = ui->graphicsView_satellite_image->getPolygonById(polygonId);
+    auto br = polItem->boundingRect();
+    qDebug() << "bounding TL x -- y: " << br.x() << br.y();
+    qDebug() << "bounding width -- height: " << br.width() << br.height();
+
     change_detection_future->setFuture(QtConcurrent::run([=]() -> QPixmap {
-        int nYSize = 1000;
-        int nXSize = 800;
+        int nYSize = br.height();
+        int nXSize = br.width();
         uchar *data = new uchar[nYSize * nXSize * 3]();
 
-        const int xOffset = 2200;
-        const int yOffset = 3500;
+        const int xOffset = br.x();  // 2200
+        const int yOffset = br.y();  // 3500
         int cd_width = change_detection_data[0].width;
         int cd_height = change_detection_data[0].height;
 
@@ -2216,10 +2222,13 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id) {
     auto polItem = ui->graphicsView_satellite_image->getPolygonById(id);
     auto points = ui->graphicsView_satellite_image->getPointsInsidePolygon(
         polItem, m_image_item);
-    qDebug() << "POINTS SIZE: " << points.size();
+    /*qDebug() << "POINTS SIZE: " << points.size();
     for (int i = 0; i < points.size(); ++i) {
         qDebug() << points[i].x() << points[i].y();
-    }
+    }*/
+    auto br = polItem->boundingRect();
+    qDebug() << "bounding TL x -- y: " << br.x() << br.y();
+    qDebug() << "bounding width -- height: " << br.width() << br.height();
 }
 
 void MainWindowSatelliteComparator::send_roi_spectrs_to_matlab(
@@ -2474,6 +2483,8 @@ void MainWindowSatelliteComparator::setUpToolWidget() {
             this, SLOT(send_roi_spectrs_to_matlab(const QString)));
     connect(m_layer_roi_list, SIGNAL(createTimeRowGradient(const QString)),
             this, SLOT(calculate_time_row_gradient(const QString)));
+    connect(m_layer_roi_list, SIGNAL(changeDetectionRegion(const QString)),
+            this, SLOT(runChangeDetectionMethod(const QString)));
 
     QHBoxLayout *tool_root_layout = new QHBoxLayout;
     QVBoxLayout *toolLayOut = new QVBoxLayout;
@@ -2564,8 +2575,7 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
                     m_spectralDock->hide();
                 }
             });
-    connect(ui->action_change_detection_CD, &QAction::triggered, this,
-            &MainWindowSatelliteComparator::runChangeDetectionMethod);
+
     connect(ui->actionTimeRowIndices, &QAction::triggered, this,
             [this](bool checked) {
                 if (checked) {

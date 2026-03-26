@@ -178,7 +178,7 @@ private slots:
     //!
     void updateImage();
 
-    void runChangeDetectionMethod();
+    void runChangeDetectionMethod(const QString &polygonId);
 
     void sendSpectrToMatlab();
 
