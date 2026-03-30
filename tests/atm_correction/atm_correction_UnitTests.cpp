@@ -69,16 +69,20 @@ void atm_correction_UnitTests::loadSattelitesData() {
             QVector<double> full_values(601, 0);
             auto arr1 = jarrs[s][j].toObject()["spectral_response"].toArray();
             int wave_offset =
-                jarrs[s][j].toObject()["wavelength_MIN_nm"].toInt();
+                jarrs[s][j].toObject()["wavelength_MIN_nm"].toInt();  //
+            double central_wave =
+                jarrs[s][j].toObject()["wavelength_CENTRAL_nm"].toDouble();
             QString name = jarrs[s][j].toObject()["physicalBand"].toString();
-
+            if (wave_offset > 1000) continue;
             for (int i = 0; i < arr1.size(); ++i) {
-                if (wave_offset > 1000) break;
                 int index = wave_offset - 400 + i;
+                if (index > 600) break;
                 full_values[index] = arr1[i].toDouble();
-            }
+                qDebug() << "offset_index: " << index;
+            };
             dv::show(full_waverange, full_values,
-                     QString::number(wave_offset).toStdString());
+                     name.toStdString() + " (" +
+                         QString::number(central_wave).toStdString() + ")");
         }
         dv::holdOff(cfg);
     }
