@@ -3626,5 +3626,136 @@ void MainWindowSatelliteComparator::sendSpectrToMatlab() {
 }
 
 void MainWindowSatelliteComparator::loadSentinelTOA() {
-    openCommonSentinelHeaderData(satc::satellite_name_sentinel_2A_TOA);
+    m_satelite_type == sad::SENTINEL_2A;
+    QString headerName =
+        getPathToSentinelHeader(this, satc::satellite_name_sentinel_2A_TOA);
+    ui->graphicsView_satellite_image->setIsSignal(false);
+    clearLandsat9DataBands();
+    clear_satellite_data();
+    clear_all_layers();
+    m_scene_cross_square_item->setVisible(false);
+
+    QFile file(headerName);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Не удалось открыть файл Sentinel XML";
+        return;
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "Ошибка разбора XML";
+        file.close();
+        return;
+    }
+    file.close();
+    deleteTimeRowData();
+    QFileInfo fi(headerName);
+    m_root_path = fi.path();
+    m_sentinel_metadata.root_path = fi.path();
+    QString dataLoadingMessage = QString("Загрузка данных %1...")
+                                     .arg(satc::satellite_name_sentinel_2A_TOA);
+    ui->statusbar->showMessage(dataLoadingMessage);
+    QApplication::processEvents();
+
+    QStringList imageFiles;
+    QDomNodeList imageNodes = doc.elementsByTagName("IMAGE_FILE");
+    for (int i = 0; i < imageNodes.count(); ++i) {
+        QDomNode node = imageNodes.at(i);
+        imageFiles << node.toElement().text();
+    }
+
+    QStringList filteredFiles;
+
+    for (const QString &file : qAsConst(imageFiles)) {
+        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
+            // Ищем точное вхождение ключа как часть имени файла
+            if (file.contains("_" + sad::sentinel_bands_keys[i])) {
+                filteredFiles << file;
+                break;  // нашли — переходим к следующему файлу
+            }
+        }
+    }
+    qDebug() << "filtered files:" << filteredFiles;
+
+    // title_satellite_name->setText(satellite_name);
+
+    for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
+        QString target = "_" + sad::sentinel_bands_keys[i];
+        QStringList list = filteredFiles.filter(target);
+        if (list.size() == 1) {
+            m_sentinel_metadata.sentinel_missed_channels[i] = false;
+            m_sentinel_metadata.files[i] = list.at(0);
+        } else if (list.size() > 1) {
+            qDebug() << "DUBLICATED FILES IN FINAL FILES LIST...";
+        }
+        target = "";
+    }
+
+    if (m_dynamic_checkboxes_widget) m_dynamic_checkboxes_widget->clear();
+    QList<QString> availableBandNames;
+    QString gui_channels[SENTINEL_BANDS_NUMBER];
+    double central_waves[SENTINEL_BANDS_NUMBER];
+    if (m_satelite_type == sad::SENTINEL_2A) {
+        copyQStringArray(sad::sentinel_2A_gui_band_names, gui_channels,
+                         SENTINEL_BANDS_NUMBER);
+        std::copy(sad::sentinel_2A_central_wave_lengths,
+                  sad::sentinel_2A_central_wave_lengths + SENTINEL_BANDS_NUMBER,
+                  central_waves);
+    } else if (m_satelite_type == sad::SENTINEL_2B) {
+        copyQStringArray(sad::sentinel_2B_gui_band_names, gui_channels,
+                         SENTINEL_BANDS_NUMBER);
+        std::copy(sad::sentinel_2B_central_wave_lengths,
+                  sad::sentinel_2B_central_wave_lengths + SENTINEL_BANDS_NUMBER,
+                  central_waves);
+    }
+
+    for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
+        if (!m_sentinel_metadata.sentinel_missed_channels[i]) {
+            sad::BAND_DATA data;
+            if (gui_channels[i].contains("WV")) continue;
+            availableBandNames << gui_channels[i];
+            data.gui_name = gui_channels[i];
+            data.central_wave_length = central_waves[i];
+            data.file_name = m_sentinel_metadata.files[i];
+            qDebug() << "file name: -->" << data.file_name;
+            m_sentinel_data.append(data);
+        }
+    }
+    m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(
+        availableBandNames, ui->verticalLayout_satellite_bands);
+    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1, 2, 3});
+
+    connect(m_dynamic_checkboxes_widget, SIGNAL(choosed_bands_changed()), this,
+            SLOT(change_bands()));
+
+    read_sentinel2_bands_data(m_sentinel_data);
+    change_bands_and_show_image(m_sentinel_data);
+
+    ui->statusbar->showMessage("");
+    m_is_image_created = true;
+    m_scene_cross_square_item->setVisible(true);
+    ui->graphicsView_satellite_image->setIsSignal(true);
+    QHash<QString, sad::geoTransform> sentinel_geo;
+    if (filteredFiles.empty() == false) {
+        QFileInfo finfo(m_root_path + "/" + filteredFiles[0] + ".jp2");
+        QDir dir(finfo.absolutePath());
+        dir.cdUp();
+        dir.cdUp();
+        const QString geo_file = dir.path() + "/MTD_TL.xml";
+        fi.setFile(geo_file);
+        auto xml_doc = fi.absoluteFilePath();
+        qDebug() << xml_doc << "--->" << fi.exists();
+        m_geo.utmZone = extractUTMZoneFromXML(xml_doc);
+        sentinel_geo = extractGeoPositions(xml_doc);
+        m_geo.ulX = sentinel_geo["20"].ulX;
+        m_geo.ulY = sentinel_geo["20"].ulY;
+        m_geo.resX = 20;
+        m_geo.resY = -20;
+
+        QString date_time =
+            getDateTimeFromXML(xml_doc).toString("yyyy/MM/dd hh:mm:ss");
+
+        m_sentinel_metadata.image_attributes.date_acquired = date_time;
+        m_label_date_time->setText(date_time);
+    }
 }
