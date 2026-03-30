@@ -174,7 +174,15 @@ QStringList sortSentinelFilesByDateTime(const QStringList &unsortedFiles) {
 }
 
 QString getPathToSentinelHeader(QWidget *context, const QString &satName) {
-    return QFileDialog::getOpenFileName(context, satName, "",
+    qDebug() << satName;
+    QString openSatMessage =
+        QString("Открыть заголовочный файл %1").arg(satName);
+    if (satName == satc::satellite_name_sentinel_2A_TOA) {
+        qDebug() << "sentinel without atm correction file";
+        return QFileDialog::getOpenFileName(context, openSatMessage, "",
+                                            "файлы(MTD_MSIL1C.xml)");
+    }
+    return QFileDialog::getOpenFileName(context, openSatMessage, "",
                                         "файлы(MTD_MSIL2A.xml)");
 }
 
@@ -854,9 +862,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
 
 void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
     const QString &satellite_name) {
-    QString openSatMessage =
-        QString("Открыть заголовочный файл %1").arg(satellite_name);
-    QString headerName = getPathToSentinelHeader(this, openSatMessage);
+    QString headerName = getPathToSentinelHeader(this, satellite_name);
 
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
@@ -3620,5 +3626,5 @@ void MainWindowSatelliteComparator::sendSpectrToMatlab() {
 }
 
 void MainWindowSatelliteComparator::loadSentinelTOA() {
-    qDebug() << "check Sentinel TOA loader";
+    openCommonSentinelHeaderData(satc::satellite_name_sentinel_2A_TOA);
 }
