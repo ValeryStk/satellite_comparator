@@ -2586,6 +2586,8 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
             });
     connect(ui->action_Sentinel2_loadCloudMask, &QAction::triggered, this,
             &MainWindowSatelliteComparator::loadMaskForSentinelMenu);
+    connect(ui->actionSentinel2_TOA, &QAction::triggered, this,
+            &MainWindowSatelliteComparator::loadSentinelTOA);
 }
 
 void MainWindowSatelliteComparator::addBaseItemsToScene() {
@@ -3615,4 +3617,8 @@ void MainWindowSatelliteComparator::sendSpectrToMatlab() {
     QJsonObject params;
     params["matFilePath"] = fullMatPath;
     m_rpc->call("processSingleSpectr", QJsonValue(params));
+}
+
+void MainWindowSatelliteComparator::loadSentinelTOA() {
+    qDebug() << "check Sentinel TOA loader";
 }

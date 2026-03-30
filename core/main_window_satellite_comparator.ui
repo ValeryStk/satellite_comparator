@@ -124,7 +124,7 @@
      <x>0</x>
      <y>0</y>
      <width>811</width>
-     <height>32</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -146,10 +146,17 @@
      </property>
      <addaction name="action_Sentinel2_loadCloudMask"/>
     </widget>
+    <widget class="QMenu" name="menu_6">
+     <property name="title">
+      <string>Загрузка данных без атмосферной коррекции</string>
+     </property>
+     <addaction name="actionSentinel2_TOA"/>
+    </widget>
     <addaction name="menu_2"/>
     <addaction name="actionBekas"/>
     <addaction name="action_LoadTimeRow"/>
     <addaction name="menu_5"/>
+    <addaction name="menu_6"/>
    </widget>
    <widget class="QMenu" name="menu_3">
     <property name="title">
@@ -238,6 +245,11 @@
   <action name="action_Sentinel2_loadCloudMask">
    <property name="text">
     <string>Загрузить маску облачности Sentinel2</string>
+   </property>
+  </action>
+  <action name="actionSentinel2_TOA">
+   <property name="text">
+    <string>Sentinel2</string>
    </property>
   </action>
  </widget>

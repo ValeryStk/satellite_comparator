@@ -182,6 +182,8 @@ private slots:
 
     void sendSpectrToMatlab();
 
+    void loadSentinelTOA();
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
