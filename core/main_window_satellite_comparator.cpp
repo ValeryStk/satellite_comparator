@@ -3744,7 +3744,6 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         QFileInfo finfo(m_root_path + "/" + filteredFiles[0] + ".jp2");
         QDir dir(finfo.absolutePath());
         dir.cdUp();
-        dir.cdUp();
         const QString geo_file = dir.path() + "/MTD_TL.xml";
         fi.setFile(geo_file);
         auto xml_doc = fi.absoluteFilePath();
