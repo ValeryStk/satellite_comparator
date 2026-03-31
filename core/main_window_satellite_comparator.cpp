@@ -3752,7 +3752,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         if (!m_sentinel_metadata.sentinel_missed_channels[i]) {
             sad::BAND_DATA data;
-            if (gui_channels[i].contains("WV")) continue;
+            // if (gui_channels[i].contains("WV")) continue;
             availableBandNames << gui_channels[i];
             data.gui_name = gui_channels[i];
             data.central_wave_length = central_waves[i];
