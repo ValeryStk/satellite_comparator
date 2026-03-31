@@ -2613,10 +2613,13 @@ void MainWindowSatelliteComparator::read_sentinel2_bands_data(
         const QString &band_file_name = data[i].file_name;
         int xS = 0;
         int yS = 0;
-
-        data[i].data =
-            readTiff(m_root_path + "/" + band_file_name + ".jp2", xS, yS);
-
+        const QString fullPath = m_root_path + "/" + band_file_name + ".jp2";
+        // qDebug() << "FullPathToJP2" << fullPath;
+        // QFileInfo fi(fullPath);
+        // qDebug() << "Path to JP2 exists..." << fi.exists();
+        data[i].data = readTiff(fullPath, xS, yS);
+        data[i].width = xS;
+        data[i].height = yS;
         if (data[i].resolution_in_pixel_meters == "R10m") {
             qDebug() << "RESOLUTION 10 TO 20";
             int outX = xS / 2;
@@ -3626,7 +3629,6 @@ void MainWindowSatelliteComparator::sendSpectrToMatlab() {
 }
 
 void MainWindowSatelliteComparator::loadSentinelTOA() {
-    m_satelite_type == sad::SENTINEL_2A;
     QString headerName =
         getPathToSentinelHeader(this, satc::satellite_name_sentinel_2A_TOA);
     ui->graphicsView_satellite_image->setIsSignal(false);
@@ -3668,6 +3670,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
 
     for (const QString &file : qAsConst(imageFiles)) {
         for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
+            if (i != 1 && i != 2 && i != 3) continue;
             // Ищем точное вхождение ключа как часть имени файла
             if (file.contains("_" + sad::sentinel_bands_keys[i])) {
                 filteredFiles << file;
@@ -3685,12 +3688,13 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         if (list.size() == 1) {
             m_sentinel_metadata.sentinel_missed_channels[i] = false;
             m_sentinel_metadata.files[i] = list.at(0);
+            qDebug() << m_sentinel_metadata.files[i];
         } else if (list.size() > 1) {
             qDebug() << "DUBLICATED FILES IN FINAL FILES LIST...";
         }
         target = "";
     }
-
+    m_satelite_type = sad::SENTINEL_2A;
     if (m_dynamic_checkboxes_widget) m_dynamic_checkboxes_widget->clear();
     QList<QString> availableBandNames;
     QString gui_channels[SENTINEL_BANDS_NUMBER];
@@ -3723,7 +3727,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
     }
     m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(
         availableBandNames, ui->verticalLayout_satellite_bands);
-    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1, 2, 3});
+    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({0, 1, 2});
 
     connect(m_dynamic_checkboxes_widget, SIGNAL(choosed_bands_changed()), this,
             SLOT(change_bands()));
