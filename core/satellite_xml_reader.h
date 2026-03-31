@@ -11,6 +11,8 @@ sad::LANDSAT_METADATA_FILE readLandsatXmlHeader(
 
 QString getPathToCloudMaskForSentinel(const QString& pathToManifestXml);
 
+QString extractSpacecraftName(const QString& xmlFilePath);
+
 }  // namespace satc
 
 #endif  // SATELLITE_XML_READER_H

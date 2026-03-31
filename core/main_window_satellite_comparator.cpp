@@ -3671,6 +3671,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
     clearLandsat9DataBands();
     clear_satellite_data();
     clear_all_layers();
+    deleteTimeRowData();
     m_scene_cross_square_item->setVisible(false);
 
     QFile file(headerName);
@@ -3686,7 +3687,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         return;
     }
     file.close();
-    deleteTimeRowData();
+    qDebug() << "header name: " << satc::extractSpacecraftName(headerName);
     QFileInfo fi(headerName);
     m_root_path = fi.path();
     m_sentinel_metadata.root_path = fi.path();

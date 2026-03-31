@@ -3,6 +3,7 @@
 #include <QDomDocument>
 #include <QDomNode>
 #include <QFile>
+#include <QXmlStreamReader>
 
 #include "QDebug"
 
@@ -159,6 +160,56 @@ QString getPathToCloudMaskForSentinel(const QString& xmlFilePath) {
     }
 
     qWarning() << "Путь к MSK_CLDPRB_20m.jp2 не найден в XML";
+    return {};
+}
+
+QString extractSpacecraftName(const QString& xmlFilePath) {
+    QFile file(xmlFilePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Не удалось открыть файл:" << xmlFilePath;
+        return {};
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        // qWarning() << "Ошибка парсинга XML:" << doc.err;
+        file.close();
+        return {};
+    }
+    file.close();
+
+    // Ищем dataObject с spacecraftName или platform
+    QDomNodeList dataObjects = doc.elementsByTagName("dataObject");
+    for (int i = 0; i < dataObjects.size(); ++i) {
+        QDomElement dataObj = dataObjects.at(i).toElement();
+        QDomNodeList spacecraftTags =
+            dataObj.elementsByTagName("SPACECRAFT_NAME");
+        if (!spacecraftTags.isEmpty()) {
+            QDomNode spacecraftNode = spacecraftTags.at(0);
+            QString name = spacecraftNode.firstChild().nodeValue().trimmed();
+            if (!name.isEmpty()) {
+                return name;  // "Sentinel-2A"
+            }
+        }
+
+        // Альтернатива: метаданные в <platform> или <mission>
+        QDomNodeList platforms = dataObj.elementsByTagName("platform");
+        for (int j = 0; j < platforms.size(); ++j) {
+            QDomNodeList shortNames =
+                platforms.at(j).toElement().elementsByTagName("shortName");
+            if (!shortNames.isEmpty()) {
+                return shortNames.at(0).firstChild().nodeValue().trimmed();
+            }
+        }
+    }
+
+    // Прямой поиск в корне документа (standalone тег)
+    QDomNodeList spacecraftRoot = doc.elementsByTagName("SPACECRAFT_NAME");
+    if (!spacecraftRoot.isEmpty()) {
+        return spacecraftRoot.at(0).firstChild().nodeValue().trimmed();
+    }
+
+    qWarning() << "SPACECRAFT_NAME не найден в XML";
     return {};
 }
 
