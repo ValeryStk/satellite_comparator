@@ -96,6 +96,8 @@ extern const double sentinel_2B_central_wave_lengths[SENTINEL_BANDS_NUMBER];
 extern const QHash<const QString, QPair<int, int>> sentinel_resolutions;
 extern const QString sentinel_bands_keys[SENTINEL_BANDS_NUMBER];
 
+extern const QHash<int, QString> sentinel_resolution_by_index;
+
 struct SENTINEL_KSY_ADD_MULT {
     QVector<double> add[SENTINEL_BANDS_NUMBER];
     QVector<double> mult[SENTINEL_BANDS_NUMBER];

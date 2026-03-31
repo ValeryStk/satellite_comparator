@@ -141,6 +141,27 @@ void downsample_uint16(const uint16_t *input, uint16_t *output, const int width,
     }
 }
 
+void upsample_by_3_uint16(const uint16_t *input, uint16_t *output,
+                          const int width, const int height) {
+    int outWidth = width * 3;
+
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            uint16_t val = input[y * width + x];
+
+            int outY = y * 3;
+            int outX = x * 3;
+
+            // 3×3 блок
+            for (int dy = 0; dy < 3; ++dy) {
+                for (int dx = 0; dx < 3; ++dx) {
+                    output[(outY + dy) * outWidth + (outX + dx)] = val;
+                }
+            }
+        }
+    }
+}
+
 void copyQStringArray(const QString source[], QString destination[], int size) {
     for (int i = 0; i < size; ++i) {
         destination[i] = source[i];
@@ -2625,13 +2646,28 @@ void MainWindowSatelliteComparator::read_sentinel2_bands_data(
             int outX = xS / 2;
             int outY = yS / 2;
             // Выделяем буфер вручную
-            uint16_t *buffer = new uint16_t[(sizeof(uint16_t) * outX * outY)];
+            uint16_t *buffer = new uint16_t[outX * outY];
             downsample_uint16(data[i].data, buffer, xS, yS);
             delete[] data[i].data;
             data[i].data = buffer;
             data[i].width = outX;
             data[i].height = outY;
         }
+
+        if (data[i].resolution_in_pixel_meters == "R60m") {
+            qDebug() << "RESOLUTION 60 TO 20";
+            int outX = xS * 3;
+            int outY = yS * 3;
+            // Выделяем буфер вручную
+            uint16_t *buffer = new uint16_t[outX * outY];
+            upsample_by_3_uint16(data[i].data, buffer, xS, yS);
+
+            delete[] data[i].data;
+            data[i].data = buffer;
+            data[i].width = outX;
+            data[i].height = outY;
+        }
+
         qDebug() << "Sentinel band" << data[i].gui_name
                  << "size:" << data[i].width << data[i].height;
         // if (data[i].width != xS) qDebug() << "WRONG X";
@@ -3670,8 +3706,8 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
 
     for (const QString &file : qAsConst(imageFiles)) {
         for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
-            if (i != 1 && i != 2 && i != 3) continue;
-            // Ищем точное вхождение ключа как часть имени файла
+            // if (i != 1 && i != 2 && i != 3) continue;
+            //  Ищем точное вхождение ключа как часть имени файла
             if (file.contains("_" + sad::sentinel_bands_keys[i])) {
                 filteredFiles << file;
                 break;  // нашли — переходим к следующему файлу
@@ -3721,6 +3757,8 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
             data.gui_name = gui_channels[i];
             data.central_wave_length = central_waves[i];
             data.file_name = m_sentinel_metadata.files[i];
+            data.resolution_in_pixel_meters =
+                sad::sentinel_resolution_by_index[i];
             qDebug() << "file name: -->" << data.file_name;
             m_sentinel_data.append(data);
         }

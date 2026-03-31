@@ -208,5 +208,21 @@ const QHash<const QString,QPair<int,int>> sentinel_resolutions = {
     {"R60m",{1830,1830}}
 };
 
+const QHash<int, QString> sentinel_resolution_by_index = {
+{0,"R60m"},
+{1,"R10m"},
+{2,"R10m"},
+{3,"R10m"},
+{4,"R20m"},
+{5,"R20m"},
+{6,"R20m"},
+{7,"R10m"},
+{8,"R20m"},
+{9,"R60m"},
+{10,"R60m"},
+{11,"R20m"},
+{12,"R20m"}
+};
+
 // clang-format on
 }  // namespace sad
