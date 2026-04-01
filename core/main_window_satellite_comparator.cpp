@@ -3687,7 +3687,17 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         return;
     }
     file.close();
-    qDebug() << "header name: " << satc::extractSpacecraftName(headerName);
+    const QString satelliteType = satc::extractSpacecraftName(headerName);
+    m_satelite_type = sad::SENTINEL_2A;
+    QString sentinelTOAname;
+    if (satelliteType == satc::satellite_name_sentinel_2A) {
+        m_satelite_type = sad::SENTINEL_2A;
+        sentinelTOAname = satc::satellite_name_sentinel_2A_TOA;
+    } else if (satelliteType == satc::satellite_name_sentinel_2B) {
+        m_satelite_type = sad::SENTINEL_2B;
+        sentinelTOAname = satc::satellite_name_sentinel_2B_TOA;
+    }
+    title_satellite_name->setText(sentinelTOAname);
     QFileInfo fi(headerName);
     m_root_path = fi.path();
     m_sentinel_metadata.root_path = fi.path();
@@ -3731,7 +3741,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         }
         target = "";
     }
-    m_satelite_type = sad::SENTINEL_2A;
+
     if (m_dynamic_checkboxes_widget) m_dynamic_checkboxes_widget->clear();
     QList<QString> availableBandNames;
     QString gui_channels[SENTINEL_BANDS_NUMBER];
