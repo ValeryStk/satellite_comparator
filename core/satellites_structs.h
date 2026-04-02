@@ -117,6 +117,7 @@ struct SENTINEL_METADATA {
 
 struct BAND_DATA {
     double central_wave_length;
+    double solar_irradiance;
     QString gui_name;
     QString resolution_in_pixel_meters;
     double reflectance_mult;

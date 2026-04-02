@@ -664,7 +664,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     auto geo_coord_str =
         getGeoCoordinates(pos.x(), pos.y(), m_geo, lat, lon, true);
     ui->statusbar->showMessage(geo_coord_str);
-    m_speya_plot->graph(0)->setData(waves, data);
+    auto speya_data = getSentinelSpeyaValues(pos.x(), pos.y());
+    m_speya_plot->graph(0)->setData(waves, speya_data);
     m_speya_plot->rescaleAxes(true);
     m_speya_plot->replot();
 }
@@ -2751,6 +2752,31 @@ QVector<double> MainWindowSatelliteComparator::getSentinelKsyValues(
     return ksy;
 }
 
+QVector<double> MainWindowSatelliteComparator::getSentinelSpeyaValues(
+    const int x, const int y) {
+    if (m_is_image_created == false) return {};
+    if (m_sentinel_data.empty()) return {};
+    int xSize = m_sentinel_data[0].width;
+    int ySize = m_sentinel_data[0].height;
+    if (x > xSize || y > ySize) return {};
+    if (x < 0 || y < 0) return {};
+    QVector<double> speya_values;
+    for (int i = 0; i < m_sentinel_data.size(); ++i) {
+        if (m_sentinel_data[i].height != ySize ||
+            m_sentinel_data[i].width != xSize) {
+            continue;
+        };
+        uint16_t value =
+            m_sentinel_data[i].data[(y * xSize) + x] -
+            1000;  // OFFSET TODO CHECKK ALL CODE --> READ IT FROM FILE
+        double speya = sam::calculateSpeyaFromSentinelDN(
+            value, m_sentinel_data[i].solar_irradiance,
+            m_sentinel_metadata.cosSunZenithAngle);
+        speya_values.append(speya);
+    }
+    return speya_values;
+}
+
 QVector<double> MainWindowSatelliteComparator::getKsyValues(const int x,
                                                             const int y) {
     QVector<double> data;
@@ -3781,6 +3807,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
             sad::BAND_DATA data;
             // if (gui_channels[i].contains("WV")) continue;
             availableBandNames << gui_channels[i];
+            data.solar_irradiance = m_sentinel_metadata.solar_irradiance[i];
             data.gui_name = gui_channels[i];
             data.central_wave_length = central_waves[i];
             data.file_name = m_sentinel_metadata.files[i];

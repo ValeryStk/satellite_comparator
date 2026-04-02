@@ -115,7 +115,7 @@ double calculateNBRSWIR(const double swir3, const double swir2) {
 double calculateSpeyaFromSentinelDN(const double DN,  // DN WITH OFFSET
                                     const double solarIrradiance,
                                     const double cosSunZenitAngle) {
-    return (DN * solarIrradiance * cosSunZenitAngle) / M_PI * 10000;
+    return (DN * solarIrradiance * cosSunZenitAngle) / (M_PI * 10000);
 }
 
 double calculateSpeyaFromSentinelKsy(const double Ksy,
