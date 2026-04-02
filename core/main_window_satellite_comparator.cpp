@@ -3687,7 +3687,8 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         return;
     }
     file.close();
-    const QString satelliteType = satc::extractSpacecraftName(headerName);
+    const QString satelliteType =
+        satc::extractSpacecraftName(headerName).toUpper();
     m_satelite_type = sad::SENTINEL_2A;
     QString sentinelTOAname;
     if (satelliteType == satc::satellite_name_sentinel_2A) {
