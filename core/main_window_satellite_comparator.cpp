@@ -291,7 +291,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
       m_is_bekas(false),
       m_scene_text_item_metric_value(new QGraphicsTextItem),
       bekas_window(nullptr),
-      time_row_indexes_plot(new QCustomPlot)
+      time_row_indexes_plot(new QCustomPlot),
+      m_speya_plot(new QCustomPlot)
 
 {
     ui->setupUi(this);
@@ -663,6 +664,9 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     auto geo_coord_str =
         getGeoCoordinates(pos.x(), pos.y(), m_geo, lat, lon, true);
     ui->statusbar->showMessage(geo_coord_str);
+    m_speya_plot->graph(0)->setData(waves, data);
+    m_speya_plot->rescaleAxes(true);
+    m_speya_plot->replot();
 }
 
 void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
@@ -3521,8 +3525,17 @@ void MainWindowSatelliteComparator::setUpUi() {
     m_spectralDock->setAllowedAreas(Qt::AllDockWidgetAreas);
     m_spectralDock->setWidget(m_spectralWidget);
 
-    // Добавляем док в левую область
+    m_speyaDock = new QDockWidget("СПЭЯ", this);
+    m_speyaDock->setAllowedAreas(Qt::RightDockWidgetArea);
+    m_speyaDock->setWidget(m_speya_plot);
+    m_speyaDock->setMinimumSize(QSize(400, 150));
+    m_speya_plot->yAxis->setLabel("СПЭЯ Вт/(м²·мкм·ср)");
+    m_speya_plot->xAxis->setLabel("Длина волны, нм");
+    m_speya_plot->addGraph();
+
+    // Добавляем доки в левую область
     addDockWidget(Qt::RightDockWidgetArea, m_spectralDock);
+    addDockWidget(Qt::RightDockWidgetArea, m_speyaDock);
 
     setWindowTitle("Спектральный анализатор");
     resize(1200, 800);
@@ -3687,6 +3700,8 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         return;
     }
     file.close();
+    m_sentinel_metadata.solar_irradiance =
+        satc::extractSolarIrradianceForSentinel(headerName);
     const QString satelliteType =
         satc::extractSpacecraftName(headerName).toUpper();
     m_satelite_type = sad::SENTINEL_2A;
@@ -3810,5 +3825,14 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
 
         m_sentinel_metadata.image_attributes.date_acquired = date_time;
         m_label_date_time->setText(date_time);
+        // TODO CHECK AND WARN USER ABOUT WRONG VALUES AND ERRORS
+        double sunZenitAngle = satc::getSunZenitAngleForSentinel(xml_doc);
+        double sunAzimutAngle = satc::getSunAzimuthAngleForSentinel(xml_doc);
+        m_sentinel_metadata.sunZenithAngle = sunZenitAngle;
+        m_sentinel_metadata.sunAzimuthAngle = sunAzimutAngle;
+        m_sentinel_metadata.cosSunZenithAngle =
+            cos(M_PI / 180.0 * sunZenitAngle);
+        qDebug() << "sza" << sunZenitAngle << "saa" << sunAzimutAngle
+                 << "cosSun" << m_sentinel_metadata.cosSunZenithAngle;
     }
 }

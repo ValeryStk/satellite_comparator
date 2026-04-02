@@ -422,6 +422,8 @@ private:
         const QVector<QVector<sad::BAND_DATA>> &m_time_row,
         sad::SATELLITE_TYPE st);
     QCustomPlot *time_row_indexes_plot;
+    QCustomPlot *m_speya_plot;
+    QDockWidget *m_speyaDock;
     QPair<QVector<double>, QVector<QString>> m_time_row_dates_unix_time;
     void showTimeRowIndexesDataViaPlot(QVector<double> &&ndvis,
                                        QVector<double> &&ndwis);

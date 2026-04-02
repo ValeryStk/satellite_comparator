@@ -31,6 +31,31 @@ QString traverseDom(const QDomNode& node, const QString& parent_name,
     }
     return result;
 }
+
+double extractDoubleParameter(const QString& filename, const QString& tagName) {
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Cannot open file:" << file.errorString();
+        return -1.0;
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "Invalid XML data";
+        file.close();
+        return -1.0;
+    }
+    file.close();
+
+    QDomNodeList nodes = doc.elementsByTagName(tagName);
+    if (!nodes.isEmpty()) {
+        QDomElement e = nodes.item(0).toElement();
+        return e.text().toDouble();
+    }
+
+    return -1.0;
+}
+
 }  // namespace
 
 namespace satc {
@@ -211,6 +236,45 @@ QString extractSpacecraftName(const QString& xmlFilePath) {
 
     qWarning() << "SPACECRAFT_NAME не найден в XML";
     return {};
+}
+
+std::unordered_map<int, double> extractSolarIrradianceForSentinel(
+    const QString& filename) {
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Cannot open file:" << file.errorString();
+        return {};
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "Invalid XML data";
+        file.close();
+        return {};
+    }
+    file.close();
+
+    std::unordered_map<int, double> solar_irradiance;
+
+    QDomElement root = doc.documentElement();
+    QDomNodeList nodes = root.elementsByTagName("SOLAR_IRRADIANCE");
+
+    for (int i = 0; i < nodes.size(); ++i) {
+        QDomElement e = nodes.item(i).toElement();
+        int bandId = e.attribute("bandId").toInt();
+        double value = e.text().toDouble();
+        solar_irradiance[bandId] = value;
+    }
+
+    return solar_irradiance;
+}
+
+double getSunZenitAngleForSentinel(const QString& filename) {
+    return extractDoubleParameter(filename, "ZENITH_ANGLE");
+}
+
+double getSunAzimuthAngleForSentinel(const QString& filename) {
+    return extractDoubleParameter(filename, "AZIMUTH_ANGLE");
 }
 
 }  // end namespace satc

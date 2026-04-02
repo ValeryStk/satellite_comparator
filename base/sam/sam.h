@@ -81,6 +81,14 @@ inline double calculateNDSWIR(const double nir2, const double swir2);
 
 inline double calculateNBRSWIR(const double swir3, const double swir2);
 
+inline double calculateSpeyaFromSentinelDN(const double DN,
+                                           const double solarIrradiance,
+                                           const double cosSunZenitAngle);
+
+inline double calculateSpeyaFromSentinelKsy(const double Ksy,
+                                            const double solarIrradiance,
+                                            const double cosSunZenitAngle);
+
 }  // end namespace sam
 
 #endif  // SAM_H

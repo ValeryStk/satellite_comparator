@@ -7,6 +7,7 @@
 
 #include "QString"
 #include "qdebug.h"
+#include "unordered_map"
 
 constexpr int LANDSAT_BANDS_NUMBER = 11;
 constexpr int SENTINEL_BANDS_NUMBER = 13;
@@ -97,11 +98,8 @@ extern const QHash<const QString, QPair<int, int>> sentinel_resolutions;
 extern const QString sentinel_bands_keys[SENTINEL_BANDS_NUMBER];
 
 extern const QHash<int, QString> sentinel_resolution_by_index;
-
-struct SENTINEL_KSY_ADD_MULT {
-    QVector<double> add[SENTINEL_BANDS_NUMBER];
-    QVector<double> mult[SENTINEL_BANDS_NUMBER];
-};
+extern const QHash<int, int> sentinel2A_index_by_centralWave;
+extern const QHash<int, int> sentinel2B_index_by_centralWave;
 
 struct SENTINEL_METADATA {
     bool isHeaderValid = false;
@@ -110,7 +108,11 @@ struct SENTINEL_METADATA {
     QString files[SENTINEL_BANDS_NUMBER];
     IMAGE_ATTRIBUTES image_attributes;
     PROJECTION_ATTRIBUTES projection_attributes;
-    SENTINEL_KSY_ADD_MULT reflectence_params;
+    std::unordered_map<int, double>
+        solar_irradiance;  // FOR CONVERSION FROM KSY TO SPEYA
+    double sunZenithAngle;
+    double sunAzimuthAngle;
+    double cosSunZenithAngle;
 };
 
 struct BAND_DATA {
