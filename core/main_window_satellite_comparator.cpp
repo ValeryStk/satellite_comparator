@@ -910,6 +910,8 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
     }
     file.close();
     deleteTimeRowData();
+    m_sentinel_metadata.solar_irradiance =
+        satc::extractSolarIrradianceForSentinel(headerName);
     QFileInfo fi(headerName);
     m_root_path = fi.path();
     m_sentinel_metadata.root_path = fi.path();
@@ -996,6 +998,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
             if (gui_channels[i].contains("WV")) continue;
             availableBandNames << gui_channels[i];
             data.gui_name = gui_channels[i];
+            data.solar_irradiance = m_sentinel_metadata.solar_irradiance[i];
             data.central_wave_length = central_waves[i];
             data.file_name = m_sentinel_metadata.files[i];
 
@@ -1059,6 +1062,15 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
 
         m_sentinel_metadata.image_attributes.date_acquired = date_time;
         m_label_date_time->setText(date_time);
+        // TODO CHECK AND WARN USER ABOUT WRONG VALUES AND ERRORS
+        double sunZenitAngle = satc::getSunZenitAngleForSentinel(xml_doc);
+        double sunAzimutAngle = satc::getSunAzimuthAngleForSentinel(xml_doc);
+        m_sentinel_metadata.sunZenithAngle = sunZenitAngle;
+        m_sentinel_metadata.sunAzimuthAngle = sunAzimutAngle;
+        m_sentinel_metadata.cosSunZenithAngle =
+            cos(M_PI / 180.0 * sunZenitAngle);
+        qDebug() << "sza" << sunZenitAngle << "saa" << sunAzimutAngle
+                 << "cosSun" << m_sentinel_metadata.cosSunZenithAngle;
     }
 }
 
