@@ -2745,8 +2745,6 @@ QVector<double> MainWindowSatelliteComparator::getSentinelKsyValues(
             continue;
         };
         uint16_t value = m_sentinel_data[i].data[(y * xSize) + x];
-        // double ksy_d =
-        // m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
         ksy.append(value / 10000.0);
     }
     return ksy;
