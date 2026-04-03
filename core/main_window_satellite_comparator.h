@@ -443,5 +443,9 @@ private:
     void loadMaskForSentinelMenu();
     uint16_t *loadMaskForSentinel(int &width, int &height,
                                   const QString &rootPath);
+
+    bool saveSentinelToGeoTiff(const QVector<sad::BAND_DATA> &bands,
+                               const sad::geoTransform &gt,
+                               const QString &outputFilePath);
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H

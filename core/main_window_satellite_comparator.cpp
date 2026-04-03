@@ -277,6 +277,27 @@ sam::BandIndicesValues getBandsValues(const QVector<double> &waves,
     return biv;
 }
 
+void copyVectorsToClipboard(const double latitude, const double longitude,
+                            const QVector<double> &col1,
+                            const QVector<double> &col2) {
+    if (col1.size() != col2.size()) {
+        qWarning() << "Vectors have different sizes!";
+        return;
+    }
+
+    QString text = QString("//latitude: %1\n//longitude: %2\n")
+                       .arg(latitude)
+                       .arg(longitude);
+    for (int i = 0; i < col1.size(); ++i) {
+        // Формат: значение1<TAB>значение2\n
+        text +=
+            QString::number(col1[i]) + " " + QString::number(col2[i]) + "\n";
+    }
+
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(text);
+}
+
 }  // end of namespace
 
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
@@ -716,6 +737,8 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
         sample = m_sentinel_sample;
     }
 
+    copyVectorsToClipboard(m_lattitude, m_longitude, waves,
+                           getSentinelSpeyaValues(pos.x(), pos.y()));
     m_preview_plot->graph(0)->data().clear();
     m_preview_plot->graph(1)->data().clear();
     m_preview_plot->graph(0)->setData(waves, data);
@@ -3626,6 +3649,91 @@ uint16_t *MainWindowSatelliteComparator::loadMaskForSentinel(
     return data;
 }
 
+bool MainWindowSatelliteComparator::saveSentinelToGeoTiff(
+    const QVector<sad::BAND_DATA> &bands, const sad::geoTransform &gt,
+    const QString &outputFilePath) {
+    if (bands.isEmpty() || !bands[0].data) {
+        qDebug() << "Error: No bands or data provided.";
+        return false;
+    }
+
+    // 1. Инициализация GDAL
+    GDALAllRegister();
+    GDALDriver *poDriver = GetGDALDriverManager()->GetDriverByName("GTiff");
+    if (!poDriver) {
+        qDebug() << "Error: GeoTIFF driver not found.";
+        return false;
+    }
+
+    // 2. Подготовка опций создания (сжатие LZW для 16-битных данных)
+    char **papszOptions = nullptr;
+    papszOptions = CSLSetNameValue(papszOptions, "COMPRESS", "LZW");
+    papszOptions = CSLSetNameValue(papszOptions, "TILED", "YES");
+    papszOptions = CSLSetNameValue(papszOptions, "BIGTIFF", "IF_NEEDED");
+
+    // 3. Создание набора данных (Dataset)
+    // Берем размеры из первого канала
+    int nXSize = bands[0].width;
+    int nYSize = bands[0].height;
+    int nBands = bands.size();
+
+    GDALDataset *poDstDS =
+        poDriver->Create(outputFilePath.toLocal8Bit().constData(), nXSize,
+                         nYSize, nBands, GDT_UInt16, papszOptions);
+
+    if (!poDstDS) {
+        qDebug() << "Error: Could not create output file.";
+        CSLDestroy(papszOptions);
+        return false;
+    }
+
+    // 4. Установка ГЕОПРИВЯЗКИ (из вашей структуры)
+    double adfGeoTransform[6];
+    adfGeoTransform[0] = gt.ulX;
+    adfGeoTransform[1] = gt.resX;
+    adfGeoTransform[2] = gt.rotateX;
+    adfGeoTransform[3] = gt.ulY;
+    adfGeoTransform[4] = gt.rotateY;
+    adfGeoTransform[5] = gt.resY;
+    poDstDS->SetGeoTransform(adfGeoTransform);
+
+    // 5. Установка ПРОЕКЦИИ (WGS84 UTM)
+    OGRSpatialReference oSRS;
+    // Предполагаем северное полушарие (1), так как это стандарт для большинства
+    // данных Sentinel
+    oSRS.SetUTM(static_cast<int>(gt.utmZone), 1);
+    oSRS.SetWellKnownGeogCS("WGS84");
+
+    char *pszWKT = nullptr;
+    oSRS.exportToWkt(&pszWKT);
+    poDstDS->SetProjection(pszWKT);
+    CPLFree(pszWKT);
+
+    // 6. ЗАПИСЬ ДАННЫХ
+    for (int i = 0; i < nBands; ++i) {
+        GDALRasterBand *poBand = poDstDS->GetRasterBand(i + 1);
+
+        // Установка имени канала для удобства в QGIS/ArcGIS
+        poBand->SetDescription(bands[i].gui_name.toLocal8Bit().constData());
+
+        // Записываем массив целиком
+        CPLErr err =
+            poBand->RasterIO(GF_Write, 0, 0, nXSize, nYSize, bands[i].data,
+                             nXSize, nYSize, GDT_UInt16, 0, 0);
+
+        if (err != CE_None) {
+            qDebug() << "Error writing band" << i + 1;
+        }
+    }
+
+    // 7. Закрытие и очистка
+    GDALClose(poDstDS);
+    CSLDestroy(papszOptions);
+
+    qDebug() << "File saved successfully:" << outputFilePath;
+    return true;
+}
+
 void MainWindowSatelliteComparator::loadMaskForSentinelMenu() {
     int width, height;
     uint16_t *raster = nullptr;
@@ -3872,4 +3980,6 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         qDebug() << "sza" << sunZenitAngle << "saa" << sunAzimutAngle
                  << "cosSun" << m_sentinel_metadata.cosSunZenithAngle;
     }
+
+    saveSentinelToGeoTiff(m_sentinel_data, m_geo, "test2.tiff");
 }
