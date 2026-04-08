@@ -88,6 +88,11 @@ void atm_correction_UnitTests::loadSattelitesData() {
     }
 }
 
-void atm_correction_UnitTests::calculateCosSunZenitAngle() {}
+void atm_correction_UnitTests::calculateCosSunZenitAngle() {
+    calculation_solver cs;
+    // cs.updateCurrentSatellite("sentinel2a-20m");
+    cs.solve_dark_pixels("sentinel2a-20m",
+                         {39.535587, 25.645323, 11.881793, 4.310712});
+}
 
 QTEST_MAIN(atm_correction_UnitTests)

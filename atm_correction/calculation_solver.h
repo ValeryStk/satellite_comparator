@@ -9,6 +9,8 @@
 
 class calculation_solver : public QObject {
     Q_OBJECT
+    friend class atm_correction_UnitTests;
+
 public:
     calculation_solver();
     QStringList getSatellitesList();
