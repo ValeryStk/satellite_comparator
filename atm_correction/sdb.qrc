@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>sd.json</file>
+        <file>sdb.json</file>
     </qresource>
 </RCC>

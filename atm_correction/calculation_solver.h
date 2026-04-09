@@ -17,8 +17,10 @@ public:
     void updateCurrentSatellite(QString sat_name);
     static double calculateAlbedo(double tau, double beta, double g,
                                   int band_number, double band_value);
+    void start_solve_dark_pixels_async(const QString& satellite_name,
+                                       const QVector<double>& dark_pixels);
 
-private slots:
+public slots:
     void setElavationAngle(double angle);
     void solve_dark_pixels(const QString& satellite_name,
                            const QVector<double>& dark_pixels);

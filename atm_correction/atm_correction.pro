@@ -1,4 +1,4 @@
-QT+=core gui widgets
+QT+=core gui widgets concurrent
 TEMPLATE=app
 include(..\pathes.pri)
 include(atm_correction.pri)
