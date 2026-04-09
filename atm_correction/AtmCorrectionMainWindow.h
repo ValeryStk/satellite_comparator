@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 
+#include "calculation_solver.h"
+
 namespace Ui {
 class AtmCorrectionMainWindow;
 }
@@ -16,6 +18,7 @@ public:
 
 private slots:
     void on_pushButton_calculateBlack_clicked();
+    void showResult(result_values);
 
 private:
     Ui::AtmCorrectionMainWindow* ui;
