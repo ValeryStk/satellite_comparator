@@ -24,9 +24,13 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
 
 AtmCorrectionMainWindow::~AtmCorrectionMainWindow() { delete ui; }
 
+void AtmCorrectionMainWindow::setSunZenitAngle(const double value) {
+    ui->doubleSpinBox_sunZenitAngle->setValue(value);
+}
+
 void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
     // sentinel2a-20m
-    cs->setElavationAngle(90 - ui->doubleSpinBox_sunZenitAngle->value());
+    cs->setSunZenitAngle(ui->doubleSpinBox_sunZenitAngle->value());
     cs->start_solve_dark_pixels_async(
         "sentinel2a-10m",
         {ui->doubleSpinBox_black1->value(), ui->doubleSpinBox_black2->value(),

@@ -15,6 +15,7 @@ class AtmCorrectionMainWindow : public QMainWindow {
 public:
     explicit AtmCorrectionMainWindow(QWidget* parent = nullptr);
     ~AtmCorrectionMainWindow();
+    void setSunZenitAngle(const double);
 
 private slots:
     void on_pushButton_calculateBlack_clicked();

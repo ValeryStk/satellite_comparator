@@ -21,7 +21,7 @@ public:
                                        const QVector<double>& dark_pixels);
 
 public slots:
-    void setElavationAngle(double angle);
+    void setSunZenitAngle(double angle);
     void solve_dark_pixels(const QString& satellite_name,
                            const QVector<double>& dark_pixels);
 signals:

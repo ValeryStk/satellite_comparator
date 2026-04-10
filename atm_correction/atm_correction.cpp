@@ -441,9 +441,9 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
 
 namespace lss {
 
-void setElevationAngle(const double& elAngle) {
-    mu_0 = qCos(qDegreesToRadians(90 - elAngle));
-    qDebug() << "sun zenit angle: " << 90 - elAngle;
+void setSunZenitAngle(const double& angle) {
+    mu_0 = qCos(qDegreesToRadians(angle));
+    qDebug() << "sun zenit angle: " << angle;
     qDebug() << "cos mu_0: " << mu_0;
 }
 

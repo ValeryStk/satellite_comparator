@@ -3942,7 +3942,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
     }
     m_dynamic_checkboxes_widget = new DynamicCheckboxWidget(
         availableBandNames, ui->verticalLayout_satellite_bands);
-    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({0, 1, 2});
+    m_dynamic_checkboxes_widget->setInitialCheckBoxesToggled({1, 2, 3});
 
     connect(m_dynamic_checkboxes_widget, SIGNAL(choosed_bands_changed()), this,
             SLOT(change_bands()));
@@ -3978,6 +3978,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         // TODO CHECK AND WARN USER ABOUT WRONG VALUES AND ERRORS
         double sunZenitAngle = satc::getSunZenitAngleForSentinel(xml_doc);
         double sunAzimutAngle = satc::getSunAzimuthAngleForSentinel(xml_doc);
+        m_ac.setSunZenitAngle(sunZenitAngle);
         m_sentinel_metadata.sunZenithAngle = sunZenitAngle;
         m_sentinel_metadata.sunAzimuthAngle = sunAzimutAngle;
         m_sentinel_metadata.cosSunZenithAngle =
@@ -3986,5 +3987,5 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
                  << "cosSun" << m_sentinel_metadata.cosSunZenithAngle;
     }
 
-    saveSentinelToGeoTiff(m_sentinel_data, m_geo, "test2.tiff");
+    // saveSentinelToGeoTiff(m_sentinel_data, m_geo, "test2.tiff");
 }

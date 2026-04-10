@@ -47,8 +47,8 @@ void calculation_solver::start_solve_dark_pixels_async(
     });
 }
 
-void calculation_solver::setElavationAngle(double angle) {
-    lss::setElevationAngle(angle);
+void calculation_solver::setSunZenitAngle(double angle) {
+    lss::setSunZenitAngle(angle);
 }
 
 void calculation_solver::solve_dark_pixels(const QString &satellite_name,
