@@ -55,7 +55,7 @@ inline vector<double> compute_tau_m(const vector<double>& list);
 void loadAllLists() {
     if (!is_first_run) return;
     is_first_run = false;
-    jsn::getJsonArrayFromFile("sdb.json", sdb);
+    jsn::getJsonArrayFromFile(":/sdb.json", sdb);
     // jsn::getJsonObjectFromFile("satellites.json", satellites);
     qDebug() << "sdb size: " << sdb.size();
 

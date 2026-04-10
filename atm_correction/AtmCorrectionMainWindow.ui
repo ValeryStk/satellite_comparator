@@ -49,27 +49,33 @@
                 <height>20</height>
                </size>
               </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>13</height>
-               </size>
-              </property>
               <property name="text">
                <string>Зенитный угол солнца</string>
               </property>
               <property name="alignment">
-               <set>Qt::AlignHCenter|Qt::AlignTop</set>
+               <set>Qt::AlignCenter</set>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QDoubleSpinBox" name="doubleSpinBox_sunZenitAngle">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>55</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>55</height>
+               </size>
               </property>
               <property name="font">
                <font>
@@ -342,13 +348,13 @@
         <property name="minimumSize">
          <size>
           <width>460</width>
-          <height>50</height>
+          <height>30</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>150</height>
+          <height>50</height>
          </size>
         </property>
         <property name="text">
