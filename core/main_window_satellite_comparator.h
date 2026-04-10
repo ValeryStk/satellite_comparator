@@ -6,6 +6,7 @@
 #include <QMainWindow>
 #include <cstdint>
 
+#include "AtmCorrectionMainWindow.h"
 #include "QComboBox"
 #include "QDoubleSpinBox"
 #include "QtConcurrent/QtConcurrent"
@@ -447,5 +448,7 @@ private:
     bool saveSentinelToGeoTiff(const QVector<sad::BAND_DATA> &bands,
                                const sad::geoTransform &gt,
                                const QString &outputFilePath);
+    AtmCorrectionMainWindow m_ac;
+    QDockWidget *m_acDock;
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H

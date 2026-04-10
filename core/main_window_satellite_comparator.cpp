@@ -3592,9 +3592,14 @@ void MainWindowSatelliteComparator::setUpUi() {
     m_speya_plot->xAxis->setLabel("Длина волны, нм");
     m_speya_plot->addGraph();
 
+    m_acDock = new QDockWidget("Атмосферная коррекция");
+    m_acDock->setAllowedAreas(Qt::RightDockWidgetArea);
+    m_acDock->setWidget(&m_ac);
+
     // Добавляем доки в левую область
     addDockWidget(Qt::RightDockWidgetArea, m_spectralDock);
     addDockWidget(Qt::RightDockWidgetArea, m_speyaDock);
+    addDockWidget(Qt::RightDockWidgetArea, m_acDock);
 
     setWindowTitle("Спектральный анализатор");
     resize(1200, 800);

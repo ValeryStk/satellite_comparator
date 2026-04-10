@@ -19,6 +19,7 @@ include(../base/sam/sam.pri)
 include($$DAVIS_DIR/davis.pri)
 include($$MPFIT_DIR/mpfit_wrapper.pri)
 include($$BASE_DIR/image_utils/image_utils.pri)
+include($$ATM_CORR_DIR/atm_correction.pri)
 
 SOURCES += \
     cross_square.cpp \
