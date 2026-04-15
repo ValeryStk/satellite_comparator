@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 
+#include "bands_widget.h"
 #include "calculation_solver.h"
 
 namespace Ui {
@@ -23,6 +24,7 @@ private slots:
 
 private:
     Ui::AtmCorrectionMainWindow* ui;
+    BandsWidget* bands_widget;
     // void solve_dark_pixels(const QString& satellite_name,
     // const QVector<double>& dark_pixels);
 signals:

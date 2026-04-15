@@ -2,13 +2,23 @@
 
 #include <QDebug>
 
+#include "QStringList"
 #include "json_utils.h"
+#include "satellites_structs.h"
 #include "ui_AtmCorrectionMainWindow.h"
+
 calculation_solver *cs;
 
 AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AtmCorrectionMainWindow) {
     ui->setupUi(this);
+    QStringList sl;
+    for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i)
+        sl << sad::sentinel_2A_gui_band_names[i];
+    BandsWidget *bands_widget =
+        new BandsWidget(sl, ui->verticalLayout_checkBoxes);
+    // bands_widget->show();
+    ui->comboBox_satellite_type->addItems({"sentinel 2A", "sentinel 2B"});
     ui->doubleSpinBox_sunZenitAngle->setValue(45);
     ui->doubleSpinBox_black1->setValue(39.53);
     ui->doubleSpinBox_black2->setValue(25.64);
