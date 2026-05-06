@@ -22,6 +22,8 @@ private slots:
     void on_pushButton_calculateBlack_clicked();
     void showResult(result_values);
 
+    void on_comboBox_satellite_type_currentIndexChanged(const QString& arg1);
+
 private:
     Ui::AtmCorrectionMainWindow* ui;
     BandsWidget* bands_widget;

@@ -21,30 +21,19 @@ void clearLayout(QLayout* layout) {
 }  // namespace
 
 BandsWidget::BandsWidget(const QList<QString>& labels, QVBoxLayout* layout) {
-    for (const QString& label : labels) {
-        QCheckBox* checkbox = new QCheckBox(label, this);
-        connect(checkbox, &QCheckBox::toggled, this,
-                [this, checkbox]() { onCheckboxStateChanged(checkbox); });
-        m_layout = layout;
-        layout->addWidget(checkbox);
-        checkbox->setFixedWidth(150);
-        m_checkboxes.append(checkbox);
-    }
+    m_layout = layout;
+    updateCheckboxesList(labels);
 }
 
 QVector<QPair<int, int>> BandsWidget::get_choosed_bands() {
-    if (m_checkedOrder.empty()) return {};
     QVector<QPair<int, int>> choosed_bands;
-    for (auto& info : m_checkedOrder) {
-        choosed_bands.append({m_checkboxes.indexOf(info.first), info.second});
-    }
     return choosed_bands;
 }
 
 void BandsWidget::clear() {
+    if (m_checkboxes.empty()) return;
+    qDeleteAll(m_checkboxes);
     m_checkboxes.clear();
-    m_checkedOrder.clear();
-    clearLayout(m_layout);
 }
 
 void BandsWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
@@ -56,5 +45,16 @@ void BandsWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
         if (checkbox->isChecked()) {
             checkedCount++;
         }
+    }
+}
+
+void BandsWidget::updateCheckboxesList(const QList<QString>& labels) {
+    for (const QString& label : labels) {
+        QCheckBox* checkbox = new QCheckBox(label, this);
+        connect(checkbox, &QCheckBox::toggled, this,
+                [this, checkbox]() { onCheckboxStateChanged(checkbox); });
+        m_layout->addWidget(checkbox);
+        checkbox->setFixedWidth(150);
+        m_checkboxes.append(checkbox);
     }
 }

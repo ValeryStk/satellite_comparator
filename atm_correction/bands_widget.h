@@ -16,6 +16,7 @@ public:
     QVector<QPair<int, int>> get_choosed_bands();
 
     void clear();
+    void updateCheckboxesList(const QList<QString>& labels);
 
 private slots:
     void onCheckboxStateChanged(QCheckBox* checkBox);
@@ -26,8 +27,6 @@ signals:
 private:
     QVBoxLayout* m_layout;
     QList<QCheckBox*> m_checkboxes;
-    QList<QPair<QCheckBox*, int>>
-        m_checkedOrder;  // Список для отслеживания порядка выбора чекбоксов
 };
 
 #endif  // BANDS_WIDGET_H

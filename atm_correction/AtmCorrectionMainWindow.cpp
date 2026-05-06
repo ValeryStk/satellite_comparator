@@ -12,13 +12,15 @@ calculation_solver *cs;
 AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AtmCorrectionMainWindow) {
     ui->setupUi(this);
+    ui->comboBox_satellite_type->blockSignals(true);
+    ui->comboBox_satellite_type->addItems({"sentinel 2A", "sentinel 2B"});
+    ui->comboBox_satellite_type->blockSignals(false);
     QStringList sl;
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i)
         sl << sad::sentinel_2A_gui_band_names[i];
-    BandsWidget *bands_widget =
-        new BandsWidget(sl, ui->verticalLayout_checkBoxes);
+    bands_widget = new BandsWidget(sl, ui->verticalLayout_checkBoxes);
     // bands_widget->show();
-    ui->comboBox_satellite_type->addItems({"sentinel 2A", "sentinel 2B"});
+
     ui->doubleSpinBox_sunZenitAngle->setValue(45);
     ui->doubleSpinBox_black1->setValue(39.53);
     ui->doubleSpinBox_black2->setValue(25.64);
@@ -57,4 +59,18 @@ void AtmCorrectionMainWindow::showResult(result_values rv) {
     ui->doubleSpinBox_result_beta_error->setValue(rv.err_beta);
     ui->doubleSpinBox_result_g_error->setValue(rv.err_g);
     ui->doubleSpinBox_result_albedo_error->setValue(rv.err_albedo);
+}
+
+void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
+    const QString &arg1) {
+    bands_widget->clear();
+    QStringList sl;
+    if (arg1 == "sentinel 2A") {
+        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i)
+            sl << sad::sentinel_2A_gui_band_names[i];
+    } else if (arg1 == "sentinel 2B") {
+        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i)
+            sl << sad::sentinel_2B_gui_band_names[i];
+    }
+    bands_widget->updateCheckboxesList(sl);
 }
