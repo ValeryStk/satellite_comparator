@@ -15,10 +15,6 @@ public:
 
     QVector<QPair<int, int>> get_choosed_bands();
 
-    void setInitialCheckBoxesToggled(const QVector<int>& toToggle);
-
-    void setRGBchannels();
-
     void clear();
 
 private slots:

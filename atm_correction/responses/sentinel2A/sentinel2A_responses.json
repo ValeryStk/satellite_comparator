@@ -1,6 +1,7 @@
 [
   {
     "physicalBand": "B1",
+    "gui_name":"B01 - 443  nm AER",
     "wavelength_MIN_nm": 412,
     "wavelength_MAX_nm": 456,
     "wavelength_CENTRAL_nm": 442.7,
@@ -8,6 +9,7 @@
   },
   {
     "physicalBand": "B2",
+    "gui_name":"B02 - 493  nm BLUE",
     "wavelength_MIN_nm": 456,
     "wavelength_MAX_nm": 533,
     "wavelength_CENTRAL_nm": 492.7,
@@ -15,6 +17,7 @@
   },
   {
     "physicalBand": "B3",
+    "gui_name":"B03 - 560  nm GREEN",
     "wavelength_MIN_nm": 538,
     "wavelength_MAX_nm": 583,
     "wavelength_CENTRAL_nm": 559.8,
@@ -22,6 +25,7 @@
   },
   {
     "physicalBand": "B4",
+    "gui_name":"B04 - 665  nm RED",
     "wavelength_MIN_nm": 646,
     "wavelength_MAX_nm": 684,
     "wavelength_CENTRAL_nm": 664.6,
@@ -29,6 +33,7 @@
   },
   {
     "physicalBand": "B5",
+    "gui_name":"B05 - 704  nm RE1",
     "wavelength_MIN_nm": 695,
     "wavelength_MAX_nm": 714,
     "wavelength_CENTRAL_nm": 704.1,
@@ -36,6 +41,7 @@
   },
   {
     "physicalBand": "B6",
+    "gui_name":"B06 - 740  nm RE2",
     "wavelength_MIN_nm": 731,
     "wavelength_MAX_nm": 749,
     "wavelength_CENTRAL_nm": 740.5,
@@ -43,6 +49,7 @@
   },
   {
     "physicalBand": "B7",
+    "gui_name":"B07 - 783  nm RE3",
     "wavelength_MIN_nm": 769,
     "wavelength_MAX_nm": 797,
     "wavelength_CENTRAL_nm": 782.8,
@@ -50,6 +57,7 @@
   },
   {
     "physicalBand": "B8",
+    "gui_name":"B08 - 833  nm NIR1",
     "wavelength_MIN_nm": 760,
     "wavelength_MAX_nm": 907,
     "wavelength_CENTRAL_nm": 832.8,
@@ -57,6 +65,7 @@
   },
   {
     "physicalBand": "B8A",
+    "gui_name":"B8A - 865  nm NIR2",
     "wavelength_MIN_nm": 837,
     "wavelength_MAX_nm": 881,
     "wavelength_CENTRAL_nm": 864.7,
@@ -64,6 +73,7 @@
   },
   {
     "physicalBand": "B9",
+    "gui_name":"B09 - 945  nm WV",
     "wavelength_MIN_nm": 932,
     "wavelength_MAX_nm": 958,
     "wavelength_CENTRAL_nm": 945.1,
@@ -71,6 +81,7 @@
   },
   {
     "physicalBand": "B10",
+    "gui_name":"B10 - 1374 nm SWIR1",
     "wavelength_MIN_nm": 1337,
     "wavelength_MAX_nm": 1412,
     "wavelength_CENTRAL_nm": 1373.5,
@@ -78,6 +89,7 @@
   },
   {
     "physicalBand": "B11",
+    "gui_name":"B11 - 1614 nm SWIR2",
     "wavelength_MIN_nm": 1539,
     "wavelength_MAX_nm": 1682,
     "wavelength_CENTRAL_nm": 1613.7,
@@ -85,6 +97,7 @@
   },
   {
     "physicalBand": "B12",
+    "gui_name":"B12 - 2202 nm SWIR3",
     "wavelength_MIN_nm": 2078,
     "wavelength_MAX_nm": 2320,
     "wavelength_CENTRAL_nm": 2202.4,

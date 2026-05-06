@@ -41,17 +41,6 @@ QVector<QPair<int, int>> BandsWidget::get_choosed_bands() {
     return choosed_bands;
 }
 
-void BandsWidget::setInitialCheckBoxesToggled(const QVector<int>& toToggle) {}
-
-void BandsWidget::setRGBchannels() {
-    for (int i = 0; i < m_checkboxes.size(); ++i) {
-        m_checkboxes[i]->blockSignals(true);
-        m_checkboxes[i]->setChecked(false);
-        m_checkboxes[i]->blockSignals(false);
-    }
-    setInitialCheckBoxesToggled({1, 2, 3});
-}
-
 void BandsWidget::clear() {
     m_checkboxes.clear();
     m_checkedOrder.clear();
@@ -68,5 +57,4 @@ void BandsWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
             checkedCount++;
         }
     }
-    emit choosed_bands_changed();
 }
