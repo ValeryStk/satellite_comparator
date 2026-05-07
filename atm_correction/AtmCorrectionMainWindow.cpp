@@ -27,8 +27,6 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     ui->doubleSpinBox_black3->setValue(11.88);
     ui->doubleSpinBox_black4->setValue(4.31);
     qRegisterMetaType<result_values>();
-    QJsonArray jarr;
-    jsn::getJsonArrayFromFile(":/sdb.json", jarr);
     cs = new calculation_solver;
     connect(cs, &calculation_solver::darkpixels_calculation_finished, this,
             &AtmCorrectionMainWindow::showResult);
