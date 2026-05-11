@@ -13,7 +13,7 @@ public:
     explicit BandsWidget(const QList<QString>& labels,
                          QVBoxLayout* layout = nullptr);
 
-    QVector<QPair<int, int>> get_choosed_bands();
+    QVector<int> get_choosed_bands();
 
     void clear();
     void updateCheckboxesList(const QList<QString>& labels);

@@ -25,8 +25,11 @@ BandsWidget::BandsWidget(const QList<QString>& labels, QVBoxLayout* layout) {
     updateCheckboxesList(labels);
 }
 
-QVector<QPair<int, int>> BandsWidget::get_choosed_bands() {
-    QVector<QPair<int, int>> choosed_bands;
+QVector<int> BandsWidget::get_choosed_bands() {
+    QVector<int> choosed_bands;
+    for (int i = 0; i < m_checkboxes.size(); ++i) {
+        if (m_checkboxes[i]->isChecked()) choosed_bands.append(i);
+    }
     return choosed_bands;
 }
 
