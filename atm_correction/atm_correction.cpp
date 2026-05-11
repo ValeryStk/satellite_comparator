@@ -63,7 +63,8 @@ void loadAllLists() {
     qDebug() << "initial satellite:" << satellite_name_key;
     for (int i = 0; i < sdb.size(); ++i) {
         T_H2O_list.push_back(sdb[i].toObject()["h2o"].toDouble());
-        T_O2_list.push_back(sdb[i].toObject()["o2"].toDouble());
+        T_O2_list.push_back(
+            sdb[i].toObject()["o2"].toDouble());  // Не планируется использовать
         T_O3_list.push_back(sdb[i].toObject()["o3"].toDouble());
         lambda_list.push_back(sdb[i].toObject()["wavelength"].toDouble());
         B_lambda_teta_list.push_back(sdb[i].toObject()["sun"].toDouble());
