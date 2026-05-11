@@ -31,9 +31,10 @@ QVector<QPair<int, int>> BandsWidget::get_choosed_bands() {
 }
 
 void BandsWidget::clear() {
-    if (m_checkboxes.empty()) return;
-    qDeleteAll(m_checkboxes);
-    m_checkboxes.clear();
+    if (!m_checkboxes.empty()) {
+        qDeleteAll(m_checkboxes);
+        m_checkboxes.clear();
+    }
 }
 
 void BandsWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
