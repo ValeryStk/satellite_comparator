@@ -22,12 +22,11 @@ vector<double> T_O3_list;
 vector<double> B_lambda_teta_list;
 vector<double> divider_list;
 vector<double> tau_m;
-QJsonObject satellites;
-QJsonArray sdb;  // old structure --> delete later
+
 QJsonArray atm_params;
 QJsonArray sat_sentinel2A_respns;
 QJsonArray sat_sentinel2B_respns;
-QString satellite_name_key = "bka";
+QString satellite_name_key = "sentinel2a-10m";
 QStringList satellites_list;
 vector<double> dark_pixels = {39.535587, 25.645323, 11.881793, 4.310712};
 

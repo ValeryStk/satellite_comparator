@@ -19,6 +19,10 @@
 #include "math.h"
 #include "mpfit.h"
 
+namespace lss {
+void updateSatelliteResponses(const QString& satellite_name);
+}
+
 namespace {
 using std::string;
 using std::vector;
@@ -39,13 +43,6 @@ struct vars_struct {
     double* albedo_err;
 };
 
-/*struct result_values{
-    double tau_0_a; // фикс при вычеслении lookup table
-    double beta;    // фикс при вычеслении lookup table
-    double g;       // фикс при вычеслении lookup table
-    double albedo;  // искомое для матрицы
-};*/
-
 double mu_0 = qCos(qDegreesToRadians(41.3));
 static result_values rv;
 void calculDividerList(vector<vector<double>>& responses);
@@ -62,8 +59,6 @@ void loadAllLists() {
     jsn::getJsonArrayFromFile(
         ":/responses/sentinel2B/sentinel2B_responses.json",
         sat_sentinel2B_respns);
-    satellite_name_key = "sentinel2b-10m";
-    qDebug() << "initial satellite:" << satellite_name_key;
 
     for (int i = 0; i < atm_params.size(); ++i) {
         double h2o = atm_params[i].toObject()["h2o"].toDouble();
@@ -77,35 +72,9 @@ void loadAllLists() {
         double sun = atm_params[i].toObject()["sun"].toDouble();
         B_lambda_teta_list.push_back(sun);
     }
-
-    QJsonArray sentinel2B_jar;
-    QJsonArray sentinel2A_jar;
-    jsn::getJsonArrayFromFile(
-        ":/responses/sentinel2B/sentinel2B_responses.json", sentinel2B_jar);
-    jsn::getJsonArrayFromFile(
-        ":/responses/sentinel2A/sentinel2A_responses.json", sentinel2A_jar);
-
-    QVector<double> full_waverange(601);
-    std::iota(full_waverange.begin(), full_waverange.end(), 400);
-    std::vector<double> full_values(601, 0);
-    for (int j = 0; j < sentinel2B_jar.size(); ++j) {
-        auto arr = sentinel2B_jar[j].toObject()["spectral_response"].toArray();
-        int wave_offset =
-            sentinel2B_jar[j].toObject()["wavelength_MIN_nm"].toInt();  //
-        double central_wave =
-            sentinel2B_jar[j].toObject()["wavelength_CENTRAL_nm"].toDouble();
-        QString name = sentinel2B_jar[j].toObject()["physicalBand"].toString();
-        if (wave_offset > 1000) continue;
-        for (int i = 0; i < arr.size(); ++i) {
-            int index = wave_offset - 400 + i;
-            if (index > 600) break;
-            full_values[index] = arr[i].toDouble();
-        };
-        S_lambda_lists.push_back(full_values);
-    }
-    qDebug() << "Responses: " << S_lambda_lists[0].size();
-    calculDividerList(S_lambda_lists);
     tau_m = compute_tau_m(lambda_list);
+    satellite_name_key = "";
+    lss::updateSatelliteResponses("sentinel 2A");
 }
 
 void calculDividerList(vector<vector<double>>& responses) {
@@ -465,33 +434,40 @@ void setSunZenitAngle(const double& angle) {
 }
 
 void updateSatelliteResponses(const QString& satellite_name) {
+    //"sentinel 2A", "sentinel 2B"
     qDebug() << "Update satellite name...." << satellite_name;
-
-    auto a1 = satellites["4"].toArray();
-    bool isExists = false;
-    for (int i = 0; i < a1.size(); ++i) {
-        if (a1[i] == satellite_name) {
-            isExists = true;
-            break;
-        }
-    }
-    if (!isExists) {
+    if (satellite_name_key == satellite_name) {
+        qDebug() << "We do not need to update satellite responses...";
         return;
     }
     satellite_name_key = satellite_name;
-    for (int i = 0; i < sdb.size(); ++i) {
-        auto response = sdb[i].toObject()[satellite_name_key].toArray();
-        for (int j = 0; j < response.size(); ++j) {
-            S_lambda_lists[j][i] = response[j].toDouble();
-        }
-        qDebug() << satellite_name_key << i + 1 << "--" << S_lambda_lists[0][i]
-                 << S_lambda_lists[1][i] << S_lambda_lists[2][i]
-                 << S_lambda_lists[3][i];
+    QJsonArray sat_responses;
+    if (satellite_name == "sentinel 2A") {
+        sat_responses = sat_sentinel2A_respns;
+    } else if (satellite_name == "sentinel 2B") {
+        sat_responses = sat_sentinel2B_respns;
+    } else {
+        Q_ASSERT(false);
+        qDebug() << "UKNOWN SATTELITE NAME";
     }
+    S_lambda_lists.clear();
+    std::vector<double> full_values(601, 0);
+    qDebug() << "sentinel_responses size..." << sat_responses.size();
+    for (int j = 0; j < sat_responses.size(); ++j) {
+        auto arr = sat_responses[j].toObject()["spectral_response"].toArray();
+        int wave_offset =
+            sat_responses[j].toObject()["wavelength_MIN_nm"].toInt();
+        if (wave_offset > 1000) continue;
+        for (int i = 0; i < arr.size(); ++i) {
+            int index = wave_offset - 400 + i;
+            if (index > 600) break;
+            full_values[index] = arr[i].toDouble();
+        };
+        S_lambda_lists.push_back(full_values);
+    }
+    qDebug() << "Responses: " << S_lambda_lists[0].size();
     calculDividerList(S_lambda_lists);
 }
-
-QStringList getSatellitesList() { return satellites_list; }
 
 result_values optimize(const QString& sat_name, const QVector<double>& blacks) {
     if (is_first_run) {

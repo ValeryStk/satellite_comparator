@@ -8,10 +8,6 @@
 
 calculation_solver::calculation_solver() { ::loadAllLists(); }
 
-QStringList calculation_solver::getSatellitesList() {
-    return lss::getSatellitesList();
-}
-
 void calculation_solver::updateCurrentSatellite(QString sat_name) {
     lss::updateSatelliteResponses(sat_name);
 }

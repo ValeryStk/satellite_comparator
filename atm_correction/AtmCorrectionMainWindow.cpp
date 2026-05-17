@@ -3,7 +3,6 @@
 #include <QDebug>
 
 #include "QStringList"
-#include "json_utils.h"
 #include "satellites_structs.h"
 #include "ui_AtmCorrectionMainWindow.h"
 
@@ -72,4 +71,5 @@ void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
             sl << sad::sentinel_2B_gui_band_names[i];
     }
     bands_widget->updateCheckboxesList(sl);
+    cs->updateCurrentSatellite(arg1);
 }

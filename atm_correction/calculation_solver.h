@@ -5,7 +5,6 @@
 #include <QVector>
 
 #include "common_types.h"
-#include "json_utils.h"
 
 class calculation_solver : public QObject {
     Q_OBJECT
@@ -13,7 +12,6 @@ class calculation_solver : public QObject {
 
 public:
     calculation_solver();
-    QStringList getSatellitesList();
     void updateCurrentSatellite(QString sat_name);
     static double calculateAlbedo(double tau, double beta, double g,
                                   int band_number, double band_value);
