@@ -1,4 +1,4 @@
-QT += testlib core
+QT += testlib core printsupport
 
 include(../../pathes.pri)
 include ($$ATM_CORR_DIR/atm_correction.pri)

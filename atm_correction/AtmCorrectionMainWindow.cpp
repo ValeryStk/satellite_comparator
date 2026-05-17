@@ -11,6 +11,7 @@ calculation_solver *cs;
 AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AtmCorrectionMainWindow) {
     ui->setupUi(this);
+    atm_params_plot = ui->widget_atm_params;
     ui->comboBox_satellite_type->blockSignals(true);
     ui->comboBox_satellite_type->addItems({"sentinel 2A", "sentinel 2B"});
     ui->comboBox_satellite_type->blockSignals(false);
@@ -38,13 +39,12 @@ void AtmCorrectionMainWindow::setSunZenitAngle(const double value) {
 }
 
 void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
-    // sentinel2a-20m
     cs->setSunZenitAngle(ui->doubleSpinBox_sunZenitAngle->value());
     cs->start_solve_dark_pixels_async(
         ui->comboBox_satellite_type->currentText(),
         {ui->doubleSpinBox_black1->value(), ui->doubleSpinBox_black2->value(),
          ui->doubleSpinBox_black3->value(), ui->doubleSpinBox_black4->value()});
-    qDebug() << bands_widget->get_choosed_bands();
+    // qDebug() << bands_widget->get_choosed_bands(); первые 10 каналов
 }
 
 void AtmCorrectionMainWindow::showResult(result_values rv) {

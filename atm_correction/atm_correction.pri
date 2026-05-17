@@ -13,6 +13,7 @@ SOURCES += \
     $$PWD/AtmCorrectionMainWindow.cpp \
     $$CORE_DIR/satellites_structs.cpp \
     $$PWD/bands_widget.cpp \
+    $$CORE_DIR/qcustomplot.cpp \
 
 HEADERS += \
     $$CORE_DIR/common_types.h \
@@ -23,6 +24,7 @@ HEADERS += \
     $$PWD/AtmCorrectionMainWindow.h \
     $$CORE_DIR/satellite_structs.h \
     $$PWD/bands_widget.h \
+    $$CORE_DIR/qcustomplot.h \
 
 FORMS += \
 $$PWD/AtmCorrectionMainWindow.ui \

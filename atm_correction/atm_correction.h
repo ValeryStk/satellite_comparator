@@ -26,7 +26,7 @@ vector<double> tau_m;
 QJsonArray atm_params;
 QJsonArray sat_sentinel2A_respns;
 QJsonArray sat_sentinel2B_respns;
-QString satellite_name_key = "sentinel2a-10m";
+QString satellite_name_key = "";
 QStringList satellites_list;
 vector<double> dark_pixels = {39.535587, 25.645323, 11.881793, 4.310712};
 
