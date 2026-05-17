@@ -13,7 +13,7 @@ struct ro_final {
     double band_value = 0.0;
 } ro_fin;
 
-vector<vector<double>> S_lambda_lists(4);
+vector<vector<double>> S_lambda_lists;
 vector<double> lambda_waves;
 vector<double> T_H2O_list;
 vector<double> lambda_list;
@@ -23,7 +23,10 @@ vector<double> B_lambda_teta_list;
 vector<double> divider_list;
 vector<double> tau_m;
 QJsonObject satellites;
-QJsonArray sdb;
+QJsonArray sdb;  // old structure --> delete later
+QJsonArray atm_params;
+QJsonArray sat_sentinel2A_respns;
+QJsonArray sat_sentinel2B_respns;
 QString satellite_name_key = "bka";
 QStringList satellites_list;
 vector<double> dark_pixels = {39.535587, 25.645323, 11.881793, 4.310712};

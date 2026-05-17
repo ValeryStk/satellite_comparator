@@ -18,7 +18,6 @@
 #include "json_utils.h"
 #include "math.h"
 #include "mpfit.h"
-#include "satellite_adder.h"
 
 namespace {
 using std::string;
@@ -55,23 +54,54 @@ inline vector<double> compute_tau_m(const vector<double>& list);
 void loadAllLists() {
     if (!is_first_run) return;
     is_first_run = false;
-    jsn::getJsonArrayFromFile(":/sdb.json", sdb);
-    // jsn::getJsonObjectFromFile("satellites.json", satellites);
-    qDebug() << "sdb size: " << sdb.size();
 
+    jsn::getJsonArrayFromFile(":/atm_params/atm_params.json", atm_params);
+    jsn::getJsonArrayFromFile(
+        ":/responses/sentinel2A/sentinel2A_responses.json",
+        sat_sentinel2A_respns);
+    jsn::getJsonArrayFromFile(
+        ":/responses/sentinel2B/sentinel2B_responses.json",
+        sat_sentinel2B_respns);
     satellite_name_key = "sentinel2b-10m";
     qDebug() << "initial satellite:" << satellite_name_key;
-    for (int i = 0; i < sdb.size(); ++i) {
-        T_H2O_list.push_back(sdb[i].toObject()["h2o"].toDouble());
-        T_O2_list.push_back(
-            sdb[i].toObject()["o2"].toDouble());  // Не планируется использовать
-        T_O3_list.push_back(sdb[i].toObject()["o3"].toDouble());
-        lambda_list.push_back(sdb[i].toObject()["wavelength"].toDouble());
-        B_lambda_teta_list.push_back(sdb[i].toObject()["sun"].toDouble());
-        auto response = sdb[i].toObject()[satellite_name_key].toArray();
-        for (int j = 0; j < response.size(); ++j) {
-            S_lambda_lists[j].push_back(response[j].toDouble());
-        }
+
+    for (int i = 0; i < atm_params.size(); ++i) {
+        double h2o = atm_params[i].toObject()["h2o"].toDouble();
+        T_H2O_list.push_back(h2o);
+        double o2 = atm_params[i].toObject()["o2"].toDouble();
+        T_O2_list.push_back(o2);
+        double o3 = atm_params[i].toObject()["o3"].toDouble();
+        T_O3_list.push_back(o3);
+        double wl = atm_params[i].toObject()["wavelength"].toDouble();
+        lambda_list.push_back(wl);
+        double sun = atm_params[i].toObject()["sun"].toDouble();
+        B_lambda_teta_list.push_back(sun);
+    }
+
+    QJsonArray sentinel2B_jar;
+    QJsonArray sentinel2A_jar;
+    jsn::getJsonArrayFromFile(
+        ":/responses/sentinel2B/sentinel2B_responses.json", sentinel2B_jar);
+    jsn::getJsonArrayFromFile(
+        ":/responses/sentinel2A/sentinel2A_responses.json", sentinel2A_jar);
+
+    QVector<double> full_waverange(601);
+    std::iota(full_waverange.begin(), full_waverange.end(), 400);
+    std::vector<double> full_values(601, 0);
+    for (int j = 0; j < sentinel2B_jar.size(); ++j) {
+        auto arr = sentinel2B_jar[j].toObject()["spectral_response"].toArray();
+        int wave_offset =
+            sentinel2B_jar[j].toObject()["wavelength_MIN_nm"].toInt();  //
+        double central_wave =
+            sentinel2B_jar[j].toObject()["wavelength_CENTRAL_nm"].toDouble();
+        QString name = sentinel2B_jar[j].toObject()["physicalBand"].toString();
+        if (wave_offset > 1000) continue;
+        for (int i = 0; i < arr.size(); ++i) {
+            int index = wave_offset - 400 + i;
+            if (index > 600) break;
+            full_values[index] = arr[i].toDouble();
+        };
+        S_lambda_lists.push_back(full_values);
     }
     qDebug() << "Responses: " << S_lambda_lists[0].size();
     calculDividerList(S_lambda_lists);
@@ -79,32 +109,18 @@ void loadAllLists() {
 }
 
 void calculDividerList(vector<vector<double>>& responses) {
-    double sum1 = 0;
-    double sum2 = 0;
-    double sum3 = 0;
-    double sum4 = 0;
+    if (!divider_list.empty()) divider_list.clear();
+    divider_list.resize(responses.size());
     size_t sizeList = responses[0].size();
     Q_ASSERT(sizeList == NUMBER_WAVELENGTH);
-    QString responses_txt;
     for (uintmax_t i = 0; i < responses.size(); ++i) {
         for (size_t j = 0; j < sizeList; ++j) {
-            if (i == 0) {
-                sum1 += responses[i][j];
-            }
-            if (i == 1) {
-                sum2 += responses[i][j];
-            }
-            if (i == 2) {
-                sum3 += responses[i][j];
-            }
-            if (i == 3) {
-                sum4 += responses[i][j];
-            }
+            divider_list[i] += responses[i][j];
         }
     }
-
-    divider_list = {sum1, sum2, sum3, sum4};
-    qDebug() << "DIVIDED: " << sum1 << sum2 << sum3 << sum4;
+    for (int i = 0; i < divider_list.size(); ++i) {
+        qDebug() << "DIVIDED: " << divider_list[i];
+    }
 }
 
 inline vector<double> compute_tau_m(const vector<double>& list) {

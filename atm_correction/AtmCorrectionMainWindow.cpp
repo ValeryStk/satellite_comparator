@@ -41,11 +41,10 @@ void AtmCorrectionMainWindow::setSunZenitAngle(const double value) {
 void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
     // sentinel2a-20m
     cs->setSunZenitAngle(ui->doubleSpinBox_sunZenitAngle->value());
-    /*cs->start_solve_dark_pixels_async(
+    cs->start_solve_dark_pixels_async(
         "sentinel2a-10m",
         {ui->doubleSpinBox_black1->value(), ui->doubleSpinBox_black2->value(),
-         ui->doubleSpinBox_black3->value(),
-       ui->doubleSpinBox_black4->value()});*/
+         ui->doubleSpinBox_black3->value(), ui->doubleSpinBox_black4->value()});
     qDebug() << bands_widget->get_choosed_bands();
 }
 
