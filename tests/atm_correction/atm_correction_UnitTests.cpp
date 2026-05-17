@@ -49,10 +49,12 @@ void atm_correction_UnitTests::loadSattelitesData() {
     jsn::saveJsonArrayToFile("test.json", out_jar, QJsonDocument::Indented);*/
     QJsonArray sentinel2B_jar;
     QJsonArray sentinel2A_jar;
+    QJsonArray atm_params_jar;
     jsn::getJsonArrayFromFile(
         ":/responses/sentinel2B/sentinel2B_responses.json", sentinel2B_jar);
     jsn::getJsonArrayFromFile(
         ":/responses/sentinel2A/sentinel2A_responses.json", sentinel2A_jar);
+    jsn::getJsonArrayFromFile(":/atm_params/atm_params.json", atm_params_jar);
     QVector<QJsonArray> jarrs = {sentinel2A_jar, sentinel2B_jar};
 
     QVector<double> full_waverange(601);
