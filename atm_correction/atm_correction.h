@@ -7,6 +7,7 @@
 #include <vector>
 
 using std::vector;
+
 struct ro_final {
     double B1 = 0.0;
     double band_number = 0.0;

@@ -12,6 +12,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AtmCorrectionMainWindow) {
     ui->setupUi(this);
     atm_params_plot = ui->widget_atm_params;
+
     ui->comboBox_satellite_type->blockSignals(true);
     ui->comboBox_satellite_type->addItems({"sentinel 2A", "sentinel 2B"});
     ui->comboBox_satellite_type->blockSignals(false);
@@ -30,6 +31,18 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     cs = new calculation_solver;
     connect(cs, &calculation_solver::darkpixels_calculation_finished, this,
             &AtmCorrectionMainWindow::showResult);
+    auto lambdas = cs->getLambdaList();
+    auto responses = cs->getResponsesList();
+    auto w = QVector<double>::fromStdVector(lambdas);
+    for (size_t i = 0; i < responses.size(); ++i) {
+        atm_params_plot->addGraph();
+        auto v = QVector<double>::fromStdVector(responses[i]);
+        atm_params_plot->graph(i)->setData(w, v);
+    }
+    atm_params_plot->addGraph();
+    auto h20 = QVector<double>::fromStdVector(cs->get_h2o());
+    atm_params_plot->graph(responses.size() - 1)->setData(w, h20);
+    atm_params_plot->rescaleAxes(true);
 }
 
 AtmCorrectionMainWindow::~AtmCorrectionMainWindow() { delete ui; }
@@ -72,4 +85,17 @@ void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
     }
     bands_widget->updateCheckboxesList(sl);
     cs->updateCurrentSatellite(arg1);
+
+    auto lambdas = cs->getLambdaList();
+    auto responses = cs->getResponsesList();
+    auto w = QVector<double>::fromStdVector(lambdas);
+
+    for (size_t i = 0; i < responses.size(); ++i) {
+        auto v = QVector<double>::fromStdVector(responses[i]);
+        atm_params_plot->graph(i)->setData(w, v);
+    }
+    auto h20 = QVector<double>::fromStdVector(cs->get_h2o());
+    atm_params_plot->graph(responses.size() - 1)->setData(w, h20);
+    atm_params_plot->replot();
+    atm_params_plot->rescaleAxes(true);
 }

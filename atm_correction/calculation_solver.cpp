@@ -8,6 +8,16 @@
 
 calculation_solver::calculation_solver() { ::loadAllLists(); }
 
+std::vector<double> calculation_solver::getLambdaList() const {
+    return lambda_list;
+}
+
+std::vector<std::vector<double>> calculation_solver::getResponsesList() {
+    return S_lambda_lists;
+}
+
+std::vector<double> calculation_solver::get_h2o() { return T_H2O_list; }
+
 void calculation_solver::updateCurrentSatellite(QString sat_name) {
     lss::updateSatelliteResponses(sat_name);
 }

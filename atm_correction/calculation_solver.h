@@ -12,6 +12,9 @@ class calculation_solver : public QObject {
 
 public:
     calculation_solver();
+    std::vector<double> getLambdaList() const;
+    std::vector<std::vector<double> > getResponsesList();
+    std::vector<double> get_h2o();
     void updateCurrentSatellite(QString sat_name);
     static double calculateAlbedo(double tau, double beta, double g,
                                   int band_number, double band_value);
