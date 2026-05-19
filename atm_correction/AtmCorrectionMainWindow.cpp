@@ -40,8 +40,16 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
         atm_params_plot->graph(i)->setData(w, v);
     }
     atm_params_plot->addGraph();
+    int next_index = responses.size() - 1;
+    atm_params_plot->graph(next_index)->setPen(QPen("#1bcdcd"));
     auto h20 = QVector<double>::fromStdVector(cs->get_h2o());
     atm_params_plot->graph(responses.size() - 1)->setData(w, h20);
+    atm_params_plot->addGraph();
+    ++next_index;
+    atm_params_plot->graph(next_index)->setPen(QPen("#cd1ba0"));
+    auto o3 = QVector<double>::fromStdVector(cs->get_o3());
+    atm_params_plot->graph(next_index)->setData(w, o3);
+
     atm_params_plot->rescaleAxes(true);
 }
 
@@ -96,6 +104,7 @@ void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
     }
     auto h20 = QVector<double>::fromStdVector(cs->get_h2o());
     atm_params_plot->graph(responses.size() - 1)->setData(w, h20);
+
     atm_params_plot->replot();
     atm_params_plot->rescaleAxes(true);
 }

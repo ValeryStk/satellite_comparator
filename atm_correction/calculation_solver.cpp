@@ -18,6 +18,8 @@ std::vector<std::vector<double>> calculation_solver::getResponsesList() {
 
 std::vector<double> calculation_solver::get_h2o() { return T_H2O_list; }
 
+std::vector<double> calculation_solver::get_o3() { return T_O3_list; }
+
 void calculation_solver::updateCurrentSatellite(QString sat_name) {
     lss::updateSatelliteResponses(sat_name);
 }

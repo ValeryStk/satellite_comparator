@@ -15,6 +15,7 @@ public:
     std::vector<double> getLambdaList() const;
     std::vector<std::vector<double> > getResponsesList();
     std::vector<double> get_h2o();
+    std::vector<double> get_o3();
     void updateCurrentSatellite(QString sat_name);
     static double calculateAlbedo(double tau, double beta, double g,
                                   int band_number, double band_value);
