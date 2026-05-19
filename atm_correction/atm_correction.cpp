@@ -64,7 +64,7 @@ void loadAllLists() {
         double h2o = atm_params[i].toObject()["h2o"].toDouble();
         T_H2O_list.push_back(h2o);
         double o2 = atm_params[i].toObject()["o2"].toDouble();
-        T_O2_list.push_back(o2);
+        T_O2_list.push_back(o2);  // В новом методе не будет использоваться
         double o3 = atm_params[i].toObject()["o3"].toDouble();
         T_O3_list.push_back(o3);
         double wl = atm_params[i].toObject()["wavelength"].toDouble();
