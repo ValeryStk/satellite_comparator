@@ -736,9 +736,9 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
         m_sentinel_sample = data;
         sample = m_sentinel_sample;
     }
-
-    copyVectorsToClipboard(m_lattitude, m_longitude, waves,
-                           getSentinelSpeyaValues(pos.x(), pos.y()));
+    auto speya_values = getSentinelSpeyaValues(pos.x(), pos.y());
+    copyVectorsToClipboard(m_lattitude, m_longitude, waves, speya_values);
+    m_ac.updateBasePixel(speya_values);
     m_preview_plot->graph(0)->data().clear();
     m_preview_plot->graph(1)->data().clear();
     m_preview_plot->graph(0)->setData(waves, data);

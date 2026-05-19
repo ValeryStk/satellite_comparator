@@ -108,3 +108,13 @@ void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
     atm_params_plot->replot();
     atm_params_plot->rescaleAxes(true);
 }
+
+void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
+    QString bands_values;
+    for (int i = 0; i < pixel_bands.size(); ++i) {
+        bands_values.append(QString::number(pixel_bands[i]));
+        if (i < pixel_bands.size() - 1) bands_values.append(" ");
+    }
+    base_pixel_speya_values = pixel_bands;
+    ui->label_pixel_bands->setText(bands_values);
+}
