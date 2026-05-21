@@ -18,7 +18,10 @@ class AtmCorrectionMainWindow : public QMainWindow {
 public:
     explicit AtmCorrectionMainWindow(QWidget* parent = nullptr);
     ~AtmCorrectionMainWindow();
-    void setSunZenitAngle(const double);
+    void setSunZenitAngle(const double value);
+    void setSunAzimutAngle(const double value);
+    void setCaptureZenitAngle(const double value);
+    void setCaptureAzimutAngle(const double value);
     void updateBasePixel(QVector<double> pixel_bands);
 
 private slots:

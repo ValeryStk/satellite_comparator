@@ -23,10 +23,6 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     // bands_widget->show();
 
     ui->doubleSpinBox_sunZenitAngle->setValue(45);
-    ui->doubleSpinBox_black1->setValue(39.53);
-    ui->doubleSpinBox_black2->setValue(25.64);
-    ui->doubleSpinBox_black3->setValue(11.88);
-    ui->doubleSpinBox_black4->setValue(4.31);
     qRegisterMetaType<result_values>();
     cs = new calculation_solver;
     connect(cs, &calculation_solver::darkpixels_calculation_finished, this,
@@ -59,12 +55,25 @@ void AtmCorrectionMainWindow::setSunZenitAngle(const double value) {
     ui->doubleSpinBox_sunZenitAngle->setValue(value);
 }
 
+void AtmCorrectionMainWindow::setSunAzimutAngle(const double value) {
+    ui->doubleSpinBox_sunAzimutAngle->setValue(value);
+}
+
+void AtmCorrectionMainWindow::setCaptureZenitAngle(const double value) {
+    ui->doubleSpinBox_CaptureZenitAngle->setValue(value);
+}
+
+void AtmCorrectionMainWindow::setCaptureAzimutAngle(const double value) {
+    ui->doubleSpinBox_CaptureAzimutAngle->setValue(value);
+}
+
 void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
     cs->setSunZenitAngle(ui->doubleSpinBox_sunZenitAngle->value());
-    cs->start_solve_dark_pixels_async(
+    /*cs->start_solve_dark_pixels_async(
         ui->comboBox_satellite_type->currentText(),
         {ui->doubleSpinBox_black1->value(), ui->doubleSpinBox_black2->value(),
-         ui->doubleSpinBox_black3->value(), ui->doubleSpinBox_black4->value()});
+         ui->doubleSpinBox_black3->value(),
+       ui->doubleSpinBox_black4->value()});*/
     // qDebug() << bands_widget->get_choosed_bands(); первые 10 каналов
 }
 

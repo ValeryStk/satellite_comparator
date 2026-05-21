@@ -3978,7 +3978,11 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         // TODO CHECK AND WARN USER ABOUT WRONG VALUES AND ERRORS
         double sunZenitAngle = satc::getSunZenitAngleForSentinel(xml_doc);
         double sunAzimutAngle = satc::getSunAzimuthAngleForSentinel(xml_doc);
+        double meanZenitCaptureAngles = satc::getAverageCaptureAngle(xml_doc);
         m_ac.setSunZenitAngle(sunZenitAngle);
+        m_ac.setSunAzimutAngle(sunAzimutAngle);
+        m_ac.setCaptureZenitAngle(meanZenitCaptureAngles);
+        m_ac.setCaptureZenitAngle(meanZenitCaptureAngles);
         m_sentinel_metadata.sunZenithAngle = sunZenitAngle;
         m_sentinel_metadata.sunAzimuthAngle = sunAzimutAngle;
         m_sentinel_metadata.cosSunZenithAngle =

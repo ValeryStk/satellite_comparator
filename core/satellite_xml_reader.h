@@ -20,6 +20,8 @@ std::unordered_map<int, double> extractSolarIrradianceForSentinel(
 double getSunZenitAngleForSentinel(const QString& filename);
 
 double getSunAzimuthAngleForSentinel(const QString& filename);
+
+double getAverageCaptureAngle(const QString& filename);
 }  // namespace satc
 
 #endif  // SATELLITE_XML_READER_H
