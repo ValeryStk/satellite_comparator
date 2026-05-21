@@ -277,7 +277,7 @@ double getSunAzimuthAngleForSentinel(const QString& filename) {
     return extractDoubleParameter(filename, "AZIMUTH_ANGLE");
 }
 
-double getAverageCaptureAngle(const QString& filename) {
+double getAverageCaptureZenitAngle(const QString& filename) {
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Не удалось открыть файл:" << filename;
@@ -304,6 +304,42 @@ double getAverageCaptureAngle(const QString& filename) {
     for (int i = 0; i < nodes.count(); ++i) {
         QDomElement bandEl = nodes.at(i).toElement();
         QDomElement zenithEl = bandEl.firstChildElement("ZENITH_ANGLE");
+        if (!zenithEl.isNull()) {
+            sum += zenithEl.text().toDouble();
+            ++count;
+        }
+    }
+
+    return count > 0 ? sum / count : 0.0;
+}
+
+double getAverageCaptureAzimutAngle(const QString& filename) {
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Не удалось открыть файл:" << filename;
+        return {};
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        // qWarning() << "Ошибка парсинга XML:" << doc.err;
+        file.close();
+        return {};
+    }
+    file.close();
+
+    QDomNodeList nodes = doc.elementsByTagName("Mean_Viewing_Incidence_Angle");
+    if (nodes.isEmpty()) {
+        qDebug() << "Mean_Viewing_Incidence_Angle not founded...";
+        return 0.0;
+    }
+
+    double sum = 0.0;
+    int count = 0;
+
+    for (int i = 0; i < nodes.count(); ++i) {
+        QDomElement bandEl = nodes.at(i).toElement();
+        QDomElement zenithEl = bandEl.firstChildElement("AZIMUTH_ANGLE");
         if (!zenithEl.isNull()) {
             sum += zenithEl.text().toDouble();
             ++count;

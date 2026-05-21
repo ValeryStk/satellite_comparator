@@ -21,7 +21,9 @@ double getSunZenitAngleForSentinel(const QString& filename);
 
 double getSunAzimuthAngleForSentinel(const QString& filename);
 
-double getAverageCaptureAngle(const QString& filename);
+double getAverageCaptureZenitAngle(const QString& filename);
+
+double getAverageCaptureAzimutAngle(const QString& filename);
 }  // namespace satc
 
 #endif  // SATELLITE_XML_READER_H
