@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>atm_params/atm_params.json</file>
+        <file>atm_params/a_H2O.txt</file>
+        <file>atm_params/b_H2O.txt</file>
     </qresource>
 </RCC>

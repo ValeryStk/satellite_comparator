@@ -16,12 +16,15 @@ public:
     std::vector<std::vector<double> > getResponsesList();
     std::vector<double> get_h2o();
     std::vector<double> get_o3();
+    std::vector<double> get_a_H2O();
+    std::vector<double> get_b_H2O();
+    double get_mH2O(double B9, double B8A);
     void updateCurrentSatellite(QString sat_name);
     static double calculateAlbedo(double tau, double beta, double g,
                                   int band_number, double band_value);
     void start_solve_dark_pixels_async(const QString& satellite_name,
                                        const QVector<double>& dark_pixels);
-
+    std::vector<double> loadDoublesFromFile(const QString& filePath);
 public slots:
     void setSunZenitAngle(double angle);
     void solve_dark_pixels(const QString& satellite_name,

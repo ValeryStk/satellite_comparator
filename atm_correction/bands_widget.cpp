@@ -53,12 +53,18 @@ void BandsWidget::onCheckboxStateChanged(QCheckBox* checkBox) {
 }
 
 void BandsWidget::updateCheckboxesList(const QList<QString>& labels) {
+    int counter = 0;
     for (const QString& label : labels) {
         QCheckBox* checkbox = new QCheckBox(label, this);
+        if (counter < 10)
+            checkbox->setChecked(true);
+        else
+            checkbox->setEnabled(false);
         connect(checkbox, &QCheckBox::toggled, this,
                 [this, checkbox]() { onCheckboxStateChanged(checkbox); });
         m_layout->addWidget(checkbox);
         checkbox->setFixedWidth(150);
         m_checkboxes.append(checkbox);
+        ++counter;
     }
 }

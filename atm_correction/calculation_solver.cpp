@@ -20,6 +20,18 @@ std::vector<double> calculation_solver::get_h2o() { return T_H2O_list; }
 
 std::vector<double> calculation_solver::get_o3() { return T_O3_list; }
 
+std::vector<double> calculation_solver::get_a_H2O() {
+    return loadDoublesFromFile(":/atm_params/a_H2O.txt");
+}
+
+std::vector<double> calculation_solver::get_b_H2O() {
+    return loadDoublesFromFile(":/atm_params/b_H2O.txt");
+}
+
+double calculation_solver::get_mH2O(double B9, double B8A) {
+    return compute_mH2O(B9, B8A);
+}
+
 void calculation_solver::updateCurrentSatellite(QString sat_name) {
     lss::updateSatelliteResponses(sat_name);
 }
@@ -53,6 +65,26 @@ void calculation_solver::start_solve_dark_pixels_async(
         qDebug() << "Dark pixels calculation finished";
         watcher->deleteLater();
     });
+}
+
+std::vector<double> calculation_solver::loadDoublesFromFile(
+    const QString &filePath) {
+    std::vector<double> values;
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return values;
+
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        const QString line = in.readLine().trimmed();
+        if (line.isEmpty()) continue;
+
+        bool ok = false;
+        const double value = line.toDouble(&ok);
+        if (ok) values.push_back(value);
+    }
+
+    return values;
 }
 
 void calculation_solver::setSunZenitAngle(double angle) {

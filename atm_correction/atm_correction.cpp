@@ -45,7 +45,11 @@ struct vars_struct {
 
 double mu_0 = qCos(qDegreesToRadians(41.3));
 static result_values rv;
+
+inline double compute_mH2O(double B9, double B8a);
+
 void calculDividerList(vector<vector<double>>& responses);
+
 inline vector<double> compute_tau_m(const vector<double>& list);
 
 void loadAllLists() {
@@ -374,6 +378,10 @@ inline vector<double> compute_EQ(
     return EQ;
 }
 
+inline double compute_mH2O(double B9, double B8a) {
+    return (0.588 * B9 - 0.258 * B8a) / (0.00087 * B9 - 0.147 * B8a);
+};
+
 inline double compute_ro(double ro,  // albedo
                          double mu_0, double tau_0_a, double beta, double g,
                          double B1,   // fixed
@@ -464,8 +472,10 @@ void updateSatelliteResponses(const QString& satellite_name) {
             full_values[index] = arr[i].toDouble();
         };
         S_lambda_lists.push_back(full_values);
+        full_values.assign(601, 0.0);
     }
-    qDebug() << "Responses: " << S_lambda_lists[0].size();
+    qDebug() << "Responses: " << S_lambda_lists[0].size()
+             << S_lambda_lists.size();
     calculDividerList(S_lambda_lists);
 }
 
