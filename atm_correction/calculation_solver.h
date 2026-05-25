@@ -28,6 +28,9 @@ public:
     std::vector<double> loadDoublesFromFile(const QString& filePath);
 public slots:
     void setSunZenitAngle(double angle);
+    void setCaptruretZenitAngle(double angle);
+    void setFiAngle(double angleSA, double angleCA);
+    void computeGamma();
     void solve_dark_pixels(const QString& satellite_name,
                            const QVector<double>& dark_pixels);
 signals:

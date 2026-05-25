@@ -458,18 +458,20 @@ void setSunZenitAngle(const double& angle) {
     qDebug() << "sun zenit angle: " << angle << "  cos mu_0: " << mu_0;
 }
 
-void setSunZenitCaptureAngle(const double& angle) {
+void setCaptureZenitAngle(const double& angle) {
     mu = qCos(qDegreesToRadians(angle));
     qDebug() << "capture zenit angle: " << angle << "  cos mu: " << mu;
 }
 
 void setFiAngle(double angleSA, double angleCA) {
     fi = qCos(qDegreesToRadians(angleCA - angleSA));
+    qDebug() << "fi angle: " << angleCA - angleSA << "  cos fi: " << fi;
 }
 
-void calculateGamma() {
+inline double compute_gamma(double mu, double mu_0, double fi) {
     gamma = -mu * mu_0 + sqrt((1 - mu * mu) * (1 - mu_0 * mu_0)) * fi;
     qDebug() << "cos gamma angle: " << gamma;
+    return gamma;
 }
 
 void updateSatelliteResponses(const QString& satellite_name) {

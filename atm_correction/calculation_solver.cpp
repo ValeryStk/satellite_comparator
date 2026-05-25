@@ -97,6 +97,16 @@ void calculation_solver::setSunZenitAngle(double angle) {
     lss::setSunZenitAngle(angle);
 }
 
+void calculation_solver::setCaptruretZenitAngle(double angle) {
+    lss::setCaptureZenitAngle(angle);
+}
+
+void calculation_solver::setFiAngle(double angleSA, double angleCA) {
+    lss::setFiAngle(angleSA, angleCA);
+}
+
+void calculation_solver::computeGamma() { lss::compute_gamma(mu, mu_0, fi); }
+
 void calculation_solver::solve_dark_pixels(const QString &satellite_name,
                                            const QVector<double> &dark_pixels) {
     qDebug() << "----------SOLVE DARK PIXEL------------------------";

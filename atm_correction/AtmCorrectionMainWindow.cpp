@@ -96,6 +96,11 @@ void AtmCorrectionMainWindow::setCaptureAzimutAngle(const double value) {
 
 void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
     cs->setSunZenitAngle(ui->doubleSpinBox_sunZenitAngle->value());
+    cs->setCaptruretZenitAngle(ui->doubleSpinBox_sunAzimutAngle->value());
+    cs->setFiAngle(ui->doubleSpinBox_sunAzimutAngle->value(),
+                   ui->doubleSpinBox_CaptureAzimutAngle->value());
+    cs->computeGamma();
+
     /*cs->start_solve_dark_pixels_async(
         ui->comboBox_satellite_type->currentText(),
         {ui->doubleSpinBox_black1->value(), ui->doubleSpinBox_black2->value(),
