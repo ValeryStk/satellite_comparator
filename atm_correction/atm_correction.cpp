@@ -49,12 +49,18 @@ struct vars_struct {
     double* albedo_err;
 };
 
-double mu_0 = qCos(qDegreesToRadians(41.3));
+double mu_0 = 0.0;  // косинус зенитного угла солнца
+double mu = 0.0;    // косинус зенитного угла съёмки
+double fi = 0.0;  // косинус разности азимутальных углов съёмки и солнца
+double gamma = 0.0;  // косинус угла рассеяния
+
 static result_values rv;
 
 inline double compute_mH2O(double B9, double B8a);
 
 inline double compute_TO3(double TiO3, double alfa_i, double X);
+
+inline double compute_gamma(double mu, double mu_0, double fi);
 
 void calculDividerList(vector<vector<double>>& responses);
 
@@ -449,8 +455,21 @@ namespace lss {
 
 void setSunZenitAngle(const double& angle) {
     mu_0 = qCos(qDegreesToRadians(angle));
-    qDebug() << "sun zenit angle: " << angle;
-    qDebug() << "cos mu_0: " << mu_0;
+    qDebug() << "sun zenit angle: " << angle << "  cos mu_0: " << mu_0;
+}
+
+void setSunZenitCaptureAngle(const double& angle) {
+    mu = qCos(qDegreesToRadians(angle));
+    qDebug() << "capture zenit angle: " << angle << "  cos mu: " << mu;
+}
+
+void setFiAngle(double angleSA, double angleCA) {
+    fi = qCos(qDegreesToRadians(angleCA - angleSA));
+}
+
+void calculateGamma() {
+    gamma = -mu * mu_0 + sqrt((1 - mu * mu) * (1 - mu_0 * mu_0)) * fi;
+    qDebug() << "cos gamma angle: " << gamma;
 }
 
 void updateSatelliteResponses(const QString& satellite_name) {
