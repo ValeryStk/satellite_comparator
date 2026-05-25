@@ -161,6 +161,7 @@ void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
     Q_ASSERT(a.size() == b.size() == w.size());
     qDebug() << a.size() << b.size() << w.size();
     QVector<double> T_H2O;
+    QVector<double> T_O3;
     for (size_t i = 0; i < w.size(); ++i) {
         T_H2O.append(a[i] * ln_m_H2O + b[i]);
     }

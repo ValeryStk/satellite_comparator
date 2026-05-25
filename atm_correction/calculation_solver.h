@@ -19,6 +19,7 @@ public:
     std::vector<double> get_a_H2O();
     std::vector<double> get_b_H2O();
     double get_mH2O(double B9, double B8A);
+    double get_TO3(int band_index, int X);
     void updateCurrentSatellite(QString sat_name);
     static double calculateAlbedo(double tau, double beta, double g,
                                   int band_number, double band_value);

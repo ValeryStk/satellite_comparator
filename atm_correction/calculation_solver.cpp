@@ -32,6 +32,12 @@ double calculation_solver::get_mH2O(double B9, double B8A) {
     return compute_mH2O(B9, B8A);
 }
 
+double calculation_solver::get_TO3(int band_index, int X) {
+    Q_ASSERT(band_index < NUMBER_OF_CHANNELS && band_index >= 0);
+    if (band_index > NUMBER_OF_CHANNELS - 1) return -1;
+    return compute_TO3(dobson_TiO[band_index], dobson_alfa[band_index], X);
+}
+
 void calculation_solver::updateCurrentSatellite(QString sat_name) {
     lss::updateSatelliteResponses(sat_name);
 }

@@ -28,6 +28,7 @@ using std::string;
 using std::vector;
 
 static bool is_first_run = true;
+constexpr int NUMBER_OF_CHANNELS = 10;
 constexpr uint16_t NUMBER_WAVELENGTH = 601;
 constexpr double TAU_M_0 = 0.101;
 constexpr double LAMBDA_0 = 0.55;
@@ -35,6 +36,11 @@ constexpr double P = 1.25;
 constexpr double Q = 1;
 constexpr double TAU_E = 0.04;
 constexpr double pi = 3.14159265358979323846;
+constexpr double dobson_TiO[NUMBER_OF_CHANNELS] = {
+    0.985, 0.992, 0.995, 0.996, 0.997, 0.997, 0.998, 0.999, 0.999, 0.997};
+constexpr double dobson_alfa[NUMBER_OF_CHANNELS] = {
+    0.0001,  0.00003, 0.00002,  0.00001,  0.00001,
+    0.00001, 0.00001, 0.000005, 0.000005, 0.00002};
 
 struct vars_struct {
     double* tau_0_a_err;
@@ -47,6 +53,8 @@ double mu_0 = qCos(qDegreesToRadians(41.3));
 static result_values rv;
 
 inline double compute_mH2O(double B9, double B8a);
+
+inline double compute_TO3(double TiO3, double alfa_i, double X);
 
 void calculDividerList(vector<vector<double>>& responses);
 
@@ -380,6 +388,10 @@ inline vector<double> compute_EQ(
 
 inline double compute_mH2O(double B9, double B8a) {
     return (0.588 * B9 - 0.258 * B8a) / (0.00087 * B9 - 0.147 * B8a);
+};
+
+inline double compute_TO3(double TiO3, double alfa_i, double X) {
+    return TiO3 * std::exp(-alfa_i * (X - 300));
 };
 
 inline double compute_ro(double ro,  // albedo
