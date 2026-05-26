@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>981</width>
-    <height>722</height>
+    <width>1394</width>
+    <height>802</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -32,7 +32,7 @@
       <x>9</x>
       <y>9</y>
       <width>231</width>
-      <height>631</height>
+      <height>741</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_checkBoxes"/>
@@ -40,9 +40,9 @@
    <widget class="QPushButton" name="pushButton_calculateBlack">
     <property name="geometry">
      <rect>
-      <x>280</x>
-      <y>600</y>
-      <width>681</width>
+      <x>250</x>
+      <y>710</y>
+      <width>1131</width>
       <height>41</height>
      </rect>
     </property>
@@ -55,8 +55,8 @@
      <rect>
       <x>250</x>
       <y>60</y>
-      <width>671</width>
-      <height>161</height>
+      <width>1131</width>
+      <height>291</height>
      </rect>
     </property>
    </widget>
@@ -64,8 +64,8 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>220</y>
-      <width>671</width>
+      <y>350</y>
+      <width>1131</width>
       <height>41</height>
      </rect>
     </property>
@@ -77,8 +77,8 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>270</y>
-      <width>671</width>
+      <y>410</y>
+      <width>1131</width>
       <height>53</height>
      </rect>
     </property>
@@ -287,6 +287,30 @@
        </item>
       </layout>
      </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>mH2O</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QDoubleSpinBox" name="doubleSpinBox_mH2O">
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+         <property name="buttonSymbols">
+          <enum>QAbstractSpinBox::NoButtons</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
     </layout>
    </widget>
    <widget class="QComboBox" name="comboBox_satellite_type">
@@ -294,7 +318,7 @@
      <rect>
       <x>250</x>
       <y>10</y>
-      <width>671</width>
+      <width>1131</width>
       <height>41</height>
      </rect>
     </property>
@@ -311,37 +335,15 @@
      </font>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QTableWidget" name="tableWidget_uknown_params">
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>350</y>
-      <width>151</width>
-      <height>51</height>
+      <y>480</y>
+      <width>1131</width>
+      <height>221</height>
      </rect>
     </property>
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>mH2O</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QDoubleSpinBox" name="doubleSpinBox_mH2O">
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-       <property name="buttonSymbols">
-        <enum>QAbstractSpinBox::NoButtons</enum>
-       </property>
-      </widget>
-     </item>
-    </layout>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -349,7 +351,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>981</width>
+     <width>1394</width>
      <height>22</height>
     </rect>
    </property>

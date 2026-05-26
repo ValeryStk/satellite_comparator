@@ -3,6 +3,7 @@
 #include <QDebug>
 
 #include "QStringList"
+#include "double_delegate.cpp"
 #include "satellites_structs.h"
 #include "ui_AtmCorrectionMainWindow.h"
 
@@ -55,7 +56,9 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
 
     for (int i = 0; i < graphCount; ++i) {
         atm_params_plot->addGraph();
-        atm_params_plot->graph(i)->setPen(QPen(channelColors[i]));
+        QPen pen(channelColors[i]);
+        pen.setWidth(2);
+        atm_params_plot->graph(i)->setPen(pen);
         atm_params_plot->graph(i)->setData(
             w, QVector<double>::fromStdVector(responses[i]));
     }
@@ -74,6 +77,97 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     atm_params_plot->graph(next_index)->setData(w, o3);*/
     atm_params_plot->rescaleAxes(true);
     atm_params_plot->replot();
+
+    ui->tableWidget_uknown_params->setColumnCount(11);
+    ui->tableWidget_uknown_params->setRowCount(4);
+    ui->tableWidget_uknown_params->verticalHeader()->setVisible(false);
+    ui->tableWidget_uknown_params->setHorizontalHeaderLabels(
+        {"--", "X", "q", "p", "Tau_m0", "Tau_a0", "Beta", "Tau_e", "g_a", "p_1",
+         "p_2"});
+    for (int row = 0; row < ui->tableWidget_uknown_params->rowCount(); ++row) {
+        // Если это вторая строка (индекс 1) — пропускаем её, она останется
+        // доступной для изменения
+        if (row == 1) {
+            continue;
+        }
+
+        for (int col = 0; col < ui->tableWidget_uknown_params->columnCount();
+             ++col) {
+            QTableWidgetItem *item =
+                ui->tableWidget_uknown_params->item(row, col);
+
+            // Если ячейка еще не создана, создаем ее
+            if (!item) {
+                item = new QTableWidgetItem();
+                ui->tableWidget_uknown_params->setItem(row, col, item);
+            }
+
+            // Убираем флаг редактирования для всех остальных строк
+            item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+            item->setTextAlignment(Qt::AlignCenter);
+        }
+    }
+
+    // Координаты первой ячейки второй строки: row = 1, col = 0
+    int blockRow = 1;
+    int blockCol = 0;
+
+    QTableWidgetItem *firstItem =
+        ui->tableWidget_uknown_params->item(blockRow, blockCol);
+
+    // Создаем ячейку, если она еще не была инициализирована
+    if (!firstItem) {
+        firstItem = new QTableWidgetItem();
+        ui->tableWidget_uknown_params->setItem(blockRow, blockCol, firstItem);
+    }
+
+    // Убираем флаг редактирования у этой конкретной ячейки
+    firstItem->setFlags(firstItem->flags() & ~Qt::ItemIsEditable);
+    // Назначаем валидатор для всей таблицы
+    ui->tableWidget_uknown_params->setItemDelegate(new DoubleDelegate(this));
+
+    // Создаем элемент с нужным текстом
+    QTableWidgetItem *firstCellItem = new QTableWidgetItem("Старт");
+    QTableWidgetItem *secondCellItem = new QTableWidgetItem("Диапазон");
+    QTableWidgetItem *resultCellItem = new QTableWidgetItem("Результат");
+
+    // Устанавливаем его в первую строку (0) и первый столбец (0)
+    ui->tableWidget_uknown_params->setItem(1, 0, firstCellItem);
+    ui->tableWidget_uknown_params->setItem(2, 0, secondCellItem);
+    ui->tableWidget_uknown_params->setItem(3, 0, resultCellItem);
+
+    // Так как первая строка у вас заблокирована, не забудьте отключить
+    // редактирование и для этой ячейки:
+    // firstCellItem->setFlags(firstCellItem->flags() & ~Qt::ItemIsEditable);
+    // Автоматическое растяжение всех 11 столбцов по ширине таблицы
+    ui->tableWidget_uknown_params->horizontalHeader()->setSectionResizeMode(
+        QHeaderView::Stretch);
+
+    // Автоматическое растяжение всех 5 строк по высоте таблицы
+    ui->tableWidget_uknown_params->verticalHeader()->setSectionResizeMode(
+        QHeaderView::Stretch);
+    // Привязываем имена к координатам ячеек (строка, столбец)
+    cellMap["X"] = QPoint(1, 1);
+    cellMap["q"] = QPoint(1, 2);
+    cellMap["p"] = QPoint(1, 3);
+    cellMap["Tau_m0"] = QPoint(1, 4);
+    cellMap["Tau_a0"] = QPoint(1, 5);
+    cellMap["Beta"] = QPoint(1, 6);
+    cellMap["Tau_e"] = QPoint(1, 7);
+    cellMap["g_a"] = QPoint(1, 8);
+    cellMap["p_1"] = QPoint(1, 9);
+    cellMap["p_2"] = QPoint(1, 10);
+
+    setCellValue("X", 300);
+    setCellValue("q", 2);
+    setCellValue("p", 1.25);
+    setCellValue("Tau_m0", 0.0098);
+    setCellValue("Tau_a0", 0.2);
+    setCellValue("Beta", 2);
+    setCellValue("Tau_e", 0.004);
+    setCellValue("g_a", 0.6);
+    setCellValue("p_1", 0.05);
+    setCellValue("p_2", 0.15);
 }
 
 AtmCorrectionMainWindow::~AtmCorrectionMainWindow() { delete ui; }
@@ -174,4 +268,49 @@ void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
                                         T_H2O);
     atm_params_plot->rescaleAxes();
     atm_params_plot->replot();
+}
+
+// Получение значения
+double AtmCorrectionMainWindow::getCellValue(const QString &name) {
+    // Проверяем, существует ли имя в нашей карте
+    if (!cellMap.contains(name)) {
+        qWarning() << "Имя ячейки не найдено в карте:" << name;
+        return 0.0;
+    }
+
+    QPoint coords = cellMap[name];
+    QTableWidgetItem *item =
+        ui->tableWidget_uknown_params->item(coords.x(), coords.y());
+
+    // Если элемент существует и не пустой, переводим строку в double
+    if (item && !item->text().isEmpty()) {
+        return item->text().toDouble();
+    }
+
+    return 0.0;  // Возвращаем 0, если ячейка пуста
+}
+
+// Установка значения
+void AtmCorrectionMainWindow::setCellValue(const QString &name, double value,
+                                           int precision) {
+    // Проверяем наличие имени в карте
+    if (!cellMap.contains(name)) {
+        qWarning() << "Имя ячейки не найдено в карте для записи:" << name;
+        return;
+    }
+
+    QPoint coords = cellMap[name];
+    QTableWidgetItem *item =
+        ui->tableWidget_uknown_params->item(coords.x(), coords.y());
+
+    // Если ячейки физически нет в таблице, создаем её
+    if (!item) {
+        item = new QTableWidgetItem();
+        item->setTextAlignment(Qt::AlignCenter);  // Сохраняем центрирование
+        ui->tableWidget_uknown_params->setItem(coords.x(), coords.y(), item);
+    }
+
+    // Преобразуем double в строку с фиксированным количеством знаков после
+    // запятой ('f')
+    item->setText(QString::number(value, 'f', precision));
 }

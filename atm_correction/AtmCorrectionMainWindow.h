@@ -34,6 +34,13 @@ private:
     BandsWidget* bands_widget;
     QCustomPlot* atm_params_plot;
     QVector<double> base_pixel_speya_values;
+    QMap<QString, QPoint> cellMap;
+    // Метод для получения вещественного числа из ячейки по имени
+    double getCellValue(const QString& name);
+
+    // Метод для записи вещественного числа в ячейку по имени
+    void setCellValue(const QString& name, double value, int precision = 2);
+
     // void solve_dark_pixels(const QString& satellite_name,
     // const QVector<double>& dark_pixels);
 signals:

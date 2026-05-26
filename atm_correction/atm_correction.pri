@@ -8,6 +8,7 @@ INCLUDEPATH += $$CORE_DIR
 
 SOURCES += \
     $$PWD/atm_correction.cpp \
+    $$PWD/double_delegate.cpp \
     $$PWD/satellite_adder.cpp \
     $$PWD/calculation_solver.cpp \
     $$PWD/AtmCorrectionMainWindow.cpp \
