@@ -62,8 +62,10 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
         atm_params_plot->graph(i)->setData(
             w, QVector<double>::fromStdVector(responses[i]));
     }
+    QPen pen("#0ecfe1");
+    pen.setWidth(3);
     atm_params_plot->addGraph();  // для Т_H20
-    atm_params_plot->graph(10)->setPen(QPen("#0ecfe1"));
+    atm_params_plot->graph(10)->setPen(pen);
 
     /*atm_params_plot->addGraph();
     int next_index = responses.size() - 1;
