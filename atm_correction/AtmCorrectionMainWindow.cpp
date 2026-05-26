@@ -81,7 +81,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     atm_params_plot->replot();
 
     ui->tableWidget_uknown_params->setColumnCount(11);
-    ui->tableWidget_uknown_params->setRowCount(4);
+    ui->tableWidget_uknown_params->setRowCount(3);
     ui->tableWidget_uknown_params->verticalHeader()->setVisible(false);
     ui->tableWidget_uknown_params->setHorizontalHeaderLabels(
         {"--", "X", "q", "p", "Tau_m0", "Tau_a0", "Beta", "Tau_e", "g_a", "p_1",
@@ -134,9 +134,9 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     QTableWidgetItem *resultCellItem = new QTableWidgetItem("Результат");
 
     // Устанавливаем его в первую строку (0) и первый столбец (0)
-    ui->tableWidget_uknown_params->setItem(1, 0, firstCellItem);
-    ui->tableWidget_uknown_params->setItem(2, 0, secondCellItem);
-    ui->tableWidget_uknown_params->setItem(3, 0, resultCellItem);
+    ui->tableWidget_uknown_params->setItem(0, 0, firstCellItem);
+    ui->tableWidget_uknown_params->setItem(1, 0, secondCellItem);
+    ui->tableWidget_uknown_params->setItem(2, 0, resultCellItem);
 
     // Так как первая строка у вас заблокирована, не забудьте отключить
     // редактирование и для этой ячейки:
@@ -149,16 +149,27 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     ui->tableWidget_uknown_params->verticalHeader()->setSectionResizeMode(
         QHeaderView::Stretch);
     // Привязываем имена к координатам ячеек (строка, столбец)
-    cellMap["X"] = QPoint(1, 1);
-    cellMap["q"] = QPoint(1, 2);
-    cellMap["p"] = QPoint(1, 3);
-    cellMap["Tau_m0"] = QPoint(1, 4);
-    cellMap["Tau_a0"] = QPoint(1, 5);
-    cellMap["Beta"] = QPoint(1, 6);
-    cellMap["Tau_e"] = QPoint(1, 7);
-    cellMap["g_a"] = QPoint(1, 8);
-    cellMap["p_1"] = QPoint(1, 9);
-    cellMap["p_2"] = QPoint(1, 10);
+    cellMap["X"] = QPoint(0, 1);
+    cellMap["q"] = QPoint(0, 2);
+    cellMap["p"] = QPoint(0, 3);
+    cellMap["Tau_m0"] = QPoint(0, 4);
+    cellMap["Tau_a0"] = QPoint(0, 5);
+    cellMap["Beta"] = QPoint(0, 6);
+    cellMap["Tau_e"] = QPoint(0, 7);
+    cellMap["g_a"] = QPoint(0, 8);
+    cellMap["p_1"] = QPoint(0, 9);
+    cellMap["p_2"] = QPoint(0, 10);
+
+    cellMap["rng_X"] = QPoint(1, 1);
+    cellMap["rng_q"] = QPoint(1, 2);
+    cellMap["rng_p"] = QPoint(1, 3);
+    cellMap["rng_Tau_m0"] = QPoint(1, 4);
+    cellMap["rng_Tau_a0"] = QPoint(1, 5);
+    cellMap["rng_Beta"] = QPoint(1, 6);
+    cellMap["rng_Tau_e"] = QPoint(1, 7);
+    cellMap["rng_g_a"] = QPoint(1, 8);
+    cellMap["rng_p_1"] = QPoint(1, 9);
+    cellMap["rng_p_2"] = QPoint(1, 10);
 
     setCellValue("X", 300);
     setCellValue("q", 2);
@@ -170,6 +181,25 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     setCellValue("g_a", 0.6);
     setCellValue("p_1", 0.05);
     setCellValue("p_2", 0.15);
+
+    setCellStringValue("rng_X", "280 - 350");
+    setCellStringValue("rng_q", "1 - 6");
+    setCellStringValue("rng_p", "0.5 - 2.0");
+    setCellStringValue("rng_Tau_m0", "0.09");
+    setCellStringValue("rng_Tau_a0", "0.01 - 1.5");
+    setCellStringValue("rng_Beta", "0 - 4");
+    setCellStringValue("rng_Tau_e", "0 - 0.5");
+    setCellStringValue("rng_g_a", "0.1 - 0.8");
+    setCellStringValue("rng_p_1", "0 - 0.8");
+    setCellStringValue("rng_p_2", "0 - 0.8");
+
+    ui->tableWidget_uknown_params->setStyleSheet(
+        "QHeaderView::section {"
+        "    background-color: #4CAF50;"  // Зеленый фон
+        "    color: white;"               // Белый текст
+        "    font-weight: bold;"          // Жирный шрифт
+        "    border: 1px solid #D1D1D1;"  // Граница
+        "}");
 }
 
 AtmCorrectionMainWindow::~AtmCorrectionMainWindow() { delete ui; }
@@ -315,4 +345,25 @@ void AtmCorrectionMainWindow::setCellValue(const QString &name, double value,
     // Преобразуем double в строку с фиксированным количеством знаков после
     // запятой ('f')
     item->setText(QString::number(value, 'f', precision));
+}
+
+void AtmCorrectionMainWindow::setCellStringValue(const QString &name,
+                                                 const QString text) {
+    // Проверяем наличие имени в карте
+    if (!cellMap.contains(name)) {
+        qWarning() << "Имя ячейки не найдено в карте для записи:" << name;
+        return;
+    }
+
+    QPoint coords = cellMap[name];
+    QTableWidgetItem *item =
+        ui->tableWidget_uknown_params->item(coords.x(), coords.y());
+
+    if (!item) {
+        item = new QTableWidgetItem();
+        item->setTextAlignment(Qt::AlignCenter);  // Сохраняем центрирование
+        ui->tableWidget_uknown_params->setItem(coords.x(), coords.y(), item);
+    }
+
+    item->setText(text);
 }

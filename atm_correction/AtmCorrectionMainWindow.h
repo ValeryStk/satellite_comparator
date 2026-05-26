@@ -41,6 +41,8 @@ private:
     // Метод для записи вещественного числа в ячейку по имени
     void setCellValue(const QString& name, double value, int precision = 2);
 
+    void setCellStringValue(const QString& name, const QString text);
+
     // void solve_dark_pixels(const QString& satellite_name,
     // const QVector<double>& dark_pixels);
 signals:
