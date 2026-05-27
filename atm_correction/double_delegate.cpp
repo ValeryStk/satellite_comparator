@@ -19,7 +19,7 @@ public:
                                                   // (например, 123.45)
         validator->setLocale(
             QLocale::C);  // Точка в качестве разделителя (1.23 вместо 1,23)
-
+        validator->setDecimals(3);
         editor->setValidator(validator);
         return editor;
     }

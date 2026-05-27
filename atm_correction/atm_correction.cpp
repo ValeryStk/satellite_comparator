@@ -119,12 +119,12 @@ inline vector<double> compute_tau_m(const vector<double>& list) {
     return result;
 }
 
-inline double compute_x_m(const double& mu_0) {
-    return 3 * (1 + pow(mu_0, 2)) / 4;
+inline double compute_x_m(const double& gamma) {
+    return 3 * (1 + gamma * gamma) / 4;  // return 3 * (1 + pow(mu_0, 2)) / 4;
 }
 
 inline double compute_x_a(const double& mu_0, const double& g) {
-    return (1 - pow(g, 2)) / pow((1 + pow(g, 2) + 2 * g * mu_0), 1.5);
+    return (1 - pow(g, 2)) / pow((1 + pow(g, 2) + 2 * g * mu_0 * gamma), 1.5);
 }
 
 inline vector<double> compute_tau_a(const double& tau_0_a, const double& beta,
@@ -179,7 +179,7 @@ inline vector<double> compute_x(const double& mu_0, const double& g,
                                 const vector<double>& list) {
     vector<double> result;
     vector<double> tau_a = compute_tau_a(tau_0_a, beta, list);
-    auto x_m = compute_x_m(mu_0);
+    auto x_m = compute_x_m(gamma);
     auto x_a = compute_x_a(mu_0, g);
     for (uintmax_t i = 0; i < list.size(); ++i) {
         result.push_back((x_m * tau_m[i] + x_a * tau_a[i]) /
@@ -266,7 +266,8 @@ inline vector<double> compute_u(const double& g, const double& tau_0_a,
                   6.13805 * pow(g_lmb[i], 3);
         auto h3 = 2.07593 - 2.03761 * g_lmb[i] + 6.25975 * pow(g_lmb[i], 2) -
                   7.35503 * pow(g_lmb[i], 3);
-        u.push_back(h0 + h1 + h2 + h3);
+        u.push_back(h0 + h1 * mu_0 + h2 * (mu_0 * mu_0) +
+                    h3 * (mu_0 * mu_0 * mu_0));
     }
     return u;
 }
@@ -284,7 +285,7 @@ inline vector<double> compute_v(const double& g, const double& tau_0_a,
                     3.61515 * pow(g_lmb[i], 3);
         auto ro_2 = 3.76447 + 3.29106 * g_lmb[i] - 12.37951 * pow(g_lmb[i], 2) +
                     9.85 * pow(g_lmb[i], 3);
-        v.push_back(ro_0 + ro_1 * exp(-ro_2));
+        v.push_back(ro_0 + ro_1 * exp(-ro_2 * mu));
     }
     return v;
 }
@@ -302,7 +303,7 @@ inline vector<double> compute_w(const double& g, const double& tau_0_a,
                    3.0646 * pow(g_lmb[i], 3);
         auto q_2 = 5.21931 + 7.2255 * g_lmb[i] - 23.43878 * pow(g_lmb[i], 2) +
                    17.65629 * pow(g_lmb[i], 3);
-        w.push_back(q_0 + q_1 * exp(-q_2));
+        w.push_back(q_0 + q_1 * exp(-q_2 * mu));
     }
     return w;
 }
@@ -335,7 +336,7 @@ inline vector<double> compute_T_lambda(const double& tau_e,
     vector<double> T_lmb;
 
     for (size_t i = 0; i < list.size(); ++i) {
-        T_lmb.push_back((exp(-tau_lambda[i])) + T_dif[i]);
+        T_lmb.push_back((exp(-tau_lambda[i]) / mu) + T_dif[i]);
     }
     return T_lmb;
 }

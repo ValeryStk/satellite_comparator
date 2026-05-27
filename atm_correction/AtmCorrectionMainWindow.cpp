@@ -89,7 +89,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     for (int row = 0; row < ui->tableWidget_uknown_params->rowCount(); ++row) {
         // Если это вторая строка (индекс 1) — пропускаем её, она останется
         // доступной для изменения
-        if (row == 1) {
+        if (row == 0) {
             continue;
         }
 
@@ -171,13 +171,24 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     cellMap["rng_p_1"] = QPoint(1, 9);
     cellMap["rng_p_2"] = QPoint(1, 10);
 
+    cellMap["result_X"] = QPoint(2, 1);
+    cellMap["result_q"] = QPoint(2, 2);
+    cellMap["result_p"] = QPoint(2, 3);
+    cellMap["result_Tau_m0"] = QPoint(2, 4);
+    cellMap["result_Tau_a0"] = QPoint(2, 5);
+    cellMap["result_Beta"] = QPoint(2, 6);
+    cellMap["result_Tau_e"] = QPoint(2, 7);
+    cellMap["result_g_a"] = QPoint(2, 8);
+    cellMap["result_p_1"] = QPoint(2, 9);
+    cellMap["result_p_2"] = QPoint(2, 10);
+
     setCellValue("X", 300);
     setCellValue("q", 2);
     setCellValue("p", 1.25);
-    setCellValue("Tau_m0", 0.0098);
+    setCellValue("Tau_m0", 0.098, 3);
     setCellValue("Tau_a0", 0.2);
     setCellValue("Beta", 2);
-    setCellValue("Tau_e", 0.004);
+    setCellValue("Tau_e", 0.04);
     setCellValue("g_a", 0.6);
     setCellValue("p_1", 0.05);
     setCellValue("p_2", 0.15);
@@ -195,11 +206,13 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
 
     ui->tableWidget_uknown_params->setStyleSheet(
         "QHeaderView::section {"
-        "    background-color: #4CAF50;"  // Зеленый фон
-        "    color: white;"               // Белый текст
+        "    background-color: #0ecfe1;"  // фон
+        "    color: black;"               // Белый текст
         "    font-weight: bold;"          // Жирный шрифт
-        "    border: 1px solid #D1D1D1;"  // Граница
+        "    border: 2px solid #D1D1D1;"  // Граница
         "}");
+    ui->doubleSpinBox_lambda_1->setValue(490);
+    ui->doubleSpinBox_lambda_2->setValue(665);
 }
 
 AtmCorrectionMainWindow::~AtmCorrectionMainWindow() { delete ui; }
