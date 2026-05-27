@@ -196,7 +196,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     setCellStringValue("rng_X", "280 - 350");
     setCellStringValue("rng_q", "1 - 6");
     setCellStringValue("rng_p", "0.5 - 2.0");
-    setCellStringValue("rng_Tau_m0", "0.09");
+    setCellStringValue("rng_Tau_m0", "0.09 - 0.1");
     setCellStringValue("rng_Tau_a0", "0.01 - 1.5");
     setCellStringValue("rng_Beta", "0 - 4");
     setCellStringValue("rng_Tau_e", "0 - 0.5");

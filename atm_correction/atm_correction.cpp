@@ -585,7 +585,7 @@ result_values optimize(const QString& sat_name, const QVector<double>& blacks) {
 
 double calculateAlbedo(const double tau, const double beta, const double g,
                        const double band_number, const double band_value) {
-    double B1 = compute_B1(T_O2_list, T_O3_list, T_H2O_list,
+    double B1 = compute_B1(T_O2_list, T_O3_list[band_number], T_H2O_list,
                            S_lambda_lists[band_number], B_lambda_teta_list,
                            mu_0, tau, beta, g, tau_m, lambda_list);
     ro_fin.B1 = B1;
