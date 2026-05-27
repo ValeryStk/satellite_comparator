@@ -241,10 +241,7 @@ void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
     cs->computeGamma();
 
     /*cs->start_solve_dark_pixels_async(
-        ui->comboBox_satellite_type->currentText(),
-        {ui->doubleSpinBox_black1->value(), ui->doubleSpinBox_black2->value(),
-         ui->doubleSpinBox_black3->value(),
-       ui->doubleSpinBox_black4->value()});*/
+        ui->comboBox_satellite_type->currentText(), {48, 26, 54, 29});*/
     // qDebug() << bands_widget->get_choosed_bands(); первые 10 каналов
 }
 
