@@ -6,7 +6,10 @@
 
 #include "atm_correction.cpp"
 
-calculation_solver::calculation_solver() { ::loadAllLists(); }
+calculation_solver::calculation_solver(QVector<double> initial_values) {
+    m_initial_values = initial_values;
+    ::loadAllLists();
+}
 
 std::vector<double> calculation_solver::getLambdaList() const {
     return lambda_list;
@@ -57,7 +60,8 @@ void calculation_solver::start_solve_dark_pixels_async(
     auto task = [this, satellite_name, dark_pixels]() {
         qDebug() << "Solve dark pixel for satellite: " << satellite_name
                  << " (in thread:" << QThread::currentThread() << ")";
-        auto result = lss::optimize(satellite_name, dark_pixels);
+        auto result =
+            lss::optimize(satellite_name, dark_pixels, m_initial_values);
         emit darkpixels_calculation_finished(
             result);  // Безопасно из любого потока
     };
@@ -112,6 +116,12 @@ void calculation_solver::solve_dark_pixels(const QString &satellite_name,
     qDebug() << "----------SOLVE DARK PIXEL------------------------";
     if (dark_pixels.size() < 4) return;
     qDebug() << "Solve dark pixel for satellite: " << satellite_name;
-    auto result = lss::optimize(satellite_name, dark_pixels);
+    auto result = lss::optimize(satellite_name, dark_pixels, m_initial_values);
     emit darkpixels_calculation_finished(result);
+}
+
+void calculation_solver::setInitial_values(
+    const QVector<double> &initial_values) {
+    qDebug() << "initial_values: " << initial_values;
+    m_initial_values = initial_values;
 }

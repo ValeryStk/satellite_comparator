@@ -42,7 +42,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
 
     ui->doubleSpinBox_sunZenitAngle->setValue(45);
     qRegisterMetaType<result_values>();
-    cs = new calculation_solver;
+    cs = new calculation_solver({1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
     connect(cs, &calculation_solver::darkpixels_calculation_finished, this,
             &AtmCorrectionMainWindow::showResult);
     auto lambdas = cs->getLambdaList();
@@ -239,6 +239,7 @@ void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
     cs->setFiAngle(ui->doubleSpinBox_sunAzimutAngle->value(),
                    ui->doubleSpinBox_CaptureAzimutAngle->value());
     cs->computeGamma();
+    updateInitialValues();
 
     /*cs->start_solve_dark_pixels_async(
         ui->comboBox_satellite_type->currentText(), {48, 26, 54, 29});*/
@@ -376,4 +377,12 @@ void AtmCorrectionMainWindow::setCellStringValue(const QString &name,
     }
 
     item->setText(text);
+}
+
+void AtmCorrectionMainWindow::updateInitialValues() {
+    cs->setInitial_values({getCellValue("X"), getCellValue("q"),
+                           getCellValue("p"), getCellValue("Tau_m0"),
+                           getCellValue("Tau_a0"), getCellValue("Beta"),
+                           getCellValue("Tau_e"), getCellValue("g_a"),
+                           getCellValue("p_1"), getCellValue("p_2")});
 }

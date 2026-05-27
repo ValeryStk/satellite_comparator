@@ -512,20 +512,27 @@ void updateSatelliteResponses(const QString& satellite_name) {
     calculDividerList(S_lambda_lists);
 }
 
-result_values optimize(const QString& sat_name, const QVector<double>& blacks) {
+result_values optimize(const QString& sat_name,
+                       const QVector<double>& speya_values,
+                       const QVector<double>& initial_values) {
     if (is_first_run) {
         loadAllLists();
         is_first_run = false;
     }
     if (sat_name != satellite_name_key) updateSatelliteResponses(sat_name);
-    double p[] = {
-        0.1, 2, 0.01,
-        0.01};  //{0.1, 2, 0.01, 0.01};               /* Initial conditions */
-    if (blacks.size() != 4) return rv;  // TODO exceptions
-    dark_pixels = {blacks[0], blacks[1], blacks[2],
-                   blacks[3]};  //{36.525799,24.058825,11.294599,4.025315};
-    double perror[4];           /* Returned parameter errors */
-    mp_par pars[4];             /* Parameter constraints */
+
+    /* Initial conditions */
+    double p[10];
+    for (int i = 0; i < initial_values.size(); ++i) {
+        p[i] = initial_values[i];
+    }
+
+    if (speya_values.size() != 4) return rv;  // TODO exceptions
+    dark_pixels = {
+        speya_values[0], speya_values[1], speya_values[2],
+        speya_values[3]};  //{36.525799,24.058825,11.294599,4.025315};
+    double perror[4];      /* Returned parameter errors */
+    mp_par pars[4];        /* Parameter constraints */
     vars_struct v;
     int status;
     mp_result result;
