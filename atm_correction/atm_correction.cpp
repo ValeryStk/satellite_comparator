@@ -209,7 +209,7 @@ inline vector<double> compute_B_atm(const double& mu_0, const double& tau_0_a,
 }
 
 inline double compute_B1(
-    const vector<double>& T_O2_list, const vector<double>& T_O3_list,
+    const vector<double>& T_O2_list, const double T_O3_list,
     const vector<double>& T_H2O_list, const vector<double>& S_lambda_list,
     const vector<double>& B_lambda_teta_list, const double& mu_0,
     const double& tau_0_a, const double& beta, const double& g,
@@ -217,13 +217,13 @@ inline double compute_B1(
     double B1 = 0.0;
     auto B_atm = compute_B_atm(mu_0, tau_0_a, beta, g, tau_m, list);
     for (uintmax_t i = 0; i < list.size(); ++i) {
-        auto T_g_lambda = T_O2_list[i] * T_O3_list[i] * T_H2O_list[i];
+        auto T_g_lambda = T_O2_list[i] * T_H2O_list[i];
         auto S_lambda = S_lambda_list[i];
         auto B_sun = B_lambda_teta_list[i];
         auto b = B_atm[i];
         B1 += b * T_g_lambda * S_lambda * B_sun;
     }
-    return B1;
+    return B1 * T_O3_list;
 }
 
 inline vector<double> compute_E_lambda(const double& mu_0, const double& albedo,
@@ -343,8 +343,7 @@ inline vector<double> compute_T_lambda(const double& tau_e,
 
 inline double compute_B2(const vector<double>& S_lambda_list,
                          const vector<double>& B_lambda_teta_list,
-                         const vector<double>& T_O2_list,
-                         const vector<double>& T_O3_list,
+                         const vector<double>& T_O2_list, const double T_O3,
                          const vector<double>& T_H2O_list, const double& mu_0,
                          const double& albedo, const double& tau_0_a,
                          const double& beta, const double& g,
@@ -356,14 +355,14 @@ inline double compute_B2(const vector<double>& S_lambda_list,
     double B2 = 0.0;
     auto B_atm = compute_B_atm(mu_0, tau_0_a, beta, g, tau_m, list);
     for (size_t i = 0; i < list.size(); ++i) {
-        auto T_g_lambda = T_O2_list[i] * T_O3_list[i] * T_H2O_list[i];
+        auto T_g_lambda = T_O2_list[i] * T_H2O_list[i];
         auto S_lambda = S_lambda_list[i];
         auto B_sun = B_lambda_teta_list[i];
         auto T = T_lambda[i];
         auto E = E_lambda[i];
         B2 += E * T * T_g_lambda * S_lambda * B_sun;
     }
-    return B2;
+    return B2 * T_O3;
 }
 
 inline double compute_eq(const double& B1, const double& B2,
@@ -383,11 +382,11 @@ inline vector<double> compute_EQ(
     vector<double> EQ;
     for (size_t i = 0; i < dark_pixels.size(); ++i) {
         auto B1 =
-            compute_B1(T_O2_list, T_O3_list, T_H2O_list, S_lambda_lists[i],
+            compute_B1(T_O2_list, T_O3_list[i], T_H2O_list, S_lambda_lists[i],
                        B_lambda_teta_list, mu_0, tau_0_a, beta, g, tau_m, list);
         auto B2 = compute_B2(S_lambda_lists[i], B_lambda_teta_list, T_O2_list,
-                             T_O3_list, T_H2O_list, mu_0, albedo, tau_0_a, beta,
-                             g, tau_m, list);
+                             T_O3_list[i], T_H2O_list, mu_0, albedo, tau_0_a,
+                             beta, g, tau_m, list);
         EQ.push_back(compute_eq(B1, B2, albedo, dividers[i], dark_pixels[i]));
     }
     return EQ;
@@ -408,8 +407,8 @@ inline double compute_ro(double ro,  // albedo
                          int band) {  // chanel number
 
     auto B2 = compute_B2(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
-                         T_O3_list, T_H2O_list, mu_0, ro, tau_0_a, beta, g,
-                         tau_m, lambda_list) *
+                         T_O3_list[band], T_H2O_list, mu_0, ro, tau_0_a, beta,
+                         g, tau_m, lambda_list) *
               ro / pi;
     double a = (B1 + B2) / divider_list[band];
     return (B - a);
