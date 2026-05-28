@@ -415,10 +415,10 @@ inline double compute_ro(double ro,  // albedo
 }
 
 int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
-    auto tau_0_a = p[0];
-    auto beta = p[1];
-    auto g = p[2];
-    auto albedo = p[3];
+    auto tau_0_a = p[4];
+    auto beta = p[5];
+    auto g = p[7];
+    auto albedo = p[8];
 
     auto eq = compute_EQ(B_lambda_teta_list, T_O2_list, T_O3_list, T_H2O_list,
                          S_lambda_lists, mu_0, albedo, tau_0_a, beta, g, tau_m,
@@ -533,8 +533,8 @@ result_values optimize(const QString& sat_name,
         return rv;
     }  // TODO exceptions
     dark_pixels = speya_values.toStdVector();
-    double perror[4]; /* Returned parameter errors */
-    mp_par pars[4];   /* Parameter constraints */
+    double perror[10]; /* Returned parameter errors */
+    mp_par pars[10];   /* Parameter constraints */
     vars_struct v;
     int status;
     mp_result result;
@@ -543,41 +543,63 @@ result_values optimize(const QString& sat_name,
     result.xerror = perror;
     memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
 
-    //[0.1, 2, 0.1, 0.01]), bounds=([0, 0.1, 0.1, 0.001], [1, 4, 1, 0.5]))
-
-    // tau_0_a
-    pars[0].limits[0] = 0;
-    pars[0].limits[1] = 1;
-    pars[0].limited[0] = 1;
-    pars[0].limited[1] = 1;
-    pars[0].side = 0;
-    pars[0].step = 0.01;
-
-    // beta
-    pars[1].limits[0] = 0.001;
-    pars[1].limits[1] = 4;
-    pars[1].side = 0;
-    pars[1].step = 0.01;
-    pars[1].limited[0] = 1;
-    pars[1].limited[1] = 1;
-
-    // g
-    pars[2].limits[0] = 0.0001;
+    // p
+    pars[2].limits[0] = 0;
     pars[2].limits[1] = 1;
-    pars[2].side = 0;
-    pars[2].step = 0.001;
     pars[2].limited[0] = 1;
     pars[2].limited[1] = 1;
+    pars[2].side = 0;
+    pars[2].step = 0.01;
 
-    // albedo
-    pars[3].limits[0] = 0.001;
-    pars[3].limits[1] = 0.5;
-    pars[3].side = 0;
-    pars[3].step = 0.01;
+    // tau_m_0
+    pars[3].limits[0] = 0;
+    pars[3].limits[1] = 1;
     pars[3].limited[0] = 1;
     pars[3].limited[1] = 1;
+    pars[3].side = 0;
+    pars[3].step = 0.01;
 
-    status = mpfit(quadfunc, 4, 4, p, pars, 0, (void*)&v, &result);
+    // tau_a_0
+    pars[4].limits[0] = 0;
+    pars[4].limits[1] = 1;
+    pars[4].limited[0] = 1;
+    pars[4].limited[1] = 1;
+    pars[4].side = 0;
+    pars[4].step = 0.01;
+
+    // beta
+    pars[5].limits[0] = 0.001;
+    pars[5].limits[1] = 4;
+    pars[5].side = 0;
+    pars[5].step = 0.01;
+    pars[5].limited[0] = 1;
+    pars[5].limited[1] = 1;
+
+    // g
+    pars[7].limits[0] = 0.0001;
+    pars[7].limits[1] = 1;
+    pars[7].side = 0;
+    pars[7].step = 0.001;
+    pars[7].limited[0] = 1;
+    pars[7].limited[1] = 1;
+
+    // albedo p1
+    pars[8].limits[0] = 0.001;
+    pars[8].limits[1] = 0.5;
+    pars[8].side = 0;
+    pars[8].step = 0.01;
+    pars[8].limited[0] = 1;
+    pars[8].limited[1] = 1;
+
+    // albedo p2
+    pars[9].limits[0] = 0.001;
+    pars[9].limits[1] = 0.5;
+    pars[9].side = 0;
+    pars[9].step = 0.01;
+    pars[9].limited[0] = 1;
+    pars[9].limited[1] = 1;
+
+    status = mpfit(quadfunc, 10, 10, p, pars, 0, (void*)&v, &result);
 
     qDebug() << "\nSTATUS: " << status;
     qDebug() << "VALUES: " << p[0] << p[1] << p[2] << p[3];
