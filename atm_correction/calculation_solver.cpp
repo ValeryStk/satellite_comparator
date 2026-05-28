@@ -46,15 +46,20 @@ void calculation_solver::updateCurrentSatellite(QString sat_name) {
 }
 
 double calculation_solver::calculateAlbedo(double tau, double beta, double g,
-                                           int band_number, double band_value) {
-    return lss::calculateAlbedo(tau, beta, g, band_number, band_value);
+                                           int band_number, double band_value,
+                                           double Q, double P) {
+    return lss::calculateAlbedo(tau, beta, g, band_number, band_value, Q, P);
 }
 
 void calculation_solver::start_solve_dark_pixels_async(
     const QString &satellite_name, const QVector<double> &dark_pixels) {
     qDebug()
         << "----------START ASYNC SOLVE DARK PIXEL------------------------";
-    if (dark_pixels.size() < 4) return;
+    if (dark_pixels.size() != 10) {
+        qDebug() << "Wrong chennels number -> " << dark_pixels.size()
+                 << "Must be 10";
+        return;
+    }
 
     // Lambda захватывает this и аргументы по ссылке
     auto task = [this, satellite_name, dark_pixels]() {

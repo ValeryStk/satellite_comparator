@@ -240,10 +240,22 @@ void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
                    ui->doubleSpinBox_CaptureAzimutAngle->value());
     cs->computeGamma();
     updateInitialValues();
+    if (base_pixel_speya_values.size() == 10) {
+        cs->start_solve_dark_pixels_async(
+            ui->comboBox_satellite_type->currentText(),
+            base_pixel_speya_values);
+    } else {
+        QMessageBox msgBox;
+        msgBox.setText("Пиксель на снимке не выбран!");
+        msgBox.setInformativeText("Выберите пиксель на снимке.");
+        msgBox.setIcon(QMessageBox::Warning);
+        msgBox.setWindowTitle("Пиксель не выбран!");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+    }
 
-    /*cs->start_solve_dark_pixels_async(
-        ui->comboBox_satellite_type->currentText(), {48, 26, 54, 29});*/
-    // qDebug() << bands_widget->get_choosed_bands(); первые 10 каналов
+    // qDebug() << bands_widget->get_choosed_bands(); первые 10 каналов пока
+    // фиксируем
 }
 
 void AtmCorrectionMainWindow::showResult(result_values rv) {
@@ -288,12 +300,14 @@ void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
 }
 
 void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
+    if (pixel_bands.size() < 10) return;
     QString bands_values;
-    for (int i = 0; i < pixel_bands.size(); ++i) {
+    base_pixel_speya_values.clear();
+    for (int i = 0; i < 10; ++i) {
+        base_pixel_speya_values.append(pixel_bands[i]);
         bands_values.append(QString::number(pixel_bands[i]));
-        if (i < pixel_bands.size() - 1) bands_values.append(" ");
+        if (i < 10 - 1) bands_values.append(" ");
     }
-    base_pixel_speya_values = pixel_bands;
     auto ln_m_H2O = cs->get_mH2O(pixel_bands[9], pixel_bands[8]);
     ui->label_pixel_bands->setText(bands_values);
     ui->doubleSpinBox_mH2O->setValue(std::exp(ln_m_H2O));
