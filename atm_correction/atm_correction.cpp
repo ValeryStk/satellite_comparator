@@ -557,40 +557,40 @@ result_values optimize(const QString& sat_name,
     memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
 
     // X
-    pars[0].limits[0] = 0;
-    pars[0].limits[1] = 1;
-    pars[0].limited[0] = 350;
-    pars[0].limited[1] = 350;
+    pars[0].limits[0] = 300;
+    pars[0].limits[1] = 350;
+    pars[0].limited[0] = 1;
+    pars[0].limited[1] = 1;
     pars[0].side = 0;
     pars[0].step = 1;
 
     // q
-    pars[1].limits[0] = 0;
-    pars[1].limits[1] = 1;
+    pars[1].limits[0] = 1;
+    pars[1].limits[1] = 6;
     pars[1].limited[0] = 1;
     pars[1].limited[1] = 1;
     pars[1].side = 0;
     pars[1].step = 0.01;
 
     // p
-    pars[2].limits[0] = 0;
-    pars[2].limits[1] = 1;
+    pars[2].limits[0] = 0.5;
+    pars[2].limits[1] = 2.0;
     pars[2].limited[0] = 1;
     pars[2].limited[1] = 1;
     pars[2].side = 0;
     pars[2].step = 0.01;
 
     // tau_m_0
-    pars[3].limits[0] = 0;
-    pars[3].limits[1] = 1;
+    pars[3].limits[0] = 0.09;
+    pars[3].limits[1] = 0.1;
     pars[3].limited[0] = 1;
     pars[3].limited[1] = 1;
     pars[3].side = 0;
     pars[3].step = 0.01;
 
     // tau_a_0
-    pars[4].limits[0] = 0;
-    pars[4].limits[1] = 1;
+    pars[4].limits[0] = 0.01;
+    pars[4].limits[1] = 1.5;
     pars[4].limited[0] = 1;
     pars[4].limited[1] = 1;
     pars[4].side = 0;
@@ -603,6 +603,14 @@ result_values optimize(const QString& sat_name,
     pars[5].step = 0.01;
     pars[5].limited[0] = 1;
     pars[5].limited[1] = 1;
+
+    // tau_e
+    pars[6].limits[0] = 0.001;
+    pars[6].limits[1] = 0.5;
+    pars[6].side = 0;
+    pars[6].step = 0.01;
+    pars[6].limited[0] = 1;
+    pars[6].limited[1] = 1;
 
     // g
     pars[7].limits[0] = 0.0001;
