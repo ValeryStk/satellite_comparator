@@ -522,17 +522,19 @@ result_values optimize(const QString& sat_name,
     if (sat_name != satellite_name_key) updateSatelliteResponses(sat_name);
 
     /* Initial conditions */
+
     double p[10];
     for (int i = 0; i < initial_values.size(); ++i) {
         p[i] = initial_values[i];
     }
 
-    if (speya_values.size() != 4) return rv;  // TODO exceptions
-    dark_pixels = {
-        speya_values[0], speya_values[1], speya_values[2],
-        speya_values[3]};  //{36.525799,24.058825,11.294599,4.025315};
-    double perror[4];      /* Returned parameter errors */
-    mp_par pars[4];        /* Parameter constraints */
+    if (speya_values.size() != 10) {
+        throw std::runtime_error("Количество каналов не равно 10");
+        return rv;
+    }  // TODO exceptions
+    dark_pixels = speya_values.toStdVector();
+    double perror[4]; /* Returned parameter errors */
+    mp_par pars[4];   /* Parameter constraints */
     vars_struct v;
     int status;
     mp_result result;
