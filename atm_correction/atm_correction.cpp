@@ -427,10 +427,10 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     for (int i = 0; i < m; i++) {
         dy[i] = eq[i];
     }
-    rv.err_tau = dy[0];
+    rv.err_tau_a0 = dy[0];
     rv.err_beta = dy[1];
     rv.err_g = dy[2];
-    rv.err_albedo = dy[3];
+    rv.err_albedo_1 = dy[3];
     return 0;
 }
 
@@ -443,10 +443,10 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     auto eq = compute_ro(ro, mu_0, tau_0_a, beta, g, ro_fin.B1,
                          ro_fin.band_value, ro_fin.band_number);
     dy[3] = eq;
-    rv.err_tau = dy[0];
+    rv.err_tau_a0 = dy[0];
     rv.err_beta = dy[1];
     rv.err_g = dy[2];
-    rv.err_albedo = dy[3];
+    rv.err_albedo_1 = dy[3];
     return 0;
 }
 }  // namespace
@@ -543,6 +543,22 @@ result_values optimize(const QString& sat_name,
     result.xerror = perror;
     memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
 
+    // X
+    pars[0].limits[0] = 0;
+    pars[0].limits[1] = 1;
+    pars[0].limited[0] = 1;
+    pars[0].limited[1] = 1;
+    pars[0].side = 0;
+    pars[0].step = 0.01;
+
+    // q
+    pars[1].limits[0] = 0;
+    pars[1].limits[1] = 1;
+    pars[1].limited[0] = 1;
+    pars[1].limited[1] = 1;
+    pars[1].side = 0;
+    pars[1].step = 0.01;
+
     // p
     pars[2].limits[0] = 0;
     pars[2].limits[1] = 1;
@@ -603,13 +619,13 @@ result_values optimize(const QString& sat_name,
 
     qDebug() << "\nSTATUS: " << status;
     qDebug() << "VALUES: " << p[0] << p[1] << p[2] << p[3];
-    qDebug() << "ERROR: " << rv.err_tau << rv.err_beta << rv.err_g
-             << rv.err_albedo;
+    qDebug() << "ERROR: " << rv.err_tau_a0 << rv.err_beta << rv.err_g
+             << rv.err_albedo_1;
 
     rv.tau_0_a = p[0];
     rv.beta = p[1];
     rv.g = p[2];
-    rv.albedo = p[3];
+    rv.albedo_1 = p[3];
 
     return rv;
 }
