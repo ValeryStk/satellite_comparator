@@ -30,12 +30,20 @@ using std::vector;
 static bool is_first_run = true;
 constexpr int NUMBER_OF_CHANNELS = 10;
 constexpr uint16_t NUMBER_WAVELENGTH = 601;
-constexpr double TAU_M_0 = 0.101;
+
 constexpr double LAMBDA_0 = 0.55;
-constexpr double P = 1.25;
-constexpr double Q = 1;
-constexpr double TAU_E = 0.04;
 constexpr double pi = 3.14159265358979323846;
+
+// double Q = 1;
+// double P = 1.25;
+double TAU_M_0 = 0.101;
+double TAU_E = 0.04;
+
+double mu_0 = 0.0;  // косинус зенитного угла солнца
+double mu = 0.0;    // косинус зенитного угла съёмки
+double fi = 0.0;  // косинус разности азимутальных углов съёмки и солнца
+double gamma = 0.0;  // косинус угла рассеяния
+
 constexpr double dobson_TiO[NUMBER_OF_CHANNELS] = {
     0.985, 0.992, 0.995, 0.996, 0.997, 0.997, 0.998, 0.999, 0.999, 0.997};
 constexpr double dobson_alfa[NUMBER_OF_CHANNELS] = {
@@ -48,11 +56,6 @@ struct vars_struct {
     double* g_err;
     double* albedo_err;
 };
-
-double mu_0 = 0.0;  // косинус зенитного угла солнца
-double mu = 0.0;    // косинус зенитного угла съёмки
-double fi = 0.0;  // косинус разности азимутальных углов съёмки и солнца
-double gamma = 0.0;  // косинус угла рассеяния
 
 static result_values rv;
 
@@ -191,7 +194,8 @@ inline vector<double> compute_x(const double& mu_0, const double& g,
 inline vector<double> compute_B_atm(const double& mu_0, const double& tau_0_a,
                                     const double& beta, const double& g,
                                     const vector<double>& tau_m,
-                                    const vector<double>& list) {
+                                    const vector<double>& list, double Q,
+                                    double P) {
     vector<double> result;
     vector<double> tau_lambda =
         compute_tau_lambda(TAU_E, tau_0_a, beta, tau_m, list);
@@ -208,14 +212,17 @@ inline vector<double> compute_B_atm(const double& mu_0, const double& tau_0_a,
     return result;
 }
 
-inline double compute_B1(
-    const vector<double>& T_O2_list, const double T_O3_list,
-    const vector<double>& T_H2O_list, const vector<double>& S_lambda_list,
-    const vector<double>& B_lambda_teta_list, const double& mu_0,
-    const double& tau_0_a, const double& beta, const double& g,
-    const vector<double>& tau_m, const vector<double>& list) {
+inline double compute_B1(const vector<double>& T_O2_list,
+                         const double T_O3_list,
+                         const vector<double>& T_H2O_list,
+                         const vector<double>& S_lambda_list,
+                         const vector<double>& B_lambda_teta_list,
+                         const double& mu_0, const double& tau_0_a,
+                         const double& beta, const double& g,
+                         const vector<double>& tau_m,
+                         const vector<double>& list, double Q, double P) {
     double B1 = 0.0;
-    auto B_atm = compute_B_atm(mu_0, tau_0_a, beta, g, tau_m, list);
+    auto B_atm = compute_B_atm(mu_0, tau_0_a, beta, g, tau_m, list, Q, P);
     for (uintmax_t i = 0; i < list.size(); ++i) {
         auto T_g_lambda = T_O2_list[i] * T_H2O_list[i];
         auto S_lambda = S_lambda_list[i];
@@ -348,12 +355,12 @@ inline double compute_B2(const vector<double>& S_lambda_list,
                          const double& albedo, const double& tau_0_a,
                          const double& beta, const double& g,
                          const vector<double>& tau_m,
-                         const vector<double>& list) {
+                         const vector<double>& list, double Q, double P) {
     auto E_lambda =
         compute_E_lambda(mu_0, albedo, tau_0_a, beta, g, tau_m, list);
     auto T_lambda = compute_T_lambda(TAU_E, tau_0_a, beta, g, tau_m, list);
     double B2 = 0.0;
-    auto B_atm = compute_B_atm(mu_0, tau_0_a, beta, g, tau_m, list);
+    auto B_atm = compute_B_atm(mu_0, tau_0_a, beta, g, tau_m, list, Q, P);
     for (size_t i = 0; i < list.size(); ++i) {
         auto T_g_lambda = T_O2_list[i] * T_H2O_list[i];
         auto S_lambda = S_lambda_list[i];
@@ -378,15 +385,16 @@ inline vector<double> compute_EQ(
     const vector<vector<double>>& S_lambda_lists, const double& mu_0,
     const double& albedo, const double& tau_0_a, const double& beta,
     const double& g, const vector<double>& tau_m, const vector<double>& list,
-    const vector<double>& dividers, const vector<double>& dark_pixels) {
+    const vector<double>& dividers, const vector<double>& dark_pixels, double Q,
+    double P) {
     vector<double> EQ;
     for (size_t i = 0; i < dark_pixels.size(); ++i) {
-        auto B1 =
-            compute_B1(T_O2_list, T_O3_list[i], T_H2O_list, S_lambda_lists[i],
-                       B_lambda_teta_list, mu_0, tau_0_a, beta, g, tau_m, list);
+        auto B1 = compute_B1(T_O2_list, T_O3_list[i], T_H2O_list,
+                             S_lambda_lists[i], B_lambda_teta_list, mu_0,
+                             tau_0_a, beta, g, tau_m, list, Q, P);
         auto B2 = compute_B2(S_lambda_lists[i], B_lambda_teta_list, T_O2_list,
                              T_O3_list[i], T_H2O_list, mu_0, albedo, tau_0_a,
-                             beta, g, tau_m, list);
+                             beta, g, tau_m, list, Q, P);
         EQ.push_back(compute_eq(B1, B2, albedo, dividers[i], dark_pixels[i]));
     }
     return EQ;
@@ -402,19 +410,22 @@ inline double compute_TO3(double TiO3, double alfa_i, double X) {
 
 inline double compute_ro(double ro,  // albedo
                          double mu_0, double tau_0_a, double beta, double g,
-                         double B1,   // fixed
-                         double B,    // pixel band value
-                         int band) {  // chanel number
+                         double B1,  // fixed
+                         double B,   // pixel band value
+                         int band, double Q,
+                         double P) {  // chanel number
 
     auto B2 = compute_B2(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
                          T_O3_list[band], T_H2O_list, mu_0, ro, tau_0_a, beta,
-                         g, tau_m, lambda_list) *
+                         g, tau_m, lambda_list, Q, P) *
               ro / pi;
     double a = (B1 + B2) / divider_list[band];
     return (B - a);
 }
 
 int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
+    auto Q = p[1];
+    auto P = p[2];
     auto tau_0_a = p[4];
     auto beta = p[5];
     auto g = p[7];
@@ -422,7 +433,7 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
 
     auto eq = compute_EQ(B_lambda_teta_list, T_O2_list, T_O3_list, T_H2O_list,
                          S_lambda_lists, mu_0, albedo, tau_0_a, beta, g, tau_m,
-                         lambda_list, divider_list, dark_pixels);
+                         lambda_list, divider_list, dark_pixels, Q, P);
 
     for (int i = 0; i < m; i++) {
         dy[i] = eq[i];
@@ -435,13 +446,15 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
 }
 
 int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
-    auto tau_0_a = p[0];
-    auto beta = p[1];
-    auto g = p[2];
-    auto ro = p[3];
+    auto Q = p[1];
+    auto P = p[2];
+    auto tau_0_a = p[4];
+    auto beta = p[5];
+    auto g = p[7];
+    auto ro = p[8];
 
     auto eq = compute_ro(ro, mu_0, tau_0_a, beta, g, ro_fin.B1,
-                         ro_fin.band_value, ro_fin.band_number);
+                         ro_fin.band_value, ro_fin.band_number, Q, P);
     dy[3] = eq;
     rv.err_tau_a0 = dy[0];
     rv.err_beta = dy[1];
@@ -546,10 +559,10 @@ result_values optimize(const QString& sat_name,
     // X
     pars[0].limits[0] = 0;
     pars[0].limits[1] = 1;
-    pars[0].limited[0] = 1;
-    pars[0].limited[1] = 1;
+    pars[0].limited[0] = 350;
+    pars[0].limited[1] = 350;
     pars[0].side = 0;
-    pars[0].step = 0.01;
+    pars[0].step = 1;
 
     // q
     pars[1].limits[0] = 0;
@@ -631,10 +644,11 @@ result_values optimize(const QString& sat_name,
 }
 
 double calculateAlbedo(const double tau, const double beta, const double g,
-                       const double band_number, const double band_value) {
+                       const double band_number, const double band_value,
+                       double Q, double P) {
     double B1 = compute_B1(T_O2_list, T_O3_list[band_number], T_H2O_list,
                            S_lambda_lists[band_number], B_lambda_teta_list,
-                           mu_0, tau, beta, g, tau_m, lambda_list);
+                           mu_0, tau, beta, g, tau_m, lambda_list, Q, P);
     ro_fin.B1 = B1;
     ro_fin.band_number = band_number;
     ro_fin.band_value = band_value;
