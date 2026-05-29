@@ -259,15 +259,16 @@ void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
 }
 
 void AtmCorrectionMainWindow::showResult(result_values rv) {
-    /*ui->doubleSpinBox_result_tau->setValue(rv.tau_0_a);
-    ui->doubleSpinBox_result_beta->setValue(rv.beta);
-    ui->doubleSpinBox_result_g->setValue(rv.g);
-    ui->doubleSpinBox_result_albedo->setValue(rv.albedo);
-
-    ui->doubleSpinBox_result_tau_error->setValue(rv.err_tau);
-    ui->doubleSpinBox_result_beta_error->setValue(rv.err_beta);
-    ui->doubleSpinBox_result_g_error->setValue(rv.err_g);
-    ui->doubleSpinBox_result_albedo_error->setValue(rv.err_albedo);*/
+    setCellValue("result_X", rv.X);
+    setCellValue("result_q", rv.q);
+    setCellValue("result_p", rv.p);
+    setCellValue("result_Tau_m0", rv.tau_mu_0);
+    setCellValue("result_Tau_a0", rv.tau_0_a);
+    setCellValue("result_Beta", rv.beta);
+    setCellValue("result_Tau_e", rv.tau_e);
+    setCellValue("result_g_a", rv.g);
+    setCellValue("result_p_1", rv.albedo_1);
+    setCellValue("result_p_2", rv.albedo_2);
 }
 
 void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(

@@ -6,6 +6,19 @@
 #include <QStringList>
 #include <vector>
 
+enum ATM_PARAMS_INDEXES {
+    X_INDEX,
+    q_INDEX,
+    p_INDEX,
+    tau_mu_0_INDEX,
+    tau_0_a_INDEX,
+    beta_INDEX,
+    tau_e_INDEX,
+    g_INDEX,
+    ro_1_INDEX,
+    ro_2_INDEX
+};
+
 using std::vector;
 
 struct ro_final {

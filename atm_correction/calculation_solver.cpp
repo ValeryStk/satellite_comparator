@@ -47,8 +47,9 @@ void calculation_solver::updateCurrentSatellite(QString sat_name) {
 
 double calculation_solver::calculateAlbedo(double tau, double beta, double g,
                                            int band_number, double band_value,
-                                           double Q, double P) {
-    return lss::calculateAlbedo(tau, beta, g, band_number, band_value, Q, P);
+                                           double Q, double P, double Tau_e) {
+    return lss::calculateAlbedo(tau, beta, g, band_number, band_value, Q, P,
+                                Tau_e);
 }
 
 void calculation_solver::start_solve_dark_pixels_async(
