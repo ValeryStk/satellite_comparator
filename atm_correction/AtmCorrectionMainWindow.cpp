@@ -323,6 +323,7 @@ void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
     }
     atm_params_plot->graph(10)->setData(QVector<double>::fromStdVector(w),
                                         T_H2O);
+    cs->setH2O(T_H2O);
     atm_params_plot->rescaleAxes();
     atm_params_plot->replot();
 }

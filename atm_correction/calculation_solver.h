@@ -27,6 +27,7 @@ public:
     void start_solve_dark_pixels_async(const QString& satellite_name,
                                        const QVector<double>& dark_pixels);
     std::vector<double> loadDoublesFromFile(const QString& filePath);
+    void setH2O(QVector<double> new_h20_list);
     void setInitial_values(const QVector<double>& initial_values);
 
 public slots:
