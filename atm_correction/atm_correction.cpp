@@ -605,7 +605,7 @@ result_values optimize(const QString& sat_name,
     pars[X_INDEX].limited[1] = 1;
     char X_param_name[] = "X";
     pars[X_INDEX].parname = X_param_name;
-    pars[X_INDEX].side = 2;
+    pars[X_INDEX].side = 0;
     pars[X_INDEX].step = 1;
 
     // q
