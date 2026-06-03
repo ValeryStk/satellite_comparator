@@ -1,13 +1,30 @@
 #ifndef COMMON_TYPES_H
 #define COMMON_TYPES_H
+
+#include "qmetatype.h"
+
 struct result_values {
-  double tau_0_a;
-  double beta;
-  double g;
-  double albedo;
-  double err_tau;
-  double err_beta;
-  double err_g;
-  double err_albedo;
+    double X;
+    double q;
+    double p;
+    double tau_mu_0;
+    double tau_0_a;
+    double beta;
+    double tau_e;
+    double g;
+    double albedo_1;
+    double albedo_2;
+
+    double err_X;
+    double err_q;
+    double err_p;
+    double err_tau_mu_0;
+    double err_tau_a0;
+    double err_beta;
+    double err_tau_e;
+    double err_g;
+    double err_albedo_1;
+    double err_albedo_2;
 };
-#endif // COMMON_TYPES_H
+Q_DECLARE_METATYPE(result_values)
+#endif  // COMMON_TYPES_H

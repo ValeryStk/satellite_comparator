@@ -2,7 +2,7 @@
 TEMPLATE = subdirs
 CONFIG += ordered
 
-SUBDIRS += base core tests
+SUBDIRS += base core tests atm_correction
 
 base.file  = base/base.pro
 core.file  = core/satellite_comparator.pro

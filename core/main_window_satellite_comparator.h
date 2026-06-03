@@ -6,6 +6,7 @@
 #include <QMainWindow>
 #include <cstdint>
 
+#include "AtmCorrectionMainWindow.h"
 #include "QComboBox"
 #include "QDoubleSpinBox"
 #include "QtConcurrent/QtConcurrent"
@@ -178,7 +179,11 @@ private slots:
     //!
     void updateImage();
 
-    void runChangeDetectionMethod();
+    void runChangeDetectionMethod(const QString &polygonId);
+
+    void sendSpectrToMatlab();
+
+    void loadSentinelTOA();
 
     void sendSpectrToMatlab();
 
@@ -193,6 +198,8 @@ private:
 
     //! \brief Текстовое поле для оотображения географических координат
     QLabel *m_label_scene_coord;
+
+    QLabel *m_label_date_time;
 
     //! \brief Графическая сцена
     QGraphicsScene *m_scene;
@@ -379,6 +386,8 @@ private:
     //! \param x, y - координаты пикселя
     QVector<double> getSentinelKsyValues(const int x, const int y);
 
+    QVector<double> getSentinelSpeyaValues(const int x, const int y);
+
     //! \brief получение значений КСЯ для любого спутника
     //! \param x
     //! \param y
@@ -393,7 +402,7 @@ private:
     QHash<QString, sad::geoTransform> extractGeoPositions(
         const QString &xmlFilePath);
     int extractUTMZoneFromXML(const QString &xmlFilePath);
-    QString getDateTimeFromXML(const QString &xmlFilePath);
+    QDateTime getDateTimeFromXML(const QString &xmlFilePath);
     void getKSY(const QPointF &pos, QVector<double> &waves,
                 QVector<double> &ksy);
     QImage createModifiedImage(const QImage &img, double coefSat,
@@ -418,6 +427,8 @@ private:
         const QVector<QVector<sad::BAND_DATA>> &m_time_row,
         sad::SATELLITE_TYPE st);
     QCustomPlot *time_row_indexes_plot;
+    QCustomPlot *m_speya_plot;
+    QDockWidget *m_speyaDock;
     QPair<QVector<double>, QVector<QString>> m_time_row_dates_unix_time;
     void showTimeRowIndexesDataViaPlot(QVector<double> &&ndvis,
                                        QVector<double> &&ndwis);
@@ -432,5 +443,14 @@ private:
     QDockWidget *m_spectralDock;
     void setUpUi();
     void deleteTimeRowData();
+    void loadMaskForSentinelMenu();
+    uint16_t *loadMaskForSentinel(int &width, int &height,
+                                  const QString &rootPath);
+
+    bool saveSentinelToGeoTiff(const QVector<sad::BAND_DATA> &bands,
+                               const sad::geoTransform &gt,
+                               const QString &outputFilePath);
+    AtmCorrectionMainWindow m_ac;
+    QDockWidget *m_acDock;
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H

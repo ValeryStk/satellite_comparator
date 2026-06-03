@@ -1,0 +1,13 @@
+{
+  "id": "S2C_33TVF_20250824_0_L2A",
+  "datetime": "2025-08-24T09:59:41.571000+00:00",
+  "eo_cloud_cover": 17.949702,
+  "sun_azimuth": 150.09672945635,
+  "sun_zenith": null,
+  "bands_downloaded": [],
+  "radiometric": {
+    "add_offset": -0.1,
+    "scale": 0.0001
+  },
+  "download_timestamp": "2026-03-30T11:36:20.000688"
+}

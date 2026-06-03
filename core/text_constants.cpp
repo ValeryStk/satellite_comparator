@@ -18,6 +18,8 @@ const char satellite_name_landsat_9[] = "LANDSAT 9";
 const char satellite_name_landsat_8[] = "LANDSAT 8";
 const char satellite_name_sentinel_2A[] = "SENTINEL-2A";
 const char satellite_name_sentinel_2B[] = "SENTINEL-2B";
+const char satellite_name_sentinel_2A_TOA[] = "SENTINEL-2A-TOA";
+const char satellite_name_sentinel_2B_TOA[] = "SENTINEL-2B-TOA";
 
 const char kSpeyaXUnit[] = "СПЭЯ, Вт/(м³·ср)";
 

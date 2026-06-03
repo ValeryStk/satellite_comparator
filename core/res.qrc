@@ -10,5 +10,6 @@
         <file>res/black.svg</file>
         <file>res/light.svg</file>
         <file>res/saturation.svg</file>
+        <file>res/sdb.json</file>
     </qresource>
 </RCC>

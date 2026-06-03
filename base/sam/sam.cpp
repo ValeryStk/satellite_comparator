@@ -1,7 +1,8 @@
 #include "sam.h"
 
+#include <qmath.h>
+
 #include <QVector>
-#include <cmath>
 
 #include "satellites_bands_map.h"
 
@@ -109,6 +110,18 @@ double calculateNDSWIR(const double nir2, const double swir2) {
 
 double calculateNBRSWIR(const double swir3, const double swir2) {
     return (swir3 - swir2 - 0.02) / (swir3 + swir2 + 0.1);
+}
+
+double calculateSpeyaFromSentinelDN(const double DN,  // DN WITH OFFSET
+                                    const double solarIrradiance,
+                                    const double cosSunZenitAngle) {
+    return (DN * solarIrradiance * cosSunZenitAngle) / (M_PI * 10000);
+}
+
+double calculateSpeyaFromSentinelKsy(const double Ksy,
+                                     const double solarIrradiance,
+                                     const double cosSunZenitAngle) {
+    return (Ksy * solarIrradiance * cosSunZenitAngle) / M_PI;
 }
 
 }  // end namespace sam

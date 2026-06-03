@@ -3,6 +3,7 @@
 #include <QDomDocument>
 #include <QDomNode>
 #include <QFile>
+#include <QXmlStreamReader>
 
 #include "QDebug"
 
@@ -30,6 +31,31 @@ QString traverseDom(const QDomNode& node, const QString& parent_name,
     }
     return result;
 }
+
+double extractDoubleParameter(const QString& filename, const QString& tagName) {
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Cannot open file:" << file.errorString();
+        return -1.0;
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "Invalid XML data";
+        file.close();
+        return -1.0;
+    }
+    file.close();
+
+    QDomNodeList nodes = doc.elementsByTagName(tagName);
+    if (!nodes.isEmpty()) {
+        QDomElement e = nodes.item(0).toElement();
+        return e.text().toDouble();
+    }
+
+    return -1.0;
+}
+
 }  // namespace
 
 namespace satc {
@@ -123,6 +149,204 @@ sad::LANDSAT_METADATA_FILE readLandsatXmlHeader(
     lmd.isHeaderValid = true;
     file.close();
     return lmd;
+}
+
+QString getPathToCloudMaskForSentinel(const QString& xmlFilePath) {
+    QFile file(xmlFilePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Не удалось открыть файл:" << xmlFilePath;
+        return {};
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "Ошибка парсинга XML";
+        file.close();
+        return {};
+    }
+    file.close();
+
+    // Ищем dataObject с ID="CloudPrbMask_Tile1_Data"
+    QDomNodeList dataObjects = doc.elementsByTagName("dataObject");
+    for (int i = 0; i < dataObjects.size(); ++i) {
+        QDomElement dataObj = dataObjects.at(i).toElement();
+        if (dataObj.attribute("ID") == "CloudPrbMask_Tile1_Data") {
+            QDomNodeList fileLocations =
+                dataObj.elementsByTagName("fileLocation");
+            if (!fileLocations.isEmpty()) {
+                QString href =
+                    fileLocations.at(0).toElement().attribute("href");
+                if (!href.isEmpty()) {
+                    return href;  // Например:
+                                  // "./GRANULE/.../MSK_CLDPRB_20m.jp2"
+                }
+            }
+        }
+    }
+
+    qWarning() << "Путь к MSK_CLDPRB_20m.jp2 не найден в XML";
+    return {};
+}
+
+QString extractSpacecraftName(const QString& xmlFilePath) {
+    QFile file(xmlFilePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Не удалось открыть файл:" << xmlFilePath;
+        return {};
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        // qWarning() << "Ошибка парсинга XML:" << doc.err;
+        file.close();
+        return {};
+    }
+    file.close();
+
+    // Ищем dataObject с spacecraftName или platform
+    QDomNodeList dataObjects = doc.elementsByTagName("dataObject");
+    for (int i = 0; i < dataObjects.size(); ++i) {
+        QDomElement dataObj = dataObjects.at(i).toElement();
+        QDomNodeList spacecraftTags =
+            dataObj.elementsByTagName("SPACECRAFT_NAME");
+        if (!spacecraftTags.isEmpty()) {
+            QDomNode spacecraftNode = spacecraftTags.at(0);
+            QString name = spacecraftNode.firstChild().nodeValue().trimmed();
+            if (!name.isEmpty()) {
+                return name;  // "Sentinel-2A"
+            }
+        }
+
+        // Альтернатива: метаданные в <platform> или <mission>
+        QDomNodeList platforms = dataObj.elementsByTagName("platform");
+        for (int j = 0; j < platforms.size(); ++j) {
+            QDomNodeList shortNames =
+                platforms.at(j).toElement().elementsByTagName("shortName");
+            if (!shortNames.isEmpty()) {
+                return shortNames.at(0).firstChild().nodeValue().trimmed();
+            }
+        }
+    }
+
+    // Прямой поиск в корне документа (standalone тег)
+    QDomNodeList spacecraftRoot = doc.elementsByTagName("SPACECRAFT_NAME");
+    if (!spacecraftRoot.isEmpty()) {
+        return spacecraftRoot.at(0).firstChild().nodeValue().trimmed();
+    }
+
+    qWarning() << "SPACECRAFT_NAME не найден в XML";
+    return {};
+}
+
+std::unordered_map<int, double> extractSolarIrradianceForSentinel(
+    const QString& filename) {
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Cannot open file:" << file.errorString();
+        return {};
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qWarning() << "Invalid XML data";
+        file.close();
+        return {};
+    }
+    file.close();
+
+    std::unordered_map<int, double> solar_irradiance;
+
+    QDomElement root = doc.documentElement();
+    QDomNodeList nodes = root.elementsByTagName("SOLAR_IRRADIANCE");
+
+    for (int i = 0; i < nodes.size(); ++i) {
+        QDomElement e = nodes.item(i).toElement();
+        int bandId = e.attribute("bandId").toInt();
+        double value = e.text().toDouble();
+        solar_irradiance[bandId] = value;
+    }
+
+    return solar_irradiance;
+}
+
+double getSunZenitAngleForSentinel(const QString& filename) {
+    return extractDoubleParameter(filename, "ZENITH_ANGLE");
+}
+
+double getSunAzimuthAngleForSentinel(const QString& filename) {
+    return extractDoubleParameter(filename, "AZIMUTH_ANGLE");
+}
+
+double getAverageCaptureZenitAngle(const QString& filename) {
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Не удалось открыть файл:" << filename;
+        return {};
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        // qWarning() << "Ошибка парсинга XML:" << doc.err;
+        file.close();
+        return {};
+    }
+    file.close();
+
+    QDomNodeList nodes = doc.elementsByTagName("Mean_Viewing_Incidence_Angle");
+    if (nodes.isEmpty()) {
+        qDebug() << "Mean_Viewing_Incidence_Angle not founded...";
+        return 0.0;
+    }
+
+    double sum = 0.0;
+    int count = 0;
+
+    for (int i = 0; i < nodes.count(); ++i) {
+        QDomElement bandEl = nodes.at(i).toElement();
+        QDomElement zenithEl = bandEl.firstChildElement("ZENITH_ANGLE");
+        if (!zenithEl.isNull()) {
+            sum += zenithEl.text().toDouble();
+            ++count;
+        }
+    }
+
+    return count > 0 ? sum / count : 0.0;
+}
+
+double getAverageCaptureAzimutAngle(const QString& filename) {
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Не удалось открыть файл:" << filename;
+        return {};
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        // qWarning() << "Ошибка парсинга XML:" << doc.err;
+        file.close();
+        return {};
+    }
+    file.close();
+
+    QDomNodeList nodes = doc.elementsByTagName("Mean_Viewing_Incidence_Angle");
+    if (nodes.isEmpty()) {
+        qDebug() << "Mean_Viewing_Incidence_Angle not founded...";
+        return 0.0;
+    }
+
+    double sum = 0.0;
+    int count = 0;
+
+    for (int i = 0; i < nodes.count(); ++i) {
+        QDomElement bandEl = nodes.at(i).toElement();
+        QDomElement zenithEl = bandEl.firstChildElement("AZIMUTH_ANGLE");
+        if (!zenithEl.isNull()) {
+            sum += zenithEl.text().toDouble();
+            ++count;
+        }
+    }
+
+    return count > 0 ? sum / count : 0.0;
 }
 
 }  // end namespace satc

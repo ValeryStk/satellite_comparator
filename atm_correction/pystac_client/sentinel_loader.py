@@ -7,8 +7,8 @@ from datetime import datetime
 client = Client.open("https://earth-search.aws.element84.com/v1")
 search = client.search(
     collections=["sentinel-2-l2a"],
-    bbox=[27.5, 53.8, 27.6, 53.9],
-    datetime="2026-03-01/2026-03-23",
+    bbox=[14.3, 40.7, 14.6, 40.8],
+    datetime="2025-08-20/2025-08-25",
     query={"eo:cloud_cover": {"lt": 20}}
 )
 
