@@ -15,9 +15,12 @@
 #include <vector>
 
 #include "common_types.h"
+#include "davis.h"
 #include "json_utils.h"
 #include "math.h"
 #include "mpfit.h"
+
+std::vector<double> speya_result;
 
 namespace lss {
 void updateSatelliteResponses(const QString& satellite_name);
@@ -52,6 +55,9 @@ constexpr double dobson_alfa[NUMBER_OF_CHANNELS] = {
 
 constexpr double central_waves[NUMBER_OF_CHANNELS] = {443, 492, 560, 664, 704,
                                                       740, 780, 840, 865, 945};
+
+std::vector<double> v_central_waves = {443, 492, 560, 664, 704,
+                                       740, 780, 840, 865, 945};
 
 struct vars_struct {
     double* tau_0_a_err;
@@ -140,7 +146,8 @@ inline double compute_x_m(const double& gamma) {
 }
 
 inline double compute_x_a(const double& mu_0, const double& g) {
-    return (1 - pow(g, 2)) / pow((1 + pow(g, 2) + 2 * g * mu_0 * gamma), 1.5);
+    return (1 - pow(g, 2)) /
+           pow((1 + pow(g, 2) - 2 * g * gamma), 1.5);  // error Anton fixed
 }
 
 inline vector<double> compute_tau_a(const double& tau_0_a, const double& beta,
@@ -412,6 +419,7 @@ inline vector<double> compute_EQ(
         double ro_0 = compute_ro_0(albedo_1, albedo_2, lambda, 490, 665);
         EQ.push_back(compute_eq(B1, B2, ro_0, dividers[i], dark_pixels[i]));
     }
+    speya_result = EQ;  // last speya_result
     return EQ;
 }
 
@@ -484,6 +492,7 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     rv.err_g = dy[g_INDEX];
     rv.err_albedo_1 = dy[ro_1_INDEX];
     rv.err_albedo_2 = dy[ro_2_INDEX];
+
     return 0;
 }
 
@@ -701,6 +710,13 @@ result_values optimize(const QString& sat_name,
     rv.g = p[g_INDEX];
     rv.albedo_1 = p[ro_1_INDEX];
     rv.albedo_2 = p[ro_2_INDEX];
+
+    // show last speya result
+    dv::Config cfg;
+    dv::holdOn();
+    dv::show(v_central_waves, dark_pixels, "Origin");
+    dv::show(v_central_waves, speya_result, "Fitted");
+    dv::holdOff();
 
     return rv;
 }
