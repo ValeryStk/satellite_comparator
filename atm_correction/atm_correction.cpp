@@ -291,8 +291,7 @@ inline vector<double> compute_u(const double& g, const double& tau_0_a,
                   6.13805 * pow(g_lmb[i], 3);
         auto h3 = 2.07593 - 2.03761 * g_lmb[i] + 6.25975 * pow(g_lmb[i], 2) -
                   7.35503 * pow(g_lmb[i], 3);
-        u.push_back(h0 + h1 * mu_0 + h2 * (mu_0 * mu_0) +
-                    h3 * (mu_0 * mu_0 * mu_0));
+        u.push_back(h0 + h1 * mu + h2 * (mu * mu) + h3 * (mu * mu * mu));
     }
     return u;
 }
