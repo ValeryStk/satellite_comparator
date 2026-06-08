@@ -21,6 +21,7 @@
 #include "mpfit.h"
 
 std::vector<double> speya_result;
+std::vector<double> e_result;
 
 namespace lss {
 void updateSatelliteResponses(const QString& satellite_name);
@@ -126,9 +127,9 @@ void calculDividerList(vector<vector<double>>& responses) {
             divider_list[i] += responses[i][j];
         }
     }
-    for (int i = 0; i < divider_list.size(); ++i) {
-        qDebug() << "DIVIDED: " << divider_list[i];
-    }
+    /*for (int i = 0; i < divider_list.size(); ++i) {
+        //qDebug() << "DIVIDED: " << divider_list[i];
+    }*/
 }
 
 inline vector<double> compute_tau_m(const vector<double>& list,
@@ -211,7 +212,8 @@ inline vector<double> compute_x(const double& mu_0, const double& g,
     return result;
 }
 
-inline vector<double> compute_B_atm(const double& mu_0, const double& tau_0_a,
+inline vector<double> compute_B_atm(const std::vector<double> B_sun_list,
+                                    const double& mu_0, const double& tau_0_a,
                                     const double& beta, const double& g,
                                     const vector<double>& tau_m,
                                     const vector<double>& list, double Q,
@@ -223,12 +225,16 @@ inline vector<double> compute_B_atm(const double& mu_0, const double& tau_0_a,
         compute_omega(Tau_e, tau_0_a, beta, tau_m, list);
     vector<double> x = compute_x(mu_0, g, tau_0_a, beta, tau_m, list);
 
-    for (uintmax_t i = 0; i < list.size(); ++i) {
-        auto b_atm = omega_lambda[i] * x[i] / (4.0 * (1.0 + mu_0)) *
-                     (1.0 - exp(-tau_lambda[i] * (1.0 / mu_0 + 1.0))) *
+    for (uintmax_t i = 0; i < list.size(); ++i) {  // Check function
+        auto b_atm = omega_lambda[i] * B_sun_list[i] * x[i] /
+                     (4.0 * (mu + mu_0)) *
+                     (1.0 - exp(-tau_lambda[i] * (1.0 / mu_0 + 1.0 / mu))) *
                      (1.0 + Q * pow(omega_lambda[i] * tau_lambda[i], P));
         result.push_back(b_atm);
     }
+    dv::Config config;
+    config.chart.title = "B_atm";
+    dv::show(v_central_waves, result);
     return result;
 }
 
@@ -239,17 +245,19 @@ inline double compute_B1(
     const double& tau_0_a, const double& beta, const double& g,
     const vector<double>& tau_m, const vector<double>& list, double Q, double P,
     double Tau_e) {
-    double B1 = 0.0;
-    auto B_atm =
-        compute_B_atm(mu_0, tau_0_a, beta, g, tau_m, list, Q, P, Tau_e);
+    auto B_atm = compute_B_atm(B_lambda_teta_list, mu_0, tau_0_a, beta, g,
+                               tau_m, list, Q, P, Tau_e);
+
+    double integral_first = 0.0;
+    double integral_second = 0.0;
+
     for (uintmax_t i = 0; i < list.size(); ++i) {
-        auto T_g_lambda = T_O2_list[i] * T_H2O_list[i];
-        auto S_lambda = S_lambda_list[i];
-        auto B_sun = B_lambda_teta_list[i];
-        auto b = B_atm[i];
-        B1 += b * T_g_lambda * S_lambda * B_sun;
+        integral_first +=
+            B_lambda_teta_list[i] * T_H2O_list[i] * S_lambda_list[i];
+        integral_second += S_lambda_list[i];
     }
-    return B1 * T_O3_list;
+    double B1 = integral_first * T_O3_list / integral_second;
+    return B1;
 }
 
 inline vector<double> compute_E_lambda(
@@ -266,13 +274,16 @@ inline vector<double> compute_E_lambda(
     for (size_t i = 0; i < list.size(); ++i) {
         double ro_0 = compute_ro_0(albedo1, albedo2, list[i], 490, 665);
         auto E_lmb =
-            4.0 * pi * omega_lambda[i] * mu_0 /
+            4.0 * pi * omega_lambda[i] * mu_0 * B_lambda_teta_list[i] /
                 (4.0 + 3.0 * (1.0 - g_lmb[i]) * (1.0 - ro_0) * tau_lambda[i]) *
                 ((0.5 + 0.75 * mu_0) +
                  (0.5 - 0.75 * mu_0) * exp(-tau_lambda[i] / mu_0)) +
-            (1.0 - omega_lambda[i]) * pi * mu_0 * exp(-tau_lambda[i] / mu_0);
+            (1.0 - omega_lambda[i]) * pi * B_lambda_teta_list[i] * mu_0 *
+                exp(-tau_lambda[i] / mu_0);
         E.push_back(E_lmb);
     }
+    e_result = E;
+    qDebug() << "-----------------> E <--------------------------" << e_result;
     return E;
 }
 
@@ -377,24 +388,37 @@ inline double compute_B2(const vector<double>& S_lambda_list,
     auto E_lambda = compute_E_lambda(mu_0, albedo_1, albedo_2, tau_0_a, beta, g,
                                      tau_m, list, Tau_e);
     auto T_lambda = compute_T_lambda(Tau_e, tau_0_a, beta, g, tau_m, list);
-    double B2 = 0.0;
-    auto B_atm =
-        compute_B_atm(mu_0, tau_0_a, beta, g, tau_m, list, Q, P, Tau_e);
+
+    double integral_first = 0.0;
+    double integral_second = 0.0;
+
+    auto B_atm = compute_B_atm(B_lambda_teta_list, mu_0, tau_0_a, beta, g,
+                               tau_m, list, Q, P, Tau_e);
+
     for (size_t i = 0; i < list.size(); ++i) {
+        auto ro_0 = compute_ro_0(albedo_1, albedo_2, list[i], 490, 665);
+        integral_first += ro_0 / pi * E_lambda[i] * T_lambda[i] *
+                          T_H2O_list[i] * S_lambda_list[i];
+        integral_second += S_lambda_list[i];
+    }
+
+    double B2 = T_O3 * integral_first / integral_second;
+
+    /*for (size_t i = 0; i < list.size(); ++i) {
         auto T_g_lambda = T_O2_list[i] * T_H2O_list[i];
         auto S_lambda = S_lambda_list[i];
         auto B_sun = B_lambda_teta_list[i];
         auto T = T_lambda[i];
         auto E = E_lambda[i];
         B2 += E * T * T_g_lambda * S_lambda * B_sun;
-    }
-    return B2 * T_O3;
+    }*/
+    return B2;
 }
 
 inline double compute_eq(const double& B1, const double& B2,
                          const double& albedo, const double& divider,
                          const double& dark_pixel) {
-    double B = (B1 + B2 * albedo / pi) / divider;
+    double B = (B1 + B2);  //* albedo / pi);  // /divider
     return dark_pixel - B;
 }
 
@@ -434,7 +458,7 @@ inline void compute_TO3_list(double X) {
     for (int i = 0; i < NUMBER_OF_CHANNELS; ++i) {
         T_O3_list[i] = compute_TO3(dobson_TiO[i], dobson_alfa[i], X);
     }
-    qDebug() << "TO3list params:" << X << T_O3_list;
+    // qDebug() << "TO3list params:" << X << T_O3_list;
 };
 
 inline double compute_ro_0(double ro_1, double ro_2, double lambda,
@@ -678,7 +702,7 @@ result_values optimize(const QString& sat_name,
 
     // albedo p1
     pars[ro_1_INDEX].limits[0] = 0.001;
-    pars[ro_1_INDEX].limits[1] = 0.5;
+    pars[ro_1_INDEX].limits[1] = 0.8;
     pars[ro_1_INDEX].side = 0;
     pars[ro_1_INDEX].step = 0.01;
     pars[ro_1_INDEX].limited[0] = 1;
@@ -686,7 +710,7 @@ result_values optimize(const QString& sat_name,
 
     // albedo p2
     pars[ro_2_INDEX].limits[0] = 0.001;
-    pars[ro_2_INDEX].limits[1] = 0.5;
+    pars[ro_2_INDEX].limits[1] = 0.8;
     pars[ro_2_INDEX].side = 0;
     pars[ro_2_INDEX].step = 0.01;
     pars[ro_2_INDEX].limited[0] = 1;
@@ -695,7 +719,12 @@ result_values optimize(const QString& sat_name,
     status = mpfit(quadfunc, 10, 10, p, pars, 0, (void*)&v, &result);
 
     qDebug() << "\nSTATUS: " << status;
-    qDebug() << "VALUES: " << p[0] << p[1] << p[2] << p[3];
+    qDebug() << "VALUES: ";
+    for (int i = 0; i < NUMBER_OF_CHANNELS; ++i) {
+        qDebug() << p[i];
+    }
+    qDebug() << "--------------------------------------------------------------"
+                "--------";
     qDebug() << "ERROR: " << rv.err_tau_a0 << rv.err_beta << rv.err_g
              << rv.err_albedo_1;
 
@@ -715,6 +744,7 @@ result_values optimize(const QString& sat_name,
     dv::holdOn();
     dv::show(v_central_waves, dark_pixels, "Origin");
     dv::show(v_central_waves, speya_result, "Fitted");
+    dv::show(v_central_waves, e_result, "E");
     dv::holdOff();
 
     return rv;
