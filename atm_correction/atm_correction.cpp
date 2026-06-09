@@ -29,6 +29,7 @@ std::vector<double> x_list;
 std::vector<double> ro_0_list;
 std::vector<double> B1_result;
 std::vector<double> B2_result;
+std::vector<double> B_result;
 
 std::vector<double> tau_a_res;
 std::vector<double> tau_m_res;
@@ -462,6 +463,7 @@ inline vector<double> compute_EQ(
     ro_0_list.clear();
     B1_result.clear();
     B2_result.clear();
+    B_result.clear();
     for (size_t i = 0; i < dark_pixels.size(); ++i) {
         auto B1 = compute_B1(T_O2_list, T_O3_list[i], T_H2O_list,
                              S_lambda_lists[i], B_lambda_teta_list, mu_0,
@@ -475,6 +477,7 @@ inline vector<double> compute_EQ(
         ro_0_list.push_back(ro_0);
         B1_result.push_back(B1);
         B2_result.push_back(B2);
+        B_result.emplace_back(B1 + B2);
     }
     speya_result = EQ;  // last speya_result
 
@@ -778,7 +781,7 @@ result_values optimize(const QString& sat_name,
     dv::Config cfg;
     dv::holdOn();
     dv::show(v_central_waves, origin_speya_pixel_values, "Origin");
-    dv::show(v_central_waves, speya_result, "Fitted");
+    dv::show(v_central_waves, B_result, "Fitted");
     dv::holdOff();
     dv::show(lambda_list, e_result, "E");
     dv::show(lambda_list, B_atm_result, "B_atm");
