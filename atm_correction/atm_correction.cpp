@@ -763,8 +763,18 @@ result_values optimize(const QString& sat_name,
     }
     qDebug() << "--------------------------------------------------------------"
                 "--------";
-    qDebug() << "ERROR: " << rv.err_tau_a0 << rv.err_beta << rv.err_g
-             << rv.err_albedo_1;
+    // clang-format off
+    qDebug() << "ERROR: "  <<"X            : "<< result.xerror[0]<<"\n"
+                           <<"q            : "<< result.xerror[1]<<"\n"
+                           <<"p            : "<< result.xerror[2]<<"\n"
+                           <<"tau_mu_0     : "<< result.xerror[3]<<"\n"
+                           <<"err_tau_a0   : "<< result.xerror[4]<<"\n"
+                           <<"beta         : "<< result.xerror[5]<<"\n"
+                           <<"err_tau_e    : "<< result.xerror[6]<<"\n"
+                           <<"err_g        : "<< result.xerror[7]<<"\n"
+                           <<"err_albedo_1 : "<< result.xerror[8]<<"\n"
+                           <<"err_albedo_2 : "<< result.xerror[9]<<"\n";
+    // clang-format on
 
     rv.X = p[X_INDEX];
     rv.q = p[q_INDEX];
@@ -783,23 +793,24 @@ result_values optimize(const QString& sat_name,
     dv::show(v_central_waves, origin_speya_pixel_values, "Origin");
     dv::show(v_central_waves, B_result, "Fitted");
     dv::holdOff();
-    dv::show(lambda_list, e_result, "E");
-    dv::show(lambda_list, B_atm_result, "B_atm");
-    dv::show(lambda_list, B_lambda_teta_list, "B_lambda_teta_list");
-    dv::show(lambda_list, omega_lambda_list, "omega_lambda");
-    dv::show(lambda_list, tau_lambda_list, "tau_lambda");
+    // dv::show(lambda_list, e_result, "E");
+    // dv::show(lambda_list, B_atm_result, "B_atm");
+    // dv::show(lambda_list, B_lambda_teta_list, "B_lambda_teta_list");
+    // dv::show(lambda_list, omega_lambda_list, "omega_lambda");
+    // dv::show(lambda_list, tau_lambda_list, "tau_lambda");
     dv::show(lambda_list, x_list, "x_list");
 
-    dv::show(v_central_waves, ro_0_list, "ro_0_list");
-    dv::show(v_central_waves, B1_result, "B1_list");
-    dv::show(v_central_waves, B2_result, "B2_list");
+    // dv::show(v_central_waves, ro_0_list, "ro_0_list");
+    // dv::show(v_central_waves, B1_result, "B1_list");
+    // dv::show(v_central_waves, B2_result, "B2_list");
     qDebug() << "mu: " << mu;
     qDebug() << "mu_0: " << mu_0;
 
-    dv::show(lambda_list, tau_a_res, "tau_a");
-    dv::show(lambda_list, tau_m_res, "tau_m");
+    // dv::show(lambda_list, tau_a_res, "tau_a");
+    // dv::show(lambda_list, tau_m_res, "tau_m");
     qDebug() << "x_m_res: " << x_m_res;
     qDebug() << "x_a_res: " << x_a_res;
+    qDebug() << x_list;
 
     return rv;
 }
