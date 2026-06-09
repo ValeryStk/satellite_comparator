@@ -29,6 +29,11 @@ std::vector<double> x_list;
 std::vector<double> ro_0_list;
 std::vector<double> B1_result;
 std::vector<double> B2_result;
+
+std::vector<double> tau_a_res;
+std::vector<double> tau_m_res;
+double x_m_res;
+double x_a_res;
 // std::vector<double> B_sun_list;
 
 /*
@@ -224,6 +229,12 @@ inline vector<double> compute_x(const double& mu_0, const double& g,
         result.push_back((x_m * tau_m[i] + x_a * tau_a[i]) /
                          (tau_m[i] + tau_a[i]));
     }
+
+    tau_a_res = tau_a;
+    tau_m_res = tau_m;
+    x_m_res = x_m;
+    x_a_res = x_a;
+
     return result;
 }
 
@@ -781,6 +792,11 @@ result_values optimize(const QString& sat_name,
     dv::show(v_central_waves, B2_result, "B2_list");
     qDebug() << "mu: " << mu;
     qDebug() << "mu_0: " << mu_0;
+
+    dv::show(lambda_list, tau_a_res, "tau_a");
+    dv::show(lambda_list, tau_m_res, "tau_m");
+    qDebug() << "x_m_res: " << x_m_res;
+    qDebug() << "x_a_res: " << x_a_res;
 
     return rv;
 }
