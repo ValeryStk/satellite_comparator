@@ -226,10 +226,10 @@ inline vector<double> compute_x(const double& mu_0, const double& g,
     auto x_m = compute_x_m(gamma);
     auto x_a = compute_x_a(mu_0, g);
     for (uintmax_t i = 0; i < list.size(); ++i) {
-        result.push_back((x_m * tau_m[i] + x_a * tau_a[i]) /
-                         (tau_m[i] + tau_a[i]));
+        double znamenatel = tau_m[i] + tau_a[i];
+        result.push_back(x_m * tau_m[i] / znamenatel +
+                         x_a * tau_a[i] / znamenatel);
     }
-
     tau_a_res = tau_a;
     tau_m_res = tau_m;
     x_m_res = x_m;
