@@ -532,10 +532,10 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     compute_TO3_list(X);
     compute_tau_m(lambda_list, TAU_M_0);
 
-    auto eq =
-        compute_EQ(B_lambda_teta_list, T_O2_list, T_O3_list, T_H2O_list,
-                   S_lambda_lists, mu_0, ro_1, ro_2, tau_0_a, beta, g, tau_m,
-                   lambda_list, divider_list, dark_pixels, Q, P, tau_e);
+    auto eq = compute_EQ(B_lambda_teta_list, T_O2_list, T_O3_list, T_H2O_list,
+                         S_lambda_lists, mu_0, ro_1, ro_2, tau_0_a, beta, g,
+                         tau_m, lambda_list, divider_list,
+                         origin_speya_pixel_values, Q, P, tau_e);
 
     for (int i = 0; i < m; i++) {
         dy[i] = eq[i];
@@ -658,7 +658,7 @@ result_values optimize(const QString& sat_name,
         throw std::runtime_error("Количество каналов не равно 10");
         return rv;
     }  // TODO exceptions
-    dark_pixels = speya_values.toStdVector();
+    origin_speya_pixel_values = speya_values.toStdVector();
     double perror[10]; /* Returned parameter errors */
     mp_par pars[10];   /* Parameter constraints */
     vars_struct v;
@@ -777,7 +777,7 @@ result_values optimize(const QString& sat_name,
     // show last speya result
     dv::Config cfg;
     dv::holdOn();
-    dv::show(v_central_waves, dark_pixels, "Origin");
+    dv::show(v_central_waves, origin_speya_pixel_values, "Origin");
     dv::show(v_central_waves, speya_result, "Fitted");
     dv::holdOff();
     dv::show(lambda_list, e_result, "E");
