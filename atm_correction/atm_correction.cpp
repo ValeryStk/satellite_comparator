@@ -22,6 +22,21 @@
 
 std::vector<double> speya_result;
 std::vector<double> e_result;
+std::vector<double> B_atm_result;
+std::vector<double> omega_lambda_list;
+std::vector<double> tau_lambda_list;
+std::vector<double> x_list;
+std::vector<double> ro_0_list;
+std::vector<double> B1_result;
+std::vector<double> B2_result;
+// std::vector<double> B_sun_list;
+
+/*
+auto b_atm = omega_lambda[i] * B_sun_list[i] * x[i] /
+             (4.0 * (mu + mu_0)) *
+             (1.0 - exp(-tau_lambda[i] * (1.0 / mu_0 + 1.0 / mu))) *
+             (1.0 + Q * pow(omega_lambda[i] * tau_lambda[i], P));
+result.push_back(b_atm);*/
 
 namespace lss {
 void updateSatelliteResponses(const QString& satellite_name);
@@ -35,7 +50,7 @@ static bool is_first_run = true;
 constexpr int NUMBER_OF_CHANNELS = 10;
 constexpr uint16_t NUMBER_WAVELENGTH = 601;
 
-constexpr double LAMBDA_0 = 0.55;
+constexpr double LAMBDA_0 = 550;
 constexpr double pi = 3.14159265358979323846;
 
 // double Q = 1;
@@ -232,9 +247,11 @@ inline vector<double> compute_B_atm(const std::vector<double> B_sun_list,
                      (1.0 + Q * pow(omega_lambda[i] * tau_lambda[i], P));
         result.push_back(b_atm);
     }
-    dv::Config config;
-    config.chart.title = "B_atm";
-    dv::show(v_central_waves, result);
+
+    omega_lambda_list = omega_lambda;
+    tau_lambda_list = tau_lambda;
+    x_list = x;
+    B_atm_result = result;
     return result;
 }
 
@@ -252,8 +269,7 @@ inline double compute_B1(
     double integral_second = 0.0;
 
     for (uintmax_t i = 0; i < list.size(); ++i) {
-        integral_first +=
-            B_lambda_teta_list[i] * T_H2O_list[i] * S_lambda_list[i];
+        integral_first += B_atm[i] * T_H2O_list[i] * S_lambda_list[i];
         integral_second += S_lambda_list[i];
     }
     double B1 = integral_first * T_O3_list / integral_second;
@@ -283,7 +299,8 @@ inline vector<double> compute_E_lambda(
         E.push_back(E_lmb);
     }
     e_result = E;
-    qDebug() << "-----------------> E <--------------------------" << e_result;
+    // qDebug() << "-----------------> E <--------------------------" <<
+    // e_result;
     return E;
 }
 
@@ -431,6 +448,9 @@ inline vector<double> compute_EQ(
     const vector<double>& list, const vector<double>& dividers,
     const vector<double>& dark_pixels, double Q, double P, double Tau_e) {
     vector<double> EQ;
+    ro_0_list.clear();
+    B1_result.clear();
+    B2_result.clear();
     for (size_t i = 0; i < dark_pixels.size(); ++i) {
         auto B1 = compute_B1(T_O2_list, T_O3_list[i], T_H2O_list,
                              S_lambda_lists[i], B_lambda_teta_list, mu_0,
@@ -441,8 +461,12 @@ inline vector<double> compute_EQ(
         double lambda = central_waves[i];
         double ro_0 = compute_ro_0(albedo_1, albedo_2, lambda, 490, 665);
         EQ.push_back(compute_eq(B1, B2, ro_0, dividers[i], dark_pixels[i]));
+        ro_0_list.push_back(ro_0);
+        B1_result.push_back(B1);
+        B2_result.push_back(B2);
     }
     speya_result = EQ;  // last speya_result
+
     return EQ;
 }
 
@@ -744,8 +768,19 @@ result_values optimize(const QString& sat_name,
     dv::holdOn();
     dv::show(v_central_waves, dark_pixels, "Origin");
     dv::show(v_central_waves, speya_result, "Fitted");
-    dv::show(v_central_waves, e_result, "E");
     dv::holdOff();
+    dv::show(lambda_list, e_result, "E");
+    dv::show(lambda_list, B_atm_result, "B_atm");
+    dv::show(lambda_list, B_lambda_teta_list, "B_lambda_teta_list");
+    dv::show(lambda_list, omega_lambda_list, "omega_lambda");
+    dv::show(lambda_list, tau_lambda_list, "tau_lambda");
+    dv::show(lambda_list, x_list, "x_list");
+
+    dv::show(v_central_waves, ro_0_list, "ro_0_list");
+    dv::show(v_central_waves, B1_result, "B1_list");
+    dv::show(v_central_waves, B2_result, "B2_list");
+    qDebug() << "mu: " << mu;
+    qDebug() << "mu_0: " << mu_0;
 
     return rv;
 }
