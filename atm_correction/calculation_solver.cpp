@@ -45,11 +45,8 @@ void calculation_solver::updateCurrentSatellite(QString sat_name) {
     lss::updateSatelliteResponses(sat_name);
 }
 
-double calculation_solver::calculateAlbedo(double tau, double beta, double g,
-                                           int band_number, double band_value,
-                                           double Q, double P, double Tau_e) {
-    return lss::calculateAlbedo(tau, beta, g, band_number, band_value, Q, P,
-                                Tau_e);
+double calculation_solver::calculateAlbedo(QVector<double> values) {
+    return lss::calculateAlbedo(values);
 }
 
 void calculation_solver::start_solve_dark_pixels_async(

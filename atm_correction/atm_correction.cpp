@@ -49,6 +49,19 @@ void updateSatelliteResponses(const QString& satellite_name);
 }
 
 namespace {
+
+bool allEqual(const std::vector<double>& v, double eps = 1e-9) {
+    if (v.empty())
+        return true;  // или false, если пустой вектор не считается "одинаковым"
+    double first = v[0];
+    for (size_t i = 1; i < v.size(); ++i) {
+        if (std::fabs(v[i] - first) > eps) {
+            return false;
+        }
+    }
+    return true;
+}
+
 using std::string;
 using std::vector;
 
@@ -235,7 +248,13 @@ inline vector<double> compute_x(const double& mu_0, const double& g,
     tau_m_res = tau_m;
     x_m_res = x_m;
     x_a_res = x_a;
-
+    /*if (allEqual(result)) {
+        qDebug()
+            << "****************** AL EQUAL *********************************";
+        qDebug() << "mu_0" << mu_0 << "g" << g << "tau_0_a" << tau_0_a << "beta"
+                 << beta << "x_m: " << x_m << "x_a: " << x_a << "tau_a" << tau_a
+                 << "tau_m" << tau_m;
+    };*/
     return result;
 }
 
@@ -513,7 +532,7 @@ inline double compute_ro(double ro1,  // albedo
                          double Tau_e) {  // chanel number
     double ro_0 = compute_ro_0(ro1, ro2, lambda_list[band], 490, 665);
     auto B2 = compute_B2(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
-                         T_O3_list[band], T_H2O_list, mu_0, ro_0, 0, tau_0_a,
+                         T_O3_list[band], T_H2O_list, mu_0, ro1, ro2, tau_0_a,
                          beta, g, tau_m, lambda_list, Q, P, Tau_e) *
               ro_0 / pi;
     double a = (B1 + B2) / divider_list[band];
@@ -566,16 +585,12 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     auto tau_e = p[6];
     auto g = p[7];
     auto ro_1 = p[8];
-    auto ro_2 = p[9];
+
     // UNDONE
     compute_tau_m(lambda_list, tau_m0);
-    auto eq = compute_ro(ro_1, ro_2, mu_0, tau_0_a, beta, g, ro_fin.B1,
-                         ro_fin.band_value, ro_fin.band_number, Q, P, tau_e);
-    dy[3] = eq;
-    rv.err_tau_a0 = dy[0];
-    rv.err_beta = dy[1];
-    rv.err_g = dy[2];
-    rv.err_albedo_1 = dy[3];
+    /*auto eq = compute_B2(/*compute_ro(ro_1, ro_2, mu_0, tau_0_a, beta, g,
+       ro_fin.B1, ro_fin.band_value, ro_fin.band_number, Q, P, tau_e);*/
+
     return 0;
 }
 }  // namespace
@@ -649,7 +664,7 @@ result_values optimize(const QString& sat_name,
         is_first_run = false;
     }
     if (sat_name != satellite_name_key) updateSatelliteResponses(sat_name);
-
+    if (initial_values.size() != 10) return rv;
     /* Initial conditions */
 
     double p[10];
@@ -810,23 +825,19 @@ result_values optimize(const QString& sat_name,
     // dv::show(lambda_list, tau_m_res, "tau_m");
     qDebug() << "x_m_res: " << x_m_res;
     qDebug() << "x_a_res: " << x_a_res;
-    qDebug() << x_list;
+    // qDebug() << x_list;
 
     return rv;
 }
 
-double calculateAlbedo(const double tau, const double beta, const double g,
-                       const double band_number, const double band_value,
-                       double Q, double P, double Tau_e) {
-    double B1 = compute_B1(T_O2_list, T_O3_list[band_number], T_H2O_list,
-                           S_lambda_lists[band_number], B_lambda_teta_list,
-                           mu_0, tau, beta, g, tau_m, lambda_list, Q, P, Tau_e);
-    ro_fin.B1 = B1;
-    ro_fin.band_number = band_number;
-    ro_fin.band_value = band_value;
-    double p[] = {tau, beta, g, 0.01};
-    double perror[4]; /* Returned parameter errors */
-    mp_par pars[4];   /* Parameter constraints */
+double calculateAlbedo(const QVector<double>& initial_values) {
+    if (initial_values.size() != 9) return 0.0;
+    double p[9];
+    for (int i = 0; i < initial_values.size(); ++i) {
+        p[i] = initial_values[i];
+    }
+    double perror[9]; /* Returned parameter errors */
+    mp_par pars[9];   /* Parameter constraints */
     vars_struct v;
     int status;
     mp_result result;
@@ -835,21 +846,39 @@ double calculateAlbedo(const double tau, const double beta, const double g,
     result.xerror = perror;
     memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
 
-    // tau_0_a
-    pars[0].fixed = 1;
-    // beta
-    pars[1].fixed = 1;
-    // g
-    pars[2].fixed = 1;
-    // albedo
-    pars[3].limits[0] = 0.001;
-    pars[3].limits[1] = 1;
-    pars[3].side = 0;
-    pars[3].step = 0.01;
-    pars[3].limited[0] = 1;
-    pars[3].limited[1] = 1;
+    // X
+    pars[X_INDEX].fixed = 1;
 
-    status = mpfit(albedofunc, 4, 4, p, pars, 0, (void*)&v, &result);
+    // q
+    pars[q_INDEX].fixed = 1;
+
+    // p
+    pars[p_INDEX].fixed = 1;
+
+    // tau_m_0
+    pars[tau_mu_0_INDEX].fixed = 1;
+
+    // tau_a_0
+    pars[tau_0_a_INDEX].fixed = 1;
+
+    // beta
+    pars[beta_INDEX].fixed = 1;
+
+    // tau_e
+    pars[tau_e_INDEX].fixed = 1;
+
+    // g
+    pars[g_INDEX].fixed = 1;
+
+    // albedo p final
+    pars[ro_1_INDEX].limits[0] = 0.001;
+    pars[ro_1_INDEX].limits[1] = 0.8;
+    pars[ro_1_INDEX].side = 0;
+    pars[ro_1_INDEX].step = 0.01;
+    pars[ro_1_INDEX].limited[0] = 1;
+    pars[ro_1_INDEX].limited[1] = 1;
+
+    status = mpfit(albedofunc, 9, 9, p, pars, 0, (void*)&v, &result);
 
     // qDebug() << "\nSTATUS: " << status;
     // qDebug() << "VALUES: " << p[0] << p[1] << p[2] << p[3];
