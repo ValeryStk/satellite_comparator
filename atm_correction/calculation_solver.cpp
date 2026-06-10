@@ -105,7 +105,6 @@ std::vector<double> calculation_solver::loadDoublesFromFile(
 
 void calculation_solver::setH2O(QVector<double> new_h20_list) {
     T_H2O_list = new_h20_list.toStdVector();
-    qDebug() << "update h20_list: " << T_H2O_list;
 }
 
 void calculation_solver::setSunZenitAngle(double angle) {

@@ -235,7 +235,7 @@ void AtmCorrectionMainWindow::setCaptureAzimutAngle(const double value) {
 
 void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
     cs->setSunZenitAngle(ui->doubleSpinBox_sunZenitAngle->value());
-    cs->setCaptruretZenitAngle(ui->doubleSpinBox_sunAzimutAngle->value());
+    cs->setCaptruretZenitAngle(ui->doubleSpinBox_CaptureZenitAngle->value());
     cs->setFiAngle(ui->doubleSpinBox_sunAzimutAngle->value(),
                    ui->doubleSpinBox_CaptureAzimutAngle->value());
     cs->computeGamma();
