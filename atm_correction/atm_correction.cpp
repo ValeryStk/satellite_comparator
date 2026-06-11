@@ -594,8 +594,7 @@ inline double compute_ro(double ro,  // albedo искомое
 
     auto B2 = compute_B2_final(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
                          T_O3_list[band], T_H2O_list, mu_0, ro, tau_0_a,
-                         beta, g, tau_m, lambda_list, Q, P, Tau_e) *
-              ro / pi;
+                         beta, g, tau_m, lambda_list, Q, P, Tau_e);
 
 
     double a = (B1 + B2);
@@ -645,22 +644,21 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     // auto X = p[X_INDEX];
     albedo_final_result.clear();
 
-    auto Q = p[q_INDEX];
-    auto P = p[p_INDEX];
-    auto TAU_M_0 = p[tau_mu_0_INDEX];
-    auto tau_0_a = p[tau_0_a_INDEX];
-    auto beta = p[beta_INDEX];
-    auto tau_e = p[tau_e_INDEX];
-    auto g = p[g_INDEX];
+    auto Q = rv.q;
+    auto P = rv.p;
+    auto TAU_M_0 = rv.tau_mu_0;
+    auto tau_0_a = rv.tau_0_a;
+    auto beta = rv.beta;
+    auto tau_e = rv.tau_e;
+    auto g = rv.g;
     auto ro = p[ro_2_INDEX];
 
-    for (int i = 0; i < m; i++) {
-        auto eq = compute_ro(ro, TAU_M_0, tau_0_a, beta, g, B1_result[i],
-                             origin_speya_pixel_values[i], i, Q, P, tau_e);
-        dy[i] = eq;
-        albedo_final_result.push_back(ro);
-    }
-    qDebug() << " albedo:  " << albedo_final_result;
+    // for (int i = 0; i < m; i++) {
+    auto eq = compute_ro(ro, TAU_M_0, tau_0_a, beta, g, B1_result[0],
+                         origin_speya_pixel_values[0], 0, Q, P, tau_e);
+    dy[ro_2_INDEX] = eq;
+    albedo_final_result.push_back(ro);
+    //}
 
     return 0;
 }
@@ -755,7 +753,7 @@ void setFiAngle(double angleSA, double angleCA) {
 
 inline double compute_gamma(double mu, double mu_0, double fi) {
     gamma = -mu * mu_0 + sqrt((1 - mu * mu) * (1 - mu_0 * mu_0)) * fi;
-    qDebug() << "cos gamma angle: " << gamma;
+    qDebug() << "gamma value: " << gamma;
     return gamma;
 }
 
@@ -829,7 +827,7 @@ result_values optimize(const QString& sat_name,
     memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
 
     // X
-    pars[X_INDEX].limits[0] = 280;
+    pars[X_INDEX].limits[0] = 250;
     pars[X_INDEX].limits[1] = 350;
     pars[X_INDEX].limited[0] = 1;
     pars[X_INDEX].limited[1] = 1;
@@ -856,7 +854,7 @@ result_values optimize(const QString& sat_name,
 
     // tau_m_0
     pars[tau_mu_0_INDEX].limits[0] = 0.09;
-    pars[tau_mu_0_INDEX].limits[1] = 0.1;
+    pars[tau_mu_0_INDEX].limits[1] = 0.15;
     pars[tau_mu_0_INDEX].limited[0] = 1;
     pars[tau_mu_0_INDEX].limited[1] = 1;
     pars[tau_mu_0_INDEX].side = 0;
@@ -887,8 +885,8 @@ result_values optimize(const QString& sat_name,
     pars[tau_e_INDEX].limited[1] = 1;
 
     // g
-    pars[g_INDEX].limits[0] = 0.0001;
-    pars[g_INDEX].limits[1] = 1;
+    pars[g_INDEX].limits[0] = 0.1;
+    pars[g_INDEX].limits[1] = 0.8;
     pars[g_INDEX].side = 0;
     pars[g_INDEX].step = 0.001;
     pars[g_INDEX].limited[0] = 1;
@@ -954,7 +952,7 @@ result_values optimize(const QString& sat_name,
     // dv::show(lambda_list, B_lambda_teta_list, "B_lambda_teta_list");
     // dv::show(lambda_list, omega_lambda_list, "omega_lambda");
     // dv::show(lambda_list, tau_lambda_list, "tau_lambda");
-    // dv::show(lambda_list, x_list, "x_list");
+    dv::show(lambda_list, x_list, "x_list");
 
     // dv::show(v_central_waves, ro_0_list, "ro_0_list");
     // dv::show(v_central_waves, B1_result, "B1_list");
