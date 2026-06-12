@@ -9,6 +9,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTextStream>
+#include <QVector>
 #include <QtMath>
 #include <array>
 #include <cmath>
@@ -31,6 +32,8 @@ std::vector<double> B1_result;
 std::vector<double> B2_result;
 std::vector<double> B_result;
 
+std::vector<double> albedo_final_result;
+
 std::vector<double> tau_a_res;
 std::vector<double> tau_m_res;
 double x_m_res;
@@ -49,6 +52,22 @@ void updateSatelliteResponses(const QString& satellite_name);
 }
 
 namespace {
+
+inline std::vector<double> calculateAlbedoFinal(
+    const QVector<double>& initial_values, const QVector<double>& speya_values);
+
+bool allEqual(const std::vector<double>& v, double eps = 1e-9) {
+    if (v.empty())
+        return true;  // или false, если пустой вектор не считается "одинаковым"
+    double first = v[0];
+    for (size_t i = 1; i < v.size(); ++i) {
+        if (std::fabs(v[i] - first) > eps) {
+            return false;
+        }
+    }
+    return true;
+}
+
 using std::string;
 using std::vector;
 
@@ -235,7 +254,13 @@ inline vector<double> compute_x(const double& mu_0, const double& g,
     tau_m_res = tau_m;
     x_m_res = x_m;
     x_a_res = x_a;
-
+    /*if (allEqual(result)) {
+        qDebug()
+            << "****************** AL EQUAL *********************************";
+        qDebug() << "mu_0" << mu_0 << "g" << g << "tau_0_a" << tau_0_a << "beta"
+                 << beta << "x_m: " << x_m << "x_a: " << x_a << "tau_a" << tau_a
+                 << "tau_m" << tau_m;
+    };*/
     return result;
 }
 
@@ -311,8 +336,31 @@ inline vector<double> compute_E_lambda(
         E.push_back(E_lmb);
     }
     e_result = E;
-    // qDebug() << "-----------------> E <--------------------------" <<
-    // e_result;
+    return E;
+}
+
+inline vector<double> compute_E_lambda_final(
+    const double& mu_0, const double& ro, const double& tau_0_a,
+    const double& beta, const double& g, const vector<double>& tau_m,
+    const vector<double>& list, double tau_e) {
+    vector<double> E;
+    vector<double> tau_lambda =
+        compute_tau_lambda(tau_e, tau_0_a, beta, tau_m, list);
+    vector<double> omega_lambda =
+        compute_omega(tau_e, tau_0_a, beta, tau_m, list);
+    vector<double> g_lmb = compute_g(g, tau_0_a, beta, tau_m, list);
+
+    for (size_t i = 0; i < list.size(); ++i) {
+        auto E_lmb =
+            4.0 * pi * omega_lambda[i] * mu_0 * B_lambda_teta_list[i] /
+                (4.0 + 3.0 * (1.0 - g_lmb[i]) * (1.0 - ro) * tau_lambda[i]) *
+                ((0.5 + 0.75 * mu_0) +
+                 (0.5 - 0.75 * mu_0) * exp(-tau_lambda[i] / mu_0)) +
+            (1.0 - omega_lambda[i]) * pi * B_lambda_teta_list[i] * mu_0 *
+                exp(-tau_lambda[i] / mu_0);
+        E.push_back(E_lmb);
+    }
+    e_result = E;
     return E;
 }
 
@@ -444,6 +492,33 @@ inline double compute_B2(const vector<double>& S_lambda_list,
     return B2;
 }
 
+inline double compute_B2_final(
+    const vector<double>& S_lambda_list,
+    const vector<double>& B_lambda_teta_list, const vector<double>& T_O2_list,
+    const double T_O3, const vector<double>& T_H2O_list, const double& mu_0,
+    const double& ro, const double& tau_0_a, const double& beta,
+    const double& g, const vector<double>& tau_m, const vector<double>& list,
+    double Q, double P, double Tau_e) {
+    auto E_lambda =
+        compute_E_lambda_final(mu_0, ro, tau_0_a, beta, g, tau_m, list, Tau_e);
+    auto T_lambda = compute_T_lambda(Tau_e, tau_0_a, beta, g, tau_m, list);
+
+    double integral_first = 0.0;
+    double integral_second = 0.0;
+
+    auto B_atm = compute_B_atm(B_lambda_teta_list, mu_0, tau_0_a, beta, g,
+                               tau_m, list, Q, P, Tau_e);
+
+    for (size_t i = 0; i < list.size(); ++i) {
+        integral_first += ro / pi * E_lambda[i] * T_lambda[i] * T_H2O_list[i] *
+                          S_lambda_list[i];
+        integral_second += S_lambda_list[i];
+    }
+
+    double B2 = T_O3 * integral_first / integral_second;
+    return B2;
+}
+
 inline double compute_eq(const double& B1, const double& B2,
                          const double& albedo, const double& divider,
                          const double& dark_pixel) {
@@ -503,22 +578,33 @@ inline double compute_ro_0(double ro_1, double ro_2, double lambda,
                            double lambda_1, double lambda_2) {
     return ro_1 + ((ro_2 - ro_1) / (lambda_2 - lambda_1)) * (lambda - lambda_1);
 };
-
-inline double compute_ro(double ro1,  // albedo
-                         double ro2, double mu_0, double tau_0_a, double beta,
+// clang-format off
+inline double compute_ro(double ro,  // albedo искомое
+                         double mu_0,
+                         double tau_0_a,
+                         double beta,
                          double g,
                          double B1,  // fixed
                          double B,   // pixel band value
-                         int band, double Q, double P,
-                         double Tau_e) {  // chanel number
-    double ro_0 = compute_ro_0(ro1, ro2, lambda_list[band], 490, 665);
-    auto B2 = compute_B2(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
-                         T_O3_list[band], T_H2O_list, mu_0, ro_0, 0, tau_0_a,
-                         beta, g, tau_m, lambda_list, Q, P, Tau_e) *
-              ro_0 / pi;
-    double a = (B1 + B2) / divider_list[band];
+                         int band,   // номер канала
+                         double Q,
+                         double P,
+                         double Tau_e) {
+
+
+    auto B2 = compute_B2_final(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
+                         T_O3_list[band], T_H2O_list, mu_0, ro, tau_0_a,
+                         beta, g, tau_m, lambda_list, Q, P, Tau_e);
+    /*auto B2 = compute_B2(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
+                         T_O3_list[band], T_H2O_list, mu_0, rv.albedo_1,rv.albedo_2, tau_0_a,
+                         beta, g, tau_m, lambda_list, Q, P, Tau_e);*/
+
+
+    double a = (B1 + B2);
+    qDebug()<<band <<"B -- a --> " <<B <<a;
     return (B - a);
 }
+// clang-format on
 
 int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     auto X = p[X_INDEX];
@@ -558,26 +644,103 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
 }
 
 int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
-    auto Q = p[1];
-    auto P = p[2];
-    auto tau_m0 = p[3];
-    auto tau_0_a = p[4];
-    auto beta = p[5];
-    auto tau_e = p[6];
-    auto g = p[7];
-    auto ro_1 = p[8];
-    auto ro_2 = p[9];
-    // UNDONE
-    compute_tau_m(lambda_list, tau_m0);
-    auto eq = compute_ro(ro_1, ro_2, mu_0, tau_0_a, beta, g, ro_fin.B1,
-                         ro_fin.band_value, ro_fin.band_number, Q, P, tau_e);
-    dy[3] = eq;
-    rv.err_tau_a0 = dy[0];
-    rv.err_beta = dy[1];
-    rv.err_g = dy[2];
-    rv.err_albedo_1 = dy[3];
+    // auto X = p[X_INDEX];
+
+    auto Q = rv.q;
+    auto P = rv.p;
+    auto TAU_M_0 = rv.tau_mu_0;
+    auto tau_0_a = rv.tau_0_a;
+    auto beta = rv.beta;
+    auto tau_e = rv.tau_e;
+    auto g = rv.g;
+    auto ro = p[ro_2_INDEX];
+    double eq = 0.0;
+    int band = p[0];
+    qDebug() << "band: " << band;
+    eq = compute_ro(ro, TAU_M_0, tau_0_a, beta, g, B1_result[band],
+                    origin_speya_pixel_values[band], band, Q, P, tau_e);
+    // eq;
+
+    dy[ro_2_INDEX] = eq;
+
     return 0;
 }
+
+std::vector<double> calculateAlbedoFinal(const QVector<double>& initial_values,
+                                         const QVector<double>& speya_values) {
+    if (initial_values.size() != 10) return {};
+    double p[10];
+    for (int i = 0; i < initial_values.size(); ++i) {
+        p[i] = initial_values[i];
+    }
+
+    if (speya_values.size() != 10) {
+        throw std::runtime_error("Количество каналов не равно 10");
+        return {};
+    }  // TODO exceptions
+    origin_speya_pixel_values = speya_values.toStdVector();
+
+    double perror[10]; /* Returned parameter errors */
+    mp_par pars[10];   /* Parameter constraints */
+    vars_struct v;
+    int status;
+    mp_result result;
+
+    memset(&result, 0, sizeof(result)); /* Zero results structure */
+    result.xerror = perror;
+    memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
+
+    // X
+    pars[X_INDEX].fixed = 1;
+
+    // q
+    pars[q_INDEX].fixed = 1;
+
+    // p
+    pars[p_INDEX].fixed = 1;
+
+    // tau_m_0
+    pars[tau_mu_0_INDEX].fixed = 1;
+
+    // tau_a_0
+    pars[tau_0_a_INDEX].fixed = 1;
+
+    // beta
+    pars[beta_INDEX].fixed = 1;
+
+    // tau_e
+    pars[tau_e_INDEX].fixed = 1;
+
+    // g
+    pars[g_INDEX].fixed = 1;
+
+    // ro_1
+    pars[ro_1_INDEX].fixed = 1;
+
+    // albedo p final
+    pars[ro_2_INDEX].limits[0] = 0.001;
+    pars[ro_2_INDEX].limits[1] = 1;
+    pars[ro_2_INDEX].side = 0;
+    pars[ro_2_INDEX].step = 0.01;
+    pars[ro_2_INDEX].limited[0] = 1;
+    pars[ro_2_INDEX].limited[1] = 1;
+    albedo_final_result.clear();
+    for (int i = 0; i < NUMBER_OF_CHANNELS; ++i) {
+        p[0] = i;
+        status = mpfit(albedofunc, 10, 10, p, pars, 0, (void*)&v, &result);
+        albedo_final_result.push_back(p[ro_2_INDEX]);
+        qDebug() << "ro_result: " << p[ro_2_INDEX];
+    }
+
+    qDebug() << "\nALBEDO FINAL STATUS: " << status;
+    // qDebug() << "VALUES: " << p[0] << p[1] << p[2] << p[3];
+    // qDebug() << "ERROR: " << rv.err_tau << rv.err_beta << rv.err_g <<
+    // rv.err_albedo;
+    // albedo_final_result.push_back(ro);
+    dv::show(v_central_waves, albedo_final_result, "final_albedo");
+    return albedo_final_result;
+}
+
 }  // namespace
 
 namespace lss {
@@ -599,7 +762,7 @@ void setFiAngle(double angleSA, double angleCA) {
 
 inline double compute_gamma(double mu, double mu_0, double fi) {
     gamma = -mu * mu_0 + sqrt((1 - mu * mu) * (1 - mu_0 * mu_0)) * fi;
-    qDebug() << "cos gamma angle: " << gamma;
+    qDebug() << "gamma value: " << gamma;
     return gamma;
 }
 
@@ -649,7 +812,7 @@ result_values optimize(const QString& sat_name,
         is_first_run = false;
     }
     if (sat_name != satellite_name_key) updateSatelliteResponses(sat_name);
-
+    if (initial_values.size() != 10) return rv;
     /* Initial conditions */
 
     double p[10];
@@ -673,7 +836,7 @@ result_values optimize(const QString& sat_name,
     memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
 
     // X
-    pars[X_INDEX].limits[0] = 280;
+    pars[X_INDEX].limits[0] = 250;
     pars[X_INDEX].limits[1] = 350;
     pars[X_INDEX].limited[0] = 1;
     pars[X_INDEX].limited[1] = 1;
@@ -700,7 +863,7 @@ result_values optimize(const QString& sat_name,
 
     // tau_m_0
     pars[tau_mu_0_INDEX].limits[0] = 0.09;
-    pars[tau_mu_0_INDEX].limits[1] = 0.1;
+    pars[tau_mu_0_INDEX].limits[1] = 0.15;
     pars[tau_mu_0_INDEX].limited[0] = 1;
     pars[tau_mu_0_INDEX].limited[1] = 1;
     pars[tau_mu_0_INDEX].side = 0;
@@ -731,8 +894,8 @@ result_values optimize(const QString& sat_name,
     pars[tau_e_INDEX].limited[1] = 1;
 
     // g
-    pars[g_INDEX].limits[0] = 0.0001;
-    pars[g_INDEX].limits[1] = 1;
+    pars[g_INDEX].limits[0] = 0.1;
+    pars[g_INDEX].limits[1] = 0.8;
     pars[g_INDEX].side = 0;
     pars[g_INDEX].step = 0.001;
     pars[g_INDEX].limited[0] = 1;
@@ -810,54 +973,13 @@ result_values optimize(const QString& sat_name,
     // dv::show(lambda_list, tau_m_res, "tau_m");
     qDebug() << "x_m_res: " << x_m_res;
     qDebug() << "x_a_res: " << x_a_res;
-    qDebug() << x_list;
+    // qDebug() << x_list;
 
+    auto sv = QVector<double>::fromStdVector(origin_speya_pixel_values);
+    auto albedo_pixel = calculateAlbedoFinal(initial_values, sv);
+    qDebug() << "albedo: " << albedo_pixel;
+    dv::show(v_central_waves, albedo_pixel, "final_albedo");
     return rv;
-}
-
-double calculateAlbedo(const double tau, const double beta, const double g,
-                       const double band_number, const double band_value,
-                       double Q, double P, double Tau_e) {
-    double B1 = compute_B1(T_O2_list, T_O3_list[band_number], T_H2O_list,
-                           S_lambda_lists[band_number], B_lambda_teta_list,
-                           mu_0, tau, beta, g, tau_m, lambda_list, Q, P, Tau_e);
-    ro_fin.B1 = B1;
-    ro_fin.band_number = band_number;
-    ro_fin.band_value = band_value;
-    double p[] = {tau, beta, g, 0.01};
-    double perror[4]; /* Returned parameter errors */
-    mp_par pars[4];   /* Parameter constraints */
-    vars_struct v;
-    int status;
-    mp_result result;
-
-    memset(&result, 0, sizeof(result)); /* Zero results structure */
-    result.xerror = perror;
-    memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
-
-    // tau_0_a
-    pars[0].fixed = 1;
-    // beta
-    pars[1].fixed = 1;
-    // g
-    pars[2].fixed = 1;
-    // albedo
-    pars[3].limits[0] = 0.001;
-    pars[3].limits[1] = 1;
-    pars[3].side = 0;
-    pars[3].step = 0.01;
-    pars[3].limited[0] = 1;
-    pars[3].limited[1] = 1;
-
-    status = mpfit(albedofunc, 4, 4, p, pars, 0, (void*)&v, &result);
-
-    // qDebug() << "\nSTATUS: " << status;
-    // qDebug() << "VALUES: " << p[0] << p[1] << p[2] << p[3];
-    // qDebug() << "ERROR: " << rv.err_tau << rv.err_beta << rv.err_g <<
-    // rv.err_albedo;
-
-    double albedo = p[3];
-    return albedo;
 }
 
 }  // namespace lss

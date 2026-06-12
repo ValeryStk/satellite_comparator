@@ -157,6 +157,7 @@
     <addaction name="action_LoadTimeRow"/>
     <addaction name="menu_5"/>
     <addaction name="menu_6"/>
+    <addaction name="action_load_hyper_spectral_data"/>
    </widget>
    <widget class="QMenu" name="menu_3">
     <property name="title">
@@ -250,6 +251,11 @@
   <action name="actionSentinel2_TOA">
    <property name="text">
     <string>Sentinel2</string>
+   </property>
+  </action>
+  <action name="action_load_hyper_spectral_data">
+   <property name="text">
+    <string>Загрузка гиперспектральных данных</string>
    </property>
   </action>
  </widget>
