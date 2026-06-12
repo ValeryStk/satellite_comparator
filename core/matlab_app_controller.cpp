@@ -10,7 +10,7 @@
 
 #include "MatFilesOperator.h"
 
-const bool IS_NEED_CHECK_RUNNING_EXE = true;
+const bool IS_NEED_CHECK_RUNNING_EXE = false;
 const QString NETWORK_CONFIG_FILE_NAME = "network_config.ini";
 
 MatlabAppController::MatlabAppController(QObject *parent) : QObject(parent) {
