@@ -2655,6 +2655,9 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
             &MainWindowSatelliteComparator::loadMaskForSentinelMenu);
     connect(ui->actionSentinel2_TOA, &QAction::triggered, this,
             &MainWindowSatelliteComparator::loadSentinelTOA);
+
+    connect(ui->action_load_hyper_spectral_data, &QAction::triggered, this,
+            []() { QProcess::startDetached("notepad.exe"); });
 }
 
 void MainWindowSatelliteComparator::addBaseItemsToScene() {
