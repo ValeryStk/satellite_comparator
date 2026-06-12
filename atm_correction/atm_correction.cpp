@@ -592,12 +592,12 @@ inline double compute_ro(double ro,  // albedo искомое
                          double Tau_e) {
 
 
-//    auto B2 = compute_B2_final(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
-//                         T_O3_list[band], T_H2O_list, mu_0, ro, tau_0_a,
-//                         beta, g, tau_m, lambda_list, Q, P, Tau_e);
-    auto B2 = compute_B2(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
-                         T_O3_list[band], T_H2O_list, mu_0, rv.albedo_1,rv.albedo_2, tau_0_a,
+    auto B2 = compute_B2_final(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
+                         T_O3_list[band], T_H2O_list, mu_0, ro, tau_0_a,
                          beta, g, tau_m, lambda_list, Q, P, Tau_e);
+    /*auto B2 = compute_B2(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
+                         T_O3_list[band], T_H2O_list, mu_0, rv.albedo_1,rv.albedo_2, tau_0_a,
+                         beta, g, tau_m, lambda_list, Q, P, Tau_e);*/
 
 
     double a = (B1 + B2);
@@ -645,7 +645,6 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
 
 int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     // auto X = p[X_INDEX];
-    albedo_final_result.clear();
 
     auto Q = rv.q;
     auto P = rv.p;
@@ -657,12 +656,12 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     auto ro = p[ro_2_INDEX];
     double eq = 0.0;
     int band = p[0];
-
+    qDebug() << "band: " << band;
     eq = compute_ro(ro, TAU_M_0, tau_0_a, beta, g, B1_result[band],
                     origin_speya_pixel_values[band], band, Q, P, tau_e);
     // eq;
 
-    dy[9] = eq;
+    dy[ro_2_INDEX] = eq;
 
     return 0;
 }
@@ -720,15 +719,17 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& initial_values,
 
     // albedo p final
     pars[ro_2_INDEX].limits[0] = 0.001;
-    pars[ro_2_INDEX].limits[1] = 10;
+    pars[ro_2_INDEX].limits[1] = 1;
     pars[ro_2_INDEX].side = 0;
     pars[ro_2_INDEX].step = 0.01;
     pars[ro_2_INDEX].limited[0] = 1;
     pars[ro_2_INDEX].limited[1] = 1;
-
+    albedo_final_result.clear();
     for (int i = 0; i < NUMBER_OF_CHANNELS; ++i) {
         p[0] = i;
         status = mpfit(albedofunc, 10, 10, p, pars, 0, (void*)&v, &result);
+        albedo_final_result.push_back(p[ro_2_INDEX]);
+        qDebug() << "ro_result: " << p[ro_2_INDEX];
     }
 
     qDebug() << "\nALBEDO FINAL STATUS: " << status;
@@ -736,6 +737,7 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& initial_values,
     // qDebug() << "ERROR: " << rv.err_tau << rv.err_beta << rv.err_g <<
     // rv.err_albedo;
     // albedo_final_result.push_back(ro);
+    dv::show(v_central_waves, albedo_final_result, "final_albedo");
     return albedo_final_result;
 }
 
