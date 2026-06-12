@@ -2657,7 +2657,7 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
             &MainWindowSatelliteComparator::loadSentinelTOA);
 
     connect(ui->action_load_hyper_spectral_data, &QAction::triggered, this,
-            []() { QProcess::startDetached("notepad.exe"); });
+            []() { QProcess::startDetached("hypercube/BadForest.exe"); });
 }
 
 void MainWindowSatelliteComparator::addBaseItemsToScene() {
