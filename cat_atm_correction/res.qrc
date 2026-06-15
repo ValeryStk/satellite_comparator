@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>_4restoring/atmoc.ini</file>
+        <file>_4restoring/satellites.json</file>
+        <file>_4restoring/sdb.json</file>
+    </qresource>
+</RCC>

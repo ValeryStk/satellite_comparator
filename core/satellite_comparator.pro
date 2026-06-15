@@ -22,6 +22,7 @@ include($$BASE_DIR/image_utils/image_utils.pri)
 include($$ATM_CORR_DIR/atm_correction.pri)
 
 SOURCES += \
+    GeoPointFinder.cpp \
     cross_square.cpp \
     dynamic_checkbox_widget.cpp \
     google_maps_url_maker.cpp \
@@ -45,6 +46,7 @@ SOURCES += \
     udpjsonrpc.cpp
 
 HEADERS += \
+    GeoPointFinder.h \
     cross_square.h \
     dynamic_checkbox_widget.h \
     google_maps_url_maker.h \
@@ -68,6 +70,7 @@ HEADERS += \
     version.h
 
 FORMS += \
+    GeoPointFinder.ui \
     main_window_satellite_comparator.ui \
     sliders_of_image_corrector.ui
 

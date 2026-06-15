@@ -1,0 +1,14 @@
+{
+    "4": [
+        "bka",
+        "sentinel2a-10m",
+        "sentinel2a-20m",
+        "sentinel2b-10m",
+        "sentinel2b-20m",
+        "kanopus-b"
+    ],
+    "5": [
+        "landsat8",
+        "landsat9"
+    ]
+}
