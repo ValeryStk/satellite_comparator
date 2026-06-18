@@ -666,6 +666,24 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
             waves = waves_landsat9;
             trimmed_satellite_data = data;
         }
+    } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+        if (m_is_bekas) {
+            sample = m_bekas_sample;
+            waves = waves_sentinel_2c_5;
+            size_t elems_to_copy = std::min(static_cast<size_t>(data.size()),
+                                            static_cast<size_t>(9));
+            trimmed_satellite_data =
+                data.mid(0, static_cast<int>(elems_to_copy));
+        } else {
+            QVector<double> c_waves;
+            for (int i = 0; i < m_sentinel_data.size(); ++i) {
+                c_waves.push_back(m_sentinel_data[i].central_wave_length);
+            }
+            sample = m_sentinel_sample;
+            waves = c_waves;
+            trimmed_satellite_data = data;
+        }
     }
 
     m_preview_plot->graph(0)->data().clear();
@@ -1111,6 +1129,10 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(
         m_sat_comparator->set_satellite_responses("landsat9");
     } else if (m_satelite_type == sad::LANDSAT_8) {
         m_sat_comparator->set_satellite_responses("landsat8");
+    } else if (m_satelite_type == sad::SENTINEL_2A) {
+        m_sat_comparator->set_satellite_responses("sentinel2a-10m");
+    } else if (m_satelite_type == sad::SENTINEL_2B) {
+        m_sat_comparator->set_satellite_responses("sentinel2b-10m");
     }
     auto folded_device_spectr_for_landsat =
         m_sat_comparator->fold_spectr_to_satellite_responses();
@@ -3860,6 +3882,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         satc::extractSolarIrradianceForSentinel(headerName);
     const QString satelliteType =
         satc::extractSpacecraftName(headerName).toUpper();
+    qDebug() << "Satellite name: " << satelliteType;
     m_satelite_type = sad::SENTINEL_2A;
     QString sentinelTOAname;
     if (satelliteType == satc::satellite_name_sentinel_2A) {
