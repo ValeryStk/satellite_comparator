@@ -185,6 +185,10 @@ private slots:
 
     void loadSentinelTOA();
 
+    void setCursorByGeo();
+
+    void setExternalSampleFromClipboard();
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
@@ -320,6 +324,7 @@ private:
 
     bool m_is_image_created;  //!< флаг созданного базового изображения
     bool m_is_bekas;  //!< флаг использования образца БЕКАС
+    bool m_is_external_spectr;
     LayerList *m_layer_gui_list;  //!< Список базовых слоёв
     LayerList *m_layer_roi_list;  //!< Список областей интересов
     QCustomPlot *m_preview_plot;  //!< Объект для отображения графика КСЯ для

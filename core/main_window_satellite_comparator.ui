@@ -172,6 +172,7 @@
     </property>
     <addaction name="action_change_detection_CD"/>
     <addaction name="action_SpectraClassifer"/>
+    <addaction name="action_setCursorByGeoCoord"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_3"/>
@@ -256,6 +257,11 @@
   <action name="action_load_hyper_spectral_data">
    <property name="text">
     <string>Загрузка гиперспектральных данных</string>
+   </property>
+  </action>
+  <action name="action_setCursorByGeoCoord">
+   <property name="text">
+    <string>Установить курсор по координатам</string>
    </property>
   </action>
  </widget>

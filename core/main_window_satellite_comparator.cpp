@@ -14,6 +14,7 @@
 #include <QUrl>
 #include <algorithm>
 
+#include "GeoPointFinder.h"
 #include "MatFilesOperator.h"
 #include "QApplication"
 #include "QCheckBox"
@@ -97,6 +98,8 @@ constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER = 11000 * 11000 * 3;
 QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443, 482, 562, 655, 865, 1610, 2200};
 QVector<double> waves_landsat9_5 = {443, 482, 562, 655, 865};
+QVector<double> waves_sentinel_2c_5 = {443, 490, 560, 665, 705,
+                                       740, 783, 842, 865};
 
 QList<QColor> distinctColors = {
     QColor(255, 0, 0),    // Красный
@@ -317,6 +320,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 {
     ui->setupUi(this);
+    m_is_external_spectr = false;
     m_label_scene_coord = new QLabel;
     m_label_date_time = new QLabel;
     ui->statusbar->addPermanentWidget(m_label_scene_coord);
@@ -2656,8 +2660,8 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
     connect(ui->actionSentinel2_TOA, &QAction::triggered, this,
             &MainWindowSatelliteComparator::loadSentinelTOA);
 
-    connect(ui->action_load_hyper_spectral_data, &QAction::triggered, this,
-            []() { QProcess::startDetached("hypercube/BadForest.exe"); });
+    connect(ui->action_setCursorByGeoCoord, &QAction::triggered, this,
+            &MainWindowSatelliteComparator::setCursorByGeo);
 }
 
 void MainWindowSatelliteComparator::addBaseItemsToScene() {
@@ -3999,3 +4003,16 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
 
     // saveSentinelToGeoTiff(m_sentinel_data, m_geo, "test2.tiff");
 }
+
+void MainWindowSatelliteComparator::setCursorByGeo() {
+    GeoPointFinder *gpf = new GeoPointFinder;
+    gpf->setAttribute(Qt::WA_DeleteOnClose);
+    gpf->show();
+    connect(gpf, &GeoPointFinder::setGeoCoordinatesAsSample, this,
+            [this](const QPointF &coords) {
+                auto pixel_coords = geoToPixel(coords.x(), coords.y(), m_geo);
+                samplePointOnSceneChangedEvent(pixel_coords);
+            });
+}
+
+void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {}
