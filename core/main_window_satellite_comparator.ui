@@ -158,6 +158,7 @@
     <addaction name="menu_5"/>
     <addaction name="menu_6"/>
     <addaction name="action_load_hyper_spectral_data"/>
+    <addaction name="action_load_external_spectr"/>
    </widget>
    <widget class="QMenu" name="menu_3">
     <property name="title">
@@ -262,6 +263,11 @@
   <action name="action_setCursorByGeoCoord">
    <property name="text">
     <string>Установить курсор по координатам</string>
+   </property>
+  </action>
+  <action name="action_load_external_spectr">
+   <property name="text">
+    <string>Загрузка внешнего спектра</string>
    </property>
   </action>
  </widget>

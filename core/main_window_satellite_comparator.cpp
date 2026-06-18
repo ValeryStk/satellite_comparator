@@ -4012,6 +4012,7 @@ void MainWindowSatelliteComparator::setCursorByGeo() {
             [this](const QPointF &coords) {
                 auto pixel_coords = geoToPixel(coords.x(), coords.y(), m_geo);
                 samplePointOnSceneChangedEvent(pixel_coords);
+                centerSceneOnCrossSquare();
             });
 }
 
