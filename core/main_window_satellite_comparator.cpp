@@ -98,6 +98,8 @@ constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER = 11000 * 11000 * 3;
 QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443, 482, 562, 655, 865, 1610, 2200};
 QVector<double> waves_landsat9_5 = {443, 482, 562, 655, 865};
+QVector<double> waves_sentinel_2c = {443, 490, 560, 665,  705,  740, 783,
+                                     842, 865, 945, 1375, 1610, 2190};
 QVector<double> waves_sentinel_2c_5 = {443, 490, 560, 665, 705,
                                        740, 783, 842, 865};
 
@@ -1123,24 +1125,31 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(
     const QVector<double> &x, const QVector<double> &y) {
     // qDebug()<<"sat_comparator: "<<x.size()<<y.size();
     if (m_satelite_type == sad::UNKNOWN_SATELLITE) return;
-    m_sat_comparator->initial_fill_data_to_show(x, y, waves_landsat9,
-                                                m_landsat9_sample);
+
     if (m_satelite_type == sad::LANDSAT_9) {
         m_sat_comparator->set_satellite_responses("landsat9");
+        m_sat_comparator->initial_fill_data_to_show(x, y, waves_landsat9,
+                                                    m_landsat9_sample);
     } else if (m_satelite_type == sad::LANDSAT_8) {
         m_sat_comparator->set_satellite_responses("landsat8");
+        m_sat_comparator->initial_fill_data_to_show(x, y, waves_landsat9,
+                                                    m_landsat9_sample);
     } else if (m_satelite_type == sad::SENTINEL_2A) {
         m_sat_comparator->set_satellite_responses("sentinel2a-10m");
+        m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
+                                                    m_sentinel_sample);
     } else if (m_satelite_type == sad::SENTINEL_2B) {
         m_sat_comparator->set_satellite_responses("sentinel2b-10m");
+        m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
+                                                    m_sentinel_sample);
     }
-    auto folded_device_spectr_for_landsat =
+    auto folded_device_spectr =
         m_sat_comparator->fold_spectr_to_satellite_responses();
-    if (folded_device_spectr_for_landsat.empty()) {
+    if (folded_device_spectr.empty()) {
         m_is_bekas = false;
         return;
     }
-    m_bekas_sample = folded_device_spectr_for_landsat;
+    m_bekas_sample = folded_device_spectr;
     m_is_bekas = true;
 }
 
