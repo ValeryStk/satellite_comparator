@@ -761,7 +761,8 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
         sample = m_sentinel_sample;
     }
     auto speya_values = getSentinelSpeyaValues(pos.x(), pos.y());
-    copyVectorsToClipboard(m_lattitude, m_longitude, waves, speya_values);
+    copyVectorsToClipboard(m_lattitude, m_longitude, waves,
+                           sample);  // speya_values);
     m_ac.updateBasePixel(speya_values);
     m_preview_plot->graph(0)->data().clear();
     m_preview_plot->graph(1)->data().clear();
@@ -1135,16 +1136,17 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_landsat9,
                                                     m_landsat9_sample);
     } else if (m_satelite_type == sad::SENTINEL_2A) {
-        m_sat_comparator->set_satellite_responses("sentinel2a-10m");
+        m_sat_comparator->set_satellite_responses("sentinel2C");
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
                                                     m_sentinel_sample);
     } else if (m_satelite_type == sad::SENTINEL_2B) {
-        m_sat_comparator->set_satellite_responses("sentinel2b-10m");
+        m_sat_comparator->set_satellite_responses("sentinel2C");
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
                                                     m_sentinel_sample);
     }
     auto folded_device_spectr =
         m_sat_comparator->fold_spectr_to_satellite_responses();
+    qDebug() << "folded_device_spectr: " << folded_device_spectr;
     if (folded_device_spectr.empty()) {
         m_is_bekas = false;
         return;
@@ -2693,6 +2695,9 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
 
     connect(ui->action_setCursorByGeoCoord, &QAction::triggered, this,
             &MainWindowSatelliteComparator::setCursorByGeo);
+
+    connect(ui->action_load_external_spectr, &QAction::triggered, this,
+            &MainWindowSatelliteComparator::setExternalSampleFromClipboard);
 }
 
 void MainWindowSatelliteComparator::addBaseItemsToScene() {
@@ -4048,4 +4053,134 @@ void MainWindowSatelliteComparator::setCursorByGeo() {
             });
 }
 
-void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {}
+void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
+    /*QJsonObject jo_source;
+    QJsonObject satellites;
+    QJsonArray responses;
+    jsn::getJsonObjectFromFile(":/res/sd.json", jo_source);
+    QString str = QJsonDocument(jo_source).toJson(QJsonDocument::Indented);
+    qDebug() << "load external spectr from clipboard...." << jo_source.keys();
+    satellites = jo_source["satellites"].toObject();
+
+    QVector<QVector<double>> result;
+    const QString path =
+        QApplication::applicationDirPath() + "/S2Cresponses.txt";
+    QFileInfo fi(path);
+    qDebug() << "is sentinel 2C exists: " << fi.isFile();
+    QFile file(path);
+
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << "sentinel 2c file open error......";
+        return;
+    };
+
+    QTextStream in(&file);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    in.setCodec("UTF-8");
+#endif
+
+    while (!in.atEnd()) {
+        const QString line = in.readLine().trimmed();
+        if (line.isEmpty()) continue;
+
+        QStringList parts = line.split('\t');
+        if (parts.size() < 14) continue;
+        qDebug() << "--->" << parts;
+        parts.removeFirst();  // игнорируем первый столбец
+
+        QVector<double> row;
+        row.reserve(parts.size());
+        QJsonArray jarr;
+        for (const QString &s : qAsConst(parts)) {
+            bool ok = false;
+            double value = s.toDouble(&ok);
+            if (!ok) continue;  // или return result; если нужно строгое чтение
+            row.push_back(value);
+            jarr.append(value);
+        }
+
+        if (!row.isEmpty()) {
+            result.push_back(row);
+            responses.append(jarr);
+        }
+    }
+
+    qDebug() << "result size: " << result.size();
+    QJsonObject temp;
+    temp["responses"] = responses;
+    temp["alias"] = "SENTINEL 2C";
+    QJsonArray central_waves = {443, 490, 560, 665,  705,  740, 783,
+                                842, 865, 945, 1375, 1610, 2190};
+
+    temp["central_waves"] = central_waves;
+    satellites["sentinel2C"] = temp;
+    jo_source["satellites"] = satellites;
+    jsn::saveJsonObjectToFile(QApplication::applicationDirPath() + "/test.json",
+                              jo_source);*/
+    // Очищаем векторы перед записью новых данных
+    QVector<double> waves;
+    QVector<double> valuesw;
+
+    // 1. Забираем текст из системного буфера обмена
+    QClipboard *clipboard = QApplication::clipboard();
+    QString clipboardText = clipboard->text();
+
+    if (clipboardText.isEmpty()) {
+        qWarning() << "Буфер обмена пуст!";
+        return;
+    }
+
+    // 2. Создаем поток для построчного чтения текста
+    QTextStream stream(&clipboardText, QIODevice::ReadOnly);
+
+    // 3. Игнорируем первые 3 строки заголовка
+    for (int i = 0; i < 3; ++i) {
+        if (stream.atEnd()) {
+            qWarning() << "Ошибка: В буфере обмена слишком мало строк!";
+            return;
+        }
+        stream.readLine();
+    }
+
+    // 4. Принудительно используем точку '.' как разделитель дроби (C-локаль)
+    QLocale cLocale(QLocale::C);
+    bool okWave = false;
+    bool okVal = false;
+
+    // Регулярное выражение для разделения по любым пробелам/табуляциям
+    QRegularExpression spacesOrTabs("\\s+");
+
+    // 5. Читаем оставшиеся строки с данными
+    while (!stream.atEnd()) {
+        QString line = stream.readLine().trimmed();
+        if (line.isEmpty()) continue;  // Пропускаем пустые строки
+
+        // Разбиваем строку на элементы
+        QStringList tokens = line.split(spacesOrTabs);
+
+        // Проверяем, что в строке есть как минимум два значения
+        if (tokens.size() >= 2) {
+            double wave = cLocale.toDouble(tokens.at(0), &okWave);
+            double val = cLocale.toDouble(tokens.at(1), &okVal);
+
+            // Если оба числа успешно распарсились, добавляем их в
+            // соответствующие векторы
+            if (okWave && okVal) {
+                waves.append(wave);
+                valuesw.append(val);
+            } else {
+                qWarning() << "Не удалось распознать числа в строке:" << line;
+            }
+        }
+    }
+
+    qDebug() << "Считано точек:" << waves.size();
+    m_is_bekas = true;
+    processBekasDataForComparing(waves, valuesw);
+    QString bekas_sample;
+    for (int i = 0; i < m_bekas_sample.size(); ++i) {
+        bekas_sample.append(QString::number(m_bekas_sample[i]));
+        bekas_sample.append("\n");
+    }
+    clipboard->setText(bekas_sample);
+}

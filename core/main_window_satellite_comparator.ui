@@ -267,7 +267,12 @@
   </action>
   <action name="action_load_external_spectr">
    <property name="text">
-    <string>Загрузка внешнего спектра</string>
+    <string>Загрузка внешнего спектра из буфера обмена</string>
+   </property>
+  </action>
+  <action name="action_paste_sample_from_clipboard">
+   <property name="text">
+    <string>Вставить образец из буфера обмена</string>
    </property>
   </action>
  </widget>
