@@ -23,6 +23,7 @@
 #include "QGraphicsProxyWidget"
 #include "QImageReader"
 #include "cpl_conv.h"
+#include "davis.h"
 #include "google_maps_url_maker.h"
 #include "health_ranges.h"
 #include "icon_generator.h"
@@ -39,6 +40,7 @@
 #include "matlab_app_controller.h"
 #include "progress_informator.h"
 #include "qcustomplot.h"
+#include "rgb_stretch.h"
 #include "sam.cpp"
 #include "satellite_xml_reader.h"
 #include "text_constants.h"
@@ -2224,6 +2226,57 @@ void MainWindowSatelliteComparator::change_bands_and_show_image() {
 void MainWindowSatelliteComparator::change_bands_and_show_image(
     const QVector<sad::BAND_DATA> &band_data) {
     if (band_data.empty()) return;
+
+    const int nXSize = band_data[0].width;
+    const int nYSize = band_data[0].height;
+    auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
+    if (bands.empty()) return;
+
+    ProgressInformator progress_info(ui->graphicsView_satellite_image,
+                                     satc::message_changing_bands);
+    progress_info.show();
+    QApplication::processEvents();
+
+    // --- Найдём индексы выбранных каналов по цвету ---
+    int idxR = -1, idxG = -1, idxB = -1;
+    for (const auto &b : bands) {
+        if (b.second == RED) idxR = b.first;
+        if (b.second == GREEN) idxG = b.first;
+        if (b.second == BLUE) idxB = b.first;
+    }
+
+    // --- Если все три канала выбраны — используем percentile stretch ---
+    if (idxR >= 0 && idxG >= 0 && idxB >= 0 && idxR < band_data.size() &&
+        idxG < band_data.size() && idxB < band_data.size()) {
+        double lowPct = 0.0;
+        double highPct = 0.95;
+        double gamma = 1.15;
+
+        // cloudMask — если он у вас хранится как uint8*,
+        // передайте его сюда; иначе nullptr
+        QImage imgNew = buildSentinelRgbPercentile(
+            band_data[idxR], band_data[idxG], band_data[idxB],
+            nullptr,  // <- замените на m_cloud_mask если есть
+            lowPct, highPct, gamma);
+        if (!imgNew.isNull()) {
+            if (m_image_item) {
+                m_scene->removeItem(m_image_item);
+                delete m_image_item;
+            }
+            m_satellite_image = imgNew;
+            auto pixmap = QPixmap::fromImage(m_satellite_image);
+            m_image_item = new QGraphicsPixmapItem(pixmap);
+            m_image_item->setCursor(Qt::CrossCursor);
+            m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
+            m_scene->addItem(m_image_item);
+            m_scene->setSceneRect(pixmap.rect());
+            ui->graphicsView_satellite_image->centerOn(m_image_item);
+            updateImage();
+            return;
+        }
+    }
+    /*
+    if (band_data.empty()) return;
     const int nXSize = band_data[0].width;
     const int nYSize = band_data[0].height;
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
@@ -2293,6 +2346,7 @@ void MainWindowSatelliteComparator::change_bands_and_show_image(
     m_scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(m_image_item);
     updateImage();
+*/
 }
 
 void MainWindowSatelliteComparator::change_bands() {
