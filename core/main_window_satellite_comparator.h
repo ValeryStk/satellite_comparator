@@ -25,12 +25,7 @@ class MainWindowSatelliteComparator;
 }
 QT_END_NAMESPACE
 
-/*!
- * \brief Класс главного окна программы
- * Предназначен для отображения загруженных спутниковых данных,
- * управления поиском, визуализации градиентов усыхания для временного ряда,
- * отображения спектральных данных для текущего пикселя
- */
+/*!\n * \\brief Класс главного окна программы\n * Предназначен для отображения загруженных спутниковых данных,\n * управления поиском, визуализации градиентов усыхания для временного ряда,\n * отображения спектральных данных для текущего пикселя\n */
 
 class MainWindowSatelliteComparator : public QMainWindow {
     Q_OBJECT
@@ -188,6 +183,8 @@ private slots:
 
     void setExternalSampleFromClipboard();
 
+    //! Слот пересчёта базового изображения при изменении параметров
+    //! персентильного растяжения (lowPct, highPct, gamma)
     void onStretchParamsChanged();
 
 private:
@@ -462,8 +459,18 @@ private:
                                const QString &outputFilePath);
     AtmCorrectionMainWindow m_ac;
     QDockWidget *m_acDock;
-    double m_lowPct = 0.02;
+
+    // Параметры персентильного растяжения гистограммы
+    double m_lowPct  = 0.02;
     double m_highPct = 0.98;
-    double m_gamma = 1.15;
+    double m_gamma   = 1.15;
+
+    // Сырые данные для пересчёта при изменении параметров растяжения
+    const uint16_t* m_current_r    = nullptr;
+    const uint16_t* m_current_g    = nullptr;
+    const uint16_t* m_current_b    = nullptr;
+    const uint16_t* m_current_mask = nullptr;
+    int             m_current_w    = 0;
+    int             m_current_h    = 0;
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H
