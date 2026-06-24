@@ -2149,182 +2149,42 @@ void MainWindowSatelliteComparator::resetColorsToDefaultRGB() {
 
 void MainWindowSatelliteComparator::change_bands_and_show_image() {
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
-    const int nXSize = m_landsat9_bands_image_sizes->first;
-    const int nYSize = m_landsat9_bands_image_sizes->second;
-
-    ProgressInformator progress_info(ui->graphicsView_satellite_image,
-                                     satc::message_changing_bands);
-    progress_info.show();
-    QApplication::processEvents();
-
-    // Ищем индексы R/G/B каналов
     int idxR = -1, idxG = -1, idxB = -1;
     for (const auto &b : bands) {
         if (b.second == RED) idxR = b.first;
         if (b.second == GREEN) idxG = b.first;
         if (b.second == BLUE) idxB = b.first;
     }
+    if (idxR < 0 || idxG < 0 || idxB < 0 || idxR >= LANDSAT_BANDS_NUMBER ||
+        idxG >= LANDSAT_BANDS_NUMBER || idxB >= LANDSAT_BANDS_NUMBER ||
+        !m_landsat9_data_bands[idxR] || !m_landsat9_data_bands[idxG] ||
+        !m_landsat9_data_bands[idxB])
+        return;
 
-    QImage imgNew;
+    const int w = m_landsat9_bands_image_sizes[idxR].first;
+    const int h = m_landsat9_bands_image_sizes[idxR].second;
 
-    if (idxR >= 0 && idxG >= 0 && idxB >= 0 && idxR < LANDSAT_BANDS_NUMBER &&
-        idxG < LANDSAT_BANDS_NUMBER && idxB < LANDSAT_BANDS_NUMBER &&
-        m_landsat9_data_bands[idxR] && m_landsat9_data_bands[idxG] &&
-        m_landsat9_data_bands[idxB]) {
-        // Используем общую функцию - та же что для Sentinel
-        double lowPct = 0.0;
-        double highPct = 0.95;
-        double gamma = 1.15;
-        imgNew = buildRgbPercentile(
-            m_landsat9_data_bands[idxR], m_landsat9_data_bands[idxG],
-            m_landsat9_data_bands[idxB], nXSize, nYSize,
-            nullptr,  // <- замените на m_cloud_mask если есть
-            lowPct, highPct, gamma);
-    }
-
-    if (imgNew.isNull()) return;  // или fallback если нужен
-
-    if (m_image_item) {
-        m_scene->removeItem(m_image_item);
-        delete m_image_item;
-    }
-    m_satellite_image = imgNew;
-    auto pixmap = QPixmap::fromImage(m_satellite_image);
-    m_image_item = new QGraphicsPixmapItem(pixmap);
-    m_image_item->setCursor(Qt::CrossCursor);
-    m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
-    m_scene->addItem(m_image_item);
-    m_scene->setSceneRect(pixmap.rect());
-    ui->graphicsView_satellite_image->centerOn(m_image_item);
-    updateImage();
+    showRgbImage(m_landsat9_data_bands[idxR], m_landsat9_data_bands[idxG],
+                 m_landsat9_data_bands[idxB], w, h);
 }
 
 void MainWindowSatelliteComparator::change_bands_and_show_image(
     const QVector<sad::BAND_DATA> &band_data) {
     if (band_data.empty()) return;
-
-    const int nXSize = band_data[0].width;
-    const int nYSize = band_data[0].height;
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
-    if (bands.empty()) return;
-
-    ProgressInformator progress_info(ui->graphicsView_satellite_image,
-                                     satc::message_changing_bands);
-    progress_info.show();
-    QApplication::processEvents();
-
-    // --- Найдём индексы выбранных каналов по цвету ---
     int idxR = -1, idxG = -1, idxB = -1;
     for (const auto &b : bands) {
         if (b.second == RED) idxR = b.first;
         if (b.second == GREEN) idxG = b.first;
         if (b.second == BLUE) idxB = b.first;
     }
+    if (idxR < 0 || idxG < 0 || idxB < 0 || idxR >= band_data.size() ||
+        idxG >= band_data.size() || idxB >= band_data.size())
+        return;
 
-    // --- Если все три канала выбраны — используем percentile stretch ---
-    if (idxR >= 0 && idxG >= 0 && idxB >= 0 && idxR < band_data.size() &&
-        idxG < band_data.size() && idxB < band_data.size()) {
-        double lowPct = 0.0;
-        double highPct = 0.95;
-        double gamma = 1.15;
-
-        // cloudMask — если он у вас хранится как uint8*,
-        // передайте его сюда; иначе nullptr
-
-        QImage imgNew = buildRgbPercentile(
-            band_data[idxR].data, band_data[idxG].data, band_data[idxB].data,
-            band_data[idxR].width, band_data[idxR].height,
-            nullptr,  // <- замените на m_cloud_mask если есть
-            lowPct, highPct, gamma);
-        if (!imgNew.isNull()) {
-            if (m_image_item) {
-                m_scene->removeItem(m_image_item);
-                delete m_image_item;
-            }
-            m_satellite_image = imgNew;
-            auto pixmap = QPixmap::fromImage(m_satellite_image);
-            m_image_item = new QGraphicsPixmapItem(pixmap);
-            m_image_item->setCursor(Qt::CrossCursor);
-            m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
-            m_scene->addItem(m_image_item);
-            m_scene->setSceneRect(pixmap.rect());
-            ui->graphicsView_satellite_image->centerOn(m_image_item);
-            updateImage();
-            return;
-        }
-    }
-    /*
-    if (band_data.empty()) return;
-    const int nXSize = band_data[0].width;
-    const int nYSize = band_data[0].height;
-    auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
-    if (bands.empty()) return;
-    ProgressInformator progress_info(ui->graphicsView_satellite_image,
-                                     satc::message_changing_bands);
-    progress_info.show();
-    QApplication::processEvents();
-
-    int offset = 0;
-    for (int y = 0; y < nYSize; ++y) {
-        for (int x = 0; x < nXSize; ++x) {
-            int B = 0;
-            int G = 0;
-            int R = 0;
-            for (int j = 0; j < bands.size(); ++j) {
-                int choosedColor = -1;
-                if (bands[j].second == BLUE) {
-                    B = static_cast<int>(
-                        band_data[bands[j].first].data[y * nXSize + x] / 255.0);
-                    choosedColor = BLUE;
-                } else if (bands[j].second == GREEN) {
-                    G = static_cast<int>(
-                        band_data[bands[j].first].data[y * nXSize + x] / 255.0);
-                    choosedColor = GREEN;
-                } else if (bands[j].second == RED) {
-                    R = static_cast<int>(
-                        band_data[bands[j].first].data[y * nXSize + x] / 255.0);
-                    choosedColor = RED;
-                }
-                if (bands.size() == 1) {
-                    switch (choosedColor) {
-                        case RED:
-                            G = R;
-                            B = R;
-                            break;
-                        case GREEN:
-                            B = G;
-                            R = G;
-                            break;
-                        case BLUE:
-                            R = B;
-                            G = B;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-            m_image_data[offset] = R;
-            m_image_data[offset + 1] = G;
-            m_image_data[offset + 2] = B;
-            offset = offset + 3;
-        }
-    }
-    if (m_image_item) {
-        m_scene->removeItem(m_image_item);
-        delete m_image_item;
-    }
-    m_satellite_image =
-        QImage(m_image_data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
-    auto pixmap = QPixmap::fromImage(m_satellite_image);
-    m_image_item = new QGraphicsPixmapItem(pixmap);
-    m_image_item->setCursor(Qt::CrossCursor);
-    m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
-    m_scene->addItem(m_image_item);
-    m_scene->setSceneRect(pixmap.rect());
-    ui->graphicsView_satellite_image->centerOn(m_image_item);
-    updateImage();
-*/
+    showRgbImage(band_data[idxR].data, band_data[idxG].data,
+                 band_data[idxB].data, band_data[idxR].width,
+                 band_data[idxR].height);
 }
 
 void MainWindowSatelliteComparator::change_bands() {
@@ -4216,4 +4076,35 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
         bekas_sample.append("\n");
     }
     clipboard->setText(bekas_sample);
+}
+
+void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,
+                                                 const uint16_t *g,
+                                                 const uint16_t *b, int width,
+                                                 int height, double lowPct,
+                                                 double highPct, double gamma,
+                                                 const uint16_t *cloudMask) {
+    ProgressInformator progress_info(ui->graphicsView_satellite_image,
+                                     satc::message_changing_bands);
+    progress_info.show();
+    QApplication::processEvents();
+
+    QImage imgNew = buildRgbPercentile(r, g, b, width, height, cloudMask,
+                                       lowPct, highPct, gamma);
+
+    if (imgNew.isNull()) return;
+
+    if (m_image_item) {
+        m_scene->removeItem(m_image_item);
+        delete m_image_item;
+    }
+    m_satellite_image = imgNew;
+    auto pixmap = QPixmap::fromImage(m_satellite_image);
+    m_image_item = new QGraphicsPixmapItem(pixmap);
+    m_image_item->setCursor(Qt::CrossCursor);
+    m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
+    m_scene->addItem(m_image_item);
+    m_scene->setSceneRect(pixmap.rect());
+    ui->graphicsView_satellite_image->centerOn(m_image_item);
+    updateImage();
 }

@@ -49,7 +49,6 @@ private slots:
     //! Слот для изменения каналов для временного ряда (загружается базовое
     //! изображение - самый поздний момент времени)
     void change_bands_and_show_image(const QVector<sad::BAND_DATA> &band_data);
-
     //! Слот изменения каналов
     void change_bands();
 
@@ -193,6 +192,12 @@ private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
     Ui::MainWindowSatelliteComparator *ui;
+
+    //! \brief отображение RGB. Вызывается из change_bands_and_show_image
+    void showRgbImage(const uint16_t *r, const uint16_t *g, const uint16_t *b,
+                      int width, int height, double lowPct = 0.02,
+                      double highPct = 0.98, double gamma = 1.15,
+                      const uint16_t *cloudMask = nullptr);
 
     //! \brief Виджет временного ряда
     QWidget m_time_row_widget;
