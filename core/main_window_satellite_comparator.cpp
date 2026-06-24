@@ -4118,6 +4118,15 @@ void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,
     progress_info.show();
     QApplication::processEvents();
 
+    // Сохраняем сырые указатели для возможного пересчёта при изменении
+    // параметров
+    m_current_r = r;
+    m_current_g = g;
+    m_current_b = b;
+    m_current_w = width;
+    m_current_h = height;
+    m_current_mask = cloudMask;
+
     QImage imgNew = buildRgbPercentile(r, g, b, width, height, cloudMask,
                                        lowPct, highPct, gamma);
 

@@ -112,19 +112,3 @@ QImage buildRgbPercentile(const uint16_t* red, const uint16_t* green,
 
     return img;
 }
-
-// =====================================================================
-//  Обёртка для Sentinel (sad::BAND_DATA)
-// =====================================================================
-QImage buildSentinelRgbPercentile(const sad::BAND_DATA& red,
-                                  const sad::BAND_DATA& green,
-                                  const sad::BAND_DATA& blue,
-                                  const uint16_t* cloudMask, double lowPct,
-                                  double highPct, double gamma) {
-    if (red.width != green.width || red.width != blue.width ||
-        red.height != green.height || red.height != blue.height)
-        return QImage();
-
-    return buildRgbPercentile(red.data, green.data, blue.data, red.width,
-                              red.height, cloudMask, lowPct, highPct, gamma);
-}
