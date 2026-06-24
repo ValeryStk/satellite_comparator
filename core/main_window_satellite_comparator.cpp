@@ -406,7 +406,8 @@ void MainWindowSatelliteComparator::openTimeRowData() {
     QStringList sentinel_subdirs;
 
     for (const auto &subdir : qAsConst(subdirs)) {
-        if (subdir.contains("S2B") || subdir.contains("S2A")) {
+        if (subdir.contains("S2B") || subdir.contains("S2A") ||
+            subdir.contains("S2C")) {
             sentinel_subdirs.append(subdir);
         } else if (subdir.contains("LC09") || subdir.contains("LC08")) {
             landsat_subdirs.append(subdir);
