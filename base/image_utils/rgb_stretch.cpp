@@ -16,14 +16,21 @@ static bool computePercentileLimitsDN(const uint16_t* data, const uint8_t* mask,
                                       uint16_t& phi) {
     if (!data || width <= 0 || height <= 0) return false;
 
-    // Для uint16 гистограмма ровно 65536 бинов — по одному на каждое значение.
-    // Памяти: 65536 * 4 байта = 256 КБ — абсолютно приемлемо.
-    constexpr int BINS = 65536;
+    const int total = width * height;
+
+    // Находим реальный максимум в массиве за первый проход
+    uint16_t maxVal = 0;
+    for (int i = 0; i < total; ++i) {
+        if (mask && mask[i] == 0) continue;
+        if (data[i] > maxVal) maxVal = data[i];
+    }
+    if (maxVal == 0) return false;
+
+    // Аллоцируем ровно столько бинов, сколько нужно
+    const int BINS = int(maxVal) + 1;
     std::vector<uint32_t> hist(BINS, 0u);
 
-    const int total = width * height;
     uint64_t count = 0;
-
     for (int i = 0; i < total; ++i) {
         if (mask && mask[i] == 0) continue;
         hist[data[i]]++;
