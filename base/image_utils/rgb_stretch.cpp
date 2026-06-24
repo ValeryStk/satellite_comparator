@@ -1,24 +1,20 @@
-// sentinel_rgb_stretch.cpp
 #include "rgb_stretch.h"
 
-#include <QImage>
 #include <QtGlobal>
 #include <cmath>
-#include <cstdint>
 #include <vector>
 
 namespace {
 
-// Ищет PLO/PHI по накопленной гистограмме сырых uint16 DN
-static bool computePercentileLimitsDN(const uint16_t* data, const uint8_t* mask,
-                                      int width, int height, double lowPct,
-                                      double highPct, uint16_t& plo,
-                                      uint16_t& phi) {
+static bool computePercentileLimitsDN(const uint16_t* data,
+                                      const uint16_t* mask, int width,
+                                      int height, double lowPct, double highPct,
+                                      uint16_t& plo, uint16_t& phi) {
     if (!data || width <= 0 || height <= 0) return false;
 
     const int total = width * height;
 
-    // Находим реальный максимум в массиве за первый проход
+    // Находим реальный максимум за первый проход
     uint16_t maxVal = 0;
     for (int i = 0; i < total; ++i) {
         if (mask && mask[i] == 0) continue;
@@ -26,11 +22,10 @@ static bool computePercentileLimitsDN(const uint16_t* data, const uint8_t* mask,
     }
     if (maxVal == 0) return false;
 
-    // Аллоцируем ровно столько бинов, сколько нужно
     const int BINS = int(maxVal) + 1;
     std::vector<uint32_t> hist(BINS, 0u);
-
     uint64_t count = 0;
+
     for (int i = 0; i < total; ++i) {
         if (mask && mask[i] == 0) continue;
         hist[data[i]]++;
@@ -82,41 +77,54 @@ static inline uchar stretchToByte(uint16_t dn, uint16_t plo, uint16_t phi,
 
 }  // anonymous namespace
 
-QImage buildSentinelRgbPercentile(const sad::BAND_DATA& red,
-                                  const sad::BAND_DATA& green,
-                                  const sad::BAND_DATA& blue,
-                                  const uint8_t* cloudMask, double lowPct,
-                                  double highPct, double gamma) {
-    if (!red.data || !green.data || !blue.data) return QImage();
-    if (red.width <= 0 || red.height <= 0) return QImage();
-
-    const int W = red.width;
-    const int H = red.height;
+// =====================================================================
+//  Основная универсальная функция
+// =====================================================================
+QImage buildRgbPercentile(const uint16_t* red, const uint16_t* green,
+                          const uint16_t* blue, int width, int height,
+                          const uint16_t* cloudMask, double lowPct,
+                          double highPct, double gamma) {
+    if (!red || !green || !blue || width <= 0 || height <= 0) return QImage();
 
     uint16_t ploR, phiR, ploG, phiG, ploB, phiB;
 
-    if (!computePercentileLimitsDN(red.data, cloudMask, W, H, lowPct, highPct,
-                                   ploR, phiR) ||
-        !computePercentileLimitsDN(green.data, cloudMask, W, H, lowPct, highPct,
-                                   ploG, phiG) ||
-        !computePercentileLimitsDN(blue.data, cloudMask, W, H, lowPct, highPct,
-                                   ploB, phiB))
+    if (!computePercentileLimitsDN(red, cloudMask, width, height, lowPct,
+                                   highPct, ploR, phiR) ||
+        !computePercentileLimitsDN(green, cloudMask, width, height, lowPct,
+                                   highPct, ploG, phiG) ||
+        !computePercentileLimitsDN(blue, cloudMask, width, height, lowPct,
+                                   highPct, ploB, phiB))
         return QImage();
 
-    QImage img(W, H, QImage::Format_ARGB32);
+    QImage img(width, height, QImage::Format_ARGB32);
     img.fill(Qt::black);
 
     const double gammaInv = (gamma > 0.0) ? (1.0 / gamma) : 1.0;
     auto* pixels = reinterpret_cast<QRgb*>(img.bits());
-    const int total = W * H;
+    const int total = width * height;
 
     for (int i = 0; i < total; ++i) {
         const uchar alpha = (!cloudMask || cloudMask[i] != 0) ? 255 : 0;
-        pixels[i] =
-            qRgba(stretchToByte(red.data[i], ploR, phiR, gammaInv),
-                  stretchToByte(green.data[i], ploG, phiG, gammaInv),
-                  stretchToByte(blue.data[i], ploB, phiB, gammaInv), alpha);
+        pixels[i] = qRgba(stretchToByte(red[i], ploR, phiR, gammaInv),
+                          stretchToByte(green[i], ploG, phiG, gammaInv),
+                          stretchToByte(blue[i], ploB, phiB, gammaInv), alpha);
     }
 
     return img;
+}
+
+// =====================================================================
+//  Обёртка для Sentinel (sad::BAND_DATA)
+// =====================================================================
+QImage buildSentinelRgbPercentile(const sad::BAND_DATA& red,
+                                  const sad::BAND_DATA& green,
+                                  const sad::BAND_DATA& blue,
+                                  const uint16_t* cloudMask, double lowPct,
+                                  double highPct, double gamma) {
+    if (red.width != green.width || red.width != blue.width ||
+        red.height != green.height || red.height != blue.height)
+        return QImage();
+
+    return buildRgbPercentile(red.data, green.data, blue.data, red.width,
+                              red.height, cloudMask, lowPct, highPct, gamma);
 }

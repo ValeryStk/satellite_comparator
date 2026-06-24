@@ -2157,62 +2157,38 @@ void MainWindowSatelliteComparator::change_bands_and_show_image() {
     progress_info.show();
     QApplication::processEvents();
 
-    int offset = 0;
-    for (int y = 0; y < nYSize; ++y) {
-        for (int x = 0; x < nXSize; ++x) {
-            int B = 0;
-            int G = 0;
-            int R = 0;
-            for (int j = 0; j < bands.size(); ++j) {
-                int choosedColor = -1;
-                if (bands[j].second == BLUE) {
-                    B = static_cast<int>(
-                        m_landsat9_data_bands[bands[j].first][y * nXSize + x] /
-                        255.0);
-                    choosedColor = BLUE;
-                } else if (bands[j].second == GREEN) {
-                    G = static_cast<int>(
-                        m_landsat9_data_bands[bands[j].first][y * nXSize + x] /
-                        255.0);
-                    choosedColor = GREEN;
-                } else if (bands[j].second == RED) {
-                    R = static_cast<int>(
-                        m_landsat9_data_bands[bands[j].first][y * nXSize + x] /
-                        255.0);
-                    choosedColor = RED;
-                }
-                if (bands.size() == 1) {
-                    switch (choosedColor) {
-                        case RED:
-                            G = R;
-                            B = R;
-                            break;
-                        case GREEN:
-                            B = G;
-                            R = G;
-                            break;
-                        case BLUE:
-                            R = B;
-                            G = B;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-            m_image_data[offset] = R;
-            m_image_data[offset + 1] = G;
-            m_image_data[offset + 2] = B;
-            offset = offset + 3;
-        }
+    // Ищем индексы R/G/B каналов
+    int idxR = -1, idxG = -1, idxB = -1;
+    for (const auto &b : bands) {
+        if (b.second == RED) idxR = b.first;
+        if (b.second == GREEN) idxG = b.first;
+        if (b.second == BLUE) idxB = b.first;
     }
+
+    QImage imgNew;
+
+    if (idxR >= 0 && idxG >= 0 && idxB >= 0 && idxR < LANDSAT_BANDS_NUMBER &&
+        idxG < LANDSAT_BANDS_NUMBER && idxB < LANDSAT_BANDS_NUMBER &&
+        m_landsat9_data_bands[idxR] && m_landsat9_data_bands[idxG] &&
+        m_landsat9_data_bands[idxB]) {
+        // Используем общую функцию - та же что для Sentinel
+        double lowPct = 0.0;
+        double highPct = 0.95;
+        double gamma = 1.15;
+        imgNew = buildRgbPercentile(
+            m_landsat9_data_bands[idxR], m_landsat9_data_bands[idxG],
+            m_landsat9_data_bands[idxB], nXSize, nYSize,
+            nullptr,  // <- замените на m_cloud_mask если есть
+            lowPct, highPct, gamma);
+    }
+
+    if (imgNew.isNull()) return;  // или fallback если нужен
+
     if (m_image_item) {
-        qDebug() << "Delete image item....";
-        m_scene->removeItem(m_image_item);  // удаление со сцены
-        delete m_image_item;  // освобождение памяти
+        m_scene->removeItem(m_image_item);
+        delete m_image_item;
     }
-    m_satellite_image =
-        QImage(m_image_data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
+    m_satellite_image = imgNew;
     auto pixmap = QPixmap::fromImage(m_satellite_image);
     m_image_item = new QGraphicsPixmapItem(pixmap);
     m_image_item->setCursor(Qt::CrossCursor);
@@ -2254,8 +2230,10 @@ void MainWindowSatelliteComparator::change_bands_and_show_image(
 
         // cloudMask — если он у вас хранится как uint8*,
         // передайте его сюда; иначе nullptr
-        QImage imgNew = buildSentinelRgbPercentile(
-            band_data[idxR], band_data[idxG], band_data[idxB],
+
+        QImage imgNew = buildRgbPercentile(
+            band_data[idxR].data, band_data[idxG].data, band_data[idxB].data,
+            band_data[idxR].width, band_data[idxR].height,
             nullptr,  // <- замените на m_cloud_mask если есть
             lowPct, highPct, gamma);
         if (!imgNew.isNull()) {
