@@ -39,13 +39,22 @@ public:
     //! Функция получения текущего значения слайдера насыщенности
     QSlider* getSaturationSlider();
 
+    double getLowPct() const;
+    double getHighPct() const;
+    double getGamma() const;
+    void setDefaultStretchValues();
+
 signals:
     //! Сигнал об изменении положения слайдеров
     void slidersWereChanged();
 
+    void stretchParamsChanged();  // для спинбоксов
+
 private slots:
     //! Слот изменения коэффициента насыщенности
     void onSaturationChanged();
+
+    void onStretchChanged();
 
     //! Слот изменения коэффициента яркости
     void onLightChanged();

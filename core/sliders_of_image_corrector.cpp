@@ -83,6 +83,15 @@ SlidersOfImageCorrector::SlidersOfImageCorrector(QWidget *parent)
             SLOT(onSaturationChanged()));
     connect(ui->slider_light, SIGNAL(sliderReleased()), this,
             SLOT(onLightChanged()));
+    connect(ui->spinBox_lowPct,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+            &SlidersOfImageCorrector::onStretchChanged);
+    connect(ui->spinBox_highPct,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+            &SlidersOfImageCorrector::onStretchChanged);
+    connect(ui->spinBox_gamma,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+            &SlidersOfImageCorrector::onStretchChanged);
 }
 
 SlidersOfImageCorrector::~SlidersOfImageCorrector() { delete ui; }
@@ -106,9 +115,23 @@ QSlider *SlidersOfImageCorrector::getSaturationSlider() {
     return ui->slider_saturation;
 }
 
+double SlidersOfImageCorrector::getLowPct() const {
+    return ui->spinBox_lowPct->value();
+}
+double SlidersOfImageCorrector::getHighPct() const {
+    return ui->spinBox_highPct->value();
+}
+double SlidersOfImageCorrector::getGamma() const {
+    return ui->spinBox_gamma->value();
+}
+
 void SlidersOfImageCorrector::onSaturationChanged() {
     coefSaturation = calculate_slider_coef(ui->slider_saturation);
     emit slidersWereChanged();
+}
+
+void SlidersOfImageCorrector::onStretchChanged() {
+    emit stretchParamsChanged();
 }
 
 void SlidersOfImageCorrector::onLightChanged() {

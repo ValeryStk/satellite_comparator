@@ -352,6 +352,11 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             SLOT(add_roi_to_gui_list(const QString)));
     connect(ui->widget_image_saturation_light_corrector,
             SIGNAL(slidersWereChanged()), SLOT(updateImage()));
+
+    connect(ui->widget_image_saturation_light_corrector,
+            &SlidersOfImageCorrector::stretchParamsChanged, this,
+            &MainWindowSatelliteComparator::onStretchParamsChanged);
+
     connect(ui->action_SpectraClassifer, SIGNAL(triggered()), this,
             SLOT(sendSpectrToMatlab()));
 }
@@ -4076,6 +4081,30 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
         bekas_sample.append("\n");
     }
     clipboard->setText(bekas_sample);
+}
+
+void MainWindowSatelliteComparator::onStretchParamsChanged() {
+    if (!m_current_r) return;
+    double lowPct = ui->widget_image_saturation_light_corrector->getLowPct();
+    double highPct = ui->widget_image_saturation_light_corrector->getHighPct();
+    double gamma = ui->widget_image_saturation_light_corrector->getGamma();
+
+    QImage imgNew =
+        buildRgbPercentile(m_current_r, m_current_g, m_current_b, m_current_w,
+                           m_current_h, m_current_mask, lowPct, highPct, gamma);
+    if (imgNew.isNull()) return;
+
+    m_satellite_image = imgNew;
+    ui->widget_image_saturation_light_corrector
+        ->setDefaultValues();  // сброс sat/light
+    auto pixmap = QPixmap::fromImage(m_satellite_image);
+    m_scene->removeItem(m_image_item);
+    delete m_image_item;
+    m_image_item = new QGraphicsPixmapItem(pixmap);
+    m_image_item->setCursor(Qt::CrossCursor);
+    m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
+    m_scene->addItem(m_image_item);
+    m_scene->update();
 }
 
 void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,

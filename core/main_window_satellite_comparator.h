@@ -188,6 +188,8 @@ private slots:
 
     void setExternalSampleFromClipboard();
 
+    void onStretchParamsChanged();
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
@@ -460,5 +462,8 @@ private:
                                const QString &outputFilePath);
     AtmCorrectionMainWindow m_ac;
     QDockWidget *m_acDock;
+    double m_lowPct = 0.02;
+    double m_highPct = 0.98;
+    double m_gamma = 1.15;
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H
