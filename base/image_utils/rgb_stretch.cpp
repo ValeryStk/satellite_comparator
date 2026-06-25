@@ -1,5 +1,6 @@
 #include "rgb_stretch.h"
 
+#include <QDebug>
 #include <QtGlobal>
 #include <cmath>
 #include <vector>
@@ -28,6 +29,7 @@ static bool computePercentileLimitsDN(const uint16_t* data,
 
     for (int i = 0; i < total; ++i) {
         if (mask && mask[i] == 0) continue;
+        if (data[i] == 0) continue;
         hist[data[i]]++;
         count++;
     }
@@ -77,9 +79,8 @@ static inline uchar stretchToByte(uint16_t dn, uint16_t plo, uint16_t phi,
 
 }  // anonymous namespace
 
-// =====================================================================
+
 //  Основная универсальная функция
-// =====================================================================
 QImage buildRgbPercentile(const uint16_t* red, const uint16_t* green,
                           const uint16_t* blue, int width, int height,
                           const uint16_t* cloudMask, double lowPct,
@@ -87,7 +88,6 @@ QImage buildRgbPercentile(const uint16_t* red, const uint16_t* green,
     if (!red || !green || !blue || width <= 0 || height <= 0) return QImage();
 
     uint16_t ploR, phiR, ploG, phiG, ploB, phiB;
-
     if (!computePercentileLimitsDN(red, cloudMask, width, height, lowPct,
                                    highPct, ploR, phiR) ||
         !computePercentileLimitsDN(green, cloudMask, width, height, lowPct,

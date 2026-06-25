@@ -2170,8 +2170,11 @@ void MainWindowSatelliteComparator::change_bands_and_show_image() {
     const int w = m_landsat9_bands_image_sizes[idxR].first;
     const int h = m_landsat9_bands_image_sizes[idxR].second;
 
+    auto lowP = ui->widget_image_saturation_light_corrector->getLowPct();
+    auto highP = ui->widget_image_saturation_light_corrector->getHighPct();
+    auto gamma = ui->widget_image_saturation_light_corrector->getGamma();
     showRgbImage(m_landsat9_data_bands[idxR], m_landsat9_data_bands[idxG],
-                 m_landsat9_data_bands[idxB], w, h);
+                 m_landsat9_data_bands[idxB], w, h, lowP, highP, gamma);
 }
 
 void MainWindowSatelliteComparator::change_bands_and_show_image(
@@ -2188,9 +2191,12 @@ void MainWindowSatelliteComparator::change_bands_and_show_image(
         idxG >= band_data.size() || idxB >= band_data.size())
         return;
 
+    auto lowP = ui->widget_image_saturation_light_corrector->getLowPct();
+    auto highP = ui->widget_image_saturation_light_corrector->getHighPct();
+    auto gamma = ui->widget_image_saturation_light_corrector->getGamma();
     showRgbImage(band_data[idxR].data, band_data[idxG].data,
                  band_data[idxB].data, band_data[idxR].width,
-                 band_data[idxR].height);
+                 band_data[idxR].height, lowP, highP, gamma);
 }
 
 void MainWindowSatelliteComparator::change_bands() {
