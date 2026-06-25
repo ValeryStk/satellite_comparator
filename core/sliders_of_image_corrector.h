@@ -31,7 +31,8 @@ public:
 
     //! Функция установки значений слайдеров и коэффициентов нейтральными
     //! значениями
-    void setDefaultValues();
+    void setDefaultSatLightValues();
+    void setDefaultStretchValues();
 
     //! Функция получения текущего значения слайдера яркости
     QSlider* getLightSlider();
@@ -42,7 +43,6 @@ public:
     double getLowPct() const;
     double getHighPct() const;
     double getGamma() const;
-    void setDefaultStretchValues();
 
 signals:
     //! Сигнал об изменении положения слайдеров

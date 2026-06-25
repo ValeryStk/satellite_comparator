@@ -2139,7 +2139,8 @@ void MainWindowSatelliteComparator::showGoogleMap() {
 }
 
 void MainWindowSatelliteComparator::resetColorsToDefaultRGB() {
-    ui->widget_image_saturation_light_corrector->setDefaultValues();
+    ui->widget_image_saturation_light_corrector->setDefaultSatLightValues();
+    ui->widget_image_saturation_light_corrector->setDefaultStretchValues();
     if (m_dynamic_checkboxes_widget) {
         m_dynamic_checkboxes_widget->setRGBchannels();
         if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
@@ -4096,7 +4097,7 @@ void MainWindowSatelliteComparator::onStretchParamsChanged() {
 
     m_satellite_image = imgNew;
     ui->widget_image_saturation_light_corrector
-        ->setDefaultValues();  // сброс sat/light
+        ->setDefaultSatLightValues();  // сброс sat/light
     auto pixmap = QPixmap::fromImage(m_satellite_image);
     m_scene->removeItem(m_image_item);
     delete m_image_item;

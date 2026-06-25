@@ -102,11 +102,17 @@ double SlidersOfImageCorrector::getCoefSaturation() const {
 
 double SlidersOfImageCorrector::getCoefLight() const { return coefLight; }
 
-void SlidersOfImageCorrector::setDefaultValues() {
+void SlidersOfImageCorrector::setDefaultSatLightValues() {
     ui->slider_saturation->setValue(SLIDER_INITIAL_VALUE);
     ui->slider_light->setValue(SLIDER_INITIAL_VALUE);
     coefSaturation = NEUTRAL_MULTIPLIER;
     coefLight = NEUTRAL_MULTIPLIER;
+}
+
+void SlidersOfImageCorrector::setDefaultStretchValues() {
+    ui->spinBox_gamma->setValue(1.15);
+    ui->spinBox_lowPct->setValue(0);
+    ui->spinBox_highPct->setValue(0.98);
 }
 
 QSlider *SlidersOfImageCorrector::getLightSlider() { return ui->slider_light; }
