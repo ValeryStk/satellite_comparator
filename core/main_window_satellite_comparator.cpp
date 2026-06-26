@@ -3268,6 +3268,35 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(
 
     QVector<QImage> images;
 
+    // Берём текущие параметры гистограммного растяжения из виджета
+    double lowPct = ui->widget_image_saturation_light_corrector->getLowPct();
+    double highPct = ui->widget_image_saturation_light_corrector->getHighPct();
+    double gamma = ui->widget_image_saturation_light_corrector->getGamma();
+
+    for (int i = 0; i < m_time_row.size(); ++i) {
+        const auto &bands = m_time_row[i];
+        if (bands.size() < 4) continue;
+
+        const uint16_t *r = bands[3].data;  // B4 — Red
+        const uint16_t *g = bands[2].data;  // B3 — Green
+        const uint16_t *b = bands[1].data;  // B2 — Blue
+        int w = bands[0].width;
+        int h = bands[0].height;
+
+        if (!r || !g || !b || w <= 0 || h <= 0) continue;
+
+        QImage img = buildRgbPercentile(r, g, b, w, h,
+                                        nullptr,  // cloudMask не нужен
+                                        lowPct, highPct, gamma);
+        if (!img.isNull()) images.push_back(img);
+    }
+
+    return images;
+    /*
+    if (m_time_row.empty()) return {QImage()};
+
+    QVector<QImage> images;
+
     int mult = 1;
     if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
         mult = 2;
@@ -3307,6 +3336,7 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(
     }
 
     return images;
+*/
 }
 
 void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(
