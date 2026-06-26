@@ -8,6 +8,7 @@
 #include <QDomDocument>
 #include <QFile>
 #include <QFileDialog>
+#include <QShortcut>
 #include <QSpacerItem>
 #include <QTextCodec>
 #include <QTextStream>
@@ -359,11 +360,28 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     connect(ui->action_SpectraClassifer, SIGNAL(triggered()), this,
             SLOT(sendSpectrToMatlab()));
+    // Shortcut Ctrl+Escape — заморозить/разморозить обновление графиков
+    m_toggle_mouse_tracking_shortcut =
+        new QShortcut(QKeySequence(Qt::Key_Escape), this);
+    connect(m_toggle_mouse_tracking_shortcut, &QShortcut::activated, this,
+            &MainWindowSatelliteComparator::toggleMouseTracking);
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
     delete ui;
     gdal_close_driver();
+}
+
+void MainWindowSatelliteComparator::toggleMouseTracking() {
+    m_mouse_tracking_enabled = !m_mouse_tracking_enabled;
+    qDebug() << m_mouse_tracking_enabled << "- m_mouse_tracking_enabled";
+    // Визуальная индикация в статус-баре
+    if (m_mouse_tracking_enabled) {
+        ui->statusbar->showMessage(tr("Обновление графиков: ВКЛ"), 2000);
+    } else {
+        ui->statusbar->showMessage(
+            tr("Обновление графиков: ОТКЛ (Esc для включения)"), 0);
+    }
 }
 
 void MainWindowSatelliteComparator::openLandsat9HeaderData() {
@@ -602,6 +620,8 @@ void MainWindowSatelliteComparator::centerSceneOnCrossSquare() {
 
 void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     QPointF pos) {
+    if (!m_mouse_tracking_enabled) return;
+
     if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
         cursorPointOnSceneChangedEventTimeRow(pos, true);
         return;
@@ -3554,6 +3574,11 @@ void MainWindowSatelliteComparator::setUpUi() {
 
     time_row_indexes_plot->setMinimumSize(QSize(400, 150));
     time_row_indexes_plot->setWindowTitle("Индексы NDVI, NDWI");
+    time_row_indexes_plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom |
+                                           QCP::iSelectPlottables |
+                                           QCP::iSelectLegend);
+    time_row_indexes_plot->xAxis->setTickLabelRotation(90);
+    time_row_indexes_plot->xAxis->setTickLabelPadding(8);
     time_row_indexes_plot->legend->setVisible(true);
     time_row_indexes_plot->yAxis->setLabel("Значение индексов");
     time_row_indexes_plot->xAxis->setLabel("Дата съёмки");

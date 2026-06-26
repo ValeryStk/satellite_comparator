@@ -25,7 +25,10 @@ class MainWindowSatelliteComparator;
 }
 QT_END_NAMESPACE
 
-/*!\n * \\brief Класс главного окна программы\n * Предназначен для отображения загруженных спутниковых данных,\n * управления поиском, визуализации градиентов усыхания для временного ряда,\n * отображения спектральных данных для текущего пикселя\n */
+/*!\n * \\brief Класс главного окна программы\n * Предназначен для отображения
+ * загруженных спутниковых данных,\n * управления поиском, визуализации
+ * градиентов усыхания для временного ряда,\n * отображения спектральных данных
+ * для текущего пикселя\n */
 
 class MainWindowSatelliteComparator : public QMainWindow {
     Q_OBJECT
@@ -38,6 +41,9 @@ public:
     ~MainWindowSatelliteComparator();
 
 private slots:
+    //! Слот переключения обработки движения мыши по сцене
+    void toggleMouseTracking();
+
     //! Слот для изменения отображения каналов одиночного изображения
     void change_bands_and_show_image();
 
@@ -457,20 +463,23 @@ private:
     bool saveSentinelToGeoTiff(const QVector<sad::BAND_DATA> &bands,
                                const sad::geoTransform &gt,
                                const QString &outputFilePath);
+
+    bool m_mouse_tracking_enabled = true;
+    QShortcut *m_toggle_mouse_tracking_shortcut;
     AtmCorrectionMainWindow m_ac;
     QDockWidget *m_acDock;
 
     // Параметры персентильного растяжения гистограммы
-    double m_lowPct  = 0.02;
+    double m_lowPct = 0.02;
     double m_highPct = 0.98;
-    double m_gamma   = 1.15;
+    double m_gamma = 1.15;
 
     // Сырые данные для пересчёта при изменении параметров растяжения
-    const uint16_t* m_current_r    = nullptr;
-    const uint16_t* m_current_g    = nullptr;
-    const uint16_t* m_current_b    = nullptr;
-    const uint16_t* m_current_mask = nullptr;
-    int             m_current_w    = 0;
-    int             m_current_h    = 0;
+    const uint16_t *m_current_r = nullptr;
+    const uint16_t *m_current_g = nullptr;
+    const uint16_t *m_current_b = nullptr;
+    const uint16_t *m_current_mask = nullptr;
+    int m_current_w = 0;
+    int m_current_h = 0;
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H

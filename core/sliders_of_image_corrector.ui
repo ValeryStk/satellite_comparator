@@ -182,7 +182,7 @@
         </font>
        </property>
        <property name="title">
-        <string>Персентили для ратяжения гистограммы</string>
+        <string>Персентили для растяжения гистограммы</string>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
         <property name="leftMargin">
