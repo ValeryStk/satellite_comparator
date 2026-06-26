@@ -42,7 +42,7 @@
           <item>
            <widget class="QLabel" name="label">
             <property name="text">
-             <string>Пример: 53.9040337416497, 27.563153788539932</string>
+             <string>Широта, долгота. Пример: 53.9040337, 27.563153</string>
             </property>
            </widget>
           </item>
@@ -54,7 +54,20 @@
        </layout>
       </item>
       <item>
+       <widget class="QLabel" name="label_parcedCord">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="pushButton_find_result">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>33</height>
+         </size>
+        </property>
         <property name="text">
          <string>Найти и установить точку</string>
         </property>
