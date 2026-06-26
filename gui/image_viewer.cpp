@@ -21,6 +21,10 @@ ImageViewer::ImageViewer(QWidget* parent)
 
 void ImageViewer::setImage(const QPixmap& pixmap) {
     scene->clear();
+    imageItem = nullptr;
+    crosshairH = nullptr;
+    crosshairV = nullptr;
+    centerRect = nullptr;
     imageItem = scene->addPixmap(pixmap);
     scene->setSceneRect(pixmap.rect());
 }

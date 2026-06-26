@@ -4138,13 +4138,12 @@ void MainWindowSatelliteComparator::onStretchParamsChanged() {
     }
 
     // --- Обновление снимков временного ряда ---
-    //    if (!m_viewers.empty() && !m_time_row.empty()) {
-    //        auto imgs = get_cropedImages_for_time_row(m_time_row,
-    //        m_satelite_type); for (int i = 0; i < imgs.size() && i <
-    //        m_viewers.size(); ++i) {
-    //            m_viewers[i]->setImage(QPixmap::fromImage(imgs[i]));
-    //        }
-    //    }
+    if (!m_viewers.empty() && !m_time_row.empty()) {
+        auto imgs = get_cropedImages_for_time_row(m_time_row, m_satelite_type);
+        for (int i = 0; i < imgs.size() && i < m_viewers.size(); ++i) {
+            m_viewers[i]->setImage(QPixmap::fromImage(imgs[i]));
+        }
+    }
 }
 
 void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,
