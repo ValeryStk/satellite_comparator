@@ -2101,7 +2101,13 @@ QPointF MainWindowSatelliteComparator::geoToPixel(double latitude,
 
     int pixelX = static_cast<int>((x - gt.ulX) / gt.resX);
     int pixelY = static_cast<int>((y - gt.ulY) / gt.resY);
-
+    qDebug() << QString(
+                    "geoToPixel.---- latitude %1  longitude %2   pixelX %3   "
+                    "pixelY %4")
+                    .arg(latitude)
+                    .arg(longitude)
+                    .arg(pixelX)
+                    .arg(pixelY);
     return QPointF(pixelX, pixelY);
 }
 
@@ -3266,77 +3272,38 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(
     sad::SATELLITE_TYPE st) {
     if (m_time_row.empty()) return {QImage()};
 
-    QVector<QImage> images;
-
-    // Берём текущие параметры гистограммного растяжения из виджета
     double lowPct = ui->widget_image_saturation_light_corrector->getLowPct();
     double highPct = ui->widget_image_saturation_light_corrector->getHighPct();
     double gamma = ui->widget_image_saturation_light_corrector->getGamma();
 
-    for (int i = 0; i < m_time_row.size(); ++i) {
-        const auto &bands = m_time_row[i];
+    const int w = m_time_row[0][0].width;
+    const int h = m_time_row[0][0].height;
+
+    // --- Собираем все каналы R, G, B со всех снимков ---
+    std::vector<const uint16_t *> allR, allG, allB;
+    for (const auto &bands : m_time_row) {
         if (bands.size() < 4) continue;
+        allR.push_back(bands[3].data);
+        allG.push_back(bands[2].data);
+        allB.push_back(bands[1].data);
+    }
 
-        const uint16_t *r = bands[3].data;  // B4 — Red
-        const uint16_t *g = bands[2].data;  // B3 — Green
-        const uint16_t *b = bands[1].data;  // B2 — Blue
-        int w = bands[0].width;
-        int h = bands[0].height;
+    // --- Вычисляем единые границы по всему ряду ---
+    uint16_t ploR, phiR, ploG, phiG, ploB, phiB;
+    computePercentileLimitsGlobal(allR, w, h, lowPct, highPct, ploR, phiR);
+    computePercentileLimitsGlobal(allG, w, h, lowPct, highPct, ploG, phiG);
+    computePercentileLimitsGlobal(allB, w, h, lowPct, highPct, ploB, phiB);
 
-        if (!r || !g || !b || w <= 0 || h <= 0) continue;
-
-        QImage img = buildRgbPercentile(r, g, b, w, h,
-                                        nullptr,  // cloudMask не нужен
-                                        lowPct, highPct, gamma);
+    // --- Рендерим каждый снимок с одинаковыми границами ---
+    QVector<QImage> images;
+    for (const auto &bands : m_time_row) {
+        if (bands.size() < 4) continue;
+        QImage img = buildRgbPercentileFixed(
+            bands[3].data, bands[2].data, bands[1].data, w, h, ploR, phiR, ploG,
+            phiG, ploB, phiB, gamma, nullptr);
         if (!img.isNull()) images.push_back(img);
     }
-
     return images;
-    /*
-    if (m_time_row.empty()) return {QImage()};
-
-    QVector<QImage> images;
-
-    int mult = 1;
-    if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
-        mult = 2;
-    } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
-        mult = 6;
-    }
-
-    for (int i = 0; i < m_time_row.size(); ++i) {
-        int offset = 0;
-        const int nXSize = m_time_row[i][0].width;
-        const int nYSize = m_time_row[i][0].height;
-        auto data = std::unique_ptr<uchar[]>(new uchar[nXSize * nYSize * 3]);
-        for (int y = 0; y < nYSize; ++y) {
-            for (int x = 0; x < nXSize; ++x) {
-                int B = 0;
-                int G = 0;
-                int R = 0;
-                B = static_cast<int>(m_time_row[i][1].data[y * nXSize + x] /
-                                     255.0) *
-                    mult;
-                G = static_cast<int>(m_time_row[i][2].data[y * nXSize + x] /
-                                     255.0) *
-                    mult;
-                R = static_cast<int>(m_time_row[i][3].data[y * nXSize + x] /
-                                     255.0) *
-                    mult;
-                data[offset] = R;
-                data[offset + 1] = G;
-                data[offset + 2] = B;
-                offset = offset + 3;
-            }
-        }
-        QImage img = QImage(data.get(), nXSize, nYSize, nXSize * 3,
-                            QImage::Format_RGB888)
-                         .copy();
-        images.push_back(img);
-    }
-
-    return images;
-*/
 }
 
 void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(
@@ -4146,27 +4113,38 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
 }
 
 void MainWindowSatelliteComparator::onStretchParamsChanged() {
-    if (!m_current_r) return;
     double lowPct = ui->widget_image_saturation_light_corrector->getLowPct();
     double highPct = ui->widget_image_saturation_light_corrector->getHighPct();
     double gamma = ui->widget_image_saturation_light_corrector->getGamma();
 
-    QImage imgNew =
-        buildRgbPercentile(m_current_r, m_current_g, m_current_b, m_current_w,
-                           m_current_h, m_current_mask, lowPct, highPct, gamma);
-    if (imgNew.isNull()) return;
+    // --- Обновление основного снимка ---
+    if (m_current_r) {
+        QImage imgNew = buildRgbPercentile(
+            m_current_r, m_current_g, m_current_b, m_current_w, m_current_h,
+            m_current_mask, lowPct, highPct, gamma);
+        if (!imgNew.isNull()) {
+            m_satellite_image = imgNew;
+            ui->widget_image_saturation_light_corrector
+                ->setDefaultSatLightValues();
+            auto pixmap = QPixmap::fromImage(m_satellite_image);
+            m_scene->removeItem(m_image_item);
+            delete m_image_item;
+            m_image_item = new QGraphicsPixmapItem(pixmap);
+            m_image_item->setCursor(Qt::CrossCursor);
+            m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
+            m_scene->addItem(m_image_item);
+            m_scene->update();
+        }
+    }
 
-    m_satellite_image = imgNew;
-    ui->widget_image_saturation_light_corrector
-        ->setDefaultSatLightValues();  // сброс sat/light
-    auto pixmap = QPixmap::fromImage(m_satellite_image);
-    m_scene->removeItem(m_image_item);
-    delete m_image_item;
-    m_image_item = new QGraphicsPixmapItem(pixmap);
-    m_image_item->setCursor(Qt::CrossCursor);
-    m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
-    m_scene->addItem(m_image_item);
-    m_scene->update();
+    // --- Обновление снимков временного ряда ---
+    //    if (!m_viewers.empty() && !m_time_row.empty()) {
+    //        auto imgs = get_cropedImages_for_time_row(m_time_row,
+    //        m_satelite_type); for (int i = 0; i < imgs.size() && i <
+    //        m_viewers.size(); ++i) {
+    //            m_viewers[i]->setImage(QPixmap::fromImage(imgs[i]));
+    //        }
+    //    }
 }
 
 void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,
