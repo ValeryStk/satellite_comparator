@@ -10,6 +10,5 @@ GeoPointFinder::GeoPointFinder(QWidget *parent)
 GeoPointFinder::~GeoPointFinder() { delete ui; }
 
 void GeoPointFinder::on_pushButton_find_result_clicked() {
-    setGeoCoordinatesAsSample(QPointF(ui->doubleSpinBox_latitude->value(),
-                                      ui->doubleSpinBox_longitude->value()));
+    setGeoCoordinatesAsSample(QPointF(111111111, 22222222));
 }
