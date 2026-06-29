@@ -83,6 +83,15 @@ SlidersOfImageCorrector::SlidersOfImageCorrector(QWidget *parent)
             SLOT(onSaturationChanged()));
     connect(ui->slider_light, SIGNAL(sliderReleased()), this,
             SLOT(onLightChanged()));
+    connect(ui->spinBox_lowPct,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+            &SlidersOfImageCorrector::onStretchChanged);
+    connect(ui->spinBox_highPct,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+            &SlidersOfImageCorrector::onStretchChanged);
+    connect(ui->spinBox_gamma,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+            &SlidersOfImageCorrector::onStretchChanged);
 }
 
 SlidersOfImageCorrector::~SlidersOfImageCorrector() { delete ui; }
@@ -93,11 +102,17 @@ double SlidersOfImageCorrector::getCoefSaturation() const {
 
 double SlidersOfImageCorrector::getCoefLight() const { return coefLight; }
 
-void SlidersOfImageCorrector::setDefaultValues() {
+void SlidersOfImageCorrector::setDefaultSatLightValues() {
     ui->slider_saturation->setValue(SLIDER_INITIAL_VALUE);
     ui->slider_light->setValue(SLIDER_INITIAL_VALUE);
     coefSaturation = NEUTRAL_MULTIPLIER;
     coefLight = NEUTRAL_MULTIPLIER;
+}
+
+void SlidersOfImageCorrector::setDefaultStretchValues() {
+    ui->spinBox_gamma->setValue(1.15);
+    ui->spinBox_lowPct->setValue(0);
+    ui->spinBox_highPct->setValue(0.98);
 }
 
 QSlider *SlidersOfImageCorrector::getLightSlider() { return ui->slider_light; }
@@ -106,9 +121,23 @@ QSlider *SlidersOfImageCorrector::getSaturationSlider() {
     return ui->slider_saturation;
 }
 
+double SlidersOfImageCorrector::getLowPct() const {
+    return ui->spinBox_lowPct->value();
+}
+double SlidersOfImageCorrector::getHighPct() const {
+    return ui->spinBox_highPct->value();
+}
+double SlidersOfImageCorrector::getGamma() const {
+    return ui->spinBox_gamma->value();
+}
+
 void SlidersOfImageCorrector::onSaturationChanged() {
     coefSaturation = calculate_slider_coef(ui->slider_saturation);
     emit slidersWereChanged();
+}
+
+void SlidersOfImageCorrector::onStretchChanged() {
+    emit stretchParamsChanged();
 }
 
 void SlidersOfImageCorrector::onLightChanged() {

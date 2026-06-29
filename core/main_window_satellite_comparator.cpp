@@ -8,6 +8,7 @@
 #include <QDomDocument>
 #include <QFile>
 #include <QFileDialog>
+#include <QShortcut>
 #include <QSpacerItem>
 #include <QTextCodec>
 #include <QTextStream>
@@ -23,6 +24,7 @@
 #include "QGraphicsProxyWidget"
 #include "QImageReader"
 #include "cpl_conv.h"
+#include "davis.h"
 #include "google_maps_url_maker.h"
 #include "health_ranges.h"
 #include "icon_generator.h"
@@ -39,6 +41,7 @@
 #include "matlab_app_controller.h"
 #include "progress_informator.h"
 #include "qcustomplot.h"
+#include "rgb_stretch.h"
 #include "sam.cpp"
 #include "satellite_xml_reader.h"
 #include "text_constants.h"
@@ -350,13 +353,35 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             SLOT(add_roi_to_gui_list(const QString)));
     connect(ui->widget_image_saturation_light_corrector,
             SIGNAL(slidersWereChanged()), SLOT(updateImage()));
+
+    connect(ui->widget_image_saturation_light_corrector,
+            &SlidersOfImageCorrector::stretchParamsChanged, this,
+            &MainWindowSatelliteComparator::onStretchParamsChanged);
+
     connect(ui->action_SpectraClassifer, SIGNAL(triggered()), this,
             SLOT(sendSpectrToMatlab()));
+    // Shortcut Ctrl+Escape — заморозить/разморозить обновление графиков
+    m_toggle_mouse_tracking_shortcut =
+        new QShortcut(QKeySequence(Qt::Key_Escape), this);
+    connect(m_toggle_mouse_tracking_shortcut, &QShortcut::activated, this,
+            &MainWindowSatelliteComparator::toggleMouseTracking);
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
     delete ui;
     gdal_close_driver();
+}
+
+void MainWindowSatelliteComparator::toggleMouseTracking() {
+    m_mouse_tracking_enabled = !m_mouse_tracking_enabled;
+    qDebug() << m_mouse_tracking_enabled << "- m_mouse_tracking_enabled";
+    // Визуальная индикация в статус-баре
+    if (m_mouse_tracking_enabled) {
+        ui->statusbar->showMessage(tr("Обновление графиков: ВКЛ"), 2000);
+    } else {
+        ui->statusbar->showMessage(
+            tr("Обновление графиков: ОТКЛ (Esc для включения)"), 0);
+    }
 }
 
 void MainWindowSatelliteComparator::openLandsat9HeaderData() {
@@ -595,6 +620,8 @@ void MainWindowSatelliteComparator::centerSceneOnCrossSquare() {
 
 void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     QPointF pos) {
+    if (!m_mouse_tracking_enabled) return;
+
     if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
         cursorPointOnSceneChangedEventTimeRow(pos, true);
         return;
@@ -2074,7 +2101,13 @@ QPointF MainWindowSatelliteComparator::geoToPixel(double latitude,
 
     int pixelX = static_cast<int>((x - gt.ulX) / gt.resX);
     int pixelY = static_cast<int>((y - gt.ulY) / gt.resY);
-
+    qDebug() << QString(
+                    "geoToPixel.---- latitude %1  longitude %2   pixelX %3   "
+                    "pixelY %4")
+                    .arg(latitude)
+                    .arg(longitude)
+                    .arg(pixelX)
+                    .arg(pixelY);
     return QPointF(pixelX, pixelY);
 }
 
@@ -2132,7 +2165,8 @@ void MainWindowSatelliteComparator::showGoogleMap() {
 }
 
 void MainWindowSatelliteComparator::resetColorsToDefaultRGB() {
-    ui->widget_image_saturation_light_corrector->setDefaultValues();
+    ui->widget_image_saturation_light_corrector->setDefaultSatLightValues();
+    ui->widget_image_saturation_light_corrector->setDefaultStretchValues();
     if (m_dynamic_checkboxes_widget) {
         m_dynamic_checkboxes_widget->setRGBchannels();
         if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
@@ -2147,152 +2181,48 @@ void MainWindowSatelliteComparator::resetColorsToDefaultRGB() {
 
 void MainWindowSatelliteComparator::change_bands_and_show_image() {
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
-    const int nXSize = m_landsat9_bands_image_sizes->first;
-    const int nYSize = m_landsat9_bands_image_sizes->second;
-
-    ProgressInformator progress_info(ui->graphicsView_satellite_image,
-                                     satc::message_changing_bands);
-    progress_info.show();
-    QApplication::processEvents();
-
-    int offset = 0;
-    for (int y = 0; y < nYSize; ++y) {
-        for (int x = 0; x < nXSize; ++x) {
-            int B = 0;
-            int G = 0;
-            int R = 0;
-            for (int j = 0; j < bands.size(); ++j) {
-                int choosedColor = -1;
-                if (bands[j].second == BLUE) {
-                    B = static_cast<int>(
-                        m_landsat9_data_bands[bands[j].first][y * nXSize + x] /
-                        255.0);
-                    choosedColor = BLUE;
-                } else if (bands[j].second == GREEN) {
-                    G = static_cast<int>(
-                        m_landsat9_data_bands[bands[j].first][y * nXSize + x] /
-                        255.0);
-                    choosedColor = GREEN;
-                } else if (bands[j].second == RED) {
-                    R = static_cast<int>(
-                        m_landsat9_data_bands[bands[j].first][y * nXSize + x] /
-                        255.0);
-                    choosedColor = RED;
-                }
-                if (bands.size() == 1) {
-                    switch (choosedColor) {
-                        case RED:
-                            G = R;
-                            B = R;
-                            break;
-                        case GREEN:
-                            B = G;
-                            R = G;
-                            break;
-                        case BLUE:
-                            R = B;
-                            G = B;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-            m_image_data[offset] = R;
-            m_image_data[offset + 1] = G;
-            m_image_data[offset + 2] = B;
-            offset = offset + 3;
-        }
+    int idxR = -1, idxG = -1, idxB = -1;
+    for (const auto &b : bands) {
+        if (b.second == RED) idxR = b.first;
+        if (b.second == GREEN) idxG = b.first;
+        if (b.second == BLUE) idxB = b.first;
     }
-    if (m_image_item) {
-        qDebug() << "Delete image item....";
-        m_scene->removeItem(m_image_item);  // удаление со сцены
-        delete m_image_item;  // освобождение памяти
-    }
-    m_satellite_image =
-        QImage(m_image_data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
-    auto pixmap = QPixmap::fromImage(m_satellite_image);
-    m_image_item = new QGraphicsPixmapItem(pixmap);
-    m_image_item->setCursor(Qt::CrossCursor);
-    m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
-    m_scene->addItem(m_image_item);
-    m_scene->setSceneRect(pixmap.rect());
-    ui->graphicsView_satellite_image->centerOn(m_image_item);
-    updateImage();
+    if (idxR < 0 || idxG < 0 || idxB < 0 || idxR >= LANDSAT_BANDS_NUMBER ||
+        idxG >= LANDSAT_BANDS_NUMBER || idxB >= LANDSAT_BANDS_NUMBER ||
+        !m_landsat9_data_bands[idxR] || !m_landsat9_data_bands[idxG] ||
+        !m_landsat9_data_bands[idxB])
+        return;
+
+    const int w = m_landsat9_bands_image_sizes[idxR].first;
+    const int h = m_landsat9_bands_image_sizes[idxR].second;
+
+    auto lowP = ui->widget_image_saturation_light_corrector->getLowPct();
+    auto highP = ui->widget_image_saturation_light_corrector->getHighPct();
+    auto gamma = ui->widget_image_saturation_light_corrector->getGamma();
+    showRgbImage(m_landsat9_data_bands[idxR], m_landsat9_data_bands[idxG],
+                 m_landsat9_data_bands[idxB], w, h, lowP, highP, gamma);
 }
 
 void MainWindowSatelliteComparator::change_bands_and_show_image(
     const QVector<sad::BAND_DATA> &band_data) {
     if (band_data.empty()) return;
-    const int nXSize = band_data[0].width;
-    const int nYSize = band_data[0].height;
     auto bands = m_dynamic_checkboxes_widget->get_choosed_bands();
-    if (bands.empty()) return;
-    ProgressInformator progress_info(ui->graphicsView_satellite_image,
-                                     satc::message_changing_bands);
-    progress_info.show();
-    QApplication::processEvents();
+    int idxR = -1, idxG = -1, idxB = -1;
+    for (const auto &b : bands) {
+        if (b.second == RED) idxR = b.first;
+        if (b.second == GREEN) idxG = b.first;
+        if (b.second == BLUE) idxB = b.first;
+    }
+    if (idxR < 0 || idxG < 0 || idxB < 0 || idxR >= band_data.size() ||
+        idxG >= band_data.size() || idxB >= band_data.size())
+        return;
 
-    int offset = 0;
-    for (int y = 0; y < nYSize; ++y) {
-        for (int x = 0; x < nXSize; ++x) {
-            int B = 0;
-            int G = 0;
-            int R = 0;
-            for (int j = 0; j < bands.size(); ++j) {
-                int choosedColor = -1;
-                if (bands[j].second == BLUE) {
-                    B = static_cast<int>(
-                        band_data[bands[j].first].data[y * nXSize + x] / 255.0);
-                    choosedColor = BLUE;
-                } else if (bands[j].second == GREEN) {
-                    G = static_cast<int>(
-                        band_data[bands[j].first].data[y * nXSize + x] / 255.0);
-                    choosedColor = GREEN;
-                } else if (bands[j].second == RED) {
-                    R = static_cast<int>(
-                        band_data[bands[j].first].data[y * nXSize + x] / 255.0);
-                    choosedColor = RED;
-                }
-                if (bands.size() == 1) {
-                    switch (choosedColor) {
-                        case RED:
-                            G = R;
-                            B = R;
-                            break;
-                        case GREEN:
-                            B = G;
-                            R = G;
-                            break;
-                        case BLUE:
-                            R = B;
-                            G = B;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-            m_image_data[offset] = R;
-            m_image_data[offset + 1] = G;
-            m_image_data[offset + 2] = B;
-            offset = offset + 3;
-        }
-    }
-    if (m_image_item) {
-        m_scene->removeItem(m_image_item);
-        delete m_image_item;
-    }
-    m_satellite_image =
-        QImage(m_image_data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
-    auto pixmap = QPixmap::fromImage(m_satellite_image);
-    m_image_item = new QGraphicsPixmapItem(pixmap);
-    m_image_item->setCursor(Qt::CrossCursor);
-    m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
-    m_scene->addItem(m_image_item);
-    m_scene->setSceneRect(pixmap.rect());
-    ui->graphicsView_satellite_image->centerOn(m_image_item);
-    updateImage();
+    auto lowP = ui->widget_image_saturation_light_corrector->getLowPct();
+    auto highP = ui->widget_image_saturation_light_corrector->getHighPct();
+    auto gamma = ui->widget_image_saturation_light_corrector->getGamma();
+    showRgbImage(band_data[idxR].data, band_data[idxG].data,
+                 band_data[idxB].data, band_data[idxR].width,
+                 band_data[idxR].height, lowP, highP, gamma);
 }
 
 void MainWindowSatelliteComparator::change_bands() {
@@ -3342,46 +3272,37 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(
     sad::SATELLITE_TYPE st) {
     if (m_time_row.empty()) return {QImage()};
 
+    double lowPct = ui->widget_image_saturation_light_corrector->getLowPct();
+    double highPct = ui->widget_image_saturation_light_corrector->getHighPct();
+    double gamma = ui->widget_image_saturation_light_corrector->getGamma();
+
+    const int w = m_time_row[0][0].width;
+    const int h = m_time_row[0][0].height;
+
+    // --- Собираем все каналы R, G, B со всех снимков ---
+    std::vector<const uint16_t *> allR, allG, allB;
+    for (const auto &bands : m_time_row) {
+        if (bands.size() < 4) continue;
+        allR.push_back(bands[3].data);
+        allG.push_back(bands[2].data);
+        allB.push_back(bands[1].data);
+    }
+
+    // --- Вычисляем единые границы по всему ряду ---
+    uint16_t ploR, phiR, ploG, phiG, ploB, phiB;
+    computePercentileLimitsGlobal(allR, w, h, lowPct, highPct, ploR, phiR);
+    computePercentileLimitsGlobal(allG, w, h, lowPct, highPct, ploG, phiG);
+    computePercentileLimitsGlobal(allB, w, h, lowPct, highPct, ploB, phiB);
+
+    // --- Рендерим каждый снимок с одинаковыми границами ---
     QVector<QImage> images;
-
-    int mult = 1;
-    if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
-        mult = 2;
-    } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
-        mult = 6;
+    for (const auto &bands : m_time_row) {
+        if (bands.size() < 4) continue;
+        QImage img = buildRgbPercentileFixed(
+            bands[3].data, bands[2].data, bands[1].data, w, h, ploR, phiR, ploG,
+            phiG, ploB, phiB, gamma, nullptr);
+        if (!img.isNull()) images.push_back(img);
     }
-
-    for (int i = 0; i < m_time_row.size(); ++i) {
-        int offset = 0;
-        const int nXSize = m_time_row[i][0].width;
-        const int nYSize = m_time_row[i][0].height;
-        auto data = std::unique_ptr<uchar[]>(new uchar[nXSize * nYSize * 3]);
-        for (int y = 0; y < nYSize; ++y) {
-            for (int x = 0; x < nXSize; ++x) {
-                int B = 0;
-                int G = 0;
-                int R = 0;
-                B = static_cast<int>(m_time_row[i][1].data[y * nXSize + x] /
-                                     255.0) *
-                    mult;
-                G = static_cast<int>(m_time_row[i][2].data[y * nXSize + x] /
-                                     255.0) *
-                    mult;
-                R = static_cast<int>(m_time_row[i][3].data[y * nXSize + x] /
-                                     255.0) *
-                    mult;
-                data[offset] = R;
-                data[offset + 1] = G;
-                data[offset + 2] = B;
-                offset = offset + 3;
-            }
-        }
-        QImage img = QImage(data.get(), nXSize, nYSize, nXSize * 3,
-                            QImage::Format_RGB888)
-                         .copy();
-        images.push_back(img);
-    }
-
     return images;
 }
 
@@ -3650,6 +3571,11 @@ void MainWindowSatelliteComparator::setUpUi() {
 
     time_row_indexes_plot->setMinimumSize(QSize(400, 150));
     time_row_indexes_plot->setWindowTitle("Индексы NDVI, NDWI");
+    time_row_indexes_plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom |
+                                           QCP::iSelectPlottables |
+                                           QCP::iSelectLegend);
+    time_row_indexes_plot->xAxis->setTickLabelRotation(90);
+    time_row_indexes_plot->xAxis->setTickLabelPadding(8);
     time_row_indexes_plot->legend->setVisible(true);
     time_row_indexes_plot->yAxis->setLabel("Значение индексов");
     time_row_indexes_plot->xAxis->setLabel("Дата съёмки");
@@ -4184,4 +4110,78 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
         bekas_sample.append("\n");
     }
     clipboard->setText(bekas_sample);
+}
+
+void MainWindowSatelliteComparator::onStretchParamsChanged() {
+    double lowPct = ui->widget_image_saturation_light_corrector->getLowPct();
+    double highPct = ui->widget_image_saturation_light_corrector->getHighPct();
+    double gamma = ui->widget_image_saturation_light_corrector->getGamma();
+
+    // --- Обновление основного снимка ---
+    if (m_current_r) {
+        QImage imgNew = buildRgbPercentile(
+            m_current_r, m_current_g, m_current_b, m_current_w, m_current_h,
+            m_current_mask, lowPct, highPct, gamma);
+        if (!imgNew.isNull()) {
+            m_satellite_image = imgNew;
+            ui->widget_image_saturation_light_corrector
+                ->setDefaultSatLightValues();
+            auto pixmap = QPixmap::fromImage(m_satellite_image);
+            m_scene->removeItem(m_image_item);
+            delete m_image_item;
+            m_image_item = new QGraphicsPixmapItem(pixmap);
+            m_image_item->setCursor(Qt::CrossCursor);
+            m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
+            m_scene->addItem(m_image_item);
+            m_scene->update();
+        }
+    }
+
+    // --- Обновление снимков временного ряда ---
+    if (!m_viewers.empty() && !m_time_row.empty()) {
+        auto imgs = get_cropedImages_for_time_row(m_time_row, m_satelite_type);
+        for (int i = 0; i < imgs.size() && i < m_viewers.size(); ++i) {
+            m_viewers[i]->setImage(QPixmap::fromImage(imgs[i]));
+        }
+    }
+}
+
+void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,
+                                                 const uint16_t *g,
+                                                 const uint16_t *b, int width,
+                                                 int height, double lowPct,
+                                                 double highPct, double gamma,
+                                                 const uint16_t *cloudMask) {
+    ProgressInformator progress_info(ui->graphicsView_satellite_image,
+                                     satc::message_changing_bands);
+    progress_info.show();
+    QApplication::processEvents();
+
+    // Сохраняем сырые указатели для возможного пересчёта при изменении
+    // параметров
+    m_current_r = r;
+    m_current_g = g;
+    m_current_b = b;
+    m_current_w = width;
+    m_current_h = height;
+    m_current_mask = cloudMask;
+
+    QImage imgNew = buildRgbPercentile(r, g, b, width, height, cloudMask,
+                                       lowPct, highPct, gamma);
+
+    if (imgNew.isNull()) return;
+
+    if (m_image_item) {
+        m_scene->removeItem(m_image_item);
+        delete m_image_item;
+    }
+    m_satellite_image = imgNew;
+    auto pixmap = QPixmap::fromImage(m_satellite_image);
+    m_image_item = new QGraphicsPixmapItem(pixmap);
+    m_image_item->setCursor(Qt::CrossCursor);
+    m_image_item->setZValue(Z_INDEX_BASE_IMAGE);
+    m_scene->addItem(m_image_item);
+    m_scene->setSceneRect(pixmap.rect());
+    ui->graphicsView_satellite_image->centerOn(m_image_item);
+    updateImage();
 }

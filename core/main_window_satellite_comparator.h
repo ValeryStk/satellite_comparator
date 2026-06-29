@@ -25,12 +25,10 @@ class MainWindowSatelliteComparator;
 }
 QT_END_NAMESPACE
 
-/*!
- * \brief Класс главного окна программы
- * Предназначен для отображения загруженных спутниковых данных,
- * управления поиском, визуализации градиентов усыхания для временного ряда,
- * отображения спектральных данных для текущего пикселя
- */
+/*!\n * \\brief Класс главного окна программы\n * Предназначен для отображения
+ * загруженных спутниковых данных,\n * управления поиском, визуализации
+ * градиентов усыхания для временного ряда,\n * отображения спектральных данных
+ * для текущего пикселя\n */
 
 class MainWindowSatelliteComparator : public QMainWindow {
     Q_OBJECT
@@ -43,13 +41,15 @@ public:
     ~MainWindowSatelliteComparator();
 
 private slots:
+    //! Слот переключения обработки движения мыши по сцене
+    void toggleMouseTracking();
+
     //! Слот для изменения отображения каналов одиночного изображения
     void change_bands_and_show_image();
 
     //! Слот для изменения каналов для временного ряда (загружается базовое
     //! изображение - самый поздний момент времени)
     void change_bands_and_show_image(const QVector<sad::BAND_DATA> &band_data);
-
     //! Слот изменения каналов
     void change_bands();
 
@@ -189,10 +189,20 @@ private slots:
 
     void setExternalSampleFromClipboard();
 
+    //! Слот пересчёта базового изображения при изменении параметров
+    //! персентильного растяжения (lowPct, highPct, gamma)
+    void onStretchParamsChanged();
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
     Ui::MainWindowSatelliteComparator *ui;
+
+    //! \brief отображение RGB. Вызывается из change_bands_and_show_image
+    void showRgbImage(const uint16_t *r, const uint16_t *g, const uint16_t *b,
+                      int width, int height, double lowPct = 0.02,
+                      double highPct = 0.98, double gamma = 1.15,
+                      const uint16_t *cloudMask = nullptr);
 
     //! \brief Виджет временного ряда
     QWidget m_time_row_widget;
@@ -453,7 +463,23 @@ private:
     bool saveSentinelToGeoTiff(const QVector<sad::BAND_DATA> &bands,
                                const sad::geoTransform &gt,
                                const QString &outputFilePath);
+
+    bool m_mouse_tracking_enabled = true;
+    QShortcut *m_toggle_mouse_tracking_shortcut;
     AtmCorrectionMainWindow m_ac;
     QDockWidget *m_acDock;
+
+    // Параметры персентильного растяжения гистограммы
+    double m_lowPct = 0.02;
+    double m_highPct = 0.98;
+    double m_gamma = 1.15;
+
+    // Сырые данные для пересчёта при изменении параметров растяжения
+    const uint16_t *m_current_r = nullptr;
+    const uint16_t *m_current_g = nullptr;
+    const uint16_t *m_current_b = nullptr;
+    const uint16_t *m_current_mask = nullptr;
+    int m_current_w = 0;
+    int m_current_h = 0;
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H
