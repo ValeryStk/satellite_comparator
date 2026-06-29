@@ -360,7 +360,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
     connect(ui->action_SpectraClassifer, SIGNAL(triggered()), this,
             SLOT(sendSpectrToMatlab()));
-    // Shortcut Ctrl+Escape — заморозить/разморозить обновление графиков
+    // Shortcut Escape — заморозить/разморозить обновление графиков
     m_toggle_mouse_tracking_shortcut =
         new QShortcut(QKeySequence(Qt::Key_Escape), this);
     connect(m_toggle_mouse_tracking_shortcut, &QShortcut::activated, this,
@@ -2101,13 +2101,6 @@ QPointF MainWindowSatelliteComparator::geoToPixel(double latitude,
 
     int pixelX = static_cast<int>((x - gt.ulX) / gt.resX);
     int pixelY = static_cast<int>((y - gt.ulY) / gt.resY);
-    qDebug() << QString(
-                    "geoToPixel.---- latitude %1  longitude %2   pixelX %3   "
-                    "pixelY %4")
-                    .arg(latitude)
-                    .arg(longitude)
-                    .arg(pixelX)
-                    .arg(pixelY);
     return QPointF(pixelX, pixelY);
 }
 
@@ -3974,7 +3967,14 @@ void MainWindowSatelliteComparator::setCursorByGeo() {
     gpf->show();
     connect(gpf, &GeoPointFinder::setGeoCoordinatesAsSample, this,
             [this](QPointF latLon) {
-                QPointF pixel = geoToPixel(latLon.x(), latLon.y(), m_geo);
+                sad::geoTransform geo;
+                if (m_satelite_type != sad::TIME_ROW_LANDSAT_COMBINATION &&
+                    m_satelite_type != sad::TIME_ROW_SENTINEL_COMBINATION) {
+                    geo = m_geo;
+                } else {
+                    geo = m_time_row_geo[0];
+                }
+                QPointF pixel = geoToPixel(latLon.x(), latLon.y(), geo);
                 if (pixel.x() < 0 && pixel.y() < 0)
                     return;  // конвертация не удалась
                 samplePointOnSceneChangedEvent(pixel);
