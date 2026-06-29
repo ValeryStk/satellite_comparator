@@ -17,8 +17,13 @@ void GeoPointFinder::on_pushButton_find_result_clicked() {
     // Нормализуем: запятая или пробел как разделитель, точка как десятичный
     // знак
     text.replace(',', ' ');
-    QStringList parts =
-        text.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+    QStringList parts = text.split(QRegularExpression("\\s+"),
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+                                   Qt::SkipEmptyParts
+#else
+                                   QString::SkipEmptyParts
+#endif
+    );
 
     if (parts.size() < 2) {
         ui->label_parcedCord->clear();
