@@ -1164,11 +1164,11 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_landsat9,
                                                     m_landsat9_sample);
     } else if (m_satelite_type == sad::SENTINEL_2A) {
-        m_sat_comparator->set_satellite_responses("sentinel2C");
+        m_sat_comparator->set_satellite_responses("sentinel2C");  // sentinel2C
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
                                                     m_sentinel_sample);
     } else if (m_satelite_type == sad::SENTINEL_2B) {
-        m_sat_comparator->set_satellite_responses("sentinel2C");
+        m_sat_comparator->set_satellite_responses("sentinel2C");  // sentinel2C
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
                                                     m_sentinel_sample);
     }
