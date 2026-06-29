@@ -1071,7 +1071,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         if (!m_sentinel_metadata.sentinel_missed_channels[i]) {
             sad::BAND_DATA data;
-            if (gui_channels[i].contains("WV")) continue;
+            // if (gui_channels[i].contains("WV")) continue;
             availableBandNames << gui_channels[i];
             data.gui_name = gui_channels[i];
             data.solar_irradiance = m_sentinel_metadata.solar_irradiance[i];
