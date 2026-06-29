@@ -104,7 +104,7 @@ QVector<double> waves_landsat9_5 = {443, 482, 562, 655, 865};
 QVector<double> waves_sentinel_2c = {443, 490, 560, 665,  705,  740, 783,
                                      842, 865, 945, 1375, 1610, 2190};
 QVector<double> waves_sentinel_2c_5 = {443, 490, 560, 665, 705,
-                                       740, 783, 842, 865};
+                                       740, 783, 842, 865, 945};
 
 QList<QColor> distinctColors = {
     QColor(255, 0, 0),    // Красный
