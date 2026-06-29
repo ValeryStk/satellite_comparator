@@ -3973,9 +3973,11 @@ void MainWindowSatelliteComparator::setCursorByGeo() {
     gpf->setAttribute(Qt::WA_DeleteOnClose);
     gpf->show();
     connect(gpf, &GeoPointFinder::setGeoCoordinatesAsSample, this,
-            [this](const QPointF &coords) {
-                auto pixel_coords = geoToPixel(coords.x(), coords.y(), m_geo);
-                samplePointOnSceneChangedEvent(pixel_coords);
+            [this](QPointF latLon) {
+                QPointF pixel = geoToPixel(latLon.x(), latLon.y(), m_geo);
+                if (pixel.x() < 0 && pixel.y() < 0)
+                    return;  // конвертация не удалась
+                samplePointOnSceneChangedEvent(pixel);
                 centerSceneOnCrossSquare();
             });
 }
