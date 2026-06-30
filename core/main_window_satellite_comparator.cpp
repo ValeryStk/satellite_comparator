@@ -1252,7 +1252,6 @@ void MainWindowSatelliteComparator::updateImage() {
             ui->widget_image_saturation_light_corrector->getCoefSaturation();
         double coef_light =
             ui->widget_image_saturation_light_corrector->getCoefLight();
-        if (coef_light == 1 && coef_saturation == 1) return;
         QImage imgNew =
             createModifiedImage(m_satellite_image, coef_saturation, coef_light);
         auto pixmap = QPixmap::fromImage(imgNew);
