@@ -184,6 +184,38 @@ const double sentinel_2B_central_wave_lengths[SENTINEL_BANDS_NUMBER] = {
     2186
 };
 
+
+const QString sentinel_2C_gui_band_names[SENTINEL_BANDS_NUMBER] = {
+    "B01 - 444  nm AER",
+    "B02 - 489  nm BLUE",
+    "B03 - 560  nm GREEN",
+    "B04 - 666  nm RED",
+    "B05 - 707  nm RE1",
+    "B06 - 741  nm RE2",
+    "B07 - 785  nm RE3",
+    "B08 - 844  nm NIR1",
+    "B8A - 866  nm NIR2",
+    "B09 - 947  nm WV",
+    "B10 - 1372 nm SWIR1",
+    "B11 - 1612 nm SWIR2",
+    "B12 - 2191 nm SWIR3"
+};
+const double sentinel_2C_central_wave_lengths[SENTINEL_BANDS_NUMBER] = {
+    444,
+    489,
+    560,
+    666,
+    707,
+    741,
+    785,
+    844,
+    866,
+    947,
+    1372,
+    1612,
+    2191
+};
+
 // COMMON SENTINEL
 const QString sentinel_bands_keys[SENTINEL_BANDS_NUMBER] = {
     "B01",

@@ -139,6 +139,7 @@
      <addaction name="actionOpenLandsat8Header"/>
      <addaction name="actionSentinel_2A"/>
      <addaction name="actionSentinel_2B"/>
+     <addaction name="actionSentinel_2C"/>
     </widget>
     <widget class="QMenu" name="menu_5">
      <property name="title">
@@ -273,6 +274,11 @@
   <action name="action_paste_sample_from_clipboard">
    <property name="text">
     <string>Вставить образец из буфера обмена</string>
+   </property>
+  </action>
+  <action name="actionSentinel_2C">
+   <property name="text">
+    <string>Sentinel 2C</string>
    </property>
   </action>
  </widget>

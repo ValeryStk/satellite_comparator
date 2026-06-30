@@ -25,6 +25,8 @@ extern const char satellite_name_sentinel_2A[];  //!< Константа тек�
                                                  //!< спутника SENTINEL 2A
 extern const char satellite_name_sentinel_2B[];  //!< Константа текст - имя
                                                  //!< спутника SENTINEL 2B
+extern const char satellite_name_sentinel_2C[];  //!< Константа текст - имя
+                                                 //!< спутника SENTINEL 2C
 extern const char satellite_name_sentinel_2A_TOA[];
 extern const char satellite_name_sentinel_2B_TOA[];
 

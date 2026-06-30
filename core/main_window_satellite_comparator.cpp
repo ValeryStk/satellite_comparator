@@ -101,10 +101,10 @@ constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER = 11000 * 11000 * 3;
 QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443, 482, 562, 655, 865, 1610, 2200};
 QVector<double> waves_landsat9_5 = {443, 482, 562, 655, 865};
-QVector<double> waves_sentinel_2c = {443, 490, 560, 665,  705,  740, 783,
-                                     842, 865, 945, 1375, 1610, 2190};
-QVector<double> waves_sentinel_2c_5 = {443, 490, 560, 665, 705,
-                                       740, 783, 842, 865, 945};
+QVector<double> waves_sentinel_2c = {444, 489, 560, 666,  707,  741, 785,
+                                     835, 866, 947, 1372, 1612, 2191};
+QVector<double> waves_sentinel_2c_5 = {444, 489, 560, 666, 707,
+                                       741, 785, 835, 866, 947};
 
 QList<QColor> distinctColors = {
     QColor(255, 0, 0),    // Красный
@@ -404,6 +404,11 @@ void MainWindowSatelliteComparator::openSentinel2BHeaderData() {
     openCommonSentinelHeaderData(satc::satellite_name_sentinel_2B);
 }
 
+void MainWindowSatelliteComparator::openSentinel2CHeaderData() {
+    m_satelite_type = sad::SENTINEL_2C;
+    openCommonSentinelHeaderData(satc::satellite_name_sentinel_2C);
+}
+
 void MainWindowSatelliteComparator::openBekasSpectraData() {
     bekas_window = new UasvViewWindow;
     bekas_window->setWindowTitle(satc::app_name);
@@ -643,7 +648,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
         data = getLandsat8Ksy(pos.x(), pos.y());
     } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
-               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2C) {
         auto w_k = getSentinelKsy(pos.x(), pos.y());
         data = w_k.second;
         waves = w_k.first;
@@ -697,7 +703,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
             trimmed_satellite_data = data;
         }
     } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
-               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2C) {
         if (m_is_bekas) {
             sample = m_bekas_sample;
             waves = waves_sentinel_2c_5;
@@ -781,7 +788,8 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
         waves = waves_landsat9;
 
     } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
-               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2C) {
         auto w_k = getSentinelKsy(pos.x(), pos.y());
         data = w_k.second;
         waves = w_k.first;
@@ -1066,6 +1074,12 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
         std::copy(sad::sentinel_2B_central_wave_lengths,
                   sad::sentinel_2B_central_wave_lengths + SENTINEL_BANDS_NUMBER,
                   central_waves);
+    } else if (m_satelite_type == sad::SENTINEL_2C) {
+        copyQStringArray(sad::sentinel_2C_gui_band_names, gui_channels,
+                         SENTINEL_BANDS_NUMBER);
+        std::copy(sad::sentinel_2C_central_wave_lengths,
+                  sad::sentinel_2C_central_wave_lengths + SENTINEL_BANDS_NUMBER,
+                  central_waves);
     }
 
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
@@ -1164,10 +1178,14 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_landsat9,
                                                     m_landsat9_sample);
     } else if (m_satelite_type == sad::SENTINEL_2A) {
-        m_sat_comparator->set_satellite_responses("sentinel2C");  // sentinel2C
+        m_sat_comparator->set_satellite_responses("sentinel2A");  // sentinel2C
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
                                                     m_sentinel_sample);
     } else if (m_satelite_type == sad::SENTINEL_2B) {
+        m_sat_comparator->set_satellite_responses("sentinel2B");  // sentinel2C
+        m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
+                                                    m_sentinel_sample);
+    } else if (m_satelite_type == sad::SENTINEL_2C) {
         m_sat_comparator->set_satellite_responses("sentinel2C");  // sentinel2C
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
                                                     m_sentinel_sample);
@@ -2593,6 +2611,8 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
             SLOT(openSentinel2AHeaderData()));
     connect(ui->actionSentinel_2B, SIGNAL(triggered()), this,
             SLOT(openSentinel2BHeaderData()));
+    connect(ui->actionSentinel_2C, SIGNAL(triggered()), this,
+            SLOT(openSentinel2CHeaderData()));
     connect(ui->action_LoadTimeRow, SIGNAL(triggered()), this,
             SLOT(openTimeRowData()));
     connect(ui->action_spectral_indicies, &QAction::triggered, this,

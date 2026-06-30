@@ -105,6 +105,9 @@ private slots:
     //! Слот для открытия данных Sentinel 2B
     void openSentinel2BHeaderData();
 
+    //! Слот для открытия данных Sentinel 2C
+    void openSentinel2CHeaderData();
+
     //! Слот для открытия данных Bekas
     void openBekasSpectraData();
 
