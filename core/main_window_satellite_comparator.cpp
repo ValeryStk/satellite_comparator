@@ -127,6 +127,14 @@ uint16_t *dataCloudMask2 = nullptr;
 
 namespace {
 
+QColor randomNiceColor() {
+    int h = QRandomGenerator::global()->bounded(360);
+    int s = QRandomGenerator::global()->bounded(160, 256);
+    int v = QRandomGenerator::global()->bounded(180, 256);
+
+    return QColor::fromHsv(h, s, v);
+}
+
 void downsample_uint16(const uint16_t *input, uint16_t *output, const int width,
                        const int height) {
     int outWidth = width / 2;
@@ -515,6 +523,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
             m_time_row[i] = getDataForSentinel_TimeRow(
                 directory.absolutePath() + "/" + subdirs[i] + "/MTD_MSIL2A.xml",
                 sad::SENTINEL_2A, sentinel_metadata, gt);
+
             /*sad::QA_MASK_DATA qa_mask;
             qa_mask.file_name = directory.absolutePath() + "/" + subdirs[i]+"/"
             +  subdirs[i] + "_QA_PIXEL.TIF"; qa_mask.data =
@@ -526,6 +535,9 @@ void MainWindowSatelliteComparator::openTimeRowData() {
                 sentinel_metadata.image_attributes.date_acquired);
             qDebug() << "Date time row stamp: "
                      << sentinel_metadata.image_attributes.date_acquired;
+            qDebug() << QString(
+                            "######## load image^. Number of its bands = %1")
+                            .arg(m_time_row[i].size());
             m_time_row_geo[i] = gt;
         }
     }
@@ -538,8 +550,9 @@ void MainWindowSatelliteComparator::openTimeRowData() {
     };  //
     for (int i = 0; i < m_preview_plot->graphCount(); i++) {
         if (i < distinctColors.size()) {
-            m_preview_plot->graph(i)->setPen(QColor(distinctColors[i]));
+            distinctColors.append(randomNiceColor());
         }
+        m_preview_plot->graph(i)->setPen(QColor(distinctColors[i]));
     }
     m_preview_plot->legend->setVisible(false);
     QStringList gui_available_bands;
@@ -575,7 +588,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
         int r = distinctColors[i].red();
         int g = distinctColors[i].green();
         int b = distinctColors[i].blue();
-        QIcon icon = iut::createIcon(r, g, b, QSize(50, 50));
+        QIcon icon = iut::createIcon(r, g, b, QSize(25, 25));
 
         QWidget *container = new QWidget(viewer);
 
@@ -583,19 +596,19 @@ void MainWindowSatelliteComparator::openTimeRowData() {
 
         // Иконка
         QLabel *iconLabel = new QLabel;
-        iconLabel->setPixmap(icon.pixmap(50, 50));
+        iconLabel->setPixmap(icon.pixmap(25, 25));
         layout->addWidget(iconLabel);
 
         // Текст
         QLabel *textLabel = new QLabel(date);
-        QFont font("Arial", 16);
+        QFont font("Arial", 12);
         textLabel->setFont(font);
         textLabel->setStyleSheet("color: white;");
         layout->addWidget(textLabel);
 
         // Стиль контейнера: полупрозрачный тёмный фон
         container->setStyleSheet(
-            "background-color: rgba(0, 0, 0, 150); border-radius: 5px;");
+            "background-color: rgba(0, 0, 0, 150); border-radius: 3px;");
         container->setLayout(layout);
     }
 
@@ -1262,7 +1275,6 @@ void MainWindowSatelliteComparator::updateImage() {
             ui->widget_image_saturation_light_corrector->getCoefSaturation();
         double coef_light =
             ui->widget_image_saturation_light_corrector->getCoefLight();
-        if (coef_light == 1 && coef_saturation == 1) return;
         QImage imgNew =
             createModifiedImage(m_satellite_image, coef_saturation, coef_light);
         auto pixmap = QPixmap::fromImage(imgNew);
@@ -3478,7 +3490,7 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
         red_band_index = 3;
         nir_band_index = 4;
         swir1_index = 5;
-    } else if (sad::TIME_ROW_SENTINEL_COMBINATION) {
+    } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
         red_band_index = 3;
         nir_band_index = 6;
         swir1_index = 9;
@@ -3494,6 +3506,14 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
                           (int)points[i].x()];
             double one_ksy_value = m_time_row[i][j].reflectance_mult * value +
                                    m_time_row[i][j].reflectance_add;
+
+            if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
+                one_ksy_value = m_time_row[i][j].reflectance_mult * value +
+                                m_time_row[i][j].reflectance_add;
+            } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
+                one_ksy_value = value / 10000.0;
+            }
+
             if (one_ksy_value == 0) continue;
             if (j == red_band_index) {
                 values.RED_BAND = one_ksy_value;
