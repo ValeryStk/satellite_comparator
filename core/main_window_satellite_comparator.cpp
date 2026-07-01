@@ -262,6 +262,16 @@ sam::BandIndicesValues getBandsValues(const QVector<double> &waves,
             swir2_cw = sad::sentinel_2B_central_wave_lengths[bi.swir2];
             swir3_cw = sad::sentinel_2B_central_wave_lengths[bi.swir3];
             break;
+        case sad::SENTINEL_2C:
+            blue_cw = sad::sentinel_2C_central_wave_lengths[bi.blue];
+            green_cw = sad::sentinel_2C_central_wave_lengths[bi.green];
+            red_cw = sad::sentinel_2C_central_wave_lengths[bi.red];
+            nir1_cw = sad::sentinel_2C_central_wave_lengths[bi.nir1];
+            nir2_cw = sad::sentinel_2C_central_wave_lengths[bi.nir2];
+            swir1_cw = sad::sentinel_2C_central_wave_lengths[bi.swir1];
+            swir2_cw = sad::sentinel_2C_central_wave_lengths[bi.swir2];
+            swir3_cw = sad::sentinel_2C_central_wave_lengths[bi.swir3];
+            break;
         case sad::TIME_ROW_LANDSAT_COMBINATION:
             break;
         case sad::TIME_ROW_SENTINEL_COMBINATION:
