@@ -1794,7 +1794,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(
         if (m_points[i].x() >= xSize || m_points[i].x() < 0) return;
         if (m_points[i].y() >= ySize || m_points[i].y() < 0) return;
     }
-
+    QVector<double> waves_vi_indexes;
+    QVector<double> values_vi_indexes;
     QVector<sad::BANDS_FOR_CALCULATING_INDEXES> data_indexes;
     for (int i = 0; i < m_points.size(); ++i) {
         m_viewers[i]->centerOnPoint(m_points[i]);
@@ -1846,6 +1847,10 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(
         m_preview_plot->graph(i)->setData(waves, one_ksy);
         m_preview_plot->rescaleAxes(true);
         m_preview_plot->replot();
+        if (i == 0) {
+            waves_vi_indexes = waves;
+            values_vi_indexes = one_ksy;
+        }
     }
 
     QVector<double> ndvi_time_row;
@@ -1870,6 +1875,20 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(
     qDebug()<<"----------------------------------";*/
     // qDebug()<<"ndvi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
     // qDebug()<<"ndwi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
+    if (!is_landsat) {
+        auto sat_type = sad::SATELLITE_TYPE::SENTINEL_2A;
+        auto bv = getBandsValues(waves_vi_indexes, values_vi_indexes, sat_type);
+
+        double dswi = sam::calculateDSWI(bv.nir1, bv.green, bv.swir2, bv.red);
+        double evi = sam::calculateEVI(bv.nir1, bv.red, bv.blue);
+        double ndvi = sam::calculateNDVI(bv.nir1, bv.red);
+        double swvi = sam::calculateSWVI(bv.nir1, bv.swir2);
+
+        m_spectralWidget->setIndices({{sam::kSpectralIndexNDVI, ndvi},
+                                      {{sam::kSpectralIndexSWVI}, {swvi}},
+                                      {{sam::kSpectralIndexDSWI}, {dswi}},
+                                      {sam::kSpectralIndexEVI, evi}});
+    }
 }
 
 uint16_t *MainWindowSatelliteComparator::readTiff(const QString &path,
