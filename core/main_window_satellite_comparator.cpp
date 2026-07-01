@@ -3480,7 +3480,7 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
         red_band_index = 3;
         nir_band_index = 4;
         swir1_index = 5;
-    } else if (sad::TIME_ROW_SENTINEL_COMBINATION) {
+    } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
         red_band_index = 3;
         nir_band_index = 6;
         swir1_index = 9;
@@ -3496,6 +3496,14 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
                           (int)points[i].x()];
             double one_ksy_value = m_time_row[i][j].reflectance_mult * value +
                                    m_time_row[i][j].reflectance_add;
+
+            if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
+                one_ksy_value = m_time_row[i][j].reflectance_mult * value +
+                                m_time_row[i][j].reflectance_add;
+            } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
+                one_ksy_value = value / 10000.0;
+            }
+
             if (one_ksy_value == 0) continue;
             if (j == red_band_index) {
                 values.RED_BAND = one_ksy_value;
