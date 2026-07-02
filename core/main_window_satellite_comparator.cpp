@@ -326,6 +326,95 @@ void copyVectorsToClipboard(const double latitude, const double longitude,
 
 }  // end of namespace
 
+// ─── Вспомогательные структуры/функции ────────────────────────────────────
+
+struct GradientFitResult {
+    double G = 0.0;   // наклон (Gradient)
+    double b = 0.0;   // сдвиг
+    double R2 = 0.0;  // коэффициент детерминации
+    bool valid = false;
+};
+
+// Линейная регрессия y = G*x + b методом МНК
+// x — Julian Days (double), y — значения NDVI или NDWI
+static GradientFitResult fitLinear(const QVector<double> &x,
+                                   const QVector<double> &y) {
+    GradientFitResult res;
+    int n = x.size();
+    if (n < 3) return res;  // нужно минимум 3 точки
+
+    double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    for (int i = 0; i < n; ++i) {
+        sumX += x[i];
+        sumY += y[i];
+        sumXY += x[i] * y[i];
+        sumX2 += x[i] * x[i];
+    }
+    double denom = n * sumX2 - sumX * sumX;
+    if (qAbs(denom) < 1e-12) return res;
+
+    res.G = (n * sumXY - sumX * sumY) / denom;
+    res.b = (sumY - res.G * sumX) / n;
+
+    // R²
+    double meanY = sumY / n;
+    double ssTot = 0, ssRes = 0;
+    for (int i = 0; i < n; ++i) {
+        double diff = y[i] - meanY;
+        ssTot += diff * diff;
+        double err = y[i] - (res.G * x[i] + res.b);
+        ssRes += err * err;
+    }
+    res.R2 = (ssTot > 1e-12) ? (1.0 - ssRes / ssTot) : 0.0;
+    res.valid = true;
+    return res;
+}
+
+// Класс усыхания по градиенту NDWI согласно таблице 3.2.1
+// Возвращает 0 — нет деградации (DP0), 1–4 — I–IV класс, -1 — не определено
+static int classifyByNdwiGradient(double G, double R2) {
+    if (R2 < 0.6) return -1;  // R² слишком мал — не надёжно
+
+    // Таблица из 3.2.1 для NDWI (правый столбец)
+    if (G >= -0.00005) return 0;  // DP0 — нет усыхания
+    if (G >= -0.00010 && G < -0.00005) return 1;  // класс I
+    if (G >= -0.00020 && G < -0.00010) return 2;  // класс II
+    if (G >= -0.00040 && G < -0.00020) return 3;  // класс III
+    if (G < -0.00040) return 4;                   // класс IV
+    return -1;
+}
+
+// Класс усыхания по градиенту NDVI (левый столбец таблицы 3.2.1)
+static int classifyByNdviGradient(double G, double R2) {
+    if (R2 < 0.6) return -1;
+
+    if (G >= -0.04) return 0;               // DP0
+    if (G >= -0.07 && G < -0.04) return 1;  // класс I
+    if (G >= -0.15 && G < -0.07)
+        return 2;  // класс II  (но II–III перекрываются)
+    if (G >= -0.30 && G < -0.15) return 3;  // класс III
+    if (G < -0.30) return 4;                // класс IV–V
+    return -1;
+}
+
+// Цвета классов по DP (аналог таблицы рис. 3.2)
+static QColor dpClassColor(int dpClass) {
+    switch (dpClass) {
+        case 0:
+            return QColor(0, 128, 0);  // зелёный   — норма
+        case 1:
+            return QColor(144, 238, 144);  // светло-зелёный — I
+        case 2:
+            return QColor(154, 205, 50);  // жёлто-зелёный  — II
+        case 3:
+            return QColor(255, 215, 0);  // жёлтый   — III
+        case 4:
+            return QColor(205, 133, 63);  // оранжево-коричневый — IV
+        default:
+            return QColor(0, 0, 0, 0);  // прозрачный — не определено
+    }
+}
+
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindowSatelliteComparator),
@@ -2572,6 +2661,8 @@ void MainWindowSatelliteComparator::setUpToolWidget() {
             this, SLOT(send_roi_spectrs_to_matlab(const QString)));
     connect(m_layer_roi_list, SIGNAL(createTimeRowGradient(const QString)),
             this, SLOT(calculate_time_row_gradient(const QString)));
+    connect(m_layer_roi_list, SIGNAL(createTimeRowGradient321(const QString)),
+            this, SLOT(calculate_time_row_gradient_321(const QString)));
     connect(m_layer_roi_list, SIGNAL(changeDetectionRegion(const QString)),
             this, SLOT(runChangeDetectionMethod(const QString)));
 
@@ -3499,6 +3590,159 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor &color) {
                     .arg(minutes)
                     .arg(seconds)
                     .arg(milliseconds);
+}
+
+void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
+    const QString &roiId) {
+    if (m_time_row.empty()) return;
+
+    // --- 1. Проверяем, что есть даты (Julian Days) ---
+    if (m_time_row_dates_unix_time.first.size() != m_time_row.size()) {
+        qWarning() << "Нет временных меток для временного ряда";
+        return;
+    }
+
+    // Переводим unix-секунды → юлианские дни от первой даты ряда
+    // x[i] = (unix_i - unix_0) / 86400  (дни с начала ряда)
+    const int N = m_time_row.size();
+    QVector<double> julianDays(N);
+    const qint64 t0 = m_time_row_dates_unix_time.first[0];
+    for (int i = 0; i < N; ++i) {
+        julianDays[i] =
+            static_cast<double>(m_time_row_dates_unix_time.first[i] - t0) /
+            86400.0;
+    }
+
+    // --- 2. Определяем размер выходного изображения ---
+    int xSize = INT_MAX;
+    int ySize = INT_MAX;
+    for (int i = 0; i < N; ++i) {
+        if (xSize > m_time_row[i][0].width) xSize = m_time_row[i][0].width;
+        if (ySize > m_time_row[i][0].height) ySize = m_time_row[i][0].height;
+    }
+
+    // --- 3. Получаем пиксели внутри ROI ---
+    auto roi_item = ui->graphicsView_satellite_image->getPolygonById(roiId);
+    if (!roi_item) return;
+
+    QRectF boundingRect =
+        roi_item->mapToScene(roi_item->boundingRect()).boundingRect();
+    QPolygonF polygon = roi_item->mapToScene(roi_item->polygon());
+
+    QVector<QPointF> insidePoints;
+    for (int x = boundingRect.left(); x <= boundingRect.right(); ++x) {
+        for (int y = boundingRect.top(); y <= boundingRect.bottom(); ++y) {
+            if (polygon.containsPoint({(double)x, (double)y}, Qt::OddEvenFill))
+                insidePoints.append({(double)x, (double)y});
+        }
+    }
+    if (insidePoints.isEmpty()) return;
+
+    // --- 4. Выделяем слой ---
+    auto new_layer = new uchar[xSize * ySize * 4];
+    std::memset(new_layer, 0, xSize * ySize * 4);
+
+    const bool is_landsat =
+        (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION);
+    const int red_band = is_landsat ? 3 : 3;
+    const int nir_band = is_landsat ? 4 : 6;
+    const int swir_band = is_landsat ? 5 : 9;
+
+    // --- 5. Цикл по пикселям ---
+    for (const QPointF &pt : insidePoints) {
+        int px = (int)pt.x();
+        int py = (int)pt.y();
+        if (px < 0 || px >= xSize || py < 0 || py >= ySize) continue;
+
+        double latitude = 0.0, longitude = 0.0;
+        getGeoCoordinates(px, py, m_time_row_geo[0], latitude, longitude,
+                          false);
+
+        // Получаем координаты пикселя в каждом снимке ряда
+        QVector<QPointF> pts(N);
+        pts[0] = {(double)px, (double)py};
+        bool anyBad = false;
+        for (int i = 1; i < N; ++i) {
+            pts[i] = geoToPixel(latitude, longitude, m_time_row_geo[i]);
+            if (pts[i].x() < 0 || pts[i].x() >= xSize || pts[i].y() < 0 ||
+                pts[i].y() >= ySize) {
+                anyBad = true;
+                break;
+            }
+        }
+        if (anyBad) continue;
+
+        // Собираем временной ряд NDVI и NDWI
+        QVector<double> ndvi_series, ndwi_series, x_valid;
+        for (int i = 0; i < N; ++i) {
+            int bx = (int)pts[i].x();
+            int by = (int)pts[i].y();
+
+            auto getValue = [&](int bandIdx) -> double {
+                auto &bd = m_time_row[i][bandIdx];
+                uint16_t raw = bd.data[by * bd.width + bx];
+                if (is_landsat)
+                    return bd.reflectance_mult * raw + bd.reflectance_add;
+                else
+                    return raw / 10000.0;
+            };
+
+            double red = getValue(red_band);
+            double nir = getValue(nir_band);
+            double swir = getValue(swir_band);
+
+            // Фильтрация невалидных значений
+            if (red <= 0 || nir <= 0 || swir <= 0) continue;
+            if (red > 1 || nir > 1 || swir > 1) continue;
+
+            double ndvi = sam::calculateNDVI(nir, red);
+            double ndwi =
+                sam::calculateSWVI(nir, swir);  // NDWI = (NIR-SWIR)/(NIR+SWIR)
+
+            ndvi_series.push_back(ndvi);
+            ndwi_series.push_back(ndwi);
+            x_valid.push_back(julianDays[i]);
+        }
+
+        if (x_valid.size() < 3) continue;  // недостаточно точек
+
+        // --- 6. Регрессия по NDWI (первичный критерий) ---
+        auto fitNdwi = fitLinear(x_valid, ndwi_series);
+        auto fitNdvi = fitLinear(x_valid, ndvi_series);
+
+        // Выбираем класс: приоритет — NDWI (точнее для усыхания)
+        int dpClass = -1;
+        if (fitNdwi.valid) {
+            dpClass = classifyByNdwiGradient(fitNdwi.G, fitNdwi.R2);
+        }
+        // Если NDWI не дал надёжного результата — пробуем NDVI
+        if (dpClass < 0 && fitNdvi.valid) {
+            dpClass = classifyByNdviGradient(fitNdvi.G, fitNdvi.R2);
+        }
+        if (dpClass < 0) continue;  // не определено — пиксель прозрачный
+
+        // --- 7. Закрашиваем пиксель ---
+        QColor color = dpClassColor(dpClass);
+        int offset = (py * xSize + px) * 4;
+        new_layer[offset] = color.red();
+        new_layer[offset + 1] = color.green();
+        new_layer[offset + 2] = color.blue();
+        new_layer[offset + 3] = 200;  // полупрозрачность
+    }
+
+    // --- 8. Добавляем слой на сцену ---
+    auto cleanup = [](void *info) { delete[] static_cast<uchar *>(info); };
+    auto img = QImage(new_layer, xSize, ySize, xSize * 4,
+                      QImage::Format_RGBA8888, cleanup, new_layer);
+    auto pixmap = QPixmap::fromImage(img);
+    auto new_image_item = new QGraphicsPixmapItem(pixmap);
+    new_image_item->setZValue(
+        ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+    m_scene->addItem(new_image_item);
+
+    m_layers_search_result_items.insert("GRADIENT_321_MAP", new_image_item);
+    m_layer_gui_list->addItemToList("GRADIENT_321_MAP", "Градиент 3.2.1",
+                                    QColor(Qt::darkGreen));
 }
 
 sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(

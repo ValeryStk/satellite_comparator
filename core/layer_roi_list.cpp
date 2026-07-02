@@ -15,6 +15,7 @@ QMenu *LayerRoiList::createContextMenu() {
     base_menu->addAction("Изменить цвет");
     base_menu->addAction("Среднее арифметическое");
     base_menu->addAction("Построить градиент усыхания");
+    base_menu->addAction("Градиент усыхания v2");  // ← добавить
     base_menu->addAction("Анализ спектров");
     base_menu->addAction("Метод 'Change detection'");
     return base_menu;
@@ -35,6 +36,8 @@ void LayerRoiList::handle_other_contextAction(const QString &actionId,
         emit roiPolygonAverage(id);
     } else if (actionId == "Построить градиент усыхания") {
         emit createTimeRowGradient(id);
+    } else if (actionId == "Градиент усыхания v2") {
+        emit createTimeRowGradient321(id);
     } else if (actionId == "Анализ спектров") {
         emit polygonForMatlabSelected(id);
     } else if (actionId == "Метод 'Change detection'") {
