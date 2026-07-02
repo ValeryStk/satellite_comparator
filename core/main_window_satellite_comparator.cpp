@@ -1984,7 +1984,8 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor &color) {
         ySize = m_landsat9_bands_image_sizes->second;
         sample = m_landsat9_sample;
     } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
-               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2C) {
         if (m_sentinel_data.empty()) return;  // MESSAGE WARNING
         xSize = m_sentinel_data[0].width;
         ySize = m_sentinel_data[0].height;
@@ -2460,7 +2461,8 @@ void MainWindowSatelliteComparator::processLayer(uchar *layer, int xSize,
                 m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
                 ksy = getLandsat8Ksy(x, y);
             } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
-                       m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+                       m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B ||
+                       m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2C) {
                 auto w_k = getSentinelKsy(x, y);
                 ksy = w_k.second;
             }
