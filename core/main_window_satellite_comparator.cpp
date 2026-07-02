@@ -3738,11 +3738,23 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
     auto new_image_item = new QGraphicsPixmapItem(pixmap);
     new_image_item->setZValue(
         ui->graphicsView_satellite_image->getMaxZValue(m_scene));
-    m_scene->addItem(new_image_item);
+    QString layerId = QString("GRADIENT_321_%1").arg(roiId);
+    QString layerName = QString("Градиент 3.2.1 [%1]").arg(roiId);
 
-    m_layers_search_result_items.insert("GRADIENT_321_MAP", new_image_item);
-    m_layer_gui_list->addItemToList("GRADIENT_321_MAP", "Градиент 3.2.1",
-                                    QColor(Qt::darkGreen));
+    // если для этого ROI уже был такой слой — сначала удалить старый
+    if (m_layers_search_result_items.contains(layerId)) {
+        auto oldItem = m_layers_search_result_items.value(layerId);
+        if (oldItem) {
+            m_scene->removeItem(oldItem);
+            delete oldItem;
+        }
+        m_layers_search_result_items.remove(layerId);
+        m_layer_gui_list->removeItemList(layerId);
+    }
+
+    m_scene->addItem(new_image_item);
+    m_layers_search_result_items.insert(layerId, new_image_item);
+    m_layer_gui_list->addItemToList(layerId, layerName, QColor(Qt::darkGreen));
 }
 
 sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
@@ -3982,8 +3994,8 @@ bool MainWindowSatelliteComparator::saveSentinelToGeoTiff(
 
     // 5. Установка ПРОЕКЦИИ (WGS84 UTM)
     OGRSpatialReference oSRS;
-    // Предполагаем северное полушарие (1), так как это стандарт для большинства
-    // данных Sentinel
+    // Предполагаем северное полушарие (1), так как это стандарт для
+    // большинства данных Sentinel
     oSRS.SetUTM(static_cast<int>(gt.utmZone), 1);
     oSRS.SetWellKnownGeogCS("WGS84");
 
@@ -4303,8 +4315,8 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
     QJsonArray responses;
     jsn::getJsonObjectFromFile(":/res/sd.json", jo_source);
     QString str = QJsonDocument(jo_source).toJson(QJsonDocument::Indented);
-    qDebug() << "load external spectr from clipboard...." << jo_source.keys();
-    satellites = jo_source["satellites"].toObject();
+    qDebug() << "load external spectr from clipboard...." <<
+jo_source.keys(); satellites = jo_source["satellites"].toObject();
 
     QVector<QVector<double>> result;
     const QString path =
@@ -4338,9 +4350,8 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
         for (const QString &s : qAsConst(parts)) {
             bool ok = false;
             double value = s.toDouble(&ok);
-            if (!ok) continue;  // или return result; если нужно строгое чтение
-            row.push_back(value);
-            jarr.append(value);
+            if (!ok) continue;  // или return result; если нужно строгое
+чтение row.push_back(value); jarr.append(value);
         }
 
         if (!row.isEmpty()) {
@@ -4359,8 +4370,8 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
     temp["central_waves"] = central_waves;
     satellites["sentinel2C"] = temp;
     jo_source["satellites"] = satellites;
-    jsn::saveJsonObjectToFile(QApplication::applicationDirPath() + "/test.json",
-                              jo_source);*/
+    jsn::saveJsonObjectToFile(QApplication::applicationDirPath() +
+"/test.json", jo_source);*/
     // Очищаем векторы перед записью новых данных
     QVector<double> waves;
     QVector<double> valuesw;
@@ -4386,7 +4397,8 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
         stream.readLine();
     }
 
-    // 4. Принудительно используем точку '.' как разделитель дроби (C-локаль)
+    // 4. Принудительно используем точку '.' как разделитель дроби
+    // (C-локаль)
     QLocale cLocale(QLocale::C);
     bool okWave = false;
     bool okVal = false;
