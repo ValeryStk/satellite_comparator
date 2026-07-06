@@ -204,6 +204,12 @@ private:
     //! программы
     Ui::MainWindowSatelliteComparator *ui;
 
+    //! \brief Для временного ряда по пороговым значениям индексов.
+    //! indexType: 0=NDVI, 1=NDWI
+    QGraphicsPixmapItem *buildGradientMask(const QVector<QPointF> &insidePoints,
+                                           const QVector<double> &julianDays,
+                                           int xSize, int ySize, int indexType);
+
     //! \brief отображение RGB. Вызывается из change_bands_and_show_image
     void showRgbImage(const uint16_t *r, const uint16_t *g, const uint16_t *b,
                       int width, int height, double lowPct = 0.02,
