@@ -3628,24 +3628,32 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
 
     if (insidePoints.isEmpty()) return;
 
+    // ── Удаляем старые слои для этого ROI, если были ──────────────────
+    const QString ndviKey = "GRADIENT_321_NDVI_" + roiId;
+    const QString ndwiKey = "GRADIENT_321_NDWI_" + roiId;
+
+    for (const QString &key : {ndviKey, ndwiKey}) {
+        if (m_layers_search_result_items.contains(key)) {
+            m_layer_gui_list->removeItemList(key);
+        }
+    }
+
     // ── Строим два независимых слоя ──────────────────────────────────────
 
     // 1. Маска по NDVI
     auto *ndvi_item = buildGradientMask(insidePoints, julianDays, xSize, ySize,
                                         /*indexType=*/0);
     m_scene->addItem(ndvi_item);
-    const QString ndviKey = "GRADIENT_321_NDVI_" + roiId;
     m_layers_search_result_items.insert(ndviKey, ndvi_item);
-    m_layer_gui_list->addItemToList(ndviKey, "Градиент NDVI 3.2.1",
+    m_layer_gui_list->addItemToList(ndviKey, "Градиент NDVI",
                                     QColor(34, 139, 34));  // лесной зелёный
 
     // 2. Маска по NDWI
     auto *ndwi_item = buildGradientMask(insidePoints, julianDays, xSize, ySize,
                                         /*indexType=*/1);
     m_scene->addItem(ndwi_item);
-    const QString ndwiKey = "GRADIENT_321_NDWI_" + roiId;
     m_layers_search_result_items.insert(ndwiKey, ndwi_item);
-    m_layer_gui_list->addItemToList(ndwiKey, "Градиент NDWI 3.2.1",
+    m_layer_gui_list->addItemToList(ndwiKey, "Градиент NDWI",
                                     QColor(30, 144, 255));  // синий
 }
 
