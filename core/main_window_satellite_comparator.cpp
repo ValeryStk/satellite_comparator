@@ -2376,12 +2376,14 @@ void MainWindowSatelliteComparator::hide_layer(const QString &id) {
 }
 
 void MainWindowSatelliteComparator::remove_scene_layer(const QString &id) {
+    qDebug() << "хотим удалить " << id;
     auto image_item = m_layers_search_result_items.value(id);
 
     if (image_item) {
         m_scene->removeItem(image_item);
         delete image_item;
         m_layers_search_result_items.remove(id);
+        qDebug() << "удалили " << id;
     }
 }
 
@@ -3634,7 +3636,7 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
 
     for (const QString &key : {ndviKey, ndwiKey}) {
         if (m_layers_search_result_items.contains(key)) {
-            m_layer_gui_list->removeItemList(key);
+            m_layer_gui_list->removeItemList(key);  // сцена и map
         }
     }
 
