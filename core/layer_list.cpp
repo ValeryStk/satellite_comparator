@@ -22,21 +22,20 @@ LayerList::LayerList(QWidget* parent) : QListWidget(parent) {
     setSelectionMode(QAbstractItemView::SingleSelection);
     connect(this, SIGNAL(customContextMenuRequested(const QPoint)), this,
             SLOT(showContextMenu(const QPoint)));
+    connect(this, &QListWidget::itemChanged, this,
+            [this](QListWidgetItem* item) { mayBeHideMayBeShow(item); });
 }
 
 void LayerList::addItemToList(const QString& itemName, const QString& toolTip,
-                              const QColor& color) {
+                              const QColor& color, Qt::CheckState checkState) {
     QListWidgetItem* item = new QListWidgetItem(itemName);
     item->setFlags(item->flags() | Qt::ItemIsEditable |
-                   Qt::ItemIsUserCheckable |
-                   Qt::ItemIsEnabled);  // Разрешаем редактирование
-    item->setCheckState(Qt::Checked);
+                   Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
     item->setData(Qt::UserRole, itemName);
     addItem(item);
     item->setToolTip(toolTip);
     item->setIcon(iut::createIcon(color.red(), color.green(), color.blue()));
-    connect(this, &QListWidget::itemChanged, this,
-            [this](QListWidgetItem* item) { mayBeHideMayBeShow(item); });
+    item->setCheckState(checkState);
 }
 
 void LayerList::removeItemList(const QString& item) { emit removeItem(item); }

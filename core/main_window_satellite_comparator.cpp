@@ -669,6 +669,19 @@ void MainWindowSatelliteComparator::openTimeRowData() {
             //qDebug()<<"mask_widht -- mask_height:
             "<<qa_mask.width<<qa_mask.height; m_time_row_qa_mask[i] = qa_mask;*/
 
+            sad::QA_MASK_DATA qa_mask;
+            const QString sceneRoot =
+                directory.absolutePath() + "/" + subdirs[i];
+
+            qa_mask.file_name = sceneRoot;
+            qa_mask.data =
+                loadMaskForSentinel(qa_mask.width, qa_mask.height, sceneRoot);
+
+            qDebug() << "mask_widht -- mask_height: " << qa_mask.width
+                     << qa_mask.height;
+
+            m_time_row_qa_mask[i] = qa_mask;
+
             date_time_row_stamps.push_back(
                 sentinel_metadata.image_attributes.date_acquired);
             qDebug() << "Date time row stamp: "
@@ -3550,29 +3563,28 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(
 
 bool MainWindowSatelliteComparator::isDataCloudShadow_OK(
     QVector<QPointF> &points) {
-    if (m_time_row_qa_mask.empty()) return true;
     if (points.empty()) return false;
+    if (m_time_row_qa_mask.empty()) return true;
     if (points.size() != m_time_row_qa_mask.size()) return false;
 
     constexpr uint16_t SENTINEL_CLOUD_THRESHOLD = 20;
 
     for (int i = 0; i < points.size(); ++i) {
-        if (!m_time_row_qa_mask[i].data) return false;
-        if (m_time_row_qa_mask[i].width <= 0 ||
-            m_time_row_qa_mask[i].height <= 0)
-            return false;
+        const auto &qa = m_time_row_qa_mask[i];
+
+        // Если маски для конкретной даты нет — не валим весь пиксель.
+        if (!qa.data || qa.width <= 0 || qa.height <= 0) {
+            continue;
+        }
 
         const int px = static_cast<int>(points[i].x());
         const int py = static_cast<int>(points[i].y());
 
         if (px < 0 || py < 0) return false;
-        if (px >= m_time_row_qa_mask[i].width ||
-            py >= m_time_row_qa_mask[i].height) {
-            return false;
-        }
+        if (px >= qa.width || py >= qa.height) return false;
 
-        const int index = py * m_time_row_qa_mask[i].width + px;
-        const uint16_t maskValue = m_time_row_qa_mask[i].data[index];
+        const int index = py * qa.width + px;
+        const uint16_t maskValue = qa.data[index];
 
         if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
             const bool isFill = maskValue & (1 << 0);
@@ -3583,7 +3595,7 @@ bool MainWindowSatelliteComparator::isDataCloudShadow_OK(
                 return false;
             }
         } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
-            // MSK_CLDPRB: 0..100
+            // Для Sentinel предполагаем probability-mask 0..100.
             if (maskValue >= SENTINEL_CLOUD_THRESHOLD) {
                 return false;
             }
@@ -4497,7 +4509,7 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
             m_layers_search_result_items.insert(ndviKey, item);
             m_layer_gui_list->addItemToList(
                 ndviKey, QString("Градиент NDVI 3.2.1 [%1]").arg(roiId),
-                QColor(34, 139, 34));
+                QColor(34, 139, 34), Qt::Unchecked);
         }
     }
 
@@ -4507,7 +4519,7 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
             m_layers_search_result_items.insert(ndwiKey, item);
             m_layer_gui_list->addItemToList(
                 ndwiKey, QString("Градиент NDWI 3.2.1 [%1]").arg(roiId),
-                QColor(30, 144, 255));
+                QColor(30, 144, 255), Qt::Unchecked);
         }
     }
 
