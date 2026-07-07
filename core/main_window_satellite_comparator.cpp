@@ -3550,24 +3550,46 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(
 
 bool MainWindowSatelliteComparator::isDataCloudShadow_OK(
     QVector<QPointF> &points) {
-    if (m_time_row_qa_mask.empty()) return false;
+    if (m_time_row_qa_mask.empty()) return true;
     if (points.empty()) return false;
-    // if(points.size() != m_time_row_qa_mask.size())return false;
+    if (points.size() != m_time_row_qa_mask.size()) return false;
+
+    constexpr uint16_t SENTINEL_CLOUD_THRESHOLD = 20;
 
     for (int i = 0; i < points.size(); ++i) {
-        auto index = ((int)points[i].y() * m_time_row_qa_mask[i].width) +
-                     (int)points[i].x();
-        auto max_size =
-            m_time_row_qa_mask[i].height * m_time_row_qa_mask[i].width;
-        if (max_size < index) return false;
-        uint16_t mask_value = m_time_row_qa_mask[i].data[index];
-        bool isFill = mask_value & (1 << 0);
-        if (isFill) return false;
-        bool isCloud = mask_value & (1 << 3);
-        if (isCloud) return false;
-        bool isShadow = mask_value & (1 << 4);
-        if (isShadow) return false;
+        if (!m_time_row_qa_mask[i].data) return false;
+        if (m_time_row_qa_mask[i].width <= 0 ||
+            m_time_row_qa_mask[i].height <= 0)
+            return false;
+
+        const int px = static_cast<int>(points[i].x());
+        const int py = static_cast<int>(points[i].y());
+
+        if (px < 0 || py < 0) return false;
+        if (px >= m_time_row_qa_mask[i].width ||
+            py >= m_time_row_qa_mask[i].height) {
+            return false;
+        }
+
+        const int index = py * m_time_row_qa_mask[i].width + px;
+        const uint16_t maskValue = m_time_row_qa_mask[i].data[index];
+
+        if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
+            const bool isFill = maskValue & (1 << 0);
+            const bool isCloud = maskValue & (1 << 3);
+            const bool isShadow = maskValue & (1 << 4);
+
+            if (isFill || isCloud || isShadow) {
+                return false;
+            }
+        } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
+            // MSK_CLDPRB: 0..100
+            if (maskValue >= SENTINEL_CLOUD_THRESHOLD) {
+                return false;
+            }
+        }
     }
+
     return true;
 }
 
@@ -4542,6 +4564,10 @@ GradientMaskResult MainWindowSatelliteComparator::buildGradientClassMap(
             }
         }
         if (anyBad) continue;
+
+        if (!isDataCloudShadow_OK(pts)) {
+            continue;
+        }
 
         QVector<double> indexSeries;
         QVector<double> xValid;
