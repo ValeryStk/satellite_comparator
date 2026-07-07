@@ -25,6 +25,20 @@ class MainWindowSatelliteComparator;
 }
 QT_END_NAMESPACE
 
+// Результат расчета градиентной маски для ROI.
+// classes хранит класс состояния для каждого пикселя:
+// -1 — нет данных / пиксель не рассчитан,
+//  0..4 — класс, определенный по методике 3.2.1.
+struct GradientMaskResult {
+    int xSize = 0;
+    int ySize = 0;
+    QVector<int> classes;  // -1 = нет данных, 0..4 = класс состояния
+
+    bool isValid() const {
+        return xSize > 0 && ySize > 0 && classes.size() == xSize * ySize;
+    }
+};
+
 /*!\n * \\brief Класс главного окна программы\n * Предназначен для отображения
  * загруженных спутниковых данных,\n * управления поиском, визуализации
  * градиентов усыхания для временного ряда,\n * отображения спектральных данных
@@ -204,11 +218,25 @@ private:
     //! программы
     Ui::MainWindowSatelliteComparator *ui;
 
-    //! \brief Для временного ряда по пороговым значениям индексов.
-    //! indexType: 0=NDVI, 1=NDWI
-    QGraphicsPixmapItem *buildGradientMask(const QVector<QPointF> &insidePoints,
-                                           const QVector<double> &julianDays,
-                                           int xSize, int ySize, int indexType);
+    // Строит карту классов для пикселей внутри ROI по временному ряду одного
+    // индекса. Для каждого пикселя собирает временной ряд, считает линейный
+    // тренд и присваивает класс состояния по порогам градиента. indexType: 0 —
+    // NDVI, 1 — NDWI.
+    GradientMaskResult buildGradientClassMap(
+        const QVector<QPointF> &insidePoints, const QVector<double> &julianDays,
+        int xSize, int ySize, int indexType);
+
+    // Формирует итоговую карту классов на основе двух ранее рассчитанных масок:
+    // NDVI и NDWI.
+    GradientMaskResult buildCombinedGradientClassMap(
+        const GradientMaskResult &ndviMask, const GradientMaskResult &ndwiMask);
+
+    // Преобразует рассчитанную карту классов в визуальный RGBA-слой и
+    // возвращает готовый QGraphicsPixmapItem для добавления на сцену.
+    // Невалидные пиксели остаются прозрачными.
+    QGraphicsPixmapItem *buildGradientMaskItem(
+        const GradientMaskResult &mask,
+        const QColor &layerColorHint = QColor());
 
     //! \brief отображение RGB. Вызывается из change_bands_and_show_image
     void showRgbImage(const uint16_t *r, const uint16_t *g, const uint16_t *b,

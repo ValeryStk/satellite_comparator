@@ -3590,75 +3590,6 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor &color) {
                     .arg(milliseconds);
 }
 
-void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
-    const QString &roiId) {
-    if (m_time_row.empty()) return;
-
-    const int N = m_time_row.size();
-    if (m_time_row_dates_unix_time.first.size() != N) {
-        qWarning() << "Нет временных меток для временного ряда";
-        return;
-    }
-
-    // Julian Days от первой даты ряда
-    QVector<double> julianDays(N);
-    const qint64 t0 = m_time_row_dates_unix_time.first[0];
-    for (int i = 0; i < N; ++i)
-        julianDays[i] =
-            static_cast<double>(m_time_row_dates_unix_time.first[i] - t0) /
-            86400.0;
-
-    // Размер изображения — минимальный общий
-    int xSize = INT_MAX, ySize = INT_MAX;
-    for (int i = 0; i < N; ++i) {
-        xSize = qMin(xSize, m_time_row[i][0].width);
-        ySize = qMin(ySize, m_time_row[i][0].height);
-    }
-
-    // Пиксели внутри ROI
-    auto roi_item = ui->graphicsView_satellite_image->getPolygonById(roiId);
-    if (!roi_item) return;
-
-    QPolygonF polygon = roi_item->mapToScene(roi_item->polygon());
-    QRectF bbox = roi_item->mapToScene(roi_item->boundingRect()).boundingRect();
-
-    QVector<QPointF> insidePoints;
-    for (int x = (int)bbox.left(); x <= (int)bbox.right(); ++x)
-        for (int y = (int)bbox.top(); y <= (int)bbox.bottom(); ++y)
-            if (polygon.containsPoint({(double)x, (double)y}, Qt::OddEvenFill))
-                insidePoints.append({(double)x, (double)y});
-
-    if (insidePoints.isEmpty()) return;
-
-    // ── Удаляем старые слои для этого ROI, если были ──────────────────
-    const QString ndviKey = "GRADIENT_321_NDVI_" + roiId;
-    const QString ndwiKey = "GRADIENT_321_NDWI_" + roiId;
-
-    for (const QString &key : {ndviKey, ndwiKey}) {
-        if (m_layers_search_result_items.contains(key)) {
-            m_layer_gui_list->removeItemList(key);  // сцена и map
-        }
-    }
-
-    // ── Строим два независимых слоя ──────────────────────────────────────
-
-    // 1. Маска по NDVI
-    auto *ndvi_item = buildGradientMask(insidePoints, julianDays, xSize, ySize,
-                                        /*indexType=*/0);
-    m_scene->addItem(ndvi_item);
-    m_layers_search_result_items.insert(ndviKey, ndvi_item);
-    m_layer_gui_list->addItemToList(ndviKey, "Градиент NDVI",
-                                    QColor(34, 139, 34));  // лесной зелёный
-
-    // 2. Маска по NDWI
-    auto *ndwi_item = buildGradientMask(insidePoints, julianDays, xSize, ySize,
-                                        /*indexType=*/1);
-    m_scene->addItem(ndwi_item);
-    m_layers_search_result_items.insert(ndwiKey, ndwi_item);
-    m_layer_gui_list->addItemToList(ndwiKey, "Градиент NDWI",
-                                    QColor(30, 144, 255));  // синий
-}
-
 sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
     const QVector<QPointF> &points) {
     int red_band_index = 0;
@@ -4377,98 +4308,6 @@ void MainWindowSatelliteComparator::onStretchParamsChanged() {
     }
 }
 
-QGraphicsPixmapItem *MainWindowSatelliteComparator::buildGradientMask(
-    const QVector<QPointF> &insidePoints, const QVector<double> &julianDays,
-    int xSize, int ySize, int indexType) {
-    auto new_layer = new uchar[xSize * ySize * 4];
-    std::memset(new_layer, 0, xSize * ySize * 4);
-
-    const int N = m_time_row.size();
-    const bool is_landsat =
-        (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION);
-
-    // Номера каналов (0-based индекс в векторе m_time_row[i])
-    const int red_band = is_landsat ? 3 : 3;
-    const int nir_band = is_landsat ? 4 : 6;
-    const int swir_band = is_landsat ? 5 : 9;
-
-    for (const QPointF &pt : insidePoints) {
-        int px = (int)pt.x();
-        int py = (int)pt.y();
-        if (px < 0 || px >= xSize || py < 0 || py >= ySize) continue;
-
-        double latitude = 0.0, longitude = 0.0;
-        getGeoCoordinates(px, py, m_time_row_geo[0], latitude, longitude,
-                          false);
-
-        // Пиксельные координаты в каждом снимке ряда
-        QVector<QPointF> pts(N);
-        pts[0] = {(double)px, (double)py};
-        bool anyBad = false;
-        for (int i = 1; i < N; ++i) {
-            pts[i] = geoToPixel(latitude, longitude, m_time_row_geo[i]);
-            int bx = (int)pts[i].x(), by = (int)pts[i].y();
-            if (bx < 0 || bx >= xSize || by < 0 || by >= ySize) {
-                anyBad = true;
-                break;
-            }
-        }
-        if (anyBad) continue;
-
-        // Собираем временной ряд нужного индекса
-        QVector<double> indexSeries, xValid;
-        for (int i = 0; i < N; ++i) {
-            int bx = (int)pts[i].x(), by = (int)pts[i].y();
-
-            auto getValue = [&](int bandIdx) -> double {
-                auto &bd = m_time_row[i][bandIdx];
-                uint16_t raw = bd.data[by * bd.width + bx];
-                return is_landsat
-                           ? (bd.reflectance_mult * raw + bd.reflectance_add)
-                           : (raw / 10000.0);
-            };
-
-            double red = getValue(red_band);
-            double nir = getValue(nir_band);
-            double swir = getValue(swir_band);
-
-            if (red <= 0 || nir <= 0 || swir <= 0) continue;
-            if (red > 1 || nir > 1 || swir > 1) continue;
-
-            double val = (indexType == 0)
-                             ? sam::calculateNDVI(nir, red)  // NDVI маска
-                             : sam::calculateSWVI(nir, swir);  // NDWI маска
-
-            indexSeries.push_back(val);
-            xValid.push_back(julianDays[i]);
-        }
-
-        if (xValid.size() < 3) continue;
-
-        auto fit = fitLinear(xValid, indexSeries);
-        if (!fit.valid) continue;
-
-        int dpClass = (indexType == 0) ? classifyByNdviGradient(fit.G, fit.R2)
-                                       : classifyByNdwiGradient(fit.G, fit.R2);
-
-        if (dpClass < 0) continue;
-
-        QColor color = dpClassColor(dpClass);
-        int offset = (py * xSize + px) * 4;
-        new_layer[offset] = color.red();
-        new_layer[offset + 1] = color.green();
-        new_layer[offset + 2] = color.blue();
-        new_layer[offset + 3] = 254;
-    }
-
-    auto cleanup = [](void *info) { delete[] static_cast<uchar *>(info); };
-    QImage img(new_layer, xSize, ySize, xSize * 4, QImage::Format_RGBA8888,
-               cleanup, new_layer);
-    auto *item = new QGraphicsPixmapItem(QPixmap::fromImage(img));
-    item->setZValue(ui->graphicsView_satellite_image->getMaxZValue(m_scene));
-    return item;
-}
-
 void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,
                                                  const uint16_t *g,
                                                  const uint16_t *b, int width,
@@ -4507,4 +4346,257 @@ void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,
     m_scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(m_image_item);
     updateImage();
+}
+
+void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
+    const QString &roiId) {
+    if (m_time_row.empty()) return;
+
+    const int N = m_time_row.size();
+    if (m_time_row_dates_unix_time.first.size() != N) {
+        qWarning() << "Нет временных меток для временного ряда";
+        return;
+    }
+
+    const QString ndviKey = "GRADIENT_321_NDVI_" + roiId;
+    const QString ndwiKey = "GRADIENT_321_NDWI_" + roiId;
+    const QString summaryKey = "GRADIENT_321_SUM_" + roiId;
+
+    // Удаляем предыдущие результаты для этого ROI
+    for (const QString &key : {ndviKey, ndwiKey, summaryKey}) {
+        if (m_layers_search_result_items.contains(key)) {
+            m_layer_gui_list->removeItemList(key);
+        }
+    }
+
+    QVector<double> julianDays(N);
+    const qint64 t0 = m_time_row_dates_unix_time.first[0];
+    for (int i = 0; i < N; ++i) {
+        julianDays[i] =
+            static_cast<double>(m_time_row_dates_unix_time.first[i] - t0) /
+            86400.0;
+    }
+
+    int xSize = INT_MAX;
+    int ySize = INT_MAX;
+    for (int i = 0; i < N; ++i) {
+        xSize = qMin(xSize, m_time_row[i][0].width);
+        ySize = qMin(ySize, m_time_row[i][0].height);
+    }
+
+    auto roi_item = ui->graphicsView_satellite_image->getPolygonById(roiId);
+    if (!roi_item) return;
+
+    QPolygonF polygon = roi_item->mapToScene(roi_item->polygon());
+    QRectF bbox = roi_item->mapToScene(roi_item->boundingRect()).boundingRect();
+
+    QVector<QPointF> insidePoints;
+    for (int x = static_cast<int>(bbox.left());
+         x <= static_cast<int>(bbox.right()); ++x) {
+        for (int y = static_cast<int>(bbox.top());
+             y <= static_cast<int>(bbox.bottom()); ++y) {
+            if (polygon.containsPoint(QPointF(x, y), Qt::OddEvenFill)) {
+                insidePoints.append(QPointF(x, y));
+            }
+        }
+    }
+
+    if (insidePoints.isEmpty()) return;
+
+    GradientMaskResult ndviMask =
+        buildGradientClassMap(insidePoints, julianDays, xSize, ySize, 0);
+    GradientMaskResult ndwiMask =
+        buildGradientClassMap(insidePoints, julianDays, xSize, ySize, 1);
+
+    if (!ndviMask.isValid() && !ndwiMask.isValid()) {
+        qWarning() << "Не удалось построить ни NDVI, ни NDWI маску";
+        return;
+    }
+
+    GradientMaskResult summaryMask =
+        buildCombinedGradientClassMap(ndviMask, ndwiMask);
+
+    if (ndviMask.isValid()) {
+        if (auto *item = buildGradientMaskItem(ndviMask)) {
+            m_scene->addItem(item);
+            m_layers_search_result_items.insert(ndviKey, item);
+            m_layer_gui_list->addItemToList(
+                ndviKey, QString("Градиент NDVI 3.2.1 [%1]").arg(roiId),
+                QColor(34, 139, 34));
+        }
+    }
+
+    if (ndwiMask.isValid()) {
+        if (auto *item = buildGradientMaskItem(ndwiMask)) {
+            m_scene->addItem(item);
+            m_layers_search_result_items.insert(ndwiKey, item);
+            m_layer_gui_list->addItemToList(
+                ndwiKey, QString("Градиент NDWI 3.2.1 [%1]").arg(roiId),
+                QColor(30, 144, 255));
+        }
+    }
+
+    if (summaryMask.isValid()) {
+        if (auto *item = buildGradientMaskItem(summaryMask)) {
+            m_scene->addItem(item);
+            m_layers_search_result_items.insert(summaryKey, item);
+            m_layer_gui_list->addItemToList(
+                summaryKey, QString("Итоговый градиент 3.2.1 [%1]").arg(roiId),
+                QColor(178, 34, 34));
+        }
+    }
+}
+
+GradientMaskResult MainWindowSatelliteComparator::buildGradientClassMap(
+    const QVector<QPointF> &insidePoints, const QVector<double> &julianDays,
+    int xSize, int ySize, int indexType) {
+    GradientMaskResult result;
+    result.xSize = xSize;
+    result.ySize = ySize;
+    result.classes.fill(-1, xSize * ySize);
+
+    const int N = m_time_row.size();
+    const bool is_landsat =
+        (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION);
+
+    const int red_band = 3;
+    const int nir_band = is_landsat ? 4 : 6;
+    const int swir_band = is_landsat ? 5 : 9;
+
+    for (const QPointF &pt : insidePoints) {
+        int px = static_cast<int>(pt.x());
+        int py = static_cast<int>(pt.y());
+        if (px < 0 || px >= xSize || py < 0 || py >= ySize) continue;
+
+        double latitude = 0.0, longitude = 0.0;
+        getGeoCoordinates(px, py, m_time_row_geo[0], latitude, longitude,
+                          false);
+
+        QVector<QPointF> pts(N);
+        pts[0] = QPointF(px, py);
+
+        bool anyBad = false;
+        for (int i = 1; i < N; ++i) {
+            pts[i] = geoToPixel(latitude, longitude, m_time_row_geo[i]);
+            int bx = static_cast<int>(pts[i].x());
+            int by = static_cast<int>(pts[i].y());
+            if (bx < 0 || bx >= xSize || by < 0 || by >= ySize) {
+                anyBad = true;
+                break;
+            }
+        }
+        if (anyBad) continue;
+
+        QVector<double> indexSeries;
+        QVector<double> xValid;
+
+        for (int i = 0; i < N; ++i) {
+            int bx = static_cast<int>(pts[i].x());
+            int by = static_cast<int>(pts[i].y());
+
+            auto getValue = [&](int bandIdx) -> double {
+                auto &bd = m_time_row[i][bandIdx];
+                uint16_t raw = bd.data[by * bd.width + bx];
+                return is_landsat
+                           ? (bd.reflectance_mult * raw + bd.reflectance_add)
+                           : (raw / 10000.0);
+            };
+
+            double red = getValue(red_band);
+            double nir = getValue(nir_band);
+            double swir = getValue(swir_band);
+
+            if (red <= 0 || nir <= 0 || swir <= 0) continue;
+            if (red > 1 || nir > 1 || swir > 1) continue;
+
+            double val = (indexType == 0) ? sam::calculateNDVI(nir, red)
+                                          : sam::calculateSWVI(nir, swir);
+
+            indexSeries.push_back(val);
+            xValid.push_back(julianDays[i]);
+        }
+
+        if (xValid.size() < 3) continue;
+
+        auto fit = fitLinear(xValid, indexSeries);
+        if (!fit.valid) continue;
+
+        int dpClass = (indexType == 0) ? classifyByNdviGradient(fit.G, fit.R2)
+                                       : classifyByNdwiGradient(fit.G, fit.R2);
+
+        if (dpClass < 0) continue;
+
+        result.classes[py * xSize + px] = dpClass;
+    }
+
+    return result;
+}
+
+GradientMaskResult MainWindowSatelliteComparator::buildCombinedGradientClassMap(
+    const GradientMaskResult &ndviMask, const GradientMaskResult &ndwiMask) {
+    GradientMaskResult result;
+
+    if (!ndviMask.isValid() && !ndwiMask.isValid()) {
+        return result;
+    }
+
+    const GradientMaskResult *base = ndviMask.isValid() ? &ndviMask : &ndwiMask;
+    result.xSize = base->xSize;
+    result.ySize = base->ySize;
+    result.classes.fill(-1, result.xSize * result.ySize);
+
+    for (int i = 0; i < result.classes.size(); ++i) {
+        const int ndviClass = ndviMask.isValid() ? ndviMask.classes[i] : -1;
+        const int ndwiClass = ndwiMask.isValid() ? ndwiMask.classes[i] : -1;
+
+        if (ndviClass >= 0 && ndwiClass >= 0) {
+            result.classes[i] = qMin(ndviClass, ndwiClass);  // выбрать
+        } else if (ndviClass >= 0) {
+            result.classes[i] = ndviClass;
+        } else if (ndwiClass >= 0) {
+            result.classes[i] = ndwiClass;
+        }
+    }
+
+    return result;
+}
+
+QGraphicsPixmapItem *MainWindowSatelliteComparator::buildGradientMaskItem(
+    const GradientMaskResult &mask, const QColor &layerColorHint) {
+    Q_UNUSED(layerColorHint);
+
+    if (!mask.isValid()) return nullptr;
+
+    auto *new_layer = new uchar[mask.xSize * mask.ySize * 4];
+    std::memset(new_layer, 0, mask.xSize * mask.ySize * 4);
+
+    bool hasAnyPixel = false;
+
+    for (int y = 0; y < mask.ySize; ++y) {
+        for (int x = 0; x < mask.xSize; ++x) {
+            const int cls = mask.classes[y * mask.xSize + x];
+            if (cls < 0) continue;
+
+            QColor color = dpClassColor(cls);
+            const int offset = (y * mask.xSize + x) * 4;
+            new_layer[offset] = color.red();
+            new_layer[offset + 1] = color.green();
+            new_layer[offset + 2] = color.blue();
+            new_layer[offset + 3] = 254;
+            hasAnyPixel = true;
+        }
+    }
+
+    if (!hasAnyPixel) {
+        delete[] new_layer;
+        return nullptr;
+    }
+
+    auto cleanup = [](void *info) { delete[] static_cast<uchar *>(info); };
+    QImage img(new_layer, mask.xSize, mask.ySize, mask.xSize * 4,
+               QImage::Format_RGBA8888, cleanup, new_layer);
+
+    auto *item = new QGraphicsPixmapItem(QPixmap::fromImage(img));
+    item->setZValue(ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+    return item;
 }
