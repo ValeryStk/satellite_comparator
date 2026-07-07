@@ -676,7 +676,6 @@ void MainWindowSatelliteComparator::openTimeRowData() {
             qa_mask.file_name = sceneRoot;
             qa_mask.data =
                 loadMaskForSentinel(qa_mask.width, qa_mask.height, sceneRoot);
-
             qDebug() << "mask_widht -- mask_height: " << qa_mask.width
                      << qa_mask.height;
 
@@ -3567,7 +3566,7 @@ bool MainWindowSatelliteComparator::isDataCloudShadow_OK(
     if (m_time_row_qa_mask.empty()) return true;
     if (points.size() != m_time_row_qa_mask.size()) return false;
 
-    constexpr uint16_t SENTINEL_CLOUD_THRESHOLD = 20;
+    constexpr uint16_t SENTINEL_CLOUD_THRESHOLD = 5;
 
     for (int i = 0; i < points.size(); ++i) {
         const auto &qa = m_time_row_qa_mask[i];
