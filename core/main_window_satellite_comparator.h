@@ -26,16 +26,17 @@ class MainWindowSatelliteComparator;
 QT_END_NAMESPACE
 
 // Результат расчета градиентной маски для ROI.
-// classes хранит класс состояния для каждого пикселя:
-// -1 — нет данных / пиксель не рассчитан,
-//  0..4 — класс, определенный по методике 3.2.1.
 struct GradientMaskResult {
     int xSize = 0;
     int ySize = 0;
+
     QVector<int> classes;  // -1 = нет данных, 0..4 = класс состояния
+    QVector<double> gradients;  // G для каждого пикселя
+    QVector<double> r2;         // R² для каждого пикселя
 
     bool isValid() const {
-        return xSize > 0 && ySize > 0 && classes.size() == xSize * ySize;
+        return xSize > 0 && ySize > 0 && classes.size() == xSize * ySize &&
+               gradients.size() == xSize * ySize && r2.size() == xSize * ySize;
     }
 };
 

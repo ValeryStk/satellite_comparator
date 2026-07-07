@@ -14,6 +14,7 @@
 #include <QTextStream>
 #include <QUrl>
 #include <algorithm>
+#include <limits>
 
 #include "GeoPointFinder.h"
 #include "MatFilesOperator.h"
@@ -391,6 +392,58 @@ static int classifyByNdviGradient(double G, double R2) {
     if (G >= -0.00040 && G < -0.00020) return 3;  // IV — Усыхающие
     if (G < -0.00040) return 4;  // V  — Свежий сухостой
     return -1;
+}
+
+// Объединение классов NDVI и NDWI в итоговый класс.
+// Логика:
+// - если валиден только один индекс, используем его;
+// - на ранних стадиях больший вес у NDWI;
+// - на поздних стадиях больший вес у NDVI;
+// - вес дополнительно масштабируется по качеству аппроксимации R².
+static int combineGradientClasses(int cNdvi, double gNdvi, double r2Ndvi,
+                                  int cNdwi, double gNdwi, double r2Ndwi) {
+    Q_UNUSED(gNdvi)
+    Q_UNUSED(gNdwi)
+
+    const bool ndviOk = (cNdvi >= 0 && r2Ndvi >= 0.6);
+    const bool ndwiOk = (cNdwi >= 0 && r2Ndwi >= 0.6);
+
+    if (!ndviOk && !ndwiOk) return -1;
+    if (ndviOk && !ndwiOk) return cNdvi;
+    if (!ndviOk && ndwiOk) return cNdwi;
+
+    const int maxClass = qMax(cNdvi, cNdwi);
+
+    double wNdwi = 0.5;
+    double wNdvi = 0.5;
+
+    // Ранние стадии — больший вес NDWI
+    if (maxClass <= 1) {
+        wNdwi = 0.7;
+        wNdvi = 0.3;
+    }
+    // Переходная зона
+    else if (maxClass == 2) {
+        wNdwi = 0.5;
+        wNdvi = 0.5;
+    }
+    // Поздние стадии — больший вес NDVI
+    else {
+        wNdwi = 0.3;
+        wNdvi = 0.7;
+    }
+
+    // Усиливаем вес по качеству аппроксимации
+    wNdwi *= qMax(0.0, r2Ndwi - 0.6);
+    wNdvi *= qMax(0.0, r2Ndvi - 0.6);
+
+    if (wNdwi + wNdvi < 1e-12) {
+        return qMax(cNdvi, cNdwi);
+    }
+
+    const double combined = (wNdwi * cNdwi + wNdvi * cNdvi) / (wNdwi + wNdvi);
+
+    return qBound(0, qRound(combined), 4);
 }
 
 // Цвета классов по DP (аналог таблицы рис. 3.2)
@@ -4454,6 +4507,9 @@ GradientMaskResult MainWindowSatelliteComparator::buildGradientClassMap(
     result.xSize = xSize;
     result.ySize = ySize;
     result.classes.fill(-1, xSize * ySize);
+    result.gradients.fill(std::numeric_limits<double>::quiet_NaN(),
+                          xSize * ySize);
+    result.r2.fill(0.0, xSize * ySize);
 
     const int N = m_time_row.size();
     const bool is_landsat =
@@ -4526,7 +4582,10 @@ GradientMaskResult MainWindowSatelliteComparator::buildGradientClassMap(
 
         if (dpClass < 0) continue;
 
-        result.classes[py * xSize + px] = dpClass;
+        const int idx = py * xSize + px;
+        result.classes[idx] = dpClass;
+        result.gradients[idx] = fit.G;
+        result.r2[idx] = fit.R2;
     }
 
     return result;
@@ -4535,7 +4594,6 @@ GradientMaskResult MainWindowSatelliteComparator::buildGradientClassMap(
 GradientMaskResult MainWindowSatelliteComparator::buildCombinedGradientClassMap(
     const GradientMaskResult &ndviMask, const GradientMaskResult &ndwiMask) {
     GradientMaskResult result;
-
     if (!ndviMask.isValid() && !ndwiMask.isValid()) {
         return result;
     }
@@ -4544,17 +4602,37 @@ GradientMaskResult MainWindowSatelliteComparator::buildCombinedGradientClassMap(
     result.xSize = base->xSize;
     result.ySize = base->ySize;
     result.classes.fill(-1, result.xSize * result.ySize);
+    result.gradients.fill(std::numeric_limits<double>::quiet_NaN(),
+                          result.xSize * result.ySize);
+    result.r2.fill(0.0, result.xSize * result.ySize);
 
     for (int i = 0; i < result.classes.size(); ++i) {
-        const int ndviClass = ndviMask.isValid() ? ndviMask.classes[i] : -1;
-        const int ndwiClass = ndwiMask.isValid() ? ndwiMask.classes[i] : -1;
+        const int cNdvi = ndviMask.isValid() ? ndviMask.classes[i] : -1;
+        const int cNdwi = ndwiMask.isValid() ? ndwiMask.classes[i] : -1;
 
-        if (ndviClass >= 0 && ndwiClass >= 0) {
-            result.classes[i] = qMin(ndviClass, ndwiClass);  // выбрать
-        } else if (ndviClass >= 0) {
-            result.classes[i] = ndviClass;
-        } else if (ndwiClass >= 0) {
-            result.classes[i] = ndwiClass;
+        const double gNdvi = ndviMask.isValid() ? ndviMask.gradients[i] : 0.0;
+        const double gNdwi = ndwiMask.isValid() ? ndwiMask.gradients[i] : 0.0;
+
+        const double r2Ndvi = ndviMask.isValid() ? ndviMask.r2[i] : 0.0;
+        const double r2Ndwi = ndwiMask.isValid() ? ndwiMask.r2[i] : 0.0;
+
+        const int combinedClass =
+            combineGradientClasses(cNdvi, gNdvi, r2Ndvi, cNdwi, gNdwi, r2Ndwi);
+
+        result.classes[i] = combinedClass;
+
+        // дозополняем поля структуры на основе данных с NDVI и NDWI
+        if (combinedClass >= 0) {
+            if (cNdvi >= 0 && cNdwi >= 0) {
+                result.gradients[i] = 0.5 * (gNdvi + gNdwi);
+                result.r2[i] = qMax(r2Ndvi, r2Ndwi);
+            } else if (cNdvi >= 0) {
+                result.gradients[i] = gNdvi;
+                result.r2[i] = r2Ndvi;
+            } else if (cNdwi >= 0) {
+                result.gradients[i] = gNdwi;
+                result.r2[i] = r2Ndwi;
+            }
         }
     }
 
