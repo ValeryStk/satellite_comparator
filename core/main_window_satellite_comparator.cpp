@@ -329,6 +329,34 @@ void copyVectorsToClipboard(const double latitude, const double longitude,
 
 // ─── Вспомогательные структуры/функции ────────────────────────────────────
 
+static QString buildGradientLegendTooltip321() {
+    return "<b>Градиент усыхания 3.2.1</b><br><br>"
+           "<span style='color: rgb(0,128,0);'>■</span> I — здоровые<br>"
+           "<span style='color: rgb(144,238,144);'>■</span> II — "
+           "ослабленные<br>"
+           "<span style='color: rgb(154,205,50);'>■</span> III — сильно "
+           "ослабленные<br>"
+           "<span style='color: rgb(255,215,0);'>■</span> IV — усыхающие<br>"
+           "<span style='color: rgb(205,133,63);'>■</span> V — свежий "
+           "сухостой<br>";
+}
+
+static QString buildGradientLegendTooltipV1(const QColor &startColor,
+                                            const QColor &endColor) {
+    return QString(
+               "<b>Градиент усыхания по NDVI (DP)</b><br><br>"
+               "<span style='color: rgb(%1,%2,%3);'>■</span> DP = 0 — нет "
+               "усыханий <br>"
+               "<span style='color: rgb(%4,%5,%6);'>■</span> DP = 3 — усыхание "
+               "в течение всего периода <br>")
+        .arg(startColor.red())
+        .arg(startColor.green())
+        .arg(startColor.blue())
+        .arg(endColor.red())
+        .arg(endColor.green())
+        .arg(endColor.blue());
+}
+
 struct GradientFitResult {
     double G = 0.0;   // наклон (Gradient)
     double b = 0.0;   // сдвиг
@@ -2517,20 +2545,40 @@ void MainWindowSatelliteComparator::send_roi_spectrs_to_matlab(
 
 void MainWindowSatelliteComparator::calculate_time_row_gradient(
     const QString &id) {
-    if (m_time_row.empty()) return;
-    auto gradient_colors = iut::generateOrangeShades(m_time_row.size());
+    if (m_time_row.empty()) {
+        return;
+    }
+
+    const QString layerId = QString("DPHEATMAP_%1").arg(id);
+
+    // Очистка старого слоя для этого же ROI:
+    // remove_scene_layer удаляет со сцены и из m_layers_search_result_items,
+    // а строку в GUI-списке надо удалить отдельно.
+    if (m_layers_search_result_items.contains(layerId)) {
+        remove_scene_layer(layerId);
+        m_layer_gui_list->removeItemList(layerId);
+    }
+
+    auto gradientColors = iut::generateOrangeShades(m_time_row.size());
+
     qDebug() << "Time row gradient connection check....." << id;
     auto roi_item = ui->graphicsView_satellite_image->getPolygonById(id);
-    if (!roi_item) return;
+    if (!roi_item) {
+        return;
+    }
+
     QVector<QPointF> insidePoints;
-    // Получаем ограничивающий прямоугольник в координатах сцены
     QRectF boundingRect =
         roi_item->mapToScene(roi_item->boundingRect()).boundingRect();
     QPolygonF polygon = roi_item->mapToScene(roi_item->polygon());
+
     qDebug() << "Bounding rect..." << boundingRect.left()
              << boundingRect.right();
-    for (int x = boundingRect.left(); x <= boundingRect.right(); x += 1) {
-        for (int y = boundingRect.top(); y <= boundingRect.bottom(); y += 1) {
+
+    for (int x = static_cast<int>(boundingRect.left());
+         x <= static_cast<int>(boundingRect.right()); ++x) {
+        for (int y = static_cast<int>(boundingRect.top());
+             y <= static_cast<int>(boundingRect.bottom()); ++y) {
             QPointF scenePoint(x, y);
             if (polygon.containsPoint(scenePoint, Qt::OddEvenFill)) {
                 insidePoints.append(scenePoint);
@@ -2541,63 +2589,87 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient(
     int xSize = INT_MAX;
     int ySize = INT_MAX;
     for (int i = 0; i < m_time_row.size(); ++i) {
-        if (xSize > m_time_row[i][0].width) xSize = m_time_row[i][0].width;
-        if (ySize > m_time_row[i][0].height) ySize = m_time_row[i][0].height;
+        if (xSize > m_time_row[i][0].width) {
+            xSize = m_time_row[i][0].width;
+        }
+        if (ySize > m_time_row[i][0].height) {
+            ySize = m_time_row[i][0].height;
+        }
     }
 
     auto new_layer = new uchar[xSize * ySize * 4];
     std::memset(new_layer, 0, xSize * ySize * 4);
 
     for (int pi = 0; pi < insidePoints.size(); ++pi) {
-        if (insidePoints[pi].x() >= xSize || insidePoints[pi].x() < 0) continue;
-        if (insidePoints[pi].y() >= ySize || insidePoints[pi].y() < 0) continue;
+        if (insidePoints[pi].x() >= xSize || insidePoints[pi].x() < 0) {
+            continue;
+        }
+        if (insidePoints[pi].y() >= ySize || insidePoints[pi].y() < 0) {
+            continue;
+        }
+
         double latitude = 0.0;
         double longitude = 0.0;
         getGeoCoordinates(insidePoints[pi].x(), insidePoints[pi].y(),
                           m_time_row_geo[0], latitude, longitude, false);
-        QVector<QPointF> m_points(m_time_row.size());
-        m_points[0] = {insidePoints[pi].x(), insidePoints[pi].y()};
-        for (int i = 1; i < m_time_row.size(); ++i) {
-            m_points[i] = (geoToPixel(latitude, longitude, m_time_row_geo[i]));
-            if (m_points[i].x() >= xSize || m_points[i].x() < 0)
-                continue;  // NEED SMART CHECK
-            if (m_points[i].y() >= ySize || m_points[i].y() < 0) continue;
-        }
-        auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
 
-        int start_color =
-            m_time_row[0][0].width * 4 * m_points[0].y() + m_points[0].x() * 4;
+        QVector<QPointF> mpoints(m_time_row.size());
+        mpoints[0] = {insidePoints[pi].x(), insidePoints[pi].y()};
+
+        bool badPoint = false;
+        for (int i = 1; i < m_time_row.size(); ++i) {
+            mpoints[i] = geoToPixel(latitude, longitude, m_time_row_geo[i]);
+            if (mpoints[i].x() >= xSize || mpoints[i].x() < 0 ||
+                mpoints[i].y() >= ySize || mpoints[i].y() < 0) {
+                badPoint = true;
+                break;
+            }
+        }
+        if (badPoint) {
+            continue;
+        }
+
+        auto ndvi_ndwi_indexes = getIndexesForTimeRow(mpoints);
+
+        const int startColor =
+            m_time_row[0][0].width * 4 * static_cast<int>(mpoints[0].y()) +
+            static_cast<int>(mpoints[0].x()) * 4;
+
         QColor color;
         if (ndvi_ndwi_indexes.dp_ndvi == 0) {
-            color = gradient_colors[0];
-        }
-        if (ndvi_ndwi_indexes.dp_ndvi == 1) {
-            color = gradient_colors[1];
-        }
-        if (ndvi_ndwi_indexes.dp_ndvi == 2) {
-            color = gradient_colors[2];
-        }
-        if (ndvi_ndwi_indexes.dp_ndvi == 3) {
-            color = gradient_colors[3];
+            color = gradientColors[0];
+        } else if (ndvi_ndwi_indexes.dp_ndvi == 1) {
+            color = gradientColors[1];
+        } else if (ndvi_ndwi_indexes.dp_ndvi == 2) {
+            color = gradientColors[2];
+        } else if (ndvi_ndwi_indexes.dp_ndvi == 3) {
+            color = gradientColors[3];
+        } else {
+            continue;
         }
 
-        new_layer[start_color] = color.red();
-        new_layer[start_color + 1] = color.green();
-        new_layer[start_color + 2] = color.blue();
-        new_layer[start_color + 3] = 255;
+        new_layer[startColor] = color.red();
+        new_layer[startColor + 1] = color.green();
+        new_layer[startColor + 2] = color.blue();
+        new_layer[startColor + 3] = 255;
     }
 
     auto cleanup = [](void *info) { delete[] static_cast<uchar *>(info); };
     auto img = QImage(new_layer, xSize, ySize, xSize * 4,
                       QImage::Format_RGBA8888, cleanup, new_layer);
     auto pixmap = QPixmap::fromImage(img);
-    auto new_image_item = new QGraphicsPixmapItem(pixmap);
-    new_image_item->setZValue(
-        ui->graphicsView_satellite_image->getMaxZValue(m_scene));
-    m_scene->addItem(new_image_item);
 
-    m_layers_search_result_items.insert("DP_HEAT_MAP", new_image_item);
-    m_layer_gui_list->addItemToList("DP_HEAT_MAP", "", QColor(Qt::red));
+    auto newimageitem = new QGraphicsPixmapItem(pixmap);
+    newimageitem->setZValue(
+        ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+    m_scene->addItem(newimageitem);
+
+    const QColor startColor = gradientColors.first();
+    const QColor endColor = gradientColors.last();
+    m_layers_search_result_items.insert(layerId, newimageitem);
+    m_layer_gui_list->addItemToList(
+        layerId, buildGradientLegendTooltipV1(startColor, endColor),
+        QColor(255, 165, 0), Qt::Checked);
 }
 
 void MainWindowSatelliteComparator::processLayer(uchar *layer, int xSize,
@@ -3566,7 +3638,7 @@ bool MainWindowSatelliteComparator::isDataCloudShadow_OK(
     if (m_time_row_qa_mask.empty()) return true;
     if (points.size() != m_time_row_qa_mask.size()) return false;
 
-    constexpr uint16_t SENTINEL_CLOUD_THRESHOLD = 5;
+    constexpr uint16_t SENTINEL_CLOUD_THRESHOLD = 15;
 
     for (int i = 0; i < points.size(); ++i) {
         const auto &qa = m_time_row_qa_mask[i];
@@ -4506,9 +4578,9 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
         if (auto *item = buildGradientMaskItem(ndviMask)) {
             m_scene->addItem(item);
             m_layers_search_result_items.insert(ndviKey, item);
-            m_layer_gui_list->addItemToList(
-                ndviKey, QString("Градиент NDVI 3.2.1 [%1]").arg(roiId),
-                QColor(34, 139, 34), Qt::Unchecked);
+            m_layer_gui_list->addItemToList(ndviKey,
+                                            buildGradientLegendTooltip321(),
+                                            QColor(34, 139, 34), Qt::Unchecked);
         }
     }
 
@@ -4517,8 +4589,8 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
             m_scene->addItem(item);
             m_layers_search_result_items.insert(ndwiKey, item);
             m_layer_gui_list->addItemToList(
-                ndwiKey, QString("Градиент NDWI 3.2.1 [%1]").arg(roiId),
-                QColor(30, 144, 255), Qt::Unchecked);
+                ndwiKey, buildGradientLegendTooltip321(), QColor(30, 144, 255),
+                Qt::Unchecked);
         }
     }
 
@@ -4526,9 +4598,9 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
         if (auto *item = buildGradientMaskItem(summaryMask)) {
             m_scene->addItem(item);
             m_layers_search_result_items.insert(summaryKey, item);
-            m_layer_gui_list->addItemToList(
-                summaryKey, QString("Итоговый градиент 3.2.1 [%1]").arg(roiId),
-                QColor(178, 34, 34));
+            m_layer_gui_list->addItemToList(summaryKey,
+                                            buildGradientLegendTooltip321(),
+                                            QColor(200, 200, 30));
         }
     }
 }
