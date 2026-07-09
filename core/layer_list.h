@@ -13,7 +13,8 @@ class LayerList : public QListWidget {
 public:
     explicit LayerList(QWidget* parent = nullptr);
     void addItemToList(const QString& item, const QString& toolTip,
-                       const QColor& color);
+                       const QColor& color,
+                       Qt::CheckState checkState = Qt::Checked);
 
     void removeItemList(const QString& item);
     void mayBeHideMayBeShow(QListWidgetItem* item);

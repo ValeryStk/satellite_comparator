@@ -14,6 +14,7 @@
 #include <QTextStream>
 #include <QUrl>
 #include <algorithm>
+#include <limits>
 
 #include "GeoPointFinder.h"
 #include "MatFilesOperator.h"
@@ -326,6 +327,179 @@ void copyVectorsToClipboard(const double latitude, const double longitude,
 
 }  // end of namespace
 
+// ─── Вспомогательные структуры/функции ────────────────────────────────────
+
+static QString buildIndexDynamicsLegendTooltip() {
+    return "<b>Градиент изменений по индексам</b><br><br>"
+           "<span style='color: rgb(0, 100, 120);'>■</span> Растет<br>"
+           "<span style='color: rgb(34, 139, 34);'>■</span> I — "
+           "Стабильно<br>"
+           "<span style='color: rgb(120, 200, 80);'>■</span> II — Слабое "
+           "ухудшение<br>"
+           "<span style='color: rgb(255, 215, 0);'>■</span> III — Умеренное "
+           "ухудшение<br>"
+           "<span style='color: rgb(255, 140, 0);'>■</span> IV — Сильное "
+           "ухудшение<br>"
+           "<span style='color: rgb(165, 42, 42);'>■</span> V — Очень сильное "
+           "ухудшение<br>";
+}
+
+static QString buildGradientLegendTooltipDP(const QColor &startColor,
+                                            const QColor &endColor) {
+    return QString(
+               "<b>Градиент усыхания по NDVI (DP)</b><br><br>"
+               "<span style='color: rgb(%1,%2,%3);'>■</span> DP = 0 — нет "
+               "усыханий <br>"
+               "<span style='color: rgb(%4,%5,%6);'>■</span> DP = 3 — усыхание "
+               "в течение всего периода <br>")
+        .arg(startColor.red())
+        .arg(startColor.green())
+        .arg(startColor.blue())
+        .arg(endColor.red())
+        .arg(endColor.green())
+        .arg(endColor.blue());
+}
+
+struct GradientFitResult {
+    double G = 0.0;   // наклон (Gradient)
+    double b = 0.0;   // сдвиг
+    double R2 = 0.0;  // коэффициент детерминации
+    bool valid = false;
+};
+
+// Линейная регрессия y = G*x + b методом МНК
+// x — Julian Days (double), y — значения NDVI или NDWI
+static GradientFitResult fitLinear(const QVector<double> &x,
+                                   const QVector<double> &y) {
+    GradientFitResult res;
+    int n = x.size();
+    if (n < 3) return res;  // нужно минимум 3 точки
+
+    double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    for (int i = 0; i < n; ++i) {
+        sumX += x[i];
+        sumY += y[i];
+        sumXY += x[i] * y[i];
+        sumX2 += x[i] * x[i];
+    }
+    double denom = n * sumX2 - sumX * sumX;
+    if (qAbs(denom) < 1e-12) return res;
+
+    res.G = (n * sumXY - sumX * sumY) / denom;
+    res.b = (sumY - res.G * sumX) / n;
+
+    // R²
+    double meanY = sumY / n;
+    double ssTot = 0, ssRes = 0;
+    for (int i = 0; i < n; ++i) {
+        double diff = y[i] - meanY;
+        ssTot += diff * diff;
+        double err = y[i] - (res.G * x[i] + res.b);
+        ssRes += err * err;
+    }
+    res.R2 = (ssTot > 1e-12) ? (1.0 - ssRes / ssTot) : 0.0;
+    res.valid = true;
+    return res;
+}
+
+// Класс усыхания по градиенту NDWI согласно таблице из Технологической
+// инструкции 3.2.1
+static int classifyByNdwiGradient(double G, double R2) {
+    if (R2 < 0.6) return -1;
+    if (G > 0.00005) return 0;                    // Растет
+    if (G >= -0.00005 && G <= 0.00005) return 1;  // I = Стабильно
+    if (G >= -0.00010 && G < -0.00005) return 2;  // II
+    if (G >= -0.00020 && G < -0.00010) return 3;  // III
+    if (G >= -0.00040 && G < -0.00020) return 4;  // IV
+    if (G < -0.00040) return 5;                   // V
+    return -1;
+}
+
+// Класс усыхания по градиенту NDVI (на данным момент дублирует NDWI)
+static int classifyByNdviGradient(double G, double R2) {
+    return classifyByNdwiGradient(G, R2);
+}
+
+// Объединение классов NDVI и NDWI в итоговый класс.
+// Логика:
+// - если валиден только один индекс, используем его;
+// - на ранних стадиях больший вес у NDWI;
+// - на поздних стадиях больший вес у NDVI;
+// - вес дополнительно масштабируется по качеству аппроксимации R².
+static int combineGradientClasses(int cNdvi, double gNdvi, double r2Ndvi,
+                                  int cNdwi, double gNdwi, double r2Ndwi) {
+    Q_UNUSED(gNdvi)
+    Q_UNUSED(gNdwi)
+
+    const bool ndviOk = (cNdvi >= 0 && r2Ndvi >= 0.6);
+    const bool ndwiOk = (cNdwi >= 0 && r2Ndwi >= 0.6);
+
+    if (!ndviOk && !ndwiOk) return -1;
+    if (ndviOk && !ndwiOk) return cNdvi;
+    if (!ndviOk && ndwiOk) return cNdwi;
+
+    // если оба показывают рост — рост
+    if (cNdvi == 0 && cNdwi == 0) return 0;
+
+    // если один рост, другой стабильность — считаем стабильностью
+    if ((cNdvi == 0 && cNdwi == 1) || (cNdvi == 1 && cNdwi == 0)) return 1;
+
+    // если один рост, а другой уже деградация — не даем росту "смазать"
+    // проблему
+    if (cNdvi == 0 && cNdwi >= 2) return cNdwi;
+    if (cNdwi == 0 && cNdvi >= 2) return cNdvi;
+
+    const int maxClass = qMax(cNdvi, cNdwi);
+
+    double wNdwi = 0.5;
+    double wNdvi = 0.5;
+
+    // слабые классы: чуть больше доверяем NDWI
+    if (maxClass <= 2) {
+        wNdwi = 0.7;
+        wNdvi = 0.3;
+    }
+    // средние: поровну
+    else if (maxClass == 3) {
+        wNdwi = 0.5;
+        wNdvi = 0.5;
+    }
+    // тяжелые: чуть больше доверяем NDVI
+    else {
+        wNdwi = 0.3;
+        wNdvi = 0.7;
+    }
+
+    wNdwi *= qMax(0.0, r2Ndwi - 0.6);
+    wNdvi *= qMax(0.0, r2Ndvi - 0.6);
+
+    if (wNdwi + wNdvi < 1e-12) return qMax(cNdvi, cNdwi);
+
+    const double combined = (wNdwi * cNdwi + wNdvi * cNdvi) / (wNdwi + wNdvi);
+
+    return qBound(0, qRound(combined), 5);
+}
+
+// Цвета классов по DP (аналог таблицы рис. 3.2)
+static QColor dpClassColor(int dpClass) {
+    switch (dpClass) {
+        case 0:
+            return QColor(0, 100, 120);  // Растет
+        case 1:
+            return QColor(34, 139, 34);  // Стабильно
+        case 2:
+            return QColor(120, 200, 80);  // Слабое ухудшение
+        case 3:
+            return QColor(255, 215, 0);  // Умеренное ухудшение
+        case 4:
+            return QColor(255, 140, 0);  // Сильное ухудшение
+        case 5:
+            return QColor(165, 42, 42);  // Очень сильное ухудшение
+        default:
+            return QColor(0, 0, 0, 0);
+    }
+}
+
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindowSatelliteComparator),
@@ -497,8 +671,9 @@ void MainWindowSatelliteComparator::openTimeRowData() {
                                 "/" + subdirs[i] + "_QA_PIXEL.TIF";
             qa_mask.data =
                 readTiff(qa_mask.file_name, qa_mask.width, qa_mask.height);
-            // qDebug()<<"mask_widht -- mask_height:
-            // "<<qa_mask.width<<qa_mask.height;
+            //            qDebug() << "mask_widht -- mask_height: " <<
+            //            qa_mask.width
+            //                     << qa_mask.height << qa_mask.file_name;
             m_time_row_qa_mask[i] = qa_mask;
 
             meta_datas.push_back(landsat_metadata);
@@ -530,6 +705,25 @@ void MainWindowSatelliteComparator::openTimeRowData() {
             readTiff(qa_mask.file_name,qa_mask.width,qa_mask.height);
             //qDebug()<<"mask_widht -- mask_height:
             "<<qa_mask.width<<qa_mask.height; m_time_row_qa_mask[i] = qa_mask;*/
+
+            sad::QA_MASK_DATA qa_mask;
+            const QString sceneRoot =
+                directory.absolutePath() + "/" + subdirs[i];
+
+            qa_mask.file_name = sceneRoot;
+            qa_mask.data =
+                loadMaskForSentinel(qa_mask.width, qa_mask.height, sceneRoot);
+
+            qa_mask.scl_file_name = sceneRoot;
+            qa_mask.scl_data = loadSCLForSentinel(
+                qa_mask.scl_width, qa_mask.scl_height, sceneRoot);
+
+            qDebug() << "cloud mask width -- height:" << qa_mask.width
+                     << qa_mask.height;
+            qDebug() << "scl mask width -- height:" << qa_mask.scl_width
+                     << qa_mask.scl_height;
+
+            m_time_row_qa_mask[i] = qa_mask;
 
             date_time_row_stamps.push_back(
                 sentinel_metadata.image_attributes.date_acquired);
@@ -2291,12 +2485,14 @@ void MainWindowSatelliteComparator::hide_layer(const QString &id) {
 }
 
 void MainWindowSatelliteComparator::remove_scene_layer(const QString &id) {
+    qDebug() << "хотим удалить " << id;
     auto image_item = m_layers_search_result_items.value(id);
 
     if (image_item) {
         m_scene->removeItem(image_item);
         delete image_item;
         m_layers_search_result_items.remove(id);
+        qDebug() << "удалили " << id;
     }
 }
 
@@ -2365,20 +2561,40 @@ void MainWindowSatelliteComparator::send_roi_spectrs_to_matlab(
 
 void MainWindowSatelliteComparator::calculate_time_row_gradient(
     const QString &id) {
-    if (m_time_row.empty()) return;
-    auto gradient_colors = iut::generateOrangeShades(m_time_row.size());
+    if (m_time_row.empty()) {
+        return;
+    }
+
+    const QString layerId = QString("DPHEATMAP_%1").arg(id);
+
+    // Очистка старого слоя для этого же ROI:
+    // remove_scene_layer удаляет со сцены и из m_layers_search_result_items,
+    // а строку в GUI-списке надо удалить отдельно.
+    if (m_layers_search_result_items.contains(layerId)) {
+        remove_scene_layer(layerId);
+        m_layer_gui_list->removeItemList(layerId);
+    }
+
+    auto gradientColors = iut::generateOrangeShades(m_time_row.size());
+
     qDebug() << "Time row gradient connection check....." << id;
     auto roi_item = ui->graphicsView_satellite_image->getPolygonById(id);
-    if (!roi_item) return;
+    if (!roi_item) {
+        return;
+    }
+
     QVector<QPointF> insidePoints;
-    // Получаем ограничивающий прямоугольник в координатах сцены
     QRectF boundingRect =
         roi_item->mapToScene(roi_item->boundingRect()).boundingRect();
     QPolygonF polygon = roi_item->mapToScene(roi_item->polygon());
+
     qDebug() << "Bounding rect..." << boundingRect.left()
              << boundingRect.right();
-    for (int x = boundingRect.left(); x <= boundingRect.right(); x += 1) {
-        for (int y = boundingRect.top(); y <= boundingRect.bottom(); y += 1) {
+
+    for (int x = static_cast<int>(boundingRect.left());
+         x <= static_cast<int>(boundingRect.right()); ++x) {
+        for (int y = static_cast<int>(boundingRect.top());
+             y <= static_cast<int>(boundingRect.bottom()); ++y) {
             QPointF scenePoint(x, y);
             if (polygon.containsPoint(scenePoint, Qt::OddEvenFill)) {
                 insidePoints.append(scenePoint);
@@ -2389,63 +2605,87 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient(
     int xSize = INT_MAX;
     int ySize = INT_MAX;
     for (int i = 0; i < m_time_row.size(); ++i) {
-        if (xSize > m_time_row[i][0].width) xSize = m_time_row[i][0].width;
-        if (ySize > m_time_row[i][0].height) ySize = m_time_row[i][0].height;
+        if (xSize > m_time_row[i][0].width) {
+            xSize = m_time_row[i][0].width;
+        }
+        if (ySize > m_time_row[i][0].height) {
+            ySize = m_time_row[i][0].height;
+        }
     }
 
     auto new_layer = new uchar[xSize * ySize * 4];
     std::memset(new_layer, 0, xSize * ySize * 4);
 
     for (int pi = 0; pi < insidePoints.size(); ++pi) {
-        if (insidePoints[pi].x() >= xSize || insidePoints[pi].x() < 0) continue;
-        if (insidePoints[pi].y() >= ySize || insidePoints[pi].y() < 0) continue;
+        if (insidePoints[pi].x() >= xSize || insidePoints[pi].x() < 0) {
+            continue;
+        }
+        if (insidePoints[pi].y() >= ySize || insidePoints[pi].y() < 0) {
+            continue;
+        }
+
         double latitude = 0.0;
         double longitude = 0.0;
         getGeoCoordinates(insidePoints[pi].x(), insidePoints[pi].y(),
                           m_time_row_geo[0], latitude, longitude, false);
-        QVector<QPointF> m_points(m_time_row.size());
-        m_points[0] = {insidePoints[pi].x(), insidePoints[pi].y()};
-        for (int i = 1; i < m_time_row.size(); ++i) {
-            m_points[i] = (geoToPixel(latitude, longitude, m_time_row_geo[i]));
-            if (m_points[i].x() >= xSize || m_points[i].x() < 0)
-                continue;  // NEED SMART CHECK
-            if (m_points[i].y() >= ySize || m_points[i].y() < 0) continue;
-        }
-        auto ndvi_ndwi_indexes = getIndexesForTimeRow(m_points);
 
-        int start_color =
-            m_time_row[0][0].width * 4 * m_points[0].y() + m_points[0].x() * 4;
+        QVector<QPointF> mpoints(m_time_row.size());
+        mpoints[0] = {insidePoints[pi].x(), insidePoints[pi].y()};
+
+        bool badPoint = false;
+        for (int i = 1; i < m_time_row.size(); ++i) {
+            mpoints[i] = geoToPixel(latitude, longitude, m_time_row_geo[i]);
+            if (mpoints[i].x() >= xSize || mpoints[i].x() < 0 ||
+                mpoints[i].y() >= ySize || mpoints[i].y() < 0) {
+                badPoint = true;
+                break;
+            }
+        }
+        if (badPoint) {
+            continue;
+        }
+
+        auto ndvi_ndwi_indexes = getIndexesForTimeRow(mpoints);
+
+        const int startColor =
+            m_time_row[0][0].width * 4 * static_cast<int>(mpoints[0].y()) +
+            static_cast<int>(mpoints[0].x()) * 4;
+
         QColor color;
         if (ndvi_ndwi_indexes.dp_ndvi == 0) {
-            color = gradient_colors[0];
-        }
-        if (ndvi_ndwi_indexes.dp_ndvi == 1) {
-            color = gradient_colors[1];
-        }
-        if (ndvi_ndwi_indexes.dp_ndvi == 2) {
-            color = gradient_colors[2];
-        }
-        if (ndvi_ndwi_indexes.dp_ndvi == 3) {
-            color = gradient_colors[3];
+            color = gradientColors[0];
+        } else if (ndvi_ndwi_indexes.dp_ndvi == 1) {
+            color = gradientColors[1];
+        } else if (ndvi_ndwi_indexes.dp_ndvi == 2) {
+            color = gradientColors[2];
+        } else if (ndvi_ndwi_indexes.dp_ndvi == 3) {
+            color = gradientColors[3];
+        } else {
+            continue;
         }
 
-        new_layer[start_color] = color.red();
-        new_layer[start_color + 1] = color.green();
-        new_layer[start_color + 2] = color.blue();
-        new_layer[start_color + 3] = 255;
+        new_layer[startColor] = color.red();
+        new_layer[startColor + 1] = color.green();
+        new_layer[startColor + 2] = color.blue();
+        new_layer[startColor + 3] = 255;
     }
 
     auto cleanup = [](void *info) { delete[] static_cast<uchar *>(info); };
     auto img = QImage(new_layer, xSize, ySize, xSize * 4,
                       QImage::Format_RGBA8888, cleanup, new_layer);
     auto pixmap = QPixmap::fromImage(img);
-    auto new_image_item = new QGraphicsPixmapItem(pixmap);
-    new_image_item->setZValue(
-        ui->graphicsView_satellite_image->getMaxZValue(m_scene));
-    m_scene->addItem(new_image_item);
 
-    m_layers_search_result_items.insert("DP_HEAT_MAP", new_image_item);
-    m_layer_gui_list->addItemToList("DP_HEAT_MAP", "", QColor(Qt::red));
+    auto newimageitem = new QGraphicsPixmapItem(pixmap);
+    newimageitem->setZValue(
+        ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+    m_scene->addItem(newimageitem);
+
+    const QColor startColor = gradientColors.first();
+    const QColor endColor = gradientColors.last();
+    m_layers_search_result_items.insert(layerId, newimageitem);
+    m_layer_gui_list->addItemToList(
+        layerId, buildGradientLegendTooltipDP(startColor, endColor),
+        QColor(255, 165, 0), Qt::Checked);
 }
 
 void MainWindowSatelliteComparator::processLayer(uchar *layer, int xSize,
@@ -2572,6 +2812,9 @@ void MainWindowSatelliteComparator::setUpToolWidget() {
             this, SLOT(send_roi_spectrs_to_matlab(const QString)));
     connect(m_layer_roi_list, SIGNAL(createTimeRowGradient(const QString)),
             this, SLOT(calculate_time_row_gradient(const QString)));
+    connect(m_layer_roi_list,
+            SIGNAL(createTimeRowIndexesGradient(const QString)), this,
+            SLOT(create_index_dynamic_maps(const QString)));
     connect(m_layer_roi_list, SIGNAL(changeDetectionRegion(const QString)),
             this, SLOT(runChangeDetectionMethod(const QString)));
 
@@ -2682,6 +2925,9 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
 
     connect(ui->action_setCursorByGeoCoord, &QAction::triggered, this,
             &MainWindowSatelliteComparator::setCursorByGeo);
+    ui->action_setCursorByGeoCoord->setShortcut(
+        QKeySequence(Qt::CTRL | Qt::Key_F));
+    ui->action_setCursorByGeoCoord->setShortcutContext(Qt::WindowShortcut);
 
     connect(ui->action_load_external_spectr, &QAction::triggered, this,
             &MainWindowSatelliteComparator::setExternalSampleFromClipboard);
@@ -3408,24 +3654,66 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(
 
 bool MainWindowSatelliteComparator::isDataCloudShadow_OK(
     QVector<QPointF> &points) {
-    if (m_time_row_qa_mask.empty()) return false;
-    if (points.empty()) return false;
-    // if(points.size() != m_time_row_qa_mask.size())return false;
+    if (points.size() != m_time_row_qa_mask.size()) {
+        return false;
+    }
 
     for (int i = 0; i < points.size(); ++i) {
-        auto index = ((int)points[i].y() * m_time_row_qa_mask[i].width) +
-                     (int)points[i].x();
-        auto max_size =
-            m_time_row_qa_mask[i].height * m_time_row_qa_mask[i].width;
-        if (max_size < index) return false;
-        uint16_t mask_value = m_time_row_qa_mask[i].data[index];
-        bool isFill = mask_value & (1 << 0);
-        if (isFill) return false;
-        bool isCloud = mask_value & (1 << 3);
-        if (isCloud) return false;
-        bool isShadow = mask_value & (1 << 4);
-        if (isShadow) return false;
+        const int x = static_cast<int>(points[i].x());
+        const int y = static_cast<int>(points[i].y());
+
+        if (x < 0 || y < 0) {
+            return false;
+        }
+
+        const auto &qa = m_time_row_qa_mask[i];
+
+        if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
+            if (!qa.data) {
+                return false;
+            }
+            if (x >= qa.width || y >= qa.height) {
+                return false;
+            }
+
+            const uint16_t value = qa.data[y * qa.width + x];
+
+            const bool isFill = value & (1 << 0);
+            const bool isCloud = value & (1 << 3);
+            const bool isShadow = value & (1 << 4);
+
+            if (isFill || isCloud || isShadow) {
+                return false;
+            }
+        } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
+            if (!qa.data || !qa.scl_data) {
+                return false;
+            }
+
+            if (x >= qa.width || y >= qa.height) {
+                return false;
+            }
+            if (x >= qa.scl_width || y >= qa.scl_height) {
+                return false;
+            }
+
+            const uint16_t cloudProb = qa.data[y * qa.width + x];
+            const uint16_t scl = qa.scl_data[y * qa.scl_width + x];
+
+            if (cloudProb > 5) {
+                return false;
+            }
+
+            if (scl == 3) {  // cloud shadow
+                return false;
+            }
+
+            if (scl == 8 || scl == 9 || scl == 10) {  // cloud / cirrus
+                return false;
+            }
+        }
     }
+
     return true;
 }
 
@@ -3654,10 +3942,15 @@ void MainWindowSatelliteComparator::setUpUi() {
 
 void MainWindowSatelliteComparator::deleteTimeRowData() {
     if (m_time_row.empty()) return;
-    for (int i = 0; i < m_time_row.size(); ++i) {
-        for (int j = 0; j < m_time_row[i].size(); ++j) {
-            auto data = m_time_row[i][j].data;
-            if (data) delete[] data;
+    for (int i = 0; i < m_time_row_qa_mask.size(); ++i) {
+        if (m_time_row_qa_mask[i].data) {
+            delete[] m_time_row_qa_mask[i].data;
+            m_time_row_qa_mask[i].data = nullptr;
+        }
+
+        if (m_time_row_qa_mask[i].scl_data) {
+            delete[] m_time_row_qa_mask[i].scl_data;
+            m_time_row_qa_mask[i].scl_data = nullptr;
         }
     }
     m_time_row.clear();
@@ -3686,6 +3979,28 @@ uint16_t *MainWindowSatelliteComparator::loadMaskForSentinel(
     auto data = readTiff(pathToCloudMsk, width, height);
     qDebug() << "CLOUD MASK" << width << "--" << height;
     return data;
+}
+
+uint16_t *MainWindowSatelliteComparator::loadSCLForSentinel(
+    int &width, int &height, const QString &rootPath) {
+    width = 0;
+    height = 0;
+
+    QDirIterator it(rootPath, QStringList() << "*SCL_20m.jp2", QDir::Files,
+                    QDirIterator::Subdirectories);
+
+    QString sclPath;
+    if (it.hasNext()) {
+        sclPath = it.next();
+    }
+
+    if (sclPath.isEmpty()) {
+        qDebug() << "SCL_20m.jp2 not found in:" << rootPath;
+        return nullptr;
+    }
+
+    qDebug() << "SCL path:" << sclPath;
+    return readTiff(sclPath, width, height);
 }
 
 bool MainWindowSatelliteComparator::saveSentinelToGeoTiff(
@@ -3738,8 +4053,8 @@ bool MainWindowSatelliteComparator::saveSentinelToGeoTiff(
 
     // 5. Установка ПРОЕКЦИИ (WGS84 UTM)
     OGRSpatialReference oSRS;
-    // Предполагаем северное полушарие (1), так как это стандарт для большинства
-    // данных Sentinel
+    // Предполагаем северное полушарие (1), так как это стандарт для
+    // большинства данных Sentinel
     oSRS.SetUTM(static_cast<int>(gt.utmZone), 1);
     oSRS.SetWellKnownGeogCS("WGS84");
 
@@ -4059,8 +4374,8 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
     QJsonArray responses;
     jsn::getJsonObjectFromFile(":/res/sd.json", jo_source);
     QString str = QJsonDocument(jo_source).toJson(QJsonDocument::Indented);
-    qDebug() << "load external spectr from clipboard...." << jo_source.keys();
-    satellites = jo_source["satellites"].toObject();
+    qDebug() << "load external spectr from clipboard...." <<
+jo_source.keys(); satellites = jo_source["satellites"].toObject();
 
     QVector<QVector<double>> result;
     const QString path =
@@ -4094,9 +4409,8 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
         for (const QString &s : qAsConst(parts)) {
             bool ok = false;
             double value = s.toDouble(&ok);
-            if (!ok) continue;  // или return result; если нужно строгое чтение
-            row.push_back(value);
-            jarr.append(value);
+            if (!ok) continue;  // или return result; если нужно строгое
+чтение row.push_back(value); jarr.append(value);
         }
 
         if (!row.isEmpty()) {
@@ -4115,8 +4429,8 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
     temp["central_waves"] = central_waves;
     satellites["sentinel2C"] = temp;
     jo_source["satellites"] = satellites;
-    jsn::saveJsonObjectToFile(QApplication::applicationDirPath() + "/test.json",
-                              jo_source);*/
+    jsn::saveJsonObjectToFile(QApplication::applicationDirPath() +
+"/test.json", jo_source);*/
     // Очищаем векторы перед записью новых данных
     QVector<double> waves;
     QVector<double> valuesw;
@@ -4142,7 +4456,8 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
         stream.readLine();
     }
 
-    // 4. Принудительно используем точку '.' как разделитель дроби (C-локаль)
+    // 4. Принудительно используем точку '.' как разделитель дроби
+    // (C-локаль)
     QLocale cLocale(QLocale::C);
     bool okWave = false;
     bool okVal = false;
@@ -4257,4 +4572,286 @@ void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,
     m_scene->setSceneRect(pixmap.rect());
     ui->graphicsView_satellite_image->centerOn(m_image_item);
     updateImage();
+}
+
+void MainWindowSatelliteComparator::create_index_dynamic_maps(
+    const QString &roiId) {
+    if (m_time_row.empty()) return;
+
+    const int N = m_time_row.size();
+    if (m_time_row_dates_unix_time.first.size() != N) {
+        qWarning() << "Нет временных меток для временного ряда";
+        return;
+    }
+
+    const QString ndviLayerId = "TIME_GRADIENT_NDVI_" + roiId;
+    const QString ndwiLayerId = "TIME_GRADIENT_NDWI_" + roiId;
+    const QString summaryLayerId = "TIME_GRADIENT_AGREGATION_" + roiId;
+
+    // Удаляем предыдущие результаты для этого ROI
+    for (const QString &key : {ndviLayerId, ndwiLayerId, summaryLayerId}) {
+        if (m_layers_search_result_items.contains(key)) {
+            m_layer_gui_list->removeItemList(key);
+        }
+    }
+
+    QVector<double> julianDays(N);
+    const qint64 t0 = m_time_row_dates_unix_time.first[0];
+    for (int i = 0; i < N; ++i) {
+        julianDays[i] =
+            static_cast<double>(m_time_row_dates_unix_time.first[i] - t0) /
+            86400.0;
+    }
+
+    int xSize = INT_MAX;
+    int ySize = INT_MAX;
+    for (int i = 0; i < N; ++i) {
+        xSize = qMin(xSize, m_time_row[i][0].width);
+        ySize = qMin(ySize, m_time_row[i][0].height);
+    }
+
+    auto roi_item = ui->graphicsView_satellite_image->getPolygonById(roiId);
+    if (!roi_item) return;
+
+    QPolygonF polygon = roi_item->mapToScene(roi_item->polygon());
+    QRectF bbox = roi_item->mapToScene(roi_item->boundingRect()).boundingRect();
+
+    QVector<QPointF> insidePoints;
+    for (int x = static_cast<int>(bbox.left());
+         x <= static_cast<int>(bbox.right()); ++x) {
+        for (int y = static_cast<int>(bbox.top());
+             y <= static_cast<int>(bbox.bottom()); ++y) {
+            if (polygon.containsPoint(QPointF(x, y), Qt::OddEvenFill)) {
+                insidePoints.append(QPointF(x, y));
+            }
+        }
+    }
+
+    if (insidePoints.isEmpty()) return;
+    qDebug() << "=-=-=-=-=-=-=-";
+    GradientMaskResult ndviMask =
+        buildGradientClassMap(insidePoints, julianDays, xSize, ySize, 0);
+    GradientMaskResult ndwiMask =
+        buildGradientClassMap(insidePoints, julianDays, xSize, ySize, 1);
+
+    if (!ndviMask.isValid() && !ndwiMask.isValid()) {
+        qWarning() << "Не удалось построить ни NDVI, ни NDWI маску";
+        return;
+    }
+
+    GradientMaskResult summaryMask =
+        buildCombinedGradientClassMap(ndviMask, ndwiMask);
+
+    if (ndviMask.isValid()) {
+        if (auto *item = buildGradientMaskItem(ndviMask)) {
+            m_scene->addItem(item);
+            m_layers_search_result_items.insert(ndviLayerId, item);
+            m_layer_gui_list->addItemToList(ndviLayerId,
+                                            buildIndexDynamicsLegendTooltip(),
+                                            QColor(34, 139, 34), Qt::Unchecked);
+        }
+    }
+
+    if (ndwiMask.isValid()) {
+        if (auto *item = buildGradientMaskItem(ndwiMask)) {
+            m_scene->addItem(item);
+            m_layers_search_result_items.insert(ndwiLayerId, item);
+            m_layer_gui_list->addItemToList(
+                ndwiLayerId, buildIndexDynamicsLegendTooltip(),
+                QColor(30, 144, 255), Qt::Unchecked);
+        }
+    }
+
+    if (summaryMask.isValid()) {
+        if (auto *item = buildGradientMaskItem(summaryMask)) {
+            m_scene->addItem(item);
+            m_layers_search_result_items.insert(summaryLayerId, item);
+            m_layer_gui_list->addItemToList(summaryLayerId,
+                                            buildIndexDynamicsLegendTooltip(),
+                                            QColor(200, 200, 30));
+        }
+    }
+}
+
+GradientMaskResult MainWindowSatelliteComparator::buildGradientClassMap(
+    const QVector<QPointF> &insidePoints, const QVector<double> &julianDays,
+    int xSize, int ySize, int indexType) {
+    GradientMaskResult result;
+    result.xSize = xSize;
+    result.ySize = ySize;
+    result.classes.fill(-1, xSize * ySize);
+    result.gradients.fill(std::numeric_limits<double>::quiet_NaN(),
+                          xSize * ySize);
+    result.r2.fill(0.0, xSize * ySize);
+
+    const int N = m_time_row.size();
+    const bool is_landsat =
+        (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION);
+
+    const int red_band = 3;
+    const int nir_band = is_landsat ? 4 : 6;
+    const int swir_band = is_landsat ? 5 : 9;
+
+    for (const QPointF &pt : insidePoints) {
+        int px = static_cast<int>(pt.x());
+        int py = static_cast<int>(pt.y());
+        if (px < 0 || px >= xSize || py < 0 || py >= ySize) continue;
+
+        double latitude = 0.0, longitude = 0.0;
+        getGeoCoordinates(px, py, m_time_row_geo[0], latitude, longitude,
+                          false);
+
+        QVector<QPointF> pts(N);
+        pts[0] = QPointF(px, py);
+
+        bool anyBad = false;
+        for (int i = 1; i < N; ++i) {
+            pts[i] = geoToPixel(latitude, longitude, m_time_row_geo[i]);
+            int bx = static_cast<int>(pts[i].x());
+            int by = static_cast<int>(pts[i].y());
+            if (bx < 0 || bx >= xSize || by < 0 || by >= ySize) {
+                anyBad = true;
+                break;
+            }
+        }
+        if (anyBad) continue;
+
+        if (!isDataCloudShadow_OK(pts)) {
+            continue;
+        }
+
+        QVector<double> indexSeries;
+        QVector<double> xValid;
+
+        for (int i = 0; i < N; ++i) {
+            int bx = static_cast<int>(pts[i].x());
+            int by = static_cast<int>(pts[i].y());
+
+            auto getValue = [&](int bandIdx) -> double {
+                auto &bd = m_time_row[i][bandIdx];
+                uint16_t raw = bd.data[by * bd.width + bx];
+                return is_landsat
+                           ? (bd.reflectance_mult * raw + bd.reflectance_add)
+                           : (raw / 10000.0);
+            };
+
+            double red = getValue(red_band);
+            double nir = getValue(nir_band);
+            double swir = getValue(swir_band);
+
+            if (red <= 0 || nir <= 0 || swir <= 0) continue;
+            if (red > 1 || nir > 1 || swir > 1) continue;
+
+            double val = (indexType == 0) ? sam::calculateNDVI(nir, red)
+                                          : sam::calculateSWVI(nir, swir);
+
+            indexSeries.push_back(val);
+            xValid.push_back(julianDays[i]);
+        }
+
+        if (xValid.size() < 3) continue;
+
+        auto fit = fitLinear(xValid, indexSeries);
+        if (!fit.valid) continue;
+
+        int dpClass = (indexType == 0) ? classifyByNdviGradient(fit.G, fit.R2)
+                                       : classifyByNdwiGradient(fit.G, fit.R2);
+
+        if (dpClass < 0) continue;
+
+        const int idx = py * xSize + px;
+        result.classes[idx] = dpClass;
+        result.gradients[idx] = fit.G;
+        result.r2[idx] = fit.R2;
+    }
+
+    return result;
+}
+
+GradientMaskResult MainWindowSatelliteComparator::buildCombinedGradientClassMap(
+    const GradientMaskResult &ndviMask, const GradientMaskResult &ndwiMask) {
+    GradientMaskResult result;
+    if (!ndviMask.isValid() && !ndwiMask.isValid()) {
+        return result;
+    }
+
+    const GradientMaskResult *base = ndviMask.isValid() ? &ndviMask : &ndwiMask;
+    result.xSize = base->xSize;
+    result.ySize = base->ySize;
+    result.classes.fill(-1, result.xSize * result.ySize);
+    result.gradients.fill(std::numeric_limits<double>::quiet_NaN(),
+                          result.xSize * result.ySize);
+    result.r2.fill(0.0, result.xSize * result.ySize);
+
+    for (int i = 0; i < result.classes.size(); ++i) {
+        const int cNdvi = ndviMask.isValid() ? ndviMask.classes[i] : -1;
+        const int cNdwi = ndwiMask.isValid() ? ndwiMask.classes[i] : -1;
+
+        const double gNdvi = ndviMask.isValid() ? ndviMask.gradients[i] : 0.0;
+        const double gNdwi = ndwiMask.isValid() ? ndwiMask.gradients[i] : 0.0;
+
+        const double r2Ndvi = ndviMask.isValid() ? ndviMask.r2[i] : 0.0;
+        const double r2Ndwi = ndwiMask.isValid() ? ndwiMask.r2[i] : 0.0;
+
+        const int combinedClass =
+            combineGradientClasses(cNdvi, gNdvi, r2Ndvi, cNdwi, gNdwi, r2Ndwi);
+
+        result.classes[i] = combinedClass;
+
+        // дозополняем поля структуры на основе данных с NDVI и NDWI
+        if (combinedClass >= 0) {
+            if (cNdvi >= 0 && cNdwi >= 0) {
+                result.gradients[i] = 0.5 * (gNdvi + gNdwi);
+                result.r2[i] = qMax(r2Ndvi, r2Ndwi);
+            } else if (cNdvi >= 0) {
+                result.gradients[i] = gNdvi;
+                result.r2[i] = r2Ndvi;
+            } else if (cNdwi >= 0) {
+                result.gradients[i] = gNdwi;
+                result.r2[i] = r2Ndwi;
+            }
+        }
+    }
+
+    return result;
+}
+
+QGraphicsPixmapItem *MainWindowSatelliteComparator::buildGradientMaskItem(
+    const GradientMaskResult &mask, const QColor &layerColorHint) {
+    Q_UNUSED(layerColorHint);
+
+    if (!mask.isValid()) return nullptr;
+
+    auto *new_layer = new uchar[mask.xSize * mask.ySize * 4];
+    std::memset(new_layer, 0, mask.xSize * mask.ySize * 4);
+
+    bool hasAnyPixel = false;
+
+    for (int y = 0; y < mask.ySize; ++y) {
+        for (int x = 0; x < mask.xSize; ++x) {
+            const int cls = mask.classes[y * mask.xSize + x];
+            if (cls < 0) continue;
+
+            QColor color = dpClassColor(cls);
+            const int offset = (y * mask.xSize + x) * 4;
+            new_layer[offset] = color.red();
+            new_layer[offset + 1] = color.green();
+            new_layer[offset + 2] = color.blue();
+            new_layer[offset + 3] = 254;
+            hasAnyPixel = true;
+        }
+    }
+
+    if (!hasAnyPixel) {
+        delete[] new_layer;
+        return nullptr;
+    }
+
+    auto cleanup = [](void *info) { delete[] static_cast<uchar *>(info); };
+    QImage img(new_layer, mask.xSize, mask.ySize, mask.xSize * 4,
+               QImage::Format_RGBA8888, cleanup, new_layer);
+
+    auto *item = new QGraphicsPixmapItem(QPixmap::fromImage(img));
+    item->setZValue(ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+    return item;
 }
