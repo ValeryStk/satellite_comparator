@@ -501,6 +501,9 @@ private:
     uint16_t *loadMaskForSentinel(int &width, int &height,
                                   const QString &rootPath);
 
+    uint16_t *loadSCLForSentinel(int &width, int &height,
+                                 const QString &rootPath);
+
     bool saveSentinelToGeoTiff(const QVector<sad::BAND_DATA> &bands,
                                const sad::geoTransform &gt,
                                const QString &outputFilePath);

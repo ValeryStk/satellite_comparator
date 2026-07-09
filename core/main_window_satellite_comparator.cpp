@@ -713,8 +713,15 @@ void MainWindowSatelliteComparator::openTimeRowData() {
             qa_mask.file_name = sceneRoot;
             qa_mask.data =
                 loadMaskForSentinel(qa_mask.width, qa_mask.height, sceneRoot);
-            qDebug() << "mask_widht -- mask_height: " << qa_mask.width
+
+            qa_mask.scl_file_name = sceneRoot;
+            qa_mask.scl_data = loadSCLForSentinel(
+                qa_mask.scl_width, qa_mask.scl_height, sceneRoot);
+
+            qDebug() << "cloud mask width -- height:" << qa_mask.width
                      << qa_mask.height;
+            qDebug() << "scl mask width -- height:" << qa_mask.scl_width
+                     << qa_mask.scl_height;
 
             m_time_row_qa_mask[i] = qa_mask;
 
@@ -3647,40 +3654,61 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(
 
 bool MainWindowSatelliteComparator::isDataCloudShadow_OK(
     QVector<QPointF> &points) {
-    if (points.empty()) return false;
-    if (m_time_row_qa_mask.empty()) return true;
-    if (points.size() != m_time_row_qa_mask.size()) return false;
-
-    constexpr uint16_t SENTINEL_CLOUD_THRESHOLD = 15;
+    if (points.size() != m_time_row_qa_mask.size()) {
+        return false;
+    }
 
     for (int i = 0; i < points.size(); ++i) {
-        const auto &qa = m_time_row_qa_mask[i];
+        const int x = static_cast<int>(points[i].x());
+        const int y = static_cast<int>(points[i].y());
 
-        // Если маски для конкретной даты нет — не валим весь пиксель.
-        if (!qa.data || qa.width <= 0 || qa.height <= 0) {
-            continue;
+        if (x < 0 || y < 0) {
+            return false;
         }
 
-        const int px = static_cast<int>(points[i].x());
-        const int py = static_cast<int>(points[i].y());
-
-        if (px < 0 || py < 0) return false;
-        if (px >= qa.width || py >= qa.height) return false;
-
-        const int index = py * qa.width + px;
-        const uint16_t maskValue = qa.data[index];
+        const auto &qa = m_time_row_qa_mask[i];
 
         if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION) {
-            const bool isFill = maskValue & (1 << 0);
-            const bool isCloud = maskValue & (1 << 3);
-            const bool isShadow = maskValue & (1 << 4);
+            if (!qa.data) {
+                return false;
+            }
+            if (x >= qa.width || y >= qa.height) {
+                return false;
+            }
+
+            const uint16_t value = qa.data[y * qa.width + x];
+
+            const bool isFill = value & (1 << 0);
+            const bool isCloud = value & (1 << 3);
+            const bool isShadow = value & (1 << 4);
 
             if (isFill || isCloud || isShadow) {
                 return false;
             }
         } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
-            // Для Sentinel предполагаем probability-mask 0..100.
-            if (maskValue >= SENTINEL_CLOUD_THRESHOLD) {
+            if (!qa.data || !qa.scl_data) {
+                return false;
+            }
+
+            if (x >= qa.width || y >= qa.height) {
+                return false;
+            }
+            if (x >= qa.scl_width || y >= qa.scl_height) {
+                return false;
+            }
+
+            const uint16_t cloudProb = qa.data[y * qa.width + x];
+            const uint16_t scl = qa.scl_data[y * qa.scl_width + x];
+
+            if (cloudProb > 5) {
+                return false;
+            }
+
+            if (scl == 3) {  // cloud shadow
+                return false;
+            }
+
+            if (scl == 8 || scl == 9 || scl == 10) {  // cloud / cirrus
                 return false;
             }
         }
@@ -3914,10 +3942,15 @@ void MainWindowSatelliteComparator::setUpUi() {
 
 void MainWindowSatelliteComparator::deleteTimeRowData() {
     if (m_time_row.empty()) return;
-    for (int i = 0; i < m_time_row.size(); ++i) {
-        for (int j = 0; j < m_time_row[i].size(); ++j) {
-            auto data = m_time_row[i][j].data;
-            if (data) delete[] data;
+    for (int i = 0; i < m_time_row_qa_mask.size(); ++i) {
+        if (m_time_row_qa_mask[i].data) {
+            delete[] m_time_row_qa_mask[i].data;
+            m_time_row_qa_mask[i].data = nullptr;
+        }
+
+        if (m_time_row_qa_mask[i].scl_data) {
+            delete[] m_time_row_qa_mask[i].scl_data;
+            m_time_row_qa_mask[i].scl_data = nullptr;
         }
     }
     m_time_row.clear();
@@ -3946,6 +3979,28 @@ uint16_t *MainWindowSatelliteComparator::loadMaskForSentinel(
     auto data = readTiff(pathToCloudMsk, width, height);
     qDebug() << "CLOUD MASK" << width << "--" << height;
     return data;
+}
+
+uint16_t *MainWindowSatelliteComparator::loadSCLForSentinel(
+    int &width, int &height, const QString &rootPath) {
+    width = 0;
+    height = 0;
+
+    QDirIterator it(rootPath, QStringList() << "*SCL_20m.jp2", QDir::Files,
+                    QDirIterator::Subdirectories);
+
+    QString sclPath;
+    if (it.hasNext()) {
+        sclPath = it.next();
+    }
+
+    if (sclPath.isEmpty()) {
+        qDebug() << "SCL_20m.jp2 not found in:" << rootPath;
+        return nullptr;
+    }
+
+    qDebug() << "SCL path:" << sclPath;
+    return readTiff(sclPath, width, height);
 }
 
 bool MainWindowSatelliteComparator::saveSentinelToGeoTiff(
