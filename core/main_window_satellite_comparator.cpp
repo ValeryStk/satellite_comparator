@@ -331,16 +331,17 @@ void copyVectorsToClipboard(const double latitude, const double longitude,
 
 static QString buildIndexDynamicsLegendTooltip() {
     return "<b>Градиент изменений по индексам</b><br><br>"
-           "<span style='color: rgb(0, 100, 120);'>Растет</span><br>"
-           "<span style='color: rgb(34, 139, 34);'>I — Стабильно</span><br>"
-           "<span style='color: rgb(144,238,144);'>II — Слабое "
-           "ухудшение</span><br>"
-           "<span style='color: rgb(154,205,50);'>III — Умеренное "
-           "ухудшение</span><br>"
-           "<span style='color: rgb(255,215,0);'>IV — Сильное "
-           "ухудшение</span><br>"
-           "<span style='color: rgb(205,133,63);'>V — Очень сильное "
-           "ухудшение</span><br>";
+           "<span style='color: rgb(0, 100, 120);'>■</span> Растет<br>"
+           "<span style='color: rgb(34, 139, 34);'>■</span> I — "
+           "Стабильно<br>"
+           "<span style='color: rgb(120, 200, 80);'>■</span> II — Слабое "
+           "ухудшение<br>"
+           "<span style='color: rgb(255, 215, 0);'>■</span> III — Умеренное "
+           "ухудшение<br>"
+           "<span style='color: rgb(255, 140, 0);'>■</span> IV — Сильное "
+           "ухудшение<br>"
+           "<span style='color: rgb(165, 42, 42);'>■</span> V — Очень сильное "
+           "ухудшение<br>";
 }
 
 static QString buildGradientLegendTooltipDP(const QColor &startColor,
@@ -416,7 +417,7 @@ static int classifyByNdwiGradient(double G, double R2) {
 
 // Класс усыхания по градиенту NDVI (на данным момент дублирует NDWI)
 static int classifyByNdviGradient(double G, double R2) {
-    return classifyByNdviGradient(G, R2);
+    return classifyByNdwiGradient(G, R2);
 }
 
 // Объединение классов NDVI и NDWI в итоговый класс.
@@ -4571,7 +4572,7 @@ void MainWindowSatelliteComparator::create_index_dynamic_maps(
     }
 
     if (insidePoints.isEmpty()) return;
-
+    qDebug() << "=-=-=-=-=-=-=-";
     GradientMaskResult ndviMask =
         buildGradientClassMap(insidePoints, julianDays, xSize, ySize, 0);
     GradientMaskResult ndwiMask =
