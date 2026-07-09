@@ -671,8 +671,9 @@ void MainWindowSatelliteComparator::openTimeRowData() {
                                 "/" + subdirs[i] + "_QA_PIXEL.TIF";
             qa_mask.data =
                 readTiff(qa_mask.file_name, qa_mask.width, qa_mask.height);
-            // qDebug()<<"mask_widht -- mask_height:
-            // "<<qa_mask.width<<qa_mask.height;
+            //            qDebug() << "mask_widht -- mask_height: " <<
+            //            qa_mask.width
+            //                     << qa_mask.height << qa_mask.file_name;
             m_time_row_qa_mask[i] = qa_mask;
 
             meta_datas.push_back(landsat_metadata);
