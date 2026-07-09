@@ -329,8 +329,8 @@ void copyVectorsToClipboard(const double latitude, const double longitude,
 
 // ─── Вспомогательные структуры/функции ────────────────────────────────────
 
-static QString buildGradientLegendTooltip321() {
-    return "<b>Градиент усыхания 3.2.1</b><br><br>"
+static QString buildIndexDynamicsLegendTooltip() {
+    return "<b>Градиент усыхания по индексам</b><br><br>"
            "<span style='color: rgb(0,128,0);'>■</span> I — здоровые<br>"
            "<span style='color: rgb(144,238,144);'>■</span> II — "
            "ослабленные<br>"
@@ -341,7 +341,7 @@ static QString buildGradientLegendTooltip321() {
            "сухостой<br>";
 }
 
-static QString buildGradientLegendTooltipV1(const QColor &startColor,
+static QString buildGradientLegendTooltipDP(const QColor &startColor,
                                             const QColor &endColor) {
     return QString(
                "<b>Градиент усыхания по NDVI (DP)</b><br><br>"
@@ -2668,7 +2668,7 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient(
     const QColor endColor = gradientColors.last();
     m_layers_search_result_items.insert(layerId, newimageitem);
     m_layer_gui_list->addItemToList(
-        layerId, buildGradientLegendTooltipV1(startColor, endColor),
+        layerId, buildGradientLegendTooltipDP(startColor, endColor),
         QColor(255, 165, 0), Qt::Checked);
 }
 
@@ -2796,8 +2796,9 @@ void MainWindowSatelliteComparator::setUpToolWidget() {
             this, SLOT(send_roi_spectrs_to_matlab(const QString)));
     connect(m_layer_roi_list, SIGNAL(createTimeRowGradient(const QString)),
             this, SLOT(calculate_time_row_gradient(const QString)));
-    connect(m_layer_roi_list, SIGNAL(createTimeRowGradient321(const QString)),
-            this, SLOT(calculate_time_row_gradient_321(const QString)));
+    connect(m_layer_roi_list,
+            SIGNAL(createTimeRowIndexesGradient(const QString)), this,
+            SLOT(create_index_dynamic_maps(const QString)));
     connect(m_layer_roi_list, SIGNAL(changeDetectionRegion(const QString)),
             this, SLOT(runChangeDetectionMethod(const QString)));
 
@@ -4506,7 +4507,7 @@ void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,
     updateImage();
 }
 
-void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
+void MainWindowSatelliteComparator::create_index_dynamic_maps(
     const QString &roiId) {
     if (m_time_row.empty()) return;
 
@@ -4516,12 +4517,12 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
         return;
     }
 
-    const QString ndviKey = "GRADIENT_321_NDVI_" + roiId;
-    const QString ndwiKey = "GRADIENT_321_NDWI_" + roiId;
-    const QString summaryKey = "GRADIENT_321_SUM_" + roiId;
+    const QString ndviLayerId = "TIME_GRADIENT_NDVI_" + roiId;
+    const QString ndwiLayerId = "TIME_GRADIENT_NDWI_" + roiId;
+    const QString summaryLayerId = "TIME_GRADIENT_AGREGATION_" + roiId;
 
     // Удаляем предыдущие результаты для этого ROI
-    for (const QString &key : {ndviKey, ndwiKey, summaryKey}) {
+    for (const QString &key : {ndviLayerId, ndwiLayerId, summaryLayerId}) {
         if (m_layers_search_result_items.contains(key)) {
             m_layer_gui_list->removeItemList(key);
         }
@@ -4577,9 +4578,9 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
     if (ndviMask.isValid()) {
         if (auto *item = buildGradientMaskItem(ndviMask)) {
             m_scene->addItem(item);
-            m_layers_search_result_items.insert(ndviKey, item);
-            m_layer_gui_list->addItemToList(ndviKey,
-                                            buildGradientLegendTooltip321(),
+            m_layers_search_result_items.insert(ndviLayerId, item);
+            m_layer_gui_list->addItemToList(ndviLayerId,
+                                            buildIndexDynamicsLegendTooltip(),
                                             QColor(34, 139, 34), Qt::Unchecked);
         }
     }
@@ -4587,19 +4588,19 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient_321(
     if (ndwiMask.isValid()) {
         if (auto *item = buildGradientMaskItem(ndwiMask)) {
             m_scene->addItem(item);
-            m_layers_search_result_items.insert(ndwiKey, item);
+            m_layers_search_result_items.insert(ndwiLayerId, item);
             m_layer_gui_list->addItemToList(
-                ndwiKey, buildGradientLegendTooltip321(), QColor(30, 144, 255),
-                Qt::Unchecked);
+                ndwiLayerId, buildIndexDynamicsLegendTooltip(),
+                QColor(30, 144, 255), Qt::Unchecked);
         }
     }
 
     if (summaryMask.isValid()) {
         if (auto *item = buildGradientMaskItem(summaryMask)) {
             m_scene->addItem(item);
-            m_layers_search_result_items.insert(summaryKey, item);
-            m_layer_gui_list->addItemToList(summaryKey,
-                                            buildGradientLegendTooltip321(),
+            m_layers_search_result_items.insert(summaryLayerId, item);
+            m_layer_gui_list->addItemToList(summaryLayerId,
+                                            buildIndexDynamicsLegendTooltip(),
                                             QColor(200, 200, 30));
         }
     }

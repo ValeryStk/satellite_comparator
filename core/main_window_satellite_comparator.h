@@ -57,7 +57,7 @@ public:
 
 private slots:
 
-    void calculate_time_row_gradient_321(const QString &roiId);
+    void create_index_dynamic_maps(const QString &roiId);
 
     //! Слот переключения обработки движения мыши по сцене
     void toggleMouseTracking();

@@ -18,7 +18,7 @@ signals:
     void createTimeRowGradient(const QString& id);
     void polygonForMatlabSelected(const QString& id);
     void changeDetectionRegion(const QString& id);
-    void createTimeRowGradient321(const QString& id);
+    void createTimeRowIndexesGradient(const QString& id);
 
     // LayerList interface
 private:

@@ -37,7 +37,7 @@ void LayerRoiList::handle_other_contextAction(const QString &actionId,
     } else if (actionId == "Построить градиент усыхания") {
         emit createTimeRowGradient(id);
     } else if (actionId == "Градиент усыхания v2") {
-        emit createTimeRowGradient321(id);
+        emit createTimeRowIndexesGradient(id);
     } else if (actionId == "Анализ спектров") {
         emit polygonForMatlabSelected(id);
     } else if (actionId == "Метод 'Change detection'") {
