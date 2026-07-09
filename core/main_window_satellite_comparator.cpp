@@ -330,15 +330,17 @@ void copyVectorsToClipboard(const double latitude, const double longitude,
 // ─── Вспомогательные структуры/функции ────────────────────────────────────
 
 static QString buildIndexDynamicsLegendTooltip() {
-    return "<b>Градиент усыхания по индексам</b><br><br>"
-           "<span style='color: rgb(0,128,0);'>■</span> I — здоровые<br>"
-           "<span style='color: rgb(144,238,144);'>■</span> II — "
-           "ослабленные<br>"
-           "<span style='color: rgb(154,205,50);'>■</span> III — сильно "
-           "ослабленные<br>"
-           "<span style='color: rgb(255,215,0);'>■</span> IV — усыхающие<br>"
-           "<span style='color: rgb(205,133,63);'>■</span> V — свежий "
-           "сухостой<br>";
+    return "<b>Градиент изменений по индексам</b><br><br>"
+           "<span style='color: rgb(0, 100, 120);'>Растет</span><br>"
+           "<span style='color: rgb(34, 139, 34);'>I — Стабильно</span><br>"
+           "<span style='color: rgb(144,238,144);'>II — Слабое "
+           "ухудшение</span><br>"
+           "<span style='color: rgb(154,205,50);'>III — Умеренное "
+           "ухудшение</span><br>"
+           "<span style='color: rgb(255,215,0);'>IV — Сильное "
+           "ухудшение</span><br>"
+           "<span style='color: rgb(205,133,63);'>V — Очень сильное "
+           "ухудшение</span><br>";
 }
 
 static QString buildGradientLegendTooltipDP(const QColor &startColor,
@@ -403,23 +405,18 @@ static GradientFitResult fitLinear(const QVector<double> &x,
 // инструкции 3.2.1
 static int classifyByNdwiGradient(double G, double R2) {
     if (R2 < 0.6) return -1;
-    if (G >= -0.00005 && G <= 0.00005) return 0;  // I  — Здоровые (норма)
-    if (G >= -0.00010 && G < -0.00005) return 1;  // II — Ослабленные
-    if (G >= -0.00020 && G < -0.00010) return 2;  // III — Сильно ослабленные
-    if (G >= -0.00040 && G < -0.00020) return 3;  // IV — Усыхающие
-    if (G < -0.00040) return 4;  // V  — Свежий сухостой
+    if (G > 0.00005) return 0;                    // Растет
+    if (G >= -0.00005 && G <= 0.00005) return 1;  // I = Стабильно
+    if (G >= -0.00010 && G < -0.00005) return 2;  // II
+    if (G >= -0.00020 && G < -0.00010) return 3;  // III
+    if (G >= -0.00040 && G < -0.00020) return 4;  // IV
+    if (G < -0.00040) return 5;                   // V
     return -1;
 }
 
 // Класс усыхания по градиенту NDVI (на данным момент дублирует NDWI)
 static int classifyByNdviGradient(double G, double R2) {
-    if (R2 < 0.6) return -1;
-    if (G >= -0.00005 && G <= 0.00005) return 0;  // I  — Здоровые (норма)
-    if (G >= -0.00010 && G < -0.00005) return 1;  // II — Ослабленные
-    if (G >= -0.00020 && G < -0.00010) return 2;  // III — Сильно ослабленные
-    if (G >= -0.00040 && G < -0.00020) return 3;  // IV — Усыхающие
-    if (G < -0.00040) return 4;  // V  — Свежий сухостой
-    return -1;
+    return classifyByNdviGradient(G, R2);
 }
 
 // Объединение классов NDVI и NDWI в итоговый класс.
@@ -440,55 +437,65 @@ static int combineGradientClasses(int cNdvi, double gNdvi, double r2Ndvi,
     if (ndviOk && !ndwiOk) return cNdvi;
     if (!ndviOk && ndwiOk) return cNdwi;
 
+    // если оба показывают рост — рост
+    if (cNdvi == 0 && cNdwi == 0) return 0;
+
+    // если один рост, другой стабильность — считаем стабильностью
+    if ((cNdvi == 0 && cNdwi == 1) || (cNdvi == 1 && cNdwi == 0)) return 1;
+
+    // если один рост, а другой уже деградация — не даем росту "смазать"
+    // проблему
+    if (cNdvi == 0 && cNdwi >= 2) return cNdwi;
+    if (cNdwi == 0 && cNdvi >= 2) return cNdvi;
+
     const int maxClass = qMax(cNdvi, cNdwi);
 
     double wNdwi = 0.5;
     double wNdvi = 0.5;
 
-    // Ранние стадии — больший вес NDWI
-    if (maxClass <= 1) {
+    // слабые классы: чуть больше доверяем NDWI
+    if (maxClass <= 2) {
         wNdwi = 0.7;
         wNdvi = 0.3;
     }
-    // Переходная зона
-    else if (maxClass == 2) {
+    // средние: поровну
+    else if (maxClass == 3) {
         wNdwi = 0.5;
         wNdvi = 0.5;
     }
-    // Поздние стадии — больший вес NDVI
+    // тяжелые: чуть больше доверяем NDVI
     else {
         wNdwi = 0.3;
         wNdvi = 0.7;
     }
 
-    // Усиливаем вес по качеству аппроксимации
     wNdwi *= qMax(0.0, r2Ndwi - 0.6);
     wNdvi *= qMax(0.0, r2Ndvi - 0.6);
 
-    if (wNdwi + wNdvi < 1e-12) {
-        return qMax(cNdvi, cNdwi);
-    }
+    if (wNdwi + wNdvi < 1e-12) return qMax(cNdvi, cNdwi);
 
     const double combined = (wNdwi * cNdwi + wNdvi * cNdvi) / (wNdwi + wNdvi);
 
-    return qBound(0, qRound(combined), 4);
+    return qBound(0, qRound(combined), 5);
 }
 
 // Цвета классов по DP (аналог таблицы рис. 3.2)
 static QColor dpClassColor(int dpClass) {
     switch (dpClass) {
         case 0:
-            return QColor(0, 128, 0);  // зелёный   — I (норма)
+            return QColor(0, 100, 120);  // Растет
         case 1:
-            return QColor(144, 238, 144);  // светло-зелёный — II
+            return QColor(34, 139, 34);  // Стабильно
         case 2:
-            return QColor(154, 205, 50);  // жёлто-зелёный  — III
+            return QColor(120, 200, 80);  // Слабое ухудшение
         case 3:
-            return QColor(255, 215, 0);  // жёлтый   — IV
+            return QColor(255, 215, 0);  // Умеренное ухудшение
         case 4:
-            return QColor(205, 133, 63);  // оранжево-коричневый — V
+            return QColor(255, 140, 0);  // Сильное ухудшение
+        case 5:
+            return QColor(165, 42, 42);  // Очень сильное ухудшение
         default:
-            return QColor(0, 0, 0, 0);  // прозрачный — не определено
+            return QColor(0, 0, 0, 0);
     }
 }
 

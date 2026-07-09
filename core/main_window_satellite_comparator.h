@@ -30,7 +30,7 @@ struct GradientMaskResult {
     int xSize = 0;
     int ySize = 0;
 
-    QVector<int> classes;  // -1 = нет данных, 0..4 = класс состояния
+    QVector<int> classes;  // -1 = нет данных, 0..5 = класс состояния
     QVector<double> gradients;  // G для каждого пикселя
     QVector<double> r2;         // R² для каждого пикселя
 
