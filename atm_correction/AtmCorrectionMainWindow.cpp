@@ -211,7 +211,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
         "    font-weight: bold;"          // Жирный шрифт
         "    border: 2px solid #D1D1D1;"  // Граница
         "}");
-    ui->doubleSpinBox_lambda_1->setValue(490);
+    ui->doubleSpinBox_lambda_1->setValue(400);
     ui->doubleSpinBox_lambda_2->setValue(665);
 }
 
@@ -240,6 +240,7 @@ void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
                    ui->doubleSpinBox_CaptureAzimutAngle->value());
     cs->computeGamma();
     updateInitialValues();
+
     if (base_pixel_speya_values.size() == 10) {
         cs->start_solve_dark_pixels_async(
             ui->comboBox_satellite_type->currentText(),
@@ -302,6 +303,7 @@ void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
 
 void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
     if (pixel_bands.size() < 10) return;
+
     QString bands_values;
     base_pixel_speya_values.clear();
     for (int i = 0; i < 10; ++i) {
@@ -309,7 +311,10 @@ void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
         bands_values.append(QString::number(pixel_bands[i]));
         if (i < 10 - 1) bands_values.append(" ");
     }
-    auto ln_m_H2O = cs->get_mH2O(pixel_bands[9], pixel_bands[8]);
+    base_pixel_speya_values = {87.94741, 77.81722, 67.03251, 61.8863,
+                               56.85879, 56.87943, 57.46667, 50.95204,
+                               53.7519,  10.7995};  // TECT DELETE
+    auto ln_m_H2O = cs->get_mH2O(10.7995, 53.7519);
     ui->label_pixel_bands->setText(bands_values);
     ui->doubleSpinBox_mH2O->setValue(std::exp(ln_m_H2O));
     auto a = cs->get_a_H2O();

@@ -187,8 +187,7 @@ inline double compute_x_m(const double& gamma) {
 }
 
 inline double compute_x_a(const double& mu_0, const double& g) {
-    return (1 - pow(g, 2)) /
-           pow((1 + pow(g, 2) - 2 * g * gamma), 1.5);  // error Anton fixed
+    return (1 - pow(g, 2)) / pow((1 + pow(g, 2) - 2 * g * gamma), 1.5);
 }
 
 inline vector<double> compute_tau_a(const double& tau_0_a, const double& beta,
@@ -254,13 +253,14 @@ inline vector<double> compute_x(const double& mu_0, const double& g,
     tau_m_res = tau_m;
     x_m_res = x_m;
     x_a_res = x_a;
-    /*if (allEqual(result)) {
-        qDebug()
+    if (allEqual(result)) {
+        /*qDebug()
             << "****************** AL EQUAL *********************************";
         qDebug() << "mu_0" << mu_0 << "g" << g << "tau_0_a" << tau_0_a << "beta"
                  << beta << "x_m: " << x_m << "x_a: " << x_a << "tau_a" << tau_a
                  << "tau_m" << tau_m;
-    };*/
+        dv::show(v_central_waves, tau_m);*/
+    };
     return result;
 }
 
@@ -325,7 +325,7 @@ inline vector<double> compute_E_lambda(
     vector<double> g_lmb = compute_g(g, tau_0_a, beta, tau_m, list);
 
     for (size_t i = 0; i < list.size(); ++i) {
-        double ro_0 = compute_ro_0(albedo1, albedo2, list[i], 490, 665);
+        double ro_0 = compute_ro_0(albedo1, albedo2, list[i], 400, 665);
         auto E_lmb =
             4.0 * pi * omega_lambda[i] * mu_0 * B_lambda_teta_list[i] /
                 (4.0 + 3.0 * (1.0 - g_lmb[i]) * (1.0 - ro_0) * tau_lambda[i]) *
@@ -469,11 +469,11 @@ inline double compute_B2(const vector<double>& S_lambda_list,
     double integral_first = 0.0;
     double integral_second = 0.0;
 
-    auto B_atm = compute_B_atm(B_lambda_teta_list, mu_0, tau_0_a, beta, g,
-                               tau_m, list, Q, P, Tau_e);
+    /*auto B_atm = compute_B_atm(B_lambda_teta_list, mu_0, tau_0_a, beta, g,
+                               tau_m, list, Q, P, Tau_e);*/
 
     for (size_t i = 0; i < list.size(); ++i) {
-        auto ro_0 = compute_ro_0(albedo_1, albedo_2, list[i], 490, 665);
+        auto ro_0 = compute_ro_0(albedo_1, albedo_2, list[i], 400, 665);
         integral_first += ro_0 / pi * E_lambda[i] * T_lambda[i] *
                           T_H2O_list[i] * S_lambda_list[i];
         integral_second += S_lambda_list[i];
@@ -547,7 +547,7 @@ inline vector<double> compute_EQ(
                              T_O3_list[i], T_H2O_list, mu_0, albedo_1, albedo_2,
                              tau_0_a, beta, g, tau_m, list, Q, P, Tau_e);
         double lambda = central_waves[i];
-        double ro_0 = compute_ro_0(albedo_1, albedo_2, lambda, 490, 665);
+        double ro_0 = compute_ro_0(albedo_1, albedo_2, lambda, 400, 665);
         EQ.push_back(compute_eq(B1, B2, ro_0, dividers[i], dark_pixels[i]));
         ro_0_list.push_back(ro_0);
         B1_result.push_back(B1);
@@ -969,8 +969,8 @@ result_values optimize(const QString& sat_name,
     qDebug() << "mu: " << mu;
     qDebug() << "mu_0: " << mu_0;
 
-    // dv::show(lambda_list, tau_a_res, "tau_a");
-    // dv::show(lambda_list, tau_m_res, "tau_m");
+    dv::show(lambda_list, tau_a_res, "tau_a");
+    dv::show(lambda_list, tau_m_res, "tau_m");
     qDebug() << "x_m_res: " << x_m_res;
     qDebug() << "x_a_res: " << x_a_res;
     // qDebug() << x_list;
