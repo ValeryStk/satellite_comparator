@@ -2916,6 +2916,9 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
 
     connect(ui->action_setCursorByGeoCoord, &QAction::triggered, this,
             &MainWindowSatelliteComparator::setCursorByGeo);
+    ui->action_setCursorByGeoCoord->setShortcut(
+        QKeySequence(Qt::CTRL | Qt::Key_F));
+    ui->action_setCursorByGeoCoord->setShortcutContext(Qt::WindowShortcut);
 
     connect(ui->action_load_external_spectr, &QAction::triggered, this,
             &MainWindowSatelliteComparator::setExternalSampleFromClipboard);

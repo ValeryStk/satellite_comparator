@@ -14,8 +14,8 @@ QMenu *LayerRoiList::createContextMenu() {
     auto base_menu = LayerList::createContextMenu();
     base_menu->addAction("Изменить цвет");
     base_menu->addAction("Среднее арифметическое");
-    base_menu->addAction("Построить градиент усыхания");
-    base_menu->addAction("Градиент усыхания v2");  // ← добавить
+    base_menu->addAction("Градиент усыхания");
+    base_menu->addAction("Градиент усыхания по идексам");
     base_menu->addAction("Анализ спектров");
     base_menu->addAction("Метод 'Change detection'");
     return base_menu;
