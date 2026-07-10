@@ -178,7 +178,7 @@ inline vector<double> compute_tau_m(const vector<double>& list,
                                     double tau_m_0) {
     std::vector<double> result;
     for (uintmax_t i = 0; i < list.size(); ++i) {
-        auto lambda_0_lambda = LAMBDA_0 / list[i];
+        double lambda_0_lambda = LAMBDA_0 / list[i];
         result.push_back(tau_m_0 * pow(lambda_0_lambda, 4));
     }
     return result;
@@ -726,11 +726,6 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& initial_values,
     }
 
     qDebug() << "\nALBEDO FINAL STATUS: " << status;
-    // qDebug() << "VALUES: " << p[0] << p[1] << p[2] << p[3];
-    // qDebug() << "ERROR: " << rv.err_tau << rv.err_beta << rv.err_g <<
-    // rv.err_albedo;
-    // albedo_final_result.push_back(ro);
-    dv::show(v_central_waves, albedo_final_result, "final_albedo");
     return albedo_final_result;
 }
 

@@ -91,16 +91,6 @@ void atm_correction_UnitTests::loadSattelitesData() {
 }
 
 void atm_correction_UnitTests::calculateCosSunZenitAngle() {
-    /*setCellValue("X", 300);
-    setCellValue("q", 2);
-    setCellValue("p", 1.25);
-    setCellValue("Tau_m0", 0.098, 3);
-    setCellValue("Tau_a0", 0.2);
-    setCellValue("Beta", 2);
-    setCellValue("Tau_e", 0.04);
-    setCellValue("g_a", 0.6);
-    setCellValue("p_1", 0.05);
-    setCellValue("p_2", 0.15);*/
     calculation_solver cs({300, 2, 1.25, 0.098, 0.2, 2, 0.04, 0.6, 0.05, 0.15});
     auto ln_m_H2O = cs.get_mH2O(10.7995, 53.7519);
     cs.setSunZenitAngle(31);
