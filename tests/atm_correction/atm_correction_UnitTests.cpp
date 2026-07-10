@@ -101,12 +101,25 @@ void atm_correction_UnitTests::calculateCosSunZenitAngle() {
     setCellValue("g_a", 0.6);
     setCellValue("p_1", 0.05);
     setCellValue("p_2", 0.15);*/
-    calculation_solver cs({300, 2, 1.25, 3, 0.2, 2, 0.04, 0.6, 0.05, 0.15});
-    cs.get_mH2O(10.7995, 53.7519);
-    cs.setSunZenitAngle(45);
-    cs.setCaptruretZenitAngle(45);
-    cs.setFiAngle(45, 78);
+    calculation_solver cs({300, 2, 1.25, 0.098, 0.2, 2, 0.04, 0.6, 0.05, 0.15});
+    auto ln_m_H2O = cs.get_mH2O(10.7995, 53.7519);
+    cs.setSunZenitAngle(31);
+    cs.setCaptruretZenitAngle(9.923);
+    cs.setFiAngle(163.981, 290.122);
     cs.computeGamma();
+
+    auto a = cs.get_a_H2O();
+    auto b = cs.get_b_H2O();
+    auto w = cs.getLambdaList();
+    Q_ASSERT(a.size() == b.size() == w.size());
+    qDebug() << a.size() << b.size() << w.size();
+    QVector<double> T_H2O;
+    QVector<double> T_O3;
+    for (size_t i = 0; i < w.size(); ++i) {
+        T_H2O.append(a[i] * ln_m_H2O + b[i]);
+    }
+    cs.setH2O(T_H2O);
+
     cs.solve_dark_pixels("sentinel 2A",
                          {87.94741, 77.81722, 67.03251, 61.8863, 56.85879,
                           56.87943, 57.46667, 50.95204, 53.7519, 10.7995});

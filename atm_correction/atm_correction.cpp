@@ -962,8 +962,8 @@ result_values optimize(const QString& sat_name,
     qDebug() << "mu: " << mu;
     qDebug() << "mu_0: " << mu_0;
 
-    // dv::show(lambda_list, tau_a_res, "tau_a");
-    // dv::show(lambda_list, tau_m_res, "tau_m");
+    dv::show(lambda_list, tau_a_res, "tau_a");
+    dv::show(lambda_list, tau_m_res, "tau_m");
     qDebug() << "x_m_res: " << x_m_res;
     qDebug() << "x_a_res: " << x_a_res;
     // qDebug() << x_list;
