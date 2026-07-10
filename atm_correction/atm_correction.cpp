@@ -38,6 +38,8 @@ std::vector<double> tau_a_res;
 std::vector<double> tau_m_res;
 double x_m_res;
 double x_a_res;
+double lambda_1 = 400;
+double lambda_2 = 665;
 // std::vector<double> B_sun_list;
 
 /*
@@ -325,7 +327,8 @@ inline vector<double> compute_E_lambda(
     vector<double> g_lmb = compute_g(g, tau_0_a, beta, tau_m, list);
 
     for (size_t i = 0; i < list.size(); ++i) {
-        double ro_0 = compute_ro_0(albedo1, albedo2, list[i], 490, 665);
+        double ro_0 =
+            compute_ro_0(albedo1, albedo2, list[i], lambda_1, lambda_2);
         auto E_lmb =
             4.0 * pi * omega_lambda[i] * mu_0 * B_lambda_teta_list[i] /
                 (4.0 + 3.0 * (1.0 - g_lmb[i]) * (1.0 - ro_0) * tau_lambda[i]) *
@@ -473,7 +476,8 @@ inline double compute_B2(const vector<double>& S_lambda_list,
                                tau_m, list, Q, P, Tau_e);
 
     for (size_t i = 0; i < list.size(); ++i) {
-        auto ro_0 = compute_ro_0(albedo_1, albedo_2, list[i], 490, 665);
+        auto ro_0 =
+            compute_ro_0(albedo_1, albedo_2, list[i], lambda_1, lambda_2);
         integral_first += ro_0 / pi * E_lambda[i] * T_lambda[i] *
                           T_H2O_list[i] * S_lambda_list[i];
         integral_second += S_lambda_list[i];
@@ -547,7 +551,8 @@ inline vector<double> compute_EQ(
                              T_O3_list[i], T_H2O_list, mu_0, albedo_1, albedo_2,
                              tau_0_a, beta, g, tau_m, list, Q, P, Tau_e);
         double lambda = central_waves[i];
-        double ro_0 = compute_ro_0(albedo_1, albedo_2, lambda, 490, 665);
+        double ro_0 =
+            compute_ro_0(albedo_1, albedo_2, lambda, lambda_1, lambda_2);
         EQ.push_back(compute_eq(B1, B2, ro_0, dividers[i], dark_pixels[i]));
         ro_0_list.push_back(ro_0);
         B1_result.push_back(B1);
