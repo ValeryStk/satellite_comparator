@@ -472,9 +472,6 @@ inline double compute_B2(const vector<double>& S_lambda_list,
     double integral_first = 0.0;
     double integral_second = 0.0;
 
-    auto B_atm = compute_B_atm(B_lambda_teta_list, mu_0, tau_0_a, beta, g,
-                               tau_m, list, Q, P, Tau_e);
-
     for (size_t i = 0; i < list.size(); ++i) {
         auto ro_0 =
             compute_ro_0(albedo_1, albedo_2, list[i], lambda_1, lambda_2);
@@ -484,15 +481,6 @@ inline double compute_B2(const vector<double>& S_lambda_list,
     }
 
     double B2 = T_O3 * integral_first / integral_second;
-
-    /*for (size_t i = 0; i < list.size(); ++i) {
-        auto T_g_lambda = T_O2_list[i] * T_H2O_list[i];
-        auto S_lambda = S_lambda_list[i];
-        auto B_sun = B_lambda_teta_list[i];
-        auto T = T_lambda[i];
-        auto E = E_lambda[i];
-        B2 += E * T * T_g_lambda * S_lambda * B_sun;
-    }*/
     return B2;
 }
 

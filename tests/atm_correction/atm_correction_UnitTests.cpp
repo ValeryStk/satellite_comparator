@@ -91,10 +91,25 @@ void atm_correction_UnitTests::loadSattelitesData() {
 }
 
 void atm_correction_UnitTests::calculateCosSunZenitAngle() {
-    calculation_solver cs({1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-    // cs.updateCurrentSatellite("sentinel2a-20m");
-    cs.solve_dark_pixels("sentinel2a-20m",
-                         {39.535587, 25.645323, 11.881793, 4.310712});
+    /*setCellValue("X", 300);
+    setCellValue("q", 2);
+    setCellValue("p", 1.25);
+    setCellValue("Tau_m0", 0.098, 3);
+    setCellValue("Tau_a0", 0.2);
+    setCellValue("Beta", 2);
+    setCellValue("Tau_e", 0.04);
+    setCellValue("g_a", 0.6);
+    setCellValue("p_1", 0.05);
+    setCellValue("p_2", 0.15);*/
+    calculation_solver cs({300, 2, 1.25, 3, 0.2, 2, 0.04, 0.6, 0.05, 0.15});
+    cs.get_mH2O(10.7995, 53.7519);
+    cs.setSunZenitAngle(45);
+    cs.setCaptruretZenitAngle(45);
+    cs.setFiAngle(45, 78);
+    cs.computeGamma();
+    cs.solve_dark_pixels("sentinel 2A",
+                         {87.94741, 77.81722, 67.03251, 61.8863, 56.85879,
+                          56.87943, 57.46667, 50.95204, 53.7519, 10.7995});
 }
 
 QTEST_MAIN(atm_correction_UnitTests)
