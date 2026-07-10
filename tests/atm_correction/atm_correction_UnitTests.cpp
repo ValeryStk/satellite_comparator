@@ -80,7 +80,7 @@ void atm_correction_UnitTests::loadSattelitesData() {
                 int index = wave_offset - 400 + i;
                 if (index > 600) break;
                 full_values[index] = arr1[i].toDouble();
-                qDebug() << "offset_index: " << index;
+                // qDebug() << "offset_index: " << index;
             };
             dv::show(full_waverange, full_values,
                      name.toStdString() + " (" +
@@ -90,7 +90,7 @@ void atm_correction_UnitTests::loadSattelitesData() {
     }
 }
 
-void atm_correction_UnitTests::calculateCosSunZenitAngle() {
+void atm_correction_UnitTests::calculateFixedMathPixel() {
     calculation_solver cs({300, 2, 1.25, 0.098, 0.2, 2, 0.04, 0.6, 0.05, 0.15});
     auto ln_m_H2O = cs.get_mH2O(10.7995, 53.7519);
     cs.setSunZenitAngle(31);
@@ -102,7 +102,7 @@ void atm_correction_UnitTests::calculateCosSunZenitAngle() {
     auto b = cs.get_b_H2O();
     auto w = cs.getLambdaList();
     Q_ASSERT(a.size() == b.size() == w.size());
-    qDebug() << a.size() << b.size() << w.size();
+    // qDebug() << a.size() << b.size() << w.size();
     QVector<double> T_H2O;
     QVector<double> T_O3;
     for (size_t i = 0; i < w.size(); ++i) {

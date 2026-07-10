@@ -184,13 +184,12 @@ inline vector<double> compute_tau_m(const vector<double>& list,
     return result;
 }
 
-inline double compute_x_m(const double& gamma) {
-    return 3 * (1 + gamma * gamma) / 4;  // return 3 * (1 + pow(mu_0, 2)) / 4;
+inline double compute_x_m(const double gamma) {
+    return 3 * (1 + gamma * gamma) / 4;
 }
 
-inline double compute_x_a(const double& mu_0, const double& g) {
-    return (1 - pow(g, 2)) /
-           pow((1 + pow(g, 2) - 2 * g * gamma), 1.5);  // error Anton fixed
+inline double compute_x_a(const double g) {
+    return ((1 - g * g) / pow((1 + g * g) - (2 * g * gamma), 1.5));
 }
 
 inline vector<double> compute_tau_a(const double& tau_0_a, const double& beta,
@@ -246,7 +245,7 @@ inline vector<double> compute_x(const double& mu_0, const double& g,
     vector<double> result;
     vector<double> tau_a = compute_tau_a(tau_0_a, beta, list);
     auto x_m = compute_x_m(gamma);
-    auto x_a = compute_x_a(mu_0, g);
+    auto x_a = compute_x_a(g);
     for (uintmax_t i = 0; i < list.size(); ++i) {
         double znamenatel = tau_m[i] + tau_a[i];
         result.push_back(x_m * tau_m[i] / znamenatel +
@@ -588,13 +587,9 @@ inline double compute_ro(double ro,  // albedo искомое
     auto B2 = compute_B2_final(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
                          T_O3_list[band], T_H2O_list, mu_0, ro, tau_0_a,
                          beta, g, tau_m, lambda_list, Q, P, Tau_e);
-    /*auto B2 = compute_B2(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
-                         T_O3_list[band], T_H2O_list, mu_0, rv.albedo_1,rv.albedo_2, tau_0_a,
-                         beta, g, tau_m, lambda_list, Q, P, Tau_e);*/
-
 
     double a = (B1 + B2);
-    qDebug()<<band <<"B -- a --> " <<B <<a;
+    //qDebug()<<band <<"B -- a --> " <<B <<a;
     return (B - a);
 }
 // clang-format on
@@ -649,7 +644,7 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     auto ro = p[ro_2_INDEX];
     double eq = 0.0;
     int band = p[0];
-    qDebug() << "band: " << band;
+    // qDebug() << "band: " << band;
     eq = compute_ro(ro, TAU_M_0, tau_0_a, beta, g, B1_result[band],
                     origin_speya_pixel_values[band], band, Q, P, tau_e);
     // eq;
@@ -915,7 +910,7 @@ result_values optimize(const QString& sat_name,
     qDebug() << "--------------------------------------------------------------"
                 "--------";
     // clang-format off
-    qDebug() << "ERROR: "  <<"X            : "<< result.xerror[0]<<"\n"
+    /*qDebug() << "ERROR: "  <<"X            : "<< result.xerror[0]<<"\n"
                            <<"q            : "<< result.xerror[1]<<"\n"
                            <<"p            : "<< result.xerror[2]<<"\n"
                            <<"tau_mu_0     : "<< result.xerror[3]<<"\n"
@@ -924,7 +919,7 @@ result_values optimize(const QString& sat_name,
                            <<"err_tau_e    : "<< result.xerror[6]<<"\n"
                            <<"err_g        : "<< result.xerror[7]<<"\n"
                            <<"err_albedo_1 : "<< result.xerror[8]<<"\n"
-                           <<"err_albedo_2 : "<< result.xerror[9]<<"\n";
+                           <<"err_albedo_2 : "<< result.xerror[9]<<"\n";*/
     // clang-format on
 
     rv.X = p[X_INDEX];
@@ -948,20 +943,20 @@ result_values optimize(const QString& sat_name,
     // dv::show(lambda_list, B_atm_result, "B_atm");
     // dv::show(lambda_list, B_lambda_teta_list, "B_lambda_teta_list");
     // dv::show(lambda_list, omega_lambda_list, "omega_lambda");
-    // dv::show(lambda_list, tau_lambda_list, "tau_lambda");
+    dv::show(lambda_list, tau_lambda_list, "tau_lambda");
     dv::show(lambda_list, x_list, "x_list");
 
     // dv::show(v_central_waves, ro_0_list, "ro_0_list");
-    // dv::show(v_central_waves, B1_result, "B1_list");
-    // dv::show(v_central_waves, B2_result, "B2_list");
+    //  dv::show(v_central_waves, B1_result, "B1_list");
+    //  dv::show(v_central_waves, B2_result, "B2_list");
     qDebug() << "mu: " << mu;
     qDebug() << "mu_0: " << mu_0;
+    qDebug() << "gamma: " << gamma;
+    qDebug() << "x_m_res: " << x_m_res;
+    qDebug() << "x_a_res: " << x_a_res;
 
     dv::show(lambda_list, tau_a_res, "tau_a");
     dv::show(lambda_list, tau_m_res, "tau_m");
-    qDebug() << "x_m_res: " << x_m_res;
-    qDebug() << "x_a_res: " << x_a_res;
-    // qDebug() << x_list;
 
     auto sv = QVector<double>::fromStdVector(origin_speya_pixel_values);
     auto albedo_pixel = calculateAlbedoFinal(initial_values, sv);
