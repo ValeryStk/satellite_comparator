@@ -139,10 +139,15 @@ struct BAND_DATA {
 };
 
 struct QA_MASK_DATA {
-    int height;
-    int width;
     QString file_name;
     uint16_t* data = nullptr;
+    int height;
+    int width;
+
+    QString scl_file_name;
+    uint16_t* scl_data = nullptr;
+    int scl_width = 0;
+    int scl_height = 0;
 };
 
 struct DATA_CLOUD_SHADOW_MASK {
