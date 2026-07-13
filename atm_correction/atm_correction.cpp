@@ -901,11 +901,12 @@ result_values optimize(const QString& sat_name,
     pars[ro_2_INDEX].limited[1] = 1;
 
     status = mpfit(quadfunc, 10, 10, p, pars, 0, (void*)&v, &result);
-
+    QStringList params = {"X",    "q",     "p", "tau_mu_0", "tau_0_a",
+                          "beta", "tau_e", "g", "ro_1",     "ro_2"};
     qDebug() << "\nSTATUS: " << status;
     qDebug() << "VALUES: ";
     for (int i = 0; i < NUMBER_OF_CHANNELS; ++i) {
-        qDebug() << p[i];
+        qDebug() << params[i] << ": " << p[i];
     }
     qDebug() << "--------------------------------------------------------------"
                 "--------";
