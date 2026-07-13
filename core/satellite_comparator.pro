@@ -37,6 +37,7 @@ SOURCES += \
     message_reporter.cpp \
     progress_informator.cpp \
     qcustomplot.cpp \
+    qcustomplot_pro.cpp \
     satellite_graphics_view.cpp \
     satellites_structs.cpp \
     sattelite_comparator.cpp \
@@ -60,6 +61,7 @@ HEADERS += \
     message_reporter.h \
     progress_informator.h \
     qcustomplot.h \
+    qcustomplot_pro.h \
     satellite_graphics_view.h \
     sattelite_comparator.h \
     sliders_of_image_corrector.h \
