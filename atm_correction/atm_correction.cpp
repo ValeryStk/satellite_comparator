@@ -152,7 +152,7 @@ void loadAllLists() {
         double sun = atm_params[i].toObject()["sun"].toDouble();
         B_lambda_teta_list.push_back(sun);
     }
-    tau_m = compute_tau_m(lambda_list, 0.01);
+    tau_m = compute_tau_m(lambda_list, 0.1);
     satellite_name_key = "";
     lss::updateSatelliteResponses("sentinel 2A");
     T_O3_list.resize(NUMBER_OF_CHANNELS);
@@ -607,7 +607,7 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     auto ro_2 = p[ro_2_INDEX];
 
     compute_TO3_list(X);
-    compute_tau_m(lambda_list, TAU_M_0);
+    tau_m = compute_tau_m(lambda_list, TAU_M_0);
 
     auto eq = compute_EQ(B_lambda_teta_list, T_O2_list, T_O3_list, T_H2O_list,
                          S_lambda_lists, mu_0, ro_1, ro_2, tau_0_a, beta, g,
@@ -853,7 +853,7 @@ result_values optimize(const QString& sat_name,
     pars[tau_mu_0_INDEX].step = 0.01;
 
     // tau_a_0
-    pars[tau_0_a_INDEX].limits[0] = 0.01;
+    pars[tau_0_a_INDEX].limits[0] = 0.1;
     pars[tau_0_a_INDEX].limits[1] = 1.5;
     pars[tau_0_a_INDEX].limited[0] = 1;
     pars[tau_0_a_INDEX].limited[1] = 1;
@@ -862,7 +862,7 @@ result_values optimize(const QString& sat_name,
 
     // beta
     pars[beta_INDEX].limits[0] = 0.001;
-    pars[beta_INDEX].limits[1] = 4;
+    pars[beta_INDEX].limits[1] = 2.5;
     pars[beta_INDEX].side = 0;
     pars[beta_INDEX].step = 0.01;
     pars[beta_INDEX].limited[0] = 1;
@@ -956,8 +956,18 @@ result_values optimize(const QString& sat_name,
     qDebug() << "x_m_res: " << x_m_res;
     qDebug() << "x_a_res: " << x_a_res;
 
+    std::vector<double> x_check_values;
+
+    for (size_t i = 0; i < lambda_list.size(); i++) {
+        double sum = tau_m_res[i] + tau_a_res[i];
+        auto value =
+            x_m_res * tau_m_res[i] / (sum) + x_a_res * tau_a_res[i] / (sum);
+        x_check_values.push_back(value);
+    }
+
     dv::show(lambda_list, tau_a_res, "tau_a");
     dv::show(lambda_list, tau_m_res, "tau_m");
+    dv::show(lambda_list, x_check_values, "x_check_list");
 
     auto sv = QVector<double>::fromStdVector(origin_speya_pixel_values);
     auto albedo_pixel = calculateAlbedoFinal(initial_values, sv);

@@ -91,7 +91,10 @@ void atm_correction_UnitTests::loadSattelitesData() {
 }
 
 void atm_correction_UnitTests::calculateFixedMathPixel() {
-    calculation_solver cs({300, 2, 1.25, 0.098, 0.2, 2, 0.04, 0.6, 0.05, 0.15});
+    // clang-format off
+                         // X   q   p    tau_m_0  tau_a_0  beta tau_e  g_a   ro_1   ro_2
+    calculation_solver cs({300, 2, 1.25, 0.098,    0.2,     2,   0.04, 0.6,  0.05, 0.15});
+    // clang-format off
     auto ln_m_H2O = cs.get_mH2O(10.7995, 53.7519);
     cs.setSunZenitAngle(31);
     cs.setCaptruretZenitAngle(9.923);
