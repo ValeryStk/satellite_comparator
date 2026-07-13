@@ -14,6 +14,7 @@
 #include "cross_square.h"
 #include "dynamic_checkbox_widget.h"
 #include "layer_list.h"
+#include "qcustomplot_pro.h"
 #include "satellite_graphics_view.h"
 #include "satellites_structs.h"
 #include "spectral_indices_widget.h"
@@ -378,8 +379,8 @@ private:
     bool m_is_external_spectr;
     LayerList *m_layer_gui_list;  //!< Список базовых слоёв
     LayerList *m_layer_roi_list;  //!< Список областей интересов
-    QCustomPlot *m_preview_plot;  //!< Объект для отображения графика КСЯ для
-                                  //!< пикселя под курсором
+    QCustomPlot_pro *m_preview_plot;  //!< Объект для отображения графика КСЯ
+                                      //!< для пикселя под курсором
     QComboBox *
         m_comboBox_calculation_method;  //!< Комбобокс для выбора метрики поиска
     QVector<double> m_landsat9_sample;  //!< Образец для поиска Landsat 9
@@ -480,8 +481,8 @@ private:
     QVector<QImage> get_cropedImages_for_time_row(
         const QVector<QVector<sad::BAND_DATA>> &m_time_row,
         sad::SATELLITE_TYPE st);
-    QCustomPlot *time_row_indexes_plot;
-    QCustomPlot *m_speya_plot;
+    QCustomPlot_pro *time_row_indexes_plot;
+    QCustomPlot_pro *m_speya_plot;
     QDockWidget *m_speyaDock;
     QPair<QVector<double>, QVector<QString>> m_time_row_dates_unix_time;
     void showTimeRowIndexesDataViaPlot(QVector<double> &&ndvis,

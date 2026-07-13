@@ -41,7 +41,6 @@
 #include "libs/gdal/x64/include/tiff.h"
 #include "matlab_app_controller.h"
 #include "progress_informator.h"
-#include "qcustomplot.h"
 #include "rgb_stretch.h"
 #include "sam.cpp"
 #include "satellite_xml_reader.h"
@@ -512,8 +511,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
       m_is_bekas(false),
       m_scene_text_item_metric_value(new QGraphicsTextItem),
       bekas_window(nullptr),
-      time_row_indexes_plot(new QCustomPlot),
-      m_speya_plot(new QCustomPlot)
+      time_row_indexes_plot(new QCustomPlot_pro),
+      m_speya_plot(new QCustomPlot_pro)
 
 {
     ui->setupUi(this);
@@ -2750,7 +2749,10 @@ void MainWindowSatelliteComparator::initLandsatStructs() {
 }
 
 void MainWindowSatelliteComparator::setUpPreviewPlot() {
-    m_preview_plot = new QCustomPlot;
+    m_preview_plot = new QCustomPlot_pro;
+    m_preview_plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom |
+                                    QCP::iSelectPlottables |
+                                    QCP::iSelectLegend);
     m_preview_plot->setFixedSize(400, 200);
     m_preview_plot->legend->setVisible(true);
     QCPGraph *graph_satellite = m_preview_plot->addGraph();
