@@ -837,8 +837,8 @@ result_values optimize(const QString& sat_name,
     pars[q_INDEX].step = 0.01;
 
     // p
-    pars[p_INDEX].limits[0] = 0.5;
-    pars[p_INDEX].limits[1] = 2.0;
+    pars[p_INDEX].limits[0] = 1;
+    pars[p_INDEX].limits[1] = 1.8;
     pars[p_INDEX].limited[0] = 1;
     pars[p_INDEX].limited[1] = 1;
     pars[p_INDEX].side = 0;
@@ -854,7 +854,7 @@ result_values optimize(const QString& sat_name,
 
     // tau_a_0
     pars[tau_0_a_INDEX].limits[0] = 0.1;
-    pars[tau_0_a_INDEX].limits[1] = 1.5;
+    pars[tau_0_a_INDEX].limits[1] = 1.3;
     pars[tau_0_a_INDEX].limited[0] = 1;
     pars[tau_0_a_INDEX].limited[1] = 1;
     pars[tau_0_a_INDEX].side = 0;
@@ -862,7 +862,7 @@ result_values optimize(const QString& sat_name,
 
     // beta
     pars[beta_INDEX].limits[0] = 0.001;
-    pars[beta_INDEX].limits[1] = 2.5;
+    pars[beta_INDEX].limits[1] = 2.8;
     pars[beta_INDEX].side = 0;
     pars[beta_INDEX].step = 0.01;
     pars[beta_INDEX].limited[0] = 1;
@@ -870,7 +870,7 @@ result_values optimize(const QString& sat_name,
 
     // tau_e
     pars[tau_e_INDEX].limits[0] = 0.001;
-    pars[tau_e_INDEX].limits[1] = 0.5;
+    pars[tau_e_INDEX].limits[1] = 0.1;
     pars[tau_e_INDEX].side = 0;
     pars[tau_e_INDEX].step = 0.01;
     pars[tau_e_INDEX].limited[0] = 1;
