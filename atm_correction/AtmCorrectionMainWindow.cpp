@@ -1,5 +1,6 @@
 #include "AtmCorrectionMainWindow.h"
 
+#include <QClipboard>
 #include <QDebug>
 
 #include "QStringList"
@@ -66,6 +67,13 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     pen.setWidth(3);
     atm_params_plot->addGraph();  // для Т_H20
     atm_params_plot->graph(10)->setPen(pen);
+
+    QPen pen2("#0aef25");
+    pen.setWidth(3);
+    atm_params_plot->addGraph();  // для Альбедо
+    atm_params_plot->graph(11)->setPen(pen2);
+    atm_params_plot->graph(11)->setScatterStyle(
+        QCPScatterStyle(QCPScatterStyle::ssDisc, 7));
 
     /*atm_params_plot->addGraph();
     int next_index = responses.size() - 1;
@@ -185,7 +193,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     setCellValue("X", 300);
     setCellValue("q", 2);
     setCellValue("p", 1.25);
-    setCellValue("Tau_m0", 0.098, 3);
+    setCellValue("Tau_m0", 1, 3);
     setCellValue("Tau_a0", 0.2);
     setCellValue("Beta", 2);
     setCellValue("Tau_e", 0.04);
@@ -196,7 +204,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     setCellStringValue("rng_X", "280 - 350");
     setCellStringValue("rng_q", "1 - 6");
     setCellStringValue("rng_p", "0.5 - 2.0");
-    setCellStringValue("rng_Tau_m0", "0.09 - 0.1");
+    setCellStringValue("rng_Tau_m0", "0.8 - 2");
     setCellStringValue("rng_Tau_a0", "0.01 - 1.5");
     setCellStringValue("rng_Beta", "0 - 4");
     setCellStringValue("rng_Tau_e", "0 - 0.5");
@@ -262,13 +270,26 @@ void AtmCorrectionMainWindow::showResult(result_values rv) {
     setCellValue("result_X", rv.X);
     setCellValue("result_q", rv.q);
     setCellValue("result_p", rv.p);
-    setCellValue("result_Tau_m0", rv.tau_mu_0);
+    setCellValue("result_Tau_m0", rv.h2O_power);
     setCellValue("result_Tau_a0", rv.tau_0_a);
     setCellValue("result_Beta", rv.beta);
     setCellValue("result_Tau_e", rv.tau_e);
     setCellValue("result_g_a", rv.g);
     setCellValue("result_p_1", rv.albedo_1);
     setCellValue("result_p_2", rv.albedo_2);
+}
+
+void AtmCorrectionMainWindow::showAlbedoUnderCursor(
+    QVector<double> speya_values) {
+    if (speya_values.empty()) return;
+    auto albedos = cs->calculateAlbedo(speya_values);
+    QVector<double> lambdas;
+    for (int i = 0; i < 10; ++i) {
+        lambdas.append(sad::sentinel_2A_central_wave_lengths[i]);
+    }
+    atm_params_plot->graph(11)->setData(lambdas, albedos);
+    atm_params_plot->replot();
+    atm_params_plot->rescaleAxes(true);
 }
 
 void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
@@ -401,4 +422,25 @@ void AtmCorrectionMainWindow::updateInitialValues() {
                            getCellValue("Tau_a0"), getCellValue("Beta"),
                            getCellValue("Tau_e"), getCellValue("g_a"),
                            getCellValue("p_1"), getCellValue("p_2")});
+}
+
+void AtmCorrectionMainWindow::on_pushButton_CopyKsy_clicked() {
+    QString ksy_result;
+    QCPGraph *graph = atm_params_plot->graph(11);
+
+    if (graph && !graph->data()->isEmpty()) {
+        // Проходим по всем точкам данных графика
+        for (auto it = graph->data()->constBegin();
+             it != graph->data()->constEnd(); ++it) {
+            // Форматируем строку: "X \t Y \n" (табуляция удобна для вставки в
+            // Excel)
+            ksy_result += QString("%1\t%2\n").arg(it->key).arg(it->value);
+        }
+    } else {
+        ksy_result = "График №11 пуст или не существует.";
+    }
+
+    // Копируем полученный текст в буфер обмена
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(ksy_result);
 }

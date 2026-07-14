@@ -525,7 +525,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     setUpUi();
     QString app_title_version = "%1 %2 %3";
     setWindowTitle(app_title_version.arg(satc::app_name)
-                       .arg(" ")
+                       .arg(" Quadratic Atm correction version ")
                        .arg(QString(VER_PRODUCTVERSION_STR)));
     gdal_start_driver();
     initSentinelStructs();
@@ -875,7 +875,6 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
             sample = m_sentinel_sample;
         }
         trimmed_satellite_data = data;
-
         auto bv = getBandsValues(waves, data, m_satelite_type);
 
         // clang-format off
@@ -961,6 +960,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         getGeoCoordinates(pos.x(), pos.y(), m_geo, lat, lon, true);
     ui->statusbar->showMessage(geo_coord_str);
     auto speya_data = getSentinelSpeyaValues(pos.x(), pos.y());
+    m_ac.showAlbedoUnderCursor(speya_data);
     m_speya_plot->graph(0)->setData(waves, speya_data);
     m_speya_plot->rescaleAxes(true);
     m_speya_plot->replot();

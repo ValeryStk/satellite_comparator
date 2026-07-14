@@ -46,7 +46,7 @@ void calculation_solver::updateCurrentSatellite(QString sat_name) {
 }
 
 QVector<double> calculation_solver::calculateAlbedo(
-    QVector<double> initial_values, QVector<double> speya_values) {
+    QVector<double> speya_values) {
     return QVector<double>::fromStdVector(::calculateAlbedoFinal(speya_values));
 }
 

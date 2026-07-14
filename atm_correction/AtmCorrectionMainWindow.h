@@ -23,11 +23,14 @@ public:
     void setCaptureZenitAngle(const double value);
     void setCaptureAzimutAngle(const double value);
     void updateBasePixel(QVector<double> pixel_bands);
+    void showAlbedoUnderCursor(QVector<double> speya_values);
 
 private slots:
     void on_pushButton_calculateBlack_clicked();
     void showResult(result_values);
     void on_comboBox_satellite_type_currentIndexChanged(const QString& arg1);
+
+    void on_pushButton_CopyKsy_clicked();
 
 private:
     Ui::AtmCorrectionMainWindow* ui;

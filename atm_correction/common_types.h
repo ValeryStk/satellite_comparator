@@ -7,7 +7,7 @@ struct result_values {
     double X;
     double q;
     double p;
-    double tau_mu_0;
+    double h2O_power;
     double tau_0_a;
     double beta;
     double tau_e;
