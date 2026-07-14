@@ -355,13 +355,12 @@ inline vector<double> compute_E_lambda_final(
     vector<double> g_lmb = compute_g(g, tau_0_a, beta, tau_m, list);
 
     for (size_t i = 0; i < list.size(); ++i) {
-        auto E_lmb =
-            4.0 * pi * omega_lambda[i] * mu_0 * B_lambda_teta_list[i] /
-                (4.0 + 3.0 * (1.0 - g_lmb[i]) * (1.0 - ro) * tau_lambda[i]) *
-                ((0.5 + 0.75 * mu_0) +
-                 (0.5 - 0.75 * mu_0) * exp(-tau_lambda[i] / mu_0)) +
-            (1.0 - omega_lambda[i]) * pi * B_lambda_teta_list[i] * mu_0 *
-                exp(-tau_lambda[i] / mu_0);
+        auto E_lmb = 4.0 * pi * omega_lambda[i] * mu_0 * B_lambda_teta_list[i] /
+                         (4.0 + 3.0 * (1.0 - g_lmb[i]) * tau_lambda[i]) *
+                         ((0.5 + 0.75 * mu_0) +
+                          (0.5 - 0.75 * mu_0) * exp(-tau_lambda[i] / mu_0)) +
+                     (1.0 - omega_lambda[i]) * pi * B_lambda_teta_list[i] *
+                         mu_0 * exp(-tau_lambda[i] / mu_0);
         E.push_back(E_lmb);
     }
     e_result = E;
@@ -503,7 +502,7 @@ inline double compute_B2_final(
                                tau_m, list, Q, P, Tau_e);
 
     for (size_t i = 0; i < list.size(); ++i) {
-        integral_first += ro / pi * E_lambda[i] * T_lambda[i] * T_H2O_list[i] *
+        integral_first += 1 / pi * E_lambda[i] * T_lambda[i] * T_H2O_list[i] *
                           S_lambda_list[i];
         integral_second += S_lambda_list[i];
     }
@@ -658,17 +657,17 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
     origin_speya_pixel_values = speya_values.toStdVector();
 
     albedo_final_result.clear();
-
+    std::vector<double> test_ro_result;
     for (int i = 0; i < NUMBER_OF_CHANNELS; ++i) {
-        int status;
-        double perror[1]; /* Returned parameter errors */
-        mp_par pars[1];   /* Parameter constraints */
+        /*int status;
+        double perror[1];
+        mp_par pars[1];
 
         mp_result result;
 
-        memset(&result, 0, sizeof(result)); /* Zero results structure */
+        memset(&result, 0, sizeof(result));
         result.xerror = perror;
-        memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
+        memset(pars, 0, sizeof(pars));
         double p[1];
         p[0] = 0.05;
         // albedo p final
@@ -682,9 +681,24 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
         double ro_value = p[0];
         albedo_final_result.push_back(ro_value);
         qDebug() << "band: " << i << " ro_value_result: " << ro_value << "\n";
-        qDebug() << "band: " << i << "\nALBEDO FINAL STATUS: " << status;
-    }
+        qDebug() << "band: " << i << "\nALBEDO FINAL STATUS: " << status;*/
 
+        auto Q = rv.q;
+        auto P = rv.p;
+        auto TAU_M_0 = rv.tau_mu_0;
+        auto tau_0_a = rv.tau_0_a;
+        auto beta = rv.beta;
+        auto tau_e = rv.tau_e;
+        auto g = rv.g;
+        qDebug() << "band: " << i;
+        auto B2 =
+            compute_B2_final(S_lambda_lists[i], B_lambda_teta_list, T_O2_list,
+                             T_O3_list[i], T_H2O_list, mu_0, 1, tau_0_a, beta,
+                             g, tau_m, lambda_list, Q, P, tau_e);
+        double ro_i_final = (origin_speya_pixel_values[i] - B1_result[i]) / B2;
+        test_ro_result.push_back(ro_i_final);
+    }
+    dv::show(v_central_waves, test_ro_result, "test ro result no solver");
     return albedo_final_result;
 }
 
