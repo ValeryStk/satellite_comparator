@@ -32,6 +32,8 @@ std::vector<double> B1_result;
 std::vector<double> B2_result;
 std::vector<double> B_result;
 
+std::vector<double> final_B_result(10, 0);
+
 std::vector<double> albedo_final_result;
 
 std::vector<double> tau_a_res;
@@ -56,7 +58,7 @@ void updateSatelliteResponses(const QString& satellite_name);
 namespace {
 
 inline std::vector<double> calculateAlbedoFinal(
-    const QVector<double>& initial_values, const QVector<double>& speya_values);
+    const QVector<double>& speya_values);
 
 bool allEqual(const std::vector<double>& v, double eps = 1e-9) {
     if (v.empty())
@@ -590,6 +592,7 @@ inline double compute_ro(double ro,  // albedo искомое
 
     double a = (B1 + B2);
     //qDebug()<<band <<"B -- a --> " <<B <<a;
+    final_B_result[band] = a;
     return (B - a);
 }
 // clang-format on
@@ -632,8 +635,6 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
 }
 
 int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
-    // auto X = p[X_INDEX];
-
     auto Q = rv.q;
     auto P = rv.p;
     auto TAU_M_0 = rv.tau_mu_0;
@@ -641,86 +642,49 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     auto beta = rv.beta;
     auto tau_e = rv.tau_e;
     auto g = rv.g;
-    auto ro = p[ro_2_INDEX];
-    double eq = 0.0;
-    int band = p[0];
-    // qDebug() << "band: " << band;
-    eq = compute_ro(ro, TAU_M_0, tau_0_a, beta, g, B1_result[band],
-                    origin_speya_pixel_values[band], band, Q, P, tau_e);
-    // eq;
-
-    dy[ro_2_INDEX] = eq;
-
+    auto ro = p[0];
+    int band = *static_cast<int*>(vars);
+    qDebug() << "band: " << band;
+    dy[0] = compute_ro(ro, TAU_M_0, tau_0_a, beta, g, B1_result[band],
+                       origin_speya_pixel_values[band], band, Q, P, tau_e);
     return 0;
 }
 
-std::vector<double> calculateAlbedoFinal(const QVector<double>& initial_values,
-                                         const QVector<double>& speya_values) {
-    if (initial_values.size() != 10) return {};
-    double p[10];
-    for (int i = 0; i < initial_values.size(); ++i) {
-        p[i] = initial_values[i];
-    }
-
+std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
     if (speya_values.size() != 10) {
         throw std::runtime_error("Количество каналов не равно 10");
         return {};
     }  // TODO exceptions
     origin_speya_pixel_values = speya_values.toStdVector();
 
-    double perror[10]; /* Returned parameter errors */
-    mp_par pars[10];   /* Parameter constraints */
-    vars_struct v;
-    int status;
-    mp_result result;
-
-    memset(&result, 0, sizeof(result)); /* Zero results structure */
-    result.xerror = perror;
-    memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
-
-    // X
-    pars[X_INDEX].fixed = 1;
-
-    // q
-    pars[q_INDEX].fixed = 1;
-
-    // p
-    pars[p_INDEX].fixed = 1;
-
-    // tau_m_0
-    pars[tau_mu_0_INDEX].fixed = 1;
-
-    // tau_a_0
-    pars[tau_0_a_INDEX].fixed = 1;
-
-    // beta
-    pars[beta_INDEX].fixed = 1;
-
-    // tau_e
-    pars[tau_e_INDEX].fixed = 1;
-
-    // g
-    pars[g_INDEX].fixed = 1;
-
-    // ro_1
-    pars[ro_1_INDEX].fixed = 1;
-
-    // albedo p final
-    pars[ro_2_INDEX].limits[0] = 0.001;
-    pars[ro_2_INDEX].limits[1] = 1;
-    pars[ro_2_INDEX].side = 0;
-    pars[ro_2_INDEX].step = 0.01;
-    pars[ro_2_INDEX].limited[0] = 1;
-    pars[ro_2_INDEX].limited[1] = 1;
     albedo_final_result.clear();
+
     for (int i = 0; i < NUMBER_OF_CHANNELS; ++i) {
-        p[0] = i;
-        status = mpfit(albedofunc, 10, 10, p, pars, 0, (void*)&v, &result);
-        albedo_final_result.push_back(p[ro_2_INDEX]);
-        qDebug() << "ro_result: " << p[ro_2_INDEX];
+        int status;
+        double perror[1]; /* Returned parameter errors */
+        mp_par pars[1];   /* Parameter constraints */
+
+        mp_result result;
+
+        memset(&result, 0, sizeof(result)); /* Zero results structure */
+        result.xerror = perror;
+        memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
+        double p[1];
+        p[0] = 0.05;
+        // albedo p final
+        pars[0].limits[0] = 0.001;
+        pars[0].limits[1] = 1;
+        pars[0].side = 0;
+        pars[0].step = 0.01;
+        pars[0].limited[0] = 1;
+        pars[0].limited[1] = 1;
+        status = mpfit(albedofunc, 1, 1, p, pars, 0, (void*)&i, &result);
+        double ro_value = p[0];
+        albedo_final_result.push_back(ro_value);
+        qDebug() << "band: " << i << " ro_value_result: " << ro_value << "\n";
+        qDebug() << "band: " << i << "\nALBEDO FINAL STATUS: " << status;
     }
 
-    qDebug() << "\nALBEDO FINAL STATUS: " << status;
     return albedo_final_result;
 }
 
@@ -970,9 +934,14 @@ result_values optimize(const QString& sat_name,
     dv::show(lambda_list, x_check_values, "x_check_list");
 
     auto sv = QVector<double>::fromStdVector(origin_speya_pixel_values);
-    auto albedo_pixel = calculateAlbedoFinal(initial_values, sv);
+    auto albedo_pixel = calculateAlbedoFinal(sv);
     qDebug() << "albedo: " << albedo_pixel;
     dv::show(v_central_waves, albedo_pixel, "final_albedo");
+    dv::holdOn();
+    dv::show(v_central_waves, origin_speya_pixel_values, "Origin");
+    dv::show(v_central_waves, final_B_result, "Fitted");
+    dv::holdOff();
+
     return rv;
 }
 

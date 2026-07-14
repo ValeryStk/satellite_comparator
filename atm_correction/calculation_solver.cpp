@@ -47,8 +47,7 @@ void calculation_solver::updateCurrentSatellite(QString sat_name) {
 
 QVector<double> calculation_solver::calculateAlbedo(
     QVector<double> initial_values, QVector<double> speya_values) {
-    return QVector<double>::fromStdVector(
-        ::calculateAlbedoFinal(initial_values, speya_values));
+    return QVector<double>::fromStdVector(::calculateAlbedoFinal(speya_values));
 }
 
 void calculation_solver::start_solve_dark_pixels_async(
@@ -123,7 +122,7 @@ void calculation_solver::computeGamma() { lss::compute_gamma(mu, mu_0, fi); }
 void calculation_solver::solve_dark_pixels(const QString &satellite_name,
                                            const QVector<double> &dark_pixels) {
     qDebug() << "----------SOLVE DARK PIXEL------------------------";
-    if (dark_pixels.size() < 4) return;
+    if (dark_pixels.size() < 10) return;
     qDebug() << "Solve pixel for satellite: " << satellite_name;
     auto result = lss::optimize(satellite_name, dark_pixels, m_initial_values);
     emit darkpixels_calculation_finished(result);
