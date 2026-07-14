@@ -23,6 +23,7 @@ public:
     void setCaptureZenitAngle(const double value);
     void setCaptureAzimutAngle(const double value);
     void updateBasePixel(QVector<double> pixel_bands);
+    void showAlbedoUnderCursor(QVector<double> speya_values);
 
 private slots:
     void on_pushButton_calculateBlack_clicked();

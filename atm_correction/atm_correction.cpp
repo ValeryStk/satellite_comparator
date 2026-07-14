@@ -650,13 +650,15 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
 }
 
 std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
-    if (speya_values.size() != 10) {
-        throw std::runtime_error("Количество каналов не равно 10");
+    if (speya_values.size() < 10 || B1_result.size() < 10) {
+        // throw std::runtime_error("Количество каналов не равно 10");
+        qDebug() << "NO CONDITIONS FOR ATMCORR-->" << speya_values.size()
+                 << B1_result.size();
         return {};
     }  // TODO exceptions
     origin_speya_pixel_values = speya_values.toStdVector();
 
-    albedo_final_result.clear();
+    // albedo_final_result.clear();
     std::vector<double> test_ro_result;
     for (int i = 0; i < NUMBER_OF_CHANNELS; ++i) {
         /*int status;
@@ -690,7 +692,7 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
         auto beta = rv.beta;
         auto tau_e = rv.tau_e;
         auto g = rv.g;
-        qDebug() << "band: " << i;
+        // qDebug() << "band: " << i;
         auto B2 =
             compute_B2_final(S_lambda_lists[i], B_lambda_teta_list, T_O2_list,
                              T_O3_list[i], T_H2O_list, mu_0, 1, tau_0_a, beta,
@@ -698,8 +700,8 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
         double ro_i_final = (origin_speya_pixel_values[i] - B1_result[i]) / B2;
         test_ro_result.push_back(ro_i_final);
     }
-    dv::show(v_central_waves, test_ro_result, "test ro result no solver");
-    return albedo_final_result;
+    // dv::show(v_central_waves, test_ro_result, "test ro result no solver");
+    return test_ro_result;
 }
 
 }  // namespace

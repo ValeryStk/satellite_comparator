@@ -67,6 +67,13 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     atm_params_plot->addGraph();  // для Т_H20
     atm_params_plot->graph(10)->setPen(pen);
 
+    QPen pen2("#0aef25");
+    pen.setWidth(3);
+    atm_params_plot->addGraph();  // для Альбедо
+    atm_params_plot->graph(11)->setPen(pen2);
+    atm_params_plot->graph(11)->setScatterStyle(
+        QCPScatterStyle(QCPScatterStyle::ssDisc, 7));
+
     /*atm_params_plot->addGraph();
     int next_index = responses.size() - 1;
     atm_params_plot->graph(next_index)->setPen(QPen("#1bcdcd"));
@@ -269,6 +276,18 @@ void AtmCorrectionMainWindow::showResult(result_values rv) {
     setCellValue("result_g_a", rv.g);
     setCellValue("result_p_1", rv.albedo_1);
     setCellValue("result_p_2", rv.albedo_2);
+}
+
+void AtmCorrectionMainWindow::showAlbedoUnderCursor(
+    QVector<double> speya_values) {
+    auto albedos = cs->calculateAlbedo(speya_values);
+    QVector<double> lambdas;
+    for (int i = 0; i < 10; ++i) {
+        lambdas.append(sad::sentinel_2A_central_wave_lengths[i]);
+    }
+    atm_params_plot->graph(11)->setData(lambdas, albedos);
+    atm_params_plot->replot();
+    atm_params_plot->rescaleAxes(true);
 }
 
 void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
