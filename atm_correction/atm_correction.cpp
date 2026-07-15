@@ -508,6 +508,9 @@ inline double compute_B2_final(
     }
 
     double B2 = T_O3 * integral_first / integral_second;
+    /*qDebug() << "------+++++++++++ SIZES +++++++++++++----------";
+    qDebug() << list.size() << S_lambda_list.size() << B_lambda_teta_list.size()
+             << T_H2O_list.size() << T_lambda.size() << E_lambda.size();*/
     return B2;
 }
 

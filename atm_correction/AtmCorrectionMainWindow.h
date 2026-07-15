@@ -30,6 +30,8 @@ private slots:
     void showResult(result_values);
     void on_comboBox_satellite_type_currentIndexChanged(const QString& arg1);
 
+    void on_pushButton_CopyKsy_clicked();
+
 private:
     Ui::AtmCorrectionMainWindow* ui;
     BandsWidget* bands_widget;

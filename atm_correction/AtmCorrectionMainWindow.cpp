@@ -1,5 +1,6 @@
 #include "AtmCorrectionMainWindow.h"
 
+#include <QClipboard>
 #include <QDebug>
 
 #include "QStringList"
@@ -420,4 +421,25 @@ void AtmCorrectionMainWindow::updateInitialValues() {
                            getCellValue("Tau_a0"), getCellValue("Beta"),
                            getCellValue("Tau_e"), getCellValue("g_a"),
                            getCellValue("p_1"), getCellValue("p_2")});
+}
+
+void AtmCorrectionMainWindow::on_pushButton_CopyKsy_clicked() {
+    QString ksy_result;
+    QCPGraph *graph = atm_params_plot->graph(11);
+
+    if (graph && !graph->data()->isEmpty()) {
+        // Проходим по всем точкам данных графика
+        for (auto it = graph->data()->constBegin();
+             it != graph->data()->constEnd(); ++it) {
+            // Форматируем строку: "X \t Y \n" (табуляция удобна для вставки в
+            // Excel)
+            ksy_result += QString("%1\t%2\n").arg(it->key).arg(it->value);
+        }
+    } else {
+        ksy_result = "График №11 пуст или не существует.";
+    }
+
+    // Копируем полученный текст в буфер обмена
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(ksy_result);
 }
