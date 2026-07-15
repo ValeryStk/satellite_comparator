@@ -573,7 +573,8 @@ inline double compute_ro_0(double ro_1, double ro_2, double lambda,
     return ro_1 + ((ro_2 - ro_1) / (lambda_2 - lambda_1)) * (lambda - lambda_1);
 };
 // clang-format off
-inline double compute_ro(double ro,  // albedo искомое
+inline double compute_ro(double ro1,  // искомый коэффициент для альбедо
+                         double ro2, // искомый коэффициент для альбедо
                          double mu_0,
                          double tau_0_a,
                          double beta,
@@ -586,8 +587,8 @@ inline double compute_ro(double ro,  // albedo искомое
                          double Tau_e) {
 
 
-    auto B2 = compute_B2_final(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
-                         T_O3_list[band], T_H2O_list, mu_0, ro, tau_0_a,
+    auto B2 = compute_B2(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
+                         T_O3_list[band], T_H2O_list, mu_0, ro1, ro2, tau_0_a,
                          beta, g, tau_m, lambda_list, Q, P, Tau_e);
 
     double a = (B1 + B2);
@@ -642,10 +643,11 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     auto beta = rv.beta;
     auto tau_e = rv.tau_e;
     auto g = rv.g;
-    auto ro = p[0];
+    auto ro_1 = p[0];
+    auto ro_2 = p[1];
     int band = *static_cast<int*>(vars);
     qDebug() << "band: " << band;
-    dy[0] = compute_ro(ro, TAU_M_0, tau_0_a, beta, g, B1_result[band],
+    dy[0] = compute_ro(ro_1, ro_2, TAU_M_0, tau_0_a, beta, g, B1_result[band],
                        origin_speya_pixel_values[band], band, Q, P, tau_e);
     return 0;
 }
@@ -661,15 +663,15 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
 
     for (int i = 0; i < NUMBER_OF_CHANNELS; ++i) {
         int status;
-        double perror[1]; /* Returned parameter errors */
-        mp_par pars[1];   /* Parameter constraints */
+        double perror[2]; /* Returned parameter errors */
+        mp_par pars[2];   /* Parameter constraints */
 
         mp_result result;
 
         memset(&result, 0, sizeof(result)); /* Zero results structure */
         result.xerror = perror;
         memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
-        double p[1];
+        double p[2];
         p[0] = 0.05;
         // albedo p final
         pars[0].limits[0] = 0.001;
@@ -678,10 +680,31 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
         pars[0].step = 0.01;
         pars[0].limited[0] = 1;
         pars[0].limited[1] = 1;
-        status = mpfit(albedofunc, 1, 1, p, pars, 0, (void*)&i, &result);
-        double ro_value = p[0];
-        albedo_final_result.push_back(ro_value);
-        qDebug() << "band: " << i << " ro_value_result: " << ro_value << "\n";
+
+        p[1] = 0.05;
+        // albedo p final
+        pars[1].limits[0] = 0.001;
+        pars[1].limits[1] = 1;
+        pars[1].side = 0;
+        pars[1].step = 0.01;
+        pars[1].limited[0] = 1;
+        pars[1].limited[1] = 1;
+        status = mpfit(albedofunc, 2, 2, p, pars, 0, (void*)&i, &result);
+        double ro_1 = p[0];
+        double ro_2 = p[1];
+
+        // divider_list[i];//
+        double ro_final_in_chanel = 0;
+        for (int j = 0; j < lambda_list.size(); ++j) {
+            ro_final_in_chanel +=
+                S_lambda_lists[i][j] *
+                (ro_1 + (ro_2 - ro_1) / (lambda_2 - lambda_1) *
+                            (lambda_list[j] - lambda_1));
+        }
+        albedo_final_result.push_back(ro_final_in_chanel);
+
+        qDebug() << "band: " << i << " ro_value_result: " << ro_final_in_chanel
+                 << "\n";
         qDebug() << "band: " << i << "\nALBEDO FINAL STATUS: " << status;
     }
 
