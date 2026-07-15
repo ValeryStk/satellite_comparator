@@ -646,7 +646,7 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     auto ro_1 = p[0];
     auto ro_2 = p[1];
     int band = *static_cast<int*>(vars);
-    qDebug() << "band: " << band;
+    // qDebug() << "band: " << band;
     dy[0] = compute_ro(ro_1, ro_2, TAU_M_0, tau_0_a, beta, g, B1_result[band],
                        origin_speya_pixel_values[band], band, Q, P, tau_e);
     return 0;
@@ -695,13 +695,27 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
 
         // divider_list[i];//
         double ro_final_in_chanel = 0;
+        double integral_sens = 0;
         for (int j = 0; j < lambda_list.size(); ++j) {
-            ro_final_in_chanel +=
-                S_lambda_lists[i][j] *
-                (ro_1 + (ro_2 - ro_1) / (lambda_2 - lambda_1) *
-                            (lambda_list[j] - lambda_1));
+            double rho_j = (ro_1 + (ro_2 - ro_1) / (lambda_2 - lambda_1) *
+                                       (lambda_list[j] - lambda_1));
+            ro_final_in_chanel += S_lambda_lists[i][j] * rho_j;
         }
-        albedo_final_result.push_back(ro_final_in_chanel);
+        for (int j = 0; j < lambda_list.size(); ++j) {
+            integral_sens += S_lambda_lists[i][j];
+        }
+        ro_final_in_chanel /= integral_sens;
+        double ro_centr = (ro_1 + (ro_2 - ro_1) / (lambda_2 - lambda_1) *
+                                      (v_central_waves[i] - lambda_1));
+        qDebug() << QString("ro at %1 = %2. ro1 = %3, ro2 = %4")
+                        .arg(v_central_waves[i])
+                        .arg(ro_centr)
+                        .arg(ro_1)
+                        .arg(ro_2);
+        albedo_final_result.push_back(
+            ro_final_in_chanel);  // было
+                                  // albedo_final_result.push_back(ro_final_in_chanel)
+                                  // можно еще ro_centr
 
         qDebug() << "band: " << i << " ro_value_result: " << ro_final_in_chanel
                  << "\n";
