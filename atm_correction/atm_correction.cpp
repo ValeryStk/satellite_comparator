@@ -705,8 +705,8 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
     auto T_list = compute_T_lambda(tau_e, tau_0_a, beta, g, tau_m, lambda_list);
     auto g_list = compute_g(g, tau_0_a, beta, tau_m, lambda_list);
     std::vector<double> test_ro_result;
-    qDebug()
-        << "START POINT FOR SOLVING FINAL ALBEDO ------------------------>";
+    /*qDebug()
+        << "START POINT FOR SOLVING FINAL ALBEDO ------------------------>";*/
     for (int i = 0; i < NUMBER_OF_CHANNELS; ++i) {
         int index = v_central_waves[i] - 400;
         double omega = omega_list[index];
@@ -717,16 +717,16 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
         double T_O3 = T_O3_list[i];
         double g_i = g_list[index];
 
-        qDebug() << "band" << i;
-        qDebug() << "index" << index;
-        qDebug() << "omega" << omega;
-        qDebug() << "T_i" << T_i;
-        qDebug() << "B_sun_i" << B_sun_i;
-        qDebug() << "Tau_i" << Tau_i;
-        qDebug() << "T_H2O_i" << T_H2O;
-        qDebug() << "T_O3_i" << T_O3;
-        qDebug() << "g_i" << g_i;
-        qDebug() << "mu_0" << mu_0;
+        // qDebug() << "band" << i;
+        // qDebug() << "index" << index;
+        // qDebug() << "omega" << omega;
+        // qDebug() << "T_i" << T_i;
+        // qDebug() << "B_sun_i" << B_sun_i;
+        // qDebug() << "Tau_i" << Tau_i;
+        // qDebug() << "T_H2O_i" << T_H2O;
+        // qDebug() << "T_O3_i" << T_O3;
+        // qDebug() << "g_i" << g_i;
+        // qDebug() << "mu_0" << mu_0;
 
         // F1 F2 F3 section
         double F1 =
@@ -738,21 +738,21 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
                     exp(-Tau_i / mu_0) * T_i * T_H2O * T_O3;
 
         double F3 = 3 * (1 - g_i) * Tau_i;
-        qDebug() << "F1" << F1;
-        qDebug() << "F2" << F2;
-        qDebug() << "F3" << F3;
-        // a b c section
+        // qDebug() << "F1" << F1;
+        // qDebug() << "F2" << F2;
+        // qDebug() << "F3" << F3;
+        //  a b c section
         double a = F2 * F3;
 
         double b = F3 * (origin_speya_pixel_values[i] - B1_result[i]) + F1 +
                    4 * F2 + F2 * F3;
 
         double c = (4 + F3) * (origin_speya_pixel_values[i] - B1_result[i]);
-        qDebug() << "a" << a;
-        qDebug() << "b" << b;
-        qDebug() << "c" << c;
+        // qDebug() << "a" << a;
+        // qDebug() << "b" << b;
+        // qDebug() << "c" << c;
         QuadraticResult qc = solveQuadratic(a, b, c);
-        qDebug() << "band: " << i << qc.has_roots << qc.x1 << qc.x2;
+        // qDebug() << "band: " << i << qc.has_roots << qc.x1 << qc.x2;
         test_ro_result.push_back(qc.x2);
     }
 

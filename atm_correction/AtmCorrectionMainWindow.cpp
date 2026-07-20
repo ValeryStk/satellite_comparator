@@ -451,4 +451,6 @@ void AtmCorrectionMainWindow::on_pushButton_CopyKsy_clicked() {
     clipboard->setText(ksy_result);
 }
 
-void AtmCorrectionMainWindow::on_pushButton_create_Image_clicked() {}
+void AtmCorrectionMainWindow::on_pushButton_create_Image_clicked() {
+    emit responseForCreatingImage();
+}
