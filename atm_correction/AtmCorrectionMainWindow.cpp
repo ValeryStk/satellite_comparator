@@ -292,6 +292,12 @@ void AtmCorrectionMainWindow::showAlbedoUnderCursor(
     atm_params_plot->rescaleAxes(true);
 }
 
+QVector<double> AtmCorrectionMainWindow::getAlbedoBySpeya(
+    const QVector<double> &speya_values) {
+    if (speya_values.empty()) return {};
+    return cs->calculateAlbedo(speya_values);
+}
+
 void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
     const QString &arg1) {
     bands_widget->clear();
@@ -444,3 +450,5 @@ void AtmCorrectionMainWindow::on_pushButton_CopyKsy_clicked() {
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(ksy_result);
 }
+
+void AtmCorrectionMainWindow::on_pushButton_create_Image_clicked() {}

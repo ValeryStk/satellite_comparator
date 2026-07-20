@@ -506,7 +506,6 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
       m_scene_cross_square_item(new CrossSquare(100)),
       m_dynamic_checkboxes_widget(nullptr),
       m_sat_comparator(new SatteliteComparator),
-      m_image_data(new uchar[MAX_BYTES_IN_BASE_IMAGE_LAYER]),
       m_is_image_created(false),
       m_is_bekas(false),
       m_scene_text_item_metric_value(new QGraphicsTextItem),
@@ -4532,6 +4531,24 @@ void MainWindowSatelliteComparator::onStretchParamsChanged() {
         auto imgs = get_cropedImages_for_time_row(m_time_row, m_satelite_type);
         for (int i = 0; i < imgs.size() && i < m_viewers.size(); ++i) {
             m_viewers[i]->setImage(QPixmap::fromImage(imgs[i]));
+        }
+    }
+}
+
+void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
+    const int x = m_sentinel_data[0].width;
+    const int y = m_sentinel_data[0].height;
+    double BLUE_band = 0.0;
+    double GREEN_band = 0.0;
+    double RED_band = 0.0;
+    for (int i = 1000; i < 2000; ++i) {
+        for (int j = 1000; j < 2000; ++j) {
+            auto ksy = getSentinelKsy(x, y);
+            ksy.second.resize(10);
+            m_ac.getAlbedoBySpeya(ksy.second);
+            BLUE_band = ksy.second[1];
+            GREEN_band = ksy.second[2];
+            RED_band = ksy.second[3];
         }
     }
 }

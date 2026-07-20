@@ -40,9 +40,9 @@
    <widget class="QPushButton" name="pushButton_calculateBlack">
     <property name="geometry">
      <rect>
-      <x>340</x>
+      <x>440</x>
       <y>710</y>
-      <width>1041</width>
+      <width>941</width>
       <height>41</height>
      </rect>
     </property>
@@ -449,6 +449,19 @@
     </property>
     <property name="text">
      <string>copy_ksy</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_create_Image">
+    <property name="geometry">
+     <rect>
+      <x>340</x>
+      <y>710</y>
+      <width>91</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>create Image</string>
     </property>
    </widget>
   </widget>
