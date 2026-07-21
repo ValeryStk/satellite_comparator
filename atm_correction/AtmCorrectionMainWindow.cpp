@@ -283,6 +283,7 @@ void AtmCorrectionMainWindow::showAlbedoUnderCursor(
     QVector<double> speya_values) {
     if (speya_values.empty()) return;
     auto albedos = cs->calculateAlbedo(speya_values);
+    if (albedos.empty()) return;
     QVector<double> lambdas;
     for (int i = 0; i < 10; ++i) {
         lambdas.append(sad::sentinel_2A_central_wave_lengths[i]);

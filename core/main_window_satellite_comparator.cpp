@@ -1409,7 +1409,7 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(
     }
     auto folded_device_spectr =
         m_sat_comparator->fold_spectr_to_satellite_responses();
-    qDebug() << "folded_device_spectr: " << folded_device_spectr;
+    qDebug() << "folded_device_spectr: " << folded_device_spectr.size();
     if (folded_device_spectr.empty()) {
         m_is_bekas = false;
         return;
@@ -2741,6 +2741,7 @@ void MainWindowSatelliteComparator::initSentinelStructs() {
         m_sentinel_metadata.sentinel_missed_channels[i] =
             true;  // Изначально считаем все каналы пропущенными
     }
+    m_sentinel_sample = QVector<double>(13, 0.0);
 }
 
 void MainWindowSatelliteComparator::initLandsatStructs() {
@@ -4451,13 +4452,13 @@ jo_source.keys(); satellites = jo_source["satellites"].toObject();
     QTextStream stream(&clipboardText, QIODevice::ReadOnly);
 
     // 3. Игнорируем первые 3 строки заголовка
-    for (int i = 0; i < 3; ++i) {
+    /*for (int i = 0; i < 3; ++i) {
         if (stream.atEnd()) {
             qWarning() << "Ошибка: В буфере обмена слишком мало строк!";
             return;
         }
         stream.readLine();
-    }
+    }*/
 
     // 4. Принудительно используем точку '.' как разделитель дроби
     // (C-локаль)
@@ -4551,13 +4552,11 @@ void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
         double GREEN_band = 0.0;
         double RED_band = 0.0;
 
-        // Создаем изображение под размер вашего окна итерации (1000x1000)
-        QImage img(1000, 1000, QImage::Format_RGB32);
+        QImage img(300, 300, QImage::Format_RGB32);
 
-        for (int i = 1000; i < 2000; ++i) {
-            for (int j = 1000; j < 2000; ++j) {
-                // ВАШ ИСХОДНЫЙ КОД (оставлен как есть)
-                auto ksy = getSentinelKsy(i, j);
+        for (int i = 1000; i < 1300; ++i) {
+            for (int j = 1000; j < 1300; ++j) {
+                auto ksy = getSentinelKsy(j, i);
                 ksy.second.resize(10);
                 m_ac.getAlbedoBySpeya(ksy.second);
                 BLUE_band = ksy.second[1];

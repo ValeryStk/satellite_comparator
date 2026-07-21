@@ -687,8 +687,8 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
 std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
     if (speya_values.size() < 10 || B1_result.size() < 10) {
         // throw std::runtime_error("Количество каналов не равно 10");
-        qDebug() << "NO CONDITIONS FOR ATMCORR-->" << speya_values.size()
-                 << B1_result.size();
+        // qDebug() << "NO CONDITIONS FOR ATMCORR-->" << speya_values.size()
+        //<< B1_result.size();
         return {};
     }  // TODO exceptions
     origin_speya_pixel_values = speya_values.toStdVector();
@@ -981,17 +981,17 @@ result_values optimize(const QString& sat_name,
     // dv::show(lambda_list, B_atm_result, "B_atm");
     // dv::show(lambda_list, B_lambda_teta_list, "B_lambda_teta_list");
     // dv::show(lambda_list, omega_lambda_list, "omega_lambda");
-    dv::show(lambda_list, tau_lambda_list, "tau_lambda");
-    dv::show(lambda_list, x_list, "x_list");
+    // dv::show(lambda_list, tau_lambda_list, "tau_lambda");
+    // dv::show(lambda_list, x_list, "x_list");
 
     // dv::show(v_central_waves, ro_0_list, "ro_0_list");
     //  dv::show(v_central_waves, B1_result, "B1_list");
     //  dv::show(v_central_waves, B2_result, "B2_list");
-    qDebug() << "mu: " << mu;
-    qDebug() << "mu_0: " << mu_0;
-    qDebug() << "gamma: " << gamma;
-    qDebug() << "x_m_res: " << x_m_res;
-    qDebug() << "x_a_res: " << x_a_res;
+    // qDebug() << "mu: " << mu;
+    // qDebug() << "mu_0: " << mu_0;
+    // qDebug() << "gamma: " << gamma;
+    // qDebug() << "x_m_res: " << x_m_res;
+    // qDebug() << "x_a_res: " << x_a_res;
 
     std::vector<double> x_check_values;
 
@@ -1002,19 +1002,10 @@ result_values optimize(const QString& sat_name,
         x_check_values.push_back(value);
     }
 
-    dv::show(lambda_list, tau_a_res, "tau_a");
-    dv::show(lambda_list, tau_m_res, "tau_m");
-    dv::show(lambda_list, x_check_values, "x_check_list");
-
-    auto sv = QVector<double>::fromStdVector(origin_speya_pixel_values);
-    auto albedo_pixel = calculateAlbedoFinal(sv);
-    qDebug() << "albedo: " << albedo_pixel;
-    dv::show(v_central_waves, albedo_pixel, "final_albedo");
-    dv::holdOn();
-    dv::show(v_central_waves, origin_speya_pixel_values, "Origin");
-    dv::show(v_central_waves, final_B_result, "Fitted");
-    dv::holdOff();
-
+    // auto sv = QVector<double>::fromStdVector(origin_speya_pixel_values);
+    // auto albedo_pixel = calculateAlbedoFinal(sv);
+    //  qDebug() << "albedo: " << albedo_pixel;
+    //   dv::show(v_central_waves, albedo_pixel, "final_albedo");
     return rv;
 }
 
