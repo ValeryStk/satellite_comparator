@@ -21,6 +21,13 @@
 #include "math.h"
 #include "mpfit.h"
 
+// Структура для возврата результата без побочных эффектов
+struct QuadraticResult {
+    bool has_roots;  // Флаг: найдены ли действительные корни
+    double x1;  // Первый корень (или 0.0, если корней нет)
+    double x2;  // Второй корень (или 0.0, если корней нет)
+};
+
 std::vector<double> speya_result;
 std::vector<double> e_result;
 std::vector<double> B_atm_result;
@@ -38,6 +45,9 @@ std::vector<double> albedo_final_result;
 
 std::vector<double> tau_a_res;
 std::vector<double> tau_m_res;
+
+std::vector<double> new_H2O_powered_list(601);
+
 double x_m_res;
 double x_a_res;
 double lambda_1 = 400;
@@ -56,6 +66,25 @@ void updateSatelliteResponses(const QString& satellite_name);
 }
 
 namespace {
+
+// Чистая функция: детерминирована, без побочных эффектов
+QuadraticResult solveQuadratic(double a, double b, double c) {
+    if (a == 0.0) {
+        return {false, 0.0, 0.0};
+    }
+
+    double D = b * b - 4.0 * a * c;
+
+    if (D < 0.0) {
+        return {false, 0.0, 0.0};
+    }
+
+    double sqrtD = std::sqrt(D);
+    double x1 = (b + sqrtD) / (2.0 * a);
+    double x2 = (b - sqrtD) / (2.0 * a);
+
+    return {true, x1, x2};
+}
 
 inline std::vector<double> calculateAlbedoFinal(
     const QVector<double>& speya_values);
@@ -355,13 +384,12 @@ inline vector<double> compute_E_lambda_final(
     vector<double> g_lmb = compute_g(g, tau_0_a, beta, tau_m, list);
 
     for (size_t i = 0; i < list.size(); ++i) {
-        auto E_lmb =
-            4.0 * pi * omega_lambda[i] * mu_0 * B_lambda_teta_list[i] /
-                (4.0 + 3.0 * (1.0 - g_lmb[i]) * (1.0 - ro) * tau_lambda[i]) *
-                ((0.5 + 0.75 * mu_0) +
-                 (0.5 - 0.75 * mu_0) * exp(-tau_lambda[i] / mu_0)) +
-            (1.0 - omega_lambda[i]) * pi * B_lambda_teta_list[i] * mu_0 *
-                exp(-tau_lambda[i] / mu_0);
+        auto E_lmb = 4.0 * pi * omega_lambda[i] * mu_0 * B_lambda_teta_list[i] /
+                         (4.0 + 3.0 * (1.0 - g_lmb[i]) * tau_lambda[i]) *
+                         ((0.5 + 0.75 * mu_0) +
+                          (0.5 - 0.75 * mu_0) * exp(-tau_lambda[i] / mu_0)) +
+                     (1.0 - omega_lambda[i]) * pi * B_lambda_teta_list[i] *
+                         mu_0 * exp(-tau_lambda[i] / mu_0);
         E.push_back(E_lmb);
     }
     e_result = E;
@@ -503,12 +531,15 @@ inline double compute_B2_final(
                                tau_m, list, Q, P, Tau_e);
 
     for (size_t i = 0; i < list.size(); ++i) {
-        integral_first += ro / pi * E_lambda[i] * T_lambda[i] * T_H2O_list[i] *
+        integral_first += 1 / pi * E_lambda[i] * T_lambda[i] * T_H2O_list[i] *
                           S_lambda_list[i];
         integral_second += S_lambda_list[i];
     }
 
     double B2 = T_O3 * integral_first / integral_second;
+    /*qDebug() << "------+++++++++++ SIZES +++++++++++++----------";
+    qDebug() << list.size() << S_lambda_list.size() << B_lambda_teta_list.size()
+             << T_H2O_list.size() << T_lambda.size() << E_lambda.size();*/
     return B2;
 }
 
@@ -587,7 +618,7 @@ inline double compute_ro(double ro,  // albedo искомое
 
 
     auto B2 = compute_B2_final(S_lambda_lists[band], B_lambda_teta_list, T_O2_list,
-                         T_O3_list[band], T_H2O_list, mu_0, ro, tau_0_a,
+                         T_O3_list[band], new_H2O_powered_list, mu_0, ro, tau_0_a,
                          beta, g, tau_m, lambda_list, Q, P, Tau_e);
 
     double a = (B1 + B2);
@@ -601,7 +632,7 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     auto X = p[X_INDEX];
     auto Q = p[q_INDEX];
     auto P = p[p_INDEX];
-    auto TAU_M_0 = p[tau_mu_0_INDEX];
+    auto H20_power = p[H2O_INDEX];
     auto tau_0_a = p[tau_0_a_INDEX];
     auto beta = p[beta_INDEX];
     auto tau_e = p[tau_e_INDEX];
@@ -610,11 +641,14 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     auto ro_2 = p[ro_2_INDEX];
 
     compute_TO3_list(X);
-    tau_m = compute_tau_m(lambda_list, TAU_M_0);
+    tau_m = compute_tau_m(lambda_list, 0.098);
 
-    auto eq = compute_EQ(B_lambda_teta_list, T_O2_list, T_O3_list, T_H2O_list,
-                         S_lambda_lists, mu_0, ro_1, ro_2, tau_0_a, beta, g,
-                         tau_m, lambda_list, divider_list,
+    for (size_t i = 0; i < T_H2O_list.size(); ++i) {
+        new_H2O_powered_list[i] = std::pow(T_H2O_list[i], H20_power);
+    }
+    auto eq = compute_EQ(B_lambda_teta_list, T_O2_list, T_O3_list,
+                         new_H2O_powered_list, S_lambda_lists, mu_0, ro_1, ro_2,
+                         tau_0_a, beta, g, tau_m, lambda_list, divider_list,
                          origin_speya_pixel_values, Q, P, tau_e);
 
     for (int i = 0; i < m; i++) {
@@ -623,7 +657,7 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     rv.err_X = dy[X_INDEX];
     rv.err_q = dy[q_INDEX];
     rv.err_p = dy[p_INDEX];
-    rv.err_tau_mu_0 = dy[tau_mu_0_INDEX];
+    rv.err_tau_mu_0 = dy[H2O_INDEX];
     rv.err_tau_a0 = dy[tau_0_a_INDEX];
     rv.err_beta = dy[beta_INDEX];
     rv.err_tau_e = dy[tau_e_INDEX];
@@ -637,7 +671,7 @@ int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
 int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     auto Q = rv.q;
     auto P = rv.p;
-    auto TAU_M_0 = rv.tau_mu_0;
+    auto TAU_M_0 = rv.h2O_power;
     auto tau_0_a = rv.tau_0_a;
     auto beta = rv.beta;
     auto tau_e = rv.tau_e;
@@ -651,41 +685,80 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
 }
 
 std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
-    if (speya_values.size() != 10) {
-        throw std::runtime_error("Количество каналов не равно 10");
+    if (speya_values.size() < 10 || B1_result.size() < 10) {
+        // throw std::runtime_error("Количество каналов не равно 10");
+        // qDebug() << "NO CONDITIONS FOR ATMCORR-->" << speya_values.size()
+        //<< B1_result.size();
         return {};
     }  // TODO exceptions
     origin_speya_pixel_values = speya_values.toStdVector();
-
-    albedo_final_result.clear();
-
+    auto Q = rv.q;
+    auto P = rv.p;
+    auto TAU_M_0 = rv.h2O_power;
+    auto tau_0_a = rv.tau_0_a;
+    auto beta = rv.beta;
+    auto tau_e = rv.tau_e;
+    auto g = rv.g;
+    auto omega_list = compute_omega(tau_e, tau_0_a, beta, tau_m, lambda_list);
+    auto tau_list =
+        compute_tau_lambda(tau_e, tau_0_a, beta, tau_m, lambda_list);
+    auto T_list = compute_T_lambda(tau_e, tau_0_a, beta, g, tau_m, lambda_list);
+    auto g_list = compute_g(g, tau_0_a, beta, tau_m, lambda_list);
+    std::vector<double> test_ro_result;
+    /*qDebug()
+        << "START POINT FOR SOLVING FINAL ALBEDO ------------------------>";*/
     for (int i = 0; i < NUMBER_OF_CHANNELS; ++i) {
-        int status;
-        double perror[1]; /* Returned parameter errors */
-        mp_par pars[1];   /* Parameter constraints */
+        int index = v_central_waves[i] - 400;
+        double omega = omega_list[index];
+        double T_i = T_list[index];
+        double B_sun_i = B_lambda_teta_list[index];
+        double Tau_i = tau_list[index];
+        double T_H2O = new_H2O_powered_list[index];
+        double T_O3 = T_O3_list[i];
+        double g_i = g_list[index];
 
-        mp_result result;
+        // qDebug() << "band" << i;
+        // qDebug() << "index" << index;
+        // qDebug() << "omega" << omega;
+        // qDebug() << "T_i" << T_i;
+        // qDebug() << "B_sun_i" << B_sun_i;
+        // qDebug() << "Tau_i" << Tau_i;
+        // qDebug() << "T_H2O_i" << T_H2O;
+        // qDebug() << "T_O3_i" << T_O3;
+        // qDebug() << "g_i" << g_i;
+        // qDebug() << "mu_0" << mu_0;
 
-        memset(&result, 0, sizeof(result)); /* Zero results structure */
-        result.xerror = perror;
-        memset(pars, 0, sizeof(pars)); /* Initialize constraint structure */
-        double p[1];
-        p[0] = 0.05;
-        // albedo p final
-        pars[0].limits[0] = 0.001;
-        pars[0].limits[1] = 1;
-        pars[0].side = 0;
-        pars[0].step = 0.01;
-        pars[0].limited[0] = 1;
-        pars[0].limited[1] = 1;
-        status = mpfit(albedofunc, 1, 1, p, pars, 0, (void*)&i, &result);
-        double ro_value = p[0];
-        albedo_final_result.push_back(ro_value);
-        qDebug() << "band: " << i << " ro_value_result: " << ro_value << "\n";
-        qDebug() << "band: " << i << "\nALBEDO FINAL STATUS: " << status;
+        // F1 F2 F3 section
+        double F1 =
+            4 * omega * B_sun_i * mu_0 *
+            ((0.5 + 0.75 * mu_0) + ((0.5 - 0.75 * mu_0) * exp(-Tau_i / mu_0))) *
+            T_i * T_H2O * T_O3;
+
+        double F2 = (1 - omega) * B_lambda_teta_list[index] * mu_0 *
+                    exp(-Tau_i / mu_0) * T_i * T_H2O * T_O3;
+
+        double F3 = 3 * (1 - g_i) * Tau_i;
+        // qDebug() << "F1" << F1;
+        // qDebug() << "F2" << F2;
+        // qDebug() << "F3" << F3;
+        //  a b c section
+        double a = F2 * F3;
+
+        double b = F3 * (origin_speya_pixel_values[i] - B1_result[i]) + F1 +
+                   4 * F2 + F2 * F3;
+
+        double c = (4 + F3) * (origin_speya_pixel_values[i] - B1_result[i]);
+        // qDebug() << "a" << a;
+        // qDebug() << "b" << b;
+        // qDebug() << "c" << c;
+        QuadraticResult qc = solveQuadratic(a, b, c);
+        // qDebug() << "band: " << i << qc.has_roots << qc.x1 << qc.x2;
+        test_ro_result.push_back(qc.x2);
     }
 
-    return albedo_final_result;
+    /*test_ro_result[9] =
+        0.49942 * test_ro_result[9] + 0.00741;  // 945 нм (остается прежним)*/
+    return test_ro_result;
 }
 
 }  // namespace
@@ -809,12 +882,12 @@ result_values optimize(const QString& sat_name,
     pars[p_INDEX].step = 0.01;
 
     // tau_m_0
-    pars[tau_mu_0_INDEX].limits[0] = 0.09;
-    pars[tau_mu_0_INDEX].limits[1] = 0.15;
-    pars[tau_mu_0_INDEX].limited[0] = 1;
-    pars[tau_mu_0_INDEX].limited[1] = 1;
-    pars[tau_mu_0_INDEX].side = 0;
-    pars[tau_mu_0_INDEX].step = 0.01;
+    pars[H2O_INDEX].limits[0] = 0.7;
+    pars[H2O_INDEX].limits[1] = 1.5;
+    pars[H2O_INDEX].limited[0] = 1;
+    pars[H2O_INDEX].limited[1] = 1;
+    pars[H2O_INDEX].side = 0;
+    pars[H2O_INDEX].step = 0.01;
 
     // tau_a_0
     pars[tau_0_a_INDEX].limits[0] = 0.1;
@@ -890,7 +963,7 @@ result_values optimize(const QString& sat_name,
     rv.X = p[X_INDEX];
     rv.q = p[q_INDEX];
     rv.p = p[p_INDEX];
-    rv.tau_mu_0 = p[tau_mu_0_INDEX];
+    rv.h2O_power = p[H2O_INDEX];
     rv.tau_0_a = p[tau_0_a_INDEX];
     rv.beta = p[beta_INDEX];
     rv.tau_e = p[tau_e_INDEX];
@@ -908,17 +981,17 @@ result_values optimize(const QString& sat_name,
     // dv::show(lambda_list, B_atm_result, "B_atm");
     // dv::show(lambda_list, B_lambda_teta_list, "B_lambda_teta_list");
     // dv::show(lambda_list, omega_lambda_list, "omega_lambda");
-    dv::show(lambda_list, tau_lambda_list, "tau_lambda");
-    dv::show(lambda_list, x_list, "x_list");
+    // dv::show(lambda_list, tau_lambda_list, "tau_lambda");
+    // dv::show(lambda_list, x_list, "x_list");
 
     // dv::show(v_central_waves, ro_0_list, "ro_0_list");
     //  dv::show(v_central_waves, B1_result, "B1_list");
     //  dv::show(v_central_waves, B2_result, "B2_list");
-    qDebug() << "mu: " << mu;
-    qDebug() << "mu_0: " << mu_0;
-    qDebug() << "gamma: " << gamma;
-    qDebug() << "x_m_res: " << x_m_res;
-    qDebug() << "x_a_res: " << x_a_res;
+    // qDebug() << "mu: " << mu;
+    // qDebug() << "mu_0: " << mu_0;
+    // qDebug() << "gamma: " << gamma;
+    // qDebug() << "x_m_res: " << x_m_res;
+    // qDebug() << "x_a_res: " << x_a_res;
 
     std::vector<double> x_check_values;
 
@@ -929,19 +1002,10 @@ result_values optimize(const QString& sat_name,
         x_check_values.push_back(value);
     }
 
-    dv::show(lambda_list, tau_a_res, "tau_a");
-    dv::show(lambda_list, tau_m_res, "tau_m");
-    dv::show(lambda_list, x_check_values, "x_check_list");
-
-    auto sv = QVector<double>::fromStdVector(origin_speya_pixel_values);
-    auto albedo_pixel = calculateAlbedoFinal(sv);
-    qDebug() << "albedo: " << albedo_pixel;
-    dv::show(v_central_waves, albedo_pixel, "final_albedo");
-    dv::holdOn();
-    dv::show(v_central_waves, origin_speya_pixel_values, "Origin");
-    dv::show(v_central_waves, final_B_result, "Fitted");
-    dv::holdOff();
-
+    // auto sv = QVector<double>::fromStdVector(origin_speya_pixel_values);
+    // auto albedo_pixel = calculateAlbedoFinal(sv);
+    //  qDebug() << "albedo: " << albedo_pixel;
+    //   dv::show(v_central_waves, albedo_pixel, "final_albedo");
     return rv;
 }
 

@@ -215,6 +215,8 @@ private slots:
     //! персентильного растяжения (lowPct, highPct, gamma)
     void onStretchParamsChanged();
 
+    void createImageWithAtmCorrecton();
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
@@ -331,11 +333,6 @@ private:
     //!
     inline void cursorPointOnSceneChangedEventTimeRow(const QPointF &pos,
                                                       const bool is_landsat);
-
-    //!
-    //! \brief m_image_data
-    //!
-    uchar *m_image_data;
 
     //!
     //! \brief readTiff

@@ -1,5 +1,7 @@
 #include "sattelite_comparator.h"
 
+#include <QDebug>
+
 namespace {
 
 bool areVectorsEqual(const QVector<double>& a, const QVector<double>& b) {
@@ -178,6 +180,7 @@ QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses() {
     auto x_y = interpolate(m_comparator_data.device_waves,
                            m_comparator_data.device_values, m_common_wave_grid,
                            status);
+    qDebug() << "FOLDED STATUS:" << (int)status;
     if (status == BASE_CHECK_RESULT::OK) {
         for (int i = 0; i < m_sat_data.bands.size(); ++i) {
             int start = m_sat_data.bands[i][0] - SATTELITE_WAVE_OFFSET;

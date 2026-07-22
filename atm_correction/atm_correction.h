@@ -10,7 +10,7 @@ enum ATM_PARAMS_INDEXES {
     X_INDEX,
     q_INDEX,
     p_INDEX,
-    tau_mu_0_INDEX,
+    H2O_INDEX,
     tau_0_a_INDEX,
     beta_INDEX,
     tau_e_INDEX,

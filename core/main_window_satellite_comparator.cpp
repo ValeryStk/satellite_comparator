@@ -506,7 +506,6 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
       m_scene_cross_square_item(new CrossSquare(100)),
       m_dynamic_checkboxes_widget(nullptr),
       m_sat_comparator(new SatteliteComparator),
-      m_image_data(new uchar[MAX_BYTES_IN_BASE_IMAGE_LAYER]),
       m_is_image_created(false),
       m_is_bekas(false),
       m_scene_text_item_metric_value(new QGraphicsTextItem),
@@ -525,7 +524,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     setUpUi();
     QString app_title_version = "%1 %2 %3";
     setWindowTitle(app_title_version.arg(satc::app_name)
-                       .arg(" ")
+                       .arg(" Quadratic Atm correction version ")
                        .arg(QString(VER_PRODUCTVERSION_STR)));
     gdal_start_driver();
     initSentinelStructs();
@@ -556,6 +555,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
         new QShortcut(QKeySequence(Qt::Key_Escape), this);
     connect(m_toggle_mouse_tracking_shortcut, &QShortcut::activated, this,
             &MainWindowSatelliteComparator::toggleMouseTracking);
+    connect(&m_ac, SIGNAL(responseForCreatingImage()), this,
+            SLOT(createImageWithAtmCorrecton()));
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
@@ -875,7 +876,6 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
             sample = m_sentinel_sample;
         }
         trimmed_satellite_data = data;
-
         auto bv = getBandsValues(waves, data, m_satelite_type);
 
         // clang-format off
@@ -961,6 +961,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         getGeoCoordinates(pos.x(), pos.y(), m_geo, lat, lon, true);
     ui->statusbar->showMessage(geo_coord_str);
     auto speya_data = getSentinelSpeyaValues(pos.x(), pos.y());
+    m_ac.showAlbedoUnderCursor(speya_data);
     m_speya_plot->graph(0)->setData(waves, speya_data);
     m_speya_plot->rescaleAxes(true);
     m_speya_plot->replot();
@@ -1408,7 +1409,7 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(
     }
     auto folded_device_spectr =
         m_sat_comparator->fold_spectr_to_satellite_responses();
-    qDebug() << "folded_device_spectr: " << folded_device_spectr;
+    qDebug() << "folded_device_spectr: " << folded_device_spectr.size();
     if (folded_device_spectr.empty()) {
         m_is_bekas = false;
         return;
@@ -2740,6 +2741,7 @@ void MainWindowSatelliteComparator::initSentinelStructs() {
         m_sentinel_metadata.sentinel_missed_channels[i] =
             true;  // Изначально считаем все каналы пропущенными
     }
+    m_sentinel_sample = QVector<double>(13, 0.0);
 }
 
 void MainWindowSatelliteComparator::initLandsatStructs() {
@@ -4450,13 +4452,13 @@ jo_source.keys(); satellites = jo_source["satellites"].toObject();
     QTextStream stream(&clipboardText, QIODevice::ReadOnly);
 
     // 3. Игнорируем первые 3 строки заголовка
-    for (int i = 0; i < 3; ++i) {
+    /*for (int i = 0; i < 3; ++i) {
         if (stream.atEnd()) {
             qWarning() << "Ошибка: В буфере обмена слишком мало строк!";
             return;
         }
         stream.readLine();
-    }
+    }*/
 
     // 4. Принудительно используем точку '.' как разделитель дроби
     // (C-локаль)
@@ -4534,6 +4536,60 @@ void MainWindowSatelliteComparator::onStretchParamsChanged() {
             m_viewers[i]->setImage(QPixmap::fromImage(imgs[i]));
         }
     }
+}
+
+void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
+    // Запускаем весь процесс асинхронно в фоновом потоке
+    if (m_sentinel_data.empty()) {
+        qDebug() << "Create Image with Atm correction Failed.....Because "
+                    "sentinel data EMPTY";
+        return;
+    };
+    QtConcurrent::run([this]() {
+        const int x = m_sentinel_data[0].width;
+        const int y = m_sentinel_data[0].height;
+        double BLUE_band = 0.0;
+        double GREEN_band = 0.0;
+        double RED_band = 0.0;
+
+        QImage img(300, 300, QImage::Format_RGB32);
+
+        for (int i = 1000; i < 1300; ++i) {
+            for (int j = 1000; j < 1300; ++j) {
+                auto ksy = getSentinelKsy(j, i);
+                ksy.second.resize(10);
+                m_ac.getAlbedoBySpeya(ksy.second);
+                BLUE_band = ksy.second[1];
+                GREEN_band = ksy.second[2];
+                RED_band = ksy.second[3];
+
+                // Перевод нормированных 0..1 в RGB 0..255
+                int r = static_cast<int>(RED_band * 255);
+                int g = static_cast<int>(GREEN_band * 255);
+                int b = static_cast<int>(BLUE_band * 255);
+
+                // Ограничиваем значения в диапазон 0..255 на случай выхода за
+                // 0..1
+                r = qBound(0, r, 255);
+                g = qBound(0, g, 255);
+                b = qBound(0, b, 255);
+
+                // Записываем пиксель в локальные координаты QImage (от 0 до
+                // 999)
+                img.setPixel(j - 1000, i - 1000, qRgb(r, g, b));
+                qDebug() << "pixel: " << i << " - " << j;
+            }
+        }
+
+        // Путь для сохранения во временную директорию ОС
+        QString filePath = QDir::tempPath() + "/sentinel_output.png";
+
+        // Сохраняем картинку на диск
+        if (img.save(filePath)) {
+            // Открываем файл программой по умолчанию в ОС
+            QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
+        }
+    });
 }
 
 void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,

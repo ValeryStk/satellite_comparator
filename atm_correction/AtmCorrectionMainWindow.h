@@ -23,11 +23,17 @@ public:
     void setCaptureZenitAngle(const double value);
     void setCaptureAzimutAngle(const double value);
     void updateBasePixel(QVector<double> pixel_bands);
+    void showAlbedoUnderCursor(QVector<double> speya_values);
+    QVector<double> getAlbedoBySpeya(const QVector<double>& speya_values);
 
 private slots:
     void on_pushButton_calculateBlack_clicked();
     void showResult(result_values);
     void on_comboBox_satellite_type_currentIndexChanged(const QString& arg1);
+
+    void on_pushButton_CopyKsy_clicked();
+
+    void on_pushButton_create_Image_clicked();
 
 private:
     Ui::AtmCorrectionMainWindow* ui;
@@ -49,6 +55,7 @@ private:
 signals:
     void resolveBlack(const QString& satellite_name,
                       const QVector<double>& dark_pixels);
+    void responseForCreatingImage();
 };
 
 #endif  // ATMCORRECTIONMAINWINDOW_H
