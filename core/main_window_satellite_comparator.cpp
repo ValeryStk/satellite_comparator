@@ -96,8 +96,6 @@ private:
 
 PixelGeo *base_pixel_geo;
 
-constexpr int MAX_BYTES_IN_BASE_IMAGE_LAYER = 11000 * 11000 * 3;
-
 QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443, 482, 562, 655, 865, 1610, 2200};
 QVector<double> waves_landsat9_5 = {443, 482, 562, 655, 865};
