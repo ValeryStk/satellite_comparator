@@ -207,6 +207,10 @@ private slots:
 
     void loadSentinelTOA();
 
+    // Загрузка данных Sen2Cor для сравнения с различными методами атмосферной
+    // коррекции
+    void loadSentinelSen2Cor();
+
     void setCursorByGeo();
 
     void setExternalSampleFromClipboard();
@@ -424,6 +428,12 @@ private:
 
     QVector<sad::BAND_DATA> m_sentinel_data;
     QVector<sad::BAND_DATA> m_landsat_data;
+
+    // используется для сравнения атмосферной коррекции
+    // с методом sen2cor
+    sad::SENTINEL_METADATA m_sentinel_metadata_for_sen2cor;
+    QVector<sad::BAND_DATA> m_sen2cor_data;
+
     void read_sentinel2_bands_data(QVector<sad::BAND_DATA> &data);
 
     void gdal_start_driver();
