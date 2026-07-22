@@ -1394,16 +1394,22 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(
                                                     m_landsat9_sample);
     } else if (m_satelite_type == sad::SENTINEL_2A) {
         m_sat_comparator->set_satellite_responses("sentinel2A");  // sentinel2C
-        m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
+        m_sat_comparator->initial_fill_data_to_show(x, y,
+                                                    waves_sentinel_2c,  // TEMP
                                                     m_sentinel_sample);
     } else if (m_satelite_type == sad::SENTINEL_2B) {
         m_sat_comparator->set_satellite_responses("sentinel2B");  // sentinel2C
-        m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
+        m_sat_comparator->initial_fill_data_to_show(x, y,
+                                                    waves_sentinel_2c,  // TEMP
                                                     m_sentinel_sample);
     } else if (m_satelite_type == sad::SENTINEL_2C) {
         m_sat_comparator->set_satellite_responses("sentinel2C");  // sentinel2C
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
                                                     m_sentinel_sample);
+        // qDebug() << "x: " << x;
+        // qDebug() << "y: " << y;
+        qDebug() << "waves_sentinel_2c: " << waves_sentinel_2c;
+        qDebug() << "sentinel_sample: " << m_sentinel_sample;
     }
     auto folded_device_spectr =
         m_sat_comparator->fold_spectr_to_satellite_responses();
@@ -2739,7 +2745,7 @@ void MainWindowSatelliteComparator::initSentinelStructs() {
         m_sentinel_metadata.sentinel_missed_channels[i] =
             true;  // Изначально считаем все каналы пропущенными
     }
-    m_sentinel_sample = QVector<double>(13, 0.0);
+    m_sentinel_sample = QVector<double>(12, 0.0);
 }
 
 void MainWindowSatelliteComparator::initLandsatStructs() {
