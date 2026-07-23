@@ -39,6 +39,7 @@ vector<double> tau_m;
 QJsonArray atm_params;
 QJsonArray sat_sentinel2A_respns;
 QJsonArray sat_sentinel2B_respns;
+QJsonArray sat_sentinel2C_respns;
 QString satellite_name_key = "";
 vector<double> origin_speya_pixel_values = {39.535587, 25.645323, 11.881793,
                                             4.310712};

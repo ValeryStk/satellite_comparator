@@ -33,7 +33,8 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     ui->widget_atm_params->axisRect()->setBackground(axisBg);
 
     ui->comboBox_satellite_type->blockSignals(true);
-    ui->comboBox_satellite_type->addItems({"sentinel 2A", "sentinel 2B"});
+    ui->comboBox_satellite_type->addItems(
+        {"sentinel 2A", "sentinel 2B", "sentinel 2C"});
     ui->comboBox_satellite_type->blockSignals(false);
     QStringList sl;
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i)
@@ -309,6 +310,9 @@ void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
     } else if (arg1 == "sentinel 2B") {
         for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i)
             sl << sad::sentinel_2B_gui_band_names[i];
+    } else if (arg1 == "sentinel 2C") {
+        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i)
+            sl << sad::sentinel_2C_gui_band_names[i];
     }
     bands_widget->updateCheckboxesList(sl);
     cs->updateCurrentSatellite(arg1);
@@ -330,15 +334,14 @@ void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
 
 void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
     if (pixel_bands.size() < 10) return;
-    QString bands_values;
+
     base_pixel_speya_values.clear();
     for (int i = 0; i < 10; ++i) {
         base_pixel_speya_values.append(pixel_bands[i]);
-        bands_values.append(QString::number(pixel_bands[i]));
-        if (i < 10 - 1) bands_values.append(" ");
+        base_pixel_speya_valuesStr.append(QString::number(pixel_bands[i]));
+        if (i < 10 - 1) base_pixel_speya_valuesStr.append(" ");
     }
     auto ln_m_H2O = cs->get_mH2O(pixel_bands[9], pixel_bands[8]);
-    ui->label_pixel_bands->setText(bands_values);
     ui->doubleSpinBox_mH2O->setValue(std::exp(ln_m_H2O));
     auto a = cs->get_a_H2O();
     auto b = cs->get_b_H2O();
@@ -346,7 +349,6 @@ void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
     Q_ASSERT(a.size() == b.size() == w.size());
     qDebug() << a.size() << b.size() << w.size();
     QVector<double> T_H2O;
-    QVector<double> T_O3;
     for (size_t i = 0; i < w.size(); ++i) {
         T_H2O.append(a[i] * ln_m_H2O + b[i]);
     }

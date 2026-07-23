@@ -2,5 +2,6 @@
     <qresource prefix="/">
         <file>responses/sentinel2A/sentinel2A_responses.json</file>
         <file>responses/sentinel2B/sentinel2B_responses.json</file>
+        <file>responses/sentinel2C/sentinel2C_responses.json</file>
     </qresource>
 </RCC>

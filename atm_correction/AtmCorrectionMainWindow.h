@@ -40,6 +40,7 @@ private:
     BandsWidget* bands_widget;
     QCustomPlot* atm_params_plot;
     QVector<double> base_pixel_speya_values;
+    QString base_pixel_speya_valuesStr;
     QMap<QString, QPoint> cellMap;
     // Метод для получения вещественного числа из ячейки по имени
     double getCellValue(const QString& name);

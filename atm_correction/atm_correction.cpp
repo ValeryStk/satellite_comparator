@@ -168,6 +168,9 @@ void loadAllLists() {
     jsn::getJsonArrayFromFile(
         ":/responses/sentinel2B/sentinel2B_responses.json",
         sat_sentinel2B_respns);
+    jsn::getJsonArrayFromFile(
+        ":/responses/sentinel2C/sentinel2C_responses.json",
+        sat_sentinel2C_respns);
 
     for (int i = 0; i < atm_params.size(); ++i) {
         // double h2o = atm_params[i].toObject()["h2o"].toDouble();
@@ -799,6 +802,8 @@ void updateSatelliteResponses(const QString& satellite_name) {
         sat_responses = sat_sentinel2A_respns;
     } else if (satellite_name == "sentinel 2B") {
         sat_responses = sat_sentinel2B_respns;
+    } else if (satellite_name == "sentinel 2C") {
+        sat_responses = sat_sentinel2C_respns;
     } else {
         Q_ASSERT(false);
         qDebug() << "UKNOWN SATTELITE NAME";
