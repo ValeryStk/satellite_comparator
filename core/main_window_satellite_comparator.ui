@@ -167,6 +167,7 @@
     </property>
     <addaction name="action_spectral_indicies"/>
     <addaction name="actionTimeRowIndices"/>
+    <addaction name="action_atm_correction"/>
    </widget>
    <widget class="QMenu" name="menu_4">
     <property name="title">
@@ -279,6 +280,17 @@
   <action name="actionSentinel_2C">
    <property name="text">
     <string>Sentinel 2C</string>
+   </property>
+  </action>
+  <action name="action_atm_correction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Атмосферная коррекция</string>
    </property>
   </action>
  </widget>

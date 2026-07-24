@@ -2925,8 +2925,21 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
                     m_time_row_spectralIndicesDock.show();
                 } else {
                     m_time_row_spectralIndicesDock.hide();
+                    ui->actionTimeRowIndices->setChecked(false);
                 }
             });
+
+    // m_acDock
+    connect(ui->action_atm_correction, &QAction::triggered, this,
+            [this](bool checked) {
+                if (checked) {
+                    m_acDock->show();
+                } else {
+                    m_acDock->hide();
+                    ui->action_atm_correction->setChecked(false);
+                }
+            });
+
     connect(ui->action_Sentinel2_loadCloudMask, &QAction::triggered, this,
             &MainWindowSatelliteComparator::loadMaskForSentinelMenu);
     connect(ui->actionSentinel2_TOA, &QAction::triggered, this,
