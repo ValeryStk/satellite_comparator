@@ -1355,7 +1355,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
         fi.setFile(geo_file);
         auto xml_doc = fi.absoluteFilePath();
         qDebug() << xml_doc << "--->" << fi.exists();
-        m_geo.utmZone = extractUTMZoneFromXML(xml_doc);
+        m_geo.utmZone = extractUTMZoneFromXML(xml_doc, m_geo);
         sentinel_geo = extractGeoPositions(xml_doc);
         m_geo.ulX = sentinel_geo["20"].ulX;
         m_geo.ulY = sentinel_geo["20"].ulY;
@@ -1644,7 +1644,8 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod(
         const QString geo_file = dir.path() + "/MTD_TL.xml";
         fi.setFile(geo_file);
         auto xml_doc = fi.absoluteFilePath();
-        change_detection_geo.utmZone = extractUTMZoneFromXML(xml_doc);
+        change_detection_geo.utmZone =
+            extractUTMZoneFromXML(xml_doc, change_detection_geo);
         date_time_str =
             getDateTimeFromXML(xml_doc).toString("yyyy/MM/dd hh:mm:s");
         sentinel_geo = extractGeoPositions(xml_doc);
@@ -2301,7 +2302,7 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(
     utmSrs.SetProjCS("UTM");
     utmSrs.SetWellKnownGeogCS("WGS84");  // DATUM из MTL.json
     utmSrs.SetUTM(geo.utmZone,
-                  true);  // Северное - true или южное - false полушарие
+                  geo.isNorth);  // Северное - true или южное - false полушарие
 
     // Создаем целевую проекцию (WGS84)
     OGRSpatialReference wgs84Srs;
@@ -2345,7 +2346,7 @@ QPointF MainWindowSatelliteComparator::geoToPixel(double latitude,
 
     if (!coordTransform) {
         srcSRS.SetWellKnownGeogCS("WGS84");
-        dstSRS.SetUTM(gt.utmZone, gt.ulY > 0);
+        dstSRS.SetUTM(gt.utmZone, gt.isNorth);
         dstSRS.SetWellKnownGeogCS("WGS84");
         coordTransform = OGRCreateCoordinateTransformation(&srcSRS, &dstSRS);
     }
@@ -3172,7 +3173,7 @@ MainWindowSatelliteComparator::extractGeoPositions(const QString &xmlFilePath) {
 }
 
 int MainWindowSatelliteComparator::extractUTMZoneFromXML(
-    const QString &xmlFilePath) {
+    const QString &xmlFilePath, sad::geoTransform &gt) {
     QFile file(xmlFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Не удалось открыть файл:" << xmlFilePath;
@@ -3194,6 +3195,13 @@ int MainWindowSatelliteComparator::extractUTMZoneFromXML(
     }
 
     QString csName = nodes.at(0).toElement().text();
+    // Берем самый последний символ строки
+    QChar lastChar = csName.at(csName.length() - 1);
+    if (lastChar == 'N') {
+        gt.isNorth = true;
+    } else if (lastChar == 'S') {
+        gt.isNorth = false;
+    }
     QRegularExpression re("zone\\s*(\\d+)");
     QRegularExpressionMatch match = re.match(csName);
 
@@ -3546,7 +3554,7 @@ MainWindowSatelliteComparator::getDataForSentinel_TimeRow(
         fi.setFile(geo_file);
         auto xml_doc = fi.absoluteFilePath();
         // qDebug()<<xml_doc<<"--->"<<fi.exists();
-        gt.utmZone = extractUTMZoneFromXML(xml_doc);
+        gt.utmZone = extractUTMZoneFromXML(xml_doc, gt);
         sentinel_geo = extractGeoPositions(xml_doc);
         QDateTime dt = getDateTimeFromXML(xml_doc);
 
@@ -4321,7 +4329,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         fi.setFile(geo_file);
         auto xml_doc = fi.absoluteFilePath();
         qDebug() << xml_doc << "--->" << fi.exists();
-        m_geo.utmZone = extractUTMZoneFromXML(xml_doc);
+        m_geo.utmZone = extractUTMZoneFromXML(xml_doc, m_geo);
         sentinel_geo = extractGeoPositions(xml_doc);
         m_geo.ulX = sentinel_geo["20"].ulX;
         m_geo.ulY = sentinel_geo["20"].ulY;
@@ -4482,7 +4490,7 @@ void MainWindowSatelliteComparator::loadSentinelSen2Cor() {
         fi.setFile(geo_file);
         auto xml_doc = fi.absoluteFilePath();
         qDebug() << xml_doc << "--->" << fi.exists();
-        m_geo.utmZone = extractUTMZoneFromXML(xml_doc);
+        m_geo.utmZone = extractUTMZoneFromXML(xml_doc, m_geo);
         sentinel_geo = extractGeoPositions(xml_doc);
         m_geo.ulX = sentinel_geo["20"].ulX;
         m_geo.ulY = sentinel_geo["20"].ulY;

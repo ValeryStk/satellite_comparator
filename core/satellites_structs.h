@@ -50,6 +50,7 @@ struct geoTransform {
     double resY =
         0;  // Разрешение по Y (отрицательное, т.к. ось Y направлена вниз)
     double utmZone = 0;
+    bool isNorth = true;
 };
 
 struct PRODUCT_CONTENTS {

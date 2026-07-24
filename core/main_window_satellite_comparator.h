@@ -50,7 +50,7 @@ class MainWindowSatelliteComparator : public QMainWindow {
     Q_OBJECT
 
 public:
-    //! Конмтруктор
+    //! Конcтруктор
     explicit MainWindowSatelliteComparator(QWidget *parent = nullptr);
 
     //! Деструктор
@@ -463,7 +463,8 @@ private:
 
     QHash<QString, sad::geoTransform> extractGeoPositions(
         const QString &xmlFilePath);
-    int extractUTMZoneFromXML(const QString &xmlFilePath);
+    int extractUTMZoneFromXML(const QString &xmlFilePath,
+                              sad::geoTransform &gt);
     QDateTime getDateTimeFromXML(const QString &xmlFilePath);
     void getKSY(const QPointF &pos, QVector<double> &waves,
                 QVector<double> &ksy);
