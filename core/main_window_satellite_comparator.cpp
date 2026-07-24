@@ -513,6 +513,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 {
     ui->setupUi(this);
+    m_lattitude = 0.0;
+    m_longitude = 0.0;
     m_is_external_spectr = false;
     m_label_scene_coord = new QLabel;
     m_label_date_time = new QLabel;
@@ -2910,6 +2912,13 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
             SLOT(openSentinel2CHeaderData()));
     connect(ui->action_LoadTimeRow, SIGNAL(triggered()), this,
             SLOT(openTimeRowData()));
+
+    connect(ui->action_copy_geo_coords, &QAction::triggered, this, [this]() {
+        QString text = QString("%1 %2").arg(m_lattitude).arg(m_longitude);
+        QClipboard *clipboard = QApplication::clipboard();
+        clipboard->setText(text);
+    });
+
     connect(ui->action_spectral_indicies, &QAction::triggered, this,
             [this](bool checked) {
                 if (checked) {

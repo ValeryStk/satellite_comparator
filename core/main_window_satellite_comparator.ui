@@ -176,6 +176,7 @@
     <addaction name="action_change_detection_CD"/>
     <addaction name="action_SpectraClassifer"/>
     <addaction name="action_setCursorByGeoCoord"/>
+    <addaction name="action_copy_geo_coords"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_3"/>
@@ -291,6 +292,11 @@
    </property>
    <property name="text">
     <string>Атмосферная коррекция</string>
+   </property>
+  </action>
+  <action name="action_copy_geo_coords">
+   <property name="text">
+    <string>Копировать координату выбранного пикселя</string>
    </property>
   </action>
  </widget>
