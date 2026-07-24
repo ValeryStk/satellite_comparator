@@ -93,8 +93,8 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     ui->tableWidget_uknown_params->setRowCount(3);
     ui->tableWidget_uknown_params->verticalHeader()->setVisible(false);
     ui->tableWidget_uknown_params->setHorizontalHeaderLabels(
-        {"--", "X", "q", "p", "Tau_m0", "Tau_a0", "Beta", "Tau_e", "g_a", "p_1",
-         "p_2"});
+        {"--", "X", "q", "p", "H2O_pow", "Tau_a0", "Beta", "Tau_e", "g_a",
+         "p_1", "p_2"});
     for (int row = 0; row < ui->tableWidget_uknown_params->rowCount(); ++row) {
         // Если это вторая строка (индекс 1) — пропускаем её, она останется
         // доступной для изменения
@@ -161,7 +161,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     cellMap["X"] = QPoint(0, 1);
     cellMap["q"] = QPoint(0, 2);
     cellMap["p"] = QPoint(0, 3);
-    cellMap["Tau_m0"] = QPoint(0, 4);
+    cellMap["H2O_pow"] = QPoint(0, 4);
     cellMap["Tau_a0"] = QPoint(0, 5);
     cellMap["Beta"] = QPoint(0, 6);
     cellMap["Tau_e"] = QPoint(0, 7);
@@ -172,7 +172,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     cellMap["rng_X"] = QPoint(1, 1);
     cellMap["rng_q"] = QPoint(1, 2);
     cellMap["rng_p"] = QPoint(1, 3);
-    cellMap["rng_Tau_m0"] = QPoint(1, 4);
+    cellMap["rng_H2O_pow"] = QPoint(1, 4);
     cellMap["rng_Tau_a0"] = QPoint(1, 5);
     cellMap["rng_Beta"] = QPoint(1, 6);
     cellMap["rng_Tau_e"] = QPoint(1, 7);
@@ -183,7 +183,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     cellMap["result_X"] = QPoint(2, 1);
     cellMap["result_q"] = QPoint(2, 2);
     cellMap["result_p"] = QPoint(2, 3);
-    cellMap["result_Tau_m0"] = QPoint(2, 4);
+    cellMap["result_H2O_power"] = QPoint(2, 4);
     cellMap["result_Tau_a0"] = QPoint(2, 5);
     cellMap["result_Beta"] = QPoint(2, 6);
     cellMap["result_Tau_e"] = QPoint(2, 7);
@@ -194,7 +194,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     setCellValue("X", 300);
     setCellValue("q", 2);
     setCellValue("p", 1.25);
-    setCellValue("Tau_m0", 1, 3);
+    setCellValue("H2O_pow", 1, 3);
     setCellValue("Tau_a0", 0.2);
     setCellValue("Beta", 2);
     setCellValue("Tau_e", 0.04);
@@ -205,7 +205,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     setCellStringValue("rng_X", "280 - 350");
     setCellStringValue("rng_q", "1 - 6");
     setCellStringValue("rng_p", "0.5 - 2.0");
-    setCellStringValue("rng_Tau_m0", "0.8 - 2");
+    setCellStringValue("rng_H2O_pow", "0.8 - 2");
     setCellStringValue("rng_Tau_a0", "0.01 - 1.5");
     setCellStringValue("rng_Beta", "0 - 4");
     setCellStringValue("rng_Tau_e", "0 - 0.5");
@@ -220,7 +220,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
         "    font-weight: bold;"          // Жирный шрифт
         "    border: 2px solid #D1D1D1;"  // Граница
         "}");
-    ui->doubleSpinBox_lambda_1->setValue(490);
+    ui->doubleSpinBox_lambda_1->setValue(400);
     ui->doubleSpinBox_lambda_2->setValue(665);
 }
 
@@ -271,7 +271,7 @@ void AtmCorrectionMainWindow::showResult(result_values rv) {
     setCellValue("result_X", rv.X);
     setCellValue("result_q", rv.q);
     setCellValue("result_p", rv.p);
-    setCellValue("result_Tau_m0", rv.h2O_power);
+    setCellValue("result_H2O_power", rv.h2O_power);
     setCellValue("result_Tau_a0", rv.tau_0_a);
     setCellValue("result_Beta", rv.beta);
     setCellValue("result_Tau_e", rv.tau_e);
@@ -427,7 +427,7 @@ void AtmCorrectionMainWindow::setCellStringValue(const QString &name,
 
 void AtmCorrectionMainWindow::updateInitialValues() {
     cs->setInitial_values({getCellValue("X"), getCellValue("q"),
-                           getCellValue("p"), getCellValue("Tau_m0"),
+                           getCellValue("p"), getCellValue("H2O_pow"),
                            getCellValue("Tau_a0"), getCellValue("Beta"),
                            getCellValue("Tau_e"), getCellValue("g_a"),
                            getCellValue("p_1"), getCellValue("p_2")});
