@@ -25,6 +25,8 @@ struct result_values {
     double err_g;
     double err_albedo_1;
     double err_albedo_2;
+
+    std::vector<double> fitted_speya;
 };
 Q_DECLARE_METATYPE(result_values)
 #endif  // COMMON_TYPES_H

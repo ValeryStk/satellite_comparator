@@ -6,6 +6,7 @@
 #include "QStringList"
 #include "double_delegate.cpp"
 #include "satellites_structs.h"
+#include "sentinel_fitting_evaluator.cpp"
 #include "ui_AtmCorrectionMainWindow.h"
 
 QVector<QColor> channelColors = {
@@ -18,6 +19,7 @@ calculation_solver *cs;
 AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AtmCorrectionMainWindow) {
     ui->setupUi(this);
+    m_central_waves.resize(SENTINEL_BANDS_NUMBER);
     atm_params_plot = ui->widget_atm_params;
     QColor bg(45, 45, 45);  // тёмно-серый
     QColor axisBg(35, 35, 35);  // чуть темнее внутри области графика
@@ -222,6 +224,32 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
         "}");
     ui->doubleSpinBox_lambda_1->setValue(400);
     ui->doubleSpinBox_lambda_2->setValue(665);
+    connect(ui->action_show_fitting_graph, &QAction::triggered, [this]() {
+        QCustomPlot *fitting_plot = new QCustomPlot;
+        fitting_plot->setAttribute(Qt::WA_DeleteOnClose, true);
+        fitting_plot->addGraph();
+        auto waves = m_central_waves;
+        waves.resize(10);
+
+        QPen pen2("#0aef25");
+        pen2.setWidth(3);
+        fitting_plot->graph(0)->setPen(pen2);
+        fitting_plot->graph(0)->setScatterStyle(
+            QCPScatterStyle(QCPScatterStyle::ssDisc, 7));
+        fitting_plot->graph(0)->setData(waves, base_pixel_speya_values);
+
+        fitting_plot->addGraph();
+        fitting_plot->graph(1)->setScatterStyle(
+            QCPScatterStyle(QCPScatterStyle::ssDisc, 7));
+        auto fitted_values =
+            QVector<double>::fromStdVector(m_atm_cor_result.fitted_speya);
+        fitting_plot->graph(1)->setData(waves, fitted_values);
+        fitting_plot->rescaleAxes(true);
+        fitting_plot->replot();
+        fitting_plot->show();
+        qDebug() << waves;
+        qDebug() << m_central_waves;
+    });
 }
 
 AtmCorrectionMainWindow::~AtmCorrectionMainWindow() { delete ui; }
@@ -268,6 +296,7 @@ void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
 }
 
 void AtmCorrectionMainWindow::showResult(result_values rv) {
+    m_atm_cor_result = rv;
     setCellValue("result_X", rv.X);
     setCellValue("result_q", rv.q);
     setCellValue("result_p", rv.p);
@@ -278,6 +307,15 @@ void AtmCorrectionMainWindow::showResult(result_values rv) {
     setCellValue("result_g_a", rv.g);
     setCellValue("result_p_1", rv.albedo_1);
     setCellValue("result_p_2", rv.albedo_2);
+    qDebug() << "base speya: " << base_pixel_speya_values.toStdVector();
+    qDebug() << "fitted speya: " << rv.fitted_speya;
+    Sentinel2_Radiance_Evaluator evaluator;
+    auto report = evaluator.compareRadiance(
+        base_pixel_speya_values.toStdVector(), rv.fitted_speya);
+    qDebug() << "Статус строгой проверки фитинга: " << report.fits_within_noise;
+    qDebug() << "Статус мягкой проверки фитинга: "
+             << evaluator.evaluateSoftFit(base_pixel_speya_values.toStdVector(),
+                                          rv.fitted_speya);
 }
 
 void AtmCorrectionMainWindow::showAlbedoUnderCursor(
@@ -305,14 +343,20 @@ void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
     bands_widget->clear();
     QStringList sl;
     if (arg1 == "sentinel 2A") {
-        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i)
+        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
             sl << sad::sentinel_2A_gui_band_names[i];
+            m_central_waves[i] = sad::sentinel_2A_central_wave_lengths[i];
+        }
     } else if (arg1 == "sentinel 2B") {
-        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i)
+        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
             sl << sad::sentinel_2B_gui_band_names[i];
+            m_central_waves[i] = sad::sentinel_2B_central_wave_lengths[i];
+        }
     } else if (arg1 == "sentinel 2C") {
-        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i)
+        for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
             sl << sad::sentinel_2C_gui_band_names[i];
+            m_central_waves[i] = sad::sentinel_2C_central_wave_lengths[i];
+        }
     }
     bands_widget->updateCheckboxesList(sl);
     cs->updateCurrentSatellite(arg1);

@@ -982,6 +982,7 @@ result_values optimize(const QString& sat_name,
     dv::show(v_central_waves, origin_speya_pixel_values, "Origin");
     dv::show(v_central_waves, B_result, "Fitted");
     dv::holdOff();
+    rv.fitted_speya = B_result;
     // dv::show(lambda_list, e_result, "E");
     // dv::show(lambda_list, B_atm_result, "B_atm");
     // dv::show(lambda_list, B_lambda_teta_list, "B_lambda_teta_list");

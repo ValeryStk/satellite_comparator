@@ -15,6 +15,8 @@ SOURCES += \
     $$CORE_DIR/satellites_structs.cpp \
     $$PWD/bands_widget.cpp \
     $$CORE_DIR/qcustomplot.cpp \
+    $$PWD/sentinel_fitting_evaluator.cpp \
+
 
 HEADERS += \
     $$CORE_DIR/common_types.h \

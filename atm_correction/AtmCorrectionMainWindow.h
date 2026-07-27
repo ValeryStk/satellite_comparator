@@ -39,8 +39,10 @@ private:
     Ui::AtmCorrectionMainWindow* ui;
     BandsWidget* bands_widget;
     QCustomPlot* atm_params_plot;
+    QVector<double> m_central_waves;
     QVector<double> base_pixel_speya_values;
     QString base_pixel_speya_valuesStr;
+    result_values m_atm_cor_result;
     QMap<QString, QPoint> cellMap;
     // Метод для получения вещественного числа из ячейки по имени
     double getCellValue(const QString& name);
