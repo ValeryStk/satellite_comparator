@@ -168,6 +168,7 @@
     <addaction name="action_spectral_indicies"/>
     <addaction name="actionTimeRowIndices"/>
     <addaction name="action_atm_correction"/>
+    <addaction name="action_speya"/>
    </widget>
    <widget class="QMenu" name="menu_4">
     <property name="title">
@@ -297,6 +298,14 @@
   <action name="action_copy_geo_coords">
    <property name="text">
     <string>Копировать координату выбранного пикселя</string>
+   </property>
+  </action>
+  <action name="action_speya">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>СПЭЯ</string>
    </property>
   </action>
  </widget>

@@ -941,8 +941,12 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
 
     m_preview_plot->graph(0)->data().clear();
     m_preview_plot->graph(1)->data().clear();
-    m_preview_plot->graph(0)->setData(waves, trimmed_satellite_data);
-    m_preview_plot->graph(1)->setData(waves, sample);
+    if (waves.size() == trimmed_satellite_data.size()) {
+        m_preview_plot->graph(0)->setData(waves, trimmed_satellite_data);
+    }
+    if (waves.size() == sample.size()) {
+        m_preview_plot->graph(1)->setData(waves, sample);
+    }
 
     double result = 999;
     if (m_comboBox_calculation_method->currentText() == satc::spectral_angle) {
@@ -3937,10 +3941,14 @@ void MainWindowSatelliteComparator::setUpUi() {
     // Создаем док
     m_spectralDock = new QDockWidget("Спектральные индексы", this);
     m_spectralDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+    m_spectralDock->setFeatures(QDockWidget::DockWidgetMovable |
+                                QDockWidget::DockWidgetFloatable);
     m_spectralDock->setWidget(m_spectralWidget);
 
     m_speyaDock = new QDockWidget("СПЭЯ", this);
     m_speyaDock->setAllowedAreas(Qt::RightDockWidgetArea);
+    m_speyaDock->setFeatures(QDockWidget::DockWidgetMovable |
+                             QDockWidget::DockWidgetFloatable);
     m_speyaDock->setWidget(m_speya_plot);
     m_speyaDock->setMinimumSize(QSize(400, 150));
     m_speya_plot->yAxis->setLabel("СПЭЯ Вт/(м²·мкм·ср)");
@@ -3949,6 +3957,8 @@ void MainWindowSatelliteComparator::setUpUi() {
 
     m_acDock = new QDockWidget("Атмосферная коррекция");
     m_acDock->setAllowedAreas(Qt::RightDockWidgetArea);
+    m_acDock->setFeatures(QDockWidget::DockWidgetMovable |
+                          QDockWidget::DockWidgetFloatable);
     m_acDock->setWidget(&m_ac);
 
     // Добавляем доки в левую область
@@ -3973,6 +3983,8 @@ void MainWindowSatelliteComparator::setUpUi() {
         QMargins(0, 10, 50, 10));  // left, top, right, bottom
     time_row_indexes_plot->yAxis->setRange(-1, 1);
     m_time_row_spectralIndicesDock.setAllowedAreas(Qt::RightDockWidgetArea);
+    m_time_row_spectralIndicesDock.setFeatures(
+        QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
     m_time_row_spectralIndicesDock.setWidget(time_row_indexes_plot);
     m_time_row_spectralIndicesDock.setWindowTitle("Временной ряд индексов");
     addDockWidget(Qt::RightDockWidgetArea, &m_time_row_spectralIndicesDock);
