@@ -2953,6 +2953,14 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
                 }
             });
 
+    connect(ui->action_speya, &QAction::triggered, this, [this](bool checked) {
+        if (checked) {
+            m_speyaDock->show();
+        } else {
+            m_speyaDock->hide();
+        }
+    });
+
     connect(ui->action_Sentinel2_loadCloudMask, &QAction::triggered, this,
             &MainWindowSatelliteComparator::loadMaskForSentinelMenu);
     connect(ui->actionSentinel2_TOA, &QAction::triggered, this,
