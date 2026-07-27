@@ -226,6 +226,9 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     ui->doubleSpinBox_lambda_2->setValue(665);
     connect(ui->action_show_fitting_graph, &QAction::triggered, [this]() {
         QCustomPlot *fitting_plot = new QCustomPlot;
+        fitting_plot->setMinimumSize(QSize(800, 600));
+        fitting_plot->setWindowTitle(
+            "Оценка совпадения теоретического спектра");
         fitting_plot->setAttribute(Qt::WA_DeleteOnClose, true);
         fitting_plot->addGraph();
         auto waves = m_central_waves;
@@ -236,13 +239,21 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
         fitting_plot->graph(0)->setPen(pen2);
         fitting_plot->graph(0)->setScatterStyle(
             QCPScatterStyle(QCPScatterStyle::ssDisc, 7));
+        fitting_plot->graph(0)->setName(
+            "Исходный спектр");  // Название для легенды
         fitting_plot->graph(0)->setData(waves, base_pixel_speya_values);
 
         fitting_plot->addGraph();
+        fitting_plot->graph(1)->setName(
+            "Модельный спектр");  // Название для легенды
         fitting_plot->graph(1)->setScatterStyle(
             QCPScatterStyle(QCPScatterStyle::ssDisc, 7));
         auto fitted_values =
             QVector<double>::fromStdVector(m_atm_cor_result.fitted_speya);
+        // Включение легенды и её видимости
+        fitting_plot->legend->setVisible(true);
+        // Опционально: делаем шрифт легенды чуть меньше для аккуратности
+        fitting_plot->legend->setFont(QFont(font().family(), 9));
         fitting_plot->graph(1)->setData(waves, fitted_values);
         fitting_plot->rescaleAxes(true);
         fitting_plot->replot();
