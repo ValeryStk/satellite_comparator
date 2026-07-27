@@ -524,7 +524,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     setUpUi();
     QString app_title_version = "%1 %2 %3";
     setWindowTitle(app_title_version.arg(satc::app_name)
-                       .arg(" Quadratic Atm correction version ")
+                       .arg(" ")
                        .arg(QString(VER_PRODUCTVERSION_STR)));
     gdal_start_driver();
     initSentinelStructs();
