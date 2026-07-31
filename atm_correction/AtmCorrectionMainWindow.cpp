@@ -20,6 +20,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AtmCorrectionMainWindow) {
     ui->setupUi(this);
     fitting_plot = nullptr;
+    ui->pushButton_create_Image->setVisible(false);
     m_central_waves.resize(SENTINEL_BANDS_NUMBER);
     atm_params_plot = ui->widget_atm_params;
     QColor bg(45, 45, 45);  // тёмно-серый

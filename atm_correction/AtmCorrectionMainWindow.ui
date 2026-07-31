@@ -470,7 +470,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_show_fitting_graph">
    <property name="text">
-    <string>Показать результат подгонки</string>
+    <string>Показать результат фитирования</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+F</string>
