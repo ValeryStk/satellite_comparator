@@ -4266,9 +4266,15 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
     if (satelliteType == satc::satellite_name_sentinel_2A) {
         m_satelite_type = sad::SENTINEL_2A;
         sentinelTOAname = satc::satellite_name_sentinel_2A_TOA;
+        m_ac.updateSatelliteType("sentinel 2A");
     } else if (satelliteType == satc::satellite_name_sentinel_2B) {
         m_satelite_type = sad::SENTINEL_2B;
         sentinelTOAname = satc::satellite_name_sentinel_2B_TOA;
+        m_ac.updateSatelliteType("sentinel 2B");
+    } else if (satelliteType == satc::satellite_name_sentinel_2C) {
+        m_satelite_type = sad::SENTINEL_2C;
+        sentinelTOAname = satc::satellite_name_sentinel_2C_TOA;
+        m_ac.updateSatelliteType("sentinel 2C");
     }
     title_satellite_name->setText(sentinelTOAname);
     QFileInfo fi(headerName);
@@ -4330,6 +4336,12 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
                          SENTINEL_BANDS_NUMBER);
         std::copy(sad::sentinel_2B_central_wave_lengths,
                   sad::sentinel_2B_central_wave_lengths + SENTINEL_BANDS_NUMBER,
+                  central_waves);
+    } else if (m_satelite_type == sad::SENTINEL_2C) {
+        copyQStringArray(sad::sentinel_2C_gui_band_names, gui_channels,
+                         SENTINEL_BANDS_NUMBER);
+        std::copy(sad::sentinel_2C_central_wave_lengths,
+                  sad::sentinel_2C_central_wave_lengths + SENTINEL_BANDS_NUMBER,
                   central_waves);
     }
 

@@ -21,6 +21,7 @@ const char satellite_name_sentinel_2B[] = "SENTINEL-2B";
 const char satellite_name_sentinel_2C[] = "SENTINEL-2C";
 const char satellite_name_sentinel_2A_TOA[] = "SENTINEL-2A-TOA";
 const char satellite_name_sentinel_2B_TOA[] = "SENTINEL-2B-TOA";
+const char satellite_name_sentinel_2C_TOA[] = "SENTINEL-2C-TOA";
 
 const char kSpeyaXUnit[] = "СПЭЯ, Вт/(м³·ср)";
 

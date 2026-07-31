@@ -19,6 +19,7 @@ calculation_solver *cs;
 AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AtmCorrectionMainWindow) {
     ui->setupUi(this);
+    fitting_plot = nullptr;
     m_central_waves.resize(SENTINEL_BANDS_NUMBER);
     atm_params_plot = ui->widget_atm_params;
     QColor bg(45, 45, 45);  // тёмно-серый
@@ -225,7 +226,20 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     ui->doubleSpinBox_lambda_1->setValue(400);
     ui->doubleSpinBox_lambda_2->setValue(665);
     connect(ui->action_show_fitting_graph, &QAction::triggered, [this]() {
-        QCustomPlot *fitting_plot = new QCustomPlot;
+        if (fitting_plot) {
+            fitting_plot->raise();
+            fitting_plot->activateWindow();
+            return;
+        }
+        fitting_plot = new QCustomPlot;
+        // Сбрасываем указатель в nullptr строго при уничтожении виджета
+        connect(fitting_plot, &QObject::destroyed, this,
+                [this]() { fitting_plot = nullptr; });
+        // Автоматический расчет отступов отключаем, чтобы задать их вручную
+        fitting_plot->axisRect()->setAutoMargins(QCP::msNone);
+
+        // Задаем отступы в пикселях: Лево, Верх, Право, Низ
+        fitting_plot->axisRect()->setMargins(QMargins(80, 40, 40, 60));
         fitting_plot->setMinimumSize(QSize(800, 600));
         fitting_plot->setWindowTitle(
             "Оценка совпадения теоретического спектра");
@@ -412,6 +426,10 @@ void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
     cs->setH2O(T_H2O);
     atm_params_plot->rescaleAxes();
     atm_params_plot->replot();
+}
+
+void AtmCorrectionMainWindow::updateSatelliteType(const QString &satName) {
+    ui->comboBox_satellite_type->setCurrentText(satName);
 }
 
 // Получение значения

@@ -23,6 +23,7 @@ public:
     void setCaptureZenitAngle(const double value);
     void setCaptureAzimutAngle(const double value);
     void updateBasePixel(QVector<double> pixel_bands);
+    void updateSatelliteType(const QString& satName);
     void showAlbedoUnderCursor(QVector<double> speya_values);
     QVector<double> getAlbedoBySpeya(const QVector<double>& speya_values);
 
@@ -44,6 +45,7 @@ private:
     QString base_pixel_speya_valuesStr;
     result_values m_atm_cor_result;
     QMap<QString, QPoint> cellMap;
+    QCustomPlot* fitting_plot;
     // Метод для получения вещественного числа из ячейки по имени
     double getCellValue(const QString& name);
 

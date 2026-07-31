@@ -29,6 +29,7 @@ extern const char satellite_name_sentinel_2C[];  //!< Константа тек�
                                                  //!< спутника SENTINEL 2C
 extern const char satellite_name_sentinel_2A_TOA[];
 extern const char satellite_name_sentinel_2B_TOA[];
+extern const char satellite_name_sentinel_2C_TOA[];
 
 extern const char kSpeyaXUnit[];  //!< Константа текст - размерность СПЭЯ
 
