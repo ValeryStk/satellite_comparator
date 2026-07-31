@@ -349,8 +349,19 @@ void AtmCorrectionMainWindow::showAlbedoUnderCursor(
     auto albedos = cs->calculateAlbedo(speya_values);
     if (albedos.empty()) return;
     QVector<double> lambdas;
-    for (int i = 0; i < 10; ++i) {
-        lambdas.append(sad::sentinel_2A_central_wave_lengths[i]);
+    // sentinel 2A sentinel 2B sentinel 2C
+    if (ui->comboBox_satellite_type->currentText() == "sentinel 2A") {
+        for (int i = 0; i < 10; ++i) {
+            lambdas.append(sad::sentinel_2A_central_wave_lengths[i]);
+        }
+    } else if (ui->comboBox_satellite_type->currentText() == "sentinel 2B") {
+        for (int i = 0; i < 10; ++i) {
+            lambdas.append(sad::sentinel_2B_central_wave_lengths[i]);
+        }
+    } else if (ui->comboBox_satellite_type->currentText() == "sentinel 2C") {
+        for (int i = 0; i < 10; ++i) {
+            lambdas.append(sad::sentinel_2C_central_wave_lengths[i]);
+        }
     }
     atm_params_plot->graph(11)->setData(lambdas, albedos);
     atm_params_plot->replot();
