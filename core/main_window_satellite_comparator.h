@@ -412,6 +412,7 @@ private:
                                          const QVector<double> &S2);
 
     sad::geoTransform m_geo;
+    sad::geoTransform m_sen2cor_geo;
 
     void processLayer(uchar *layer, int xSize, int yStart, int yEnd,
                       const QVector<double> sample, QColor color,
