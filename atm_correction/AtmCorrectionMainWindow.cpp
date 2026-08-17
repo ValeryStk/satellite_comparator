@@ -276,6 +276,11 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
         qDebug() << waves;
         qDebug() << m_central_waves;
     });
+
+    connect(
+        ui->action_sen2cor, SIGNAL(triggered()), this,
+        SIGNAL(
+            responseForLoadingSen2CorData()));  // responseForLaodingSen2CorData
 }
 
 AtmCorrectionMainWindow::~AtmCorrectionMainWindow() { delete ui; }

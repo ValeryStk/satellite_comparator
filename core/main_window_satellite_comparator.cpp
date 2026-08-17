@@ -556,7 +556,9 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     connect(m_toggle_mouse_tracking_shortcut, &QShortcut::activated, this,
             &MainWindowSatelliteComparator::toggleMouseTracking);
     connect(&m_ac, SIGNAL(responseForCreatingImage()), this,
-            SLOT(createImageWithAtmCorrecton()));
+            SLOT(createImageWithAtmCorrecton()));  // action_sen2cor
+    connect(&m_ac, SIGNAL(responseForLoadingSen2CorData()), this,
+            SLOT(loadSentinelSen2Cor()));
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
@@ -1344,7 +1346,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
     connect(m_dynamic_checkboxes_widget, SIGNAL(choosed_bands_changed()), this,
             SLOT(change_bands()));
 
-    read_sentinel2_bands_data(m_sentinel_data);
+    read_sentinel2_bands_data(m_sentinel_data, m_root_path);
     change_bands_and_show_image(m_sentinel_data);
 
     ui->statusbar->showMessage("");
@@ -1636,7 +1638,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod(
                  << change_detection_data[1].file_name;
         qDebug() << change_detection_data[2].gui_name
                  << change_detection_data[2].file_name;
-        read_sentinel2_bands_data(change_detection_data);
+        read_sentinel2_bands_data(change_detection_data, m_root_path);
     } else {
         return;
     }
@@ -2988,12 +2990,12 @@ void MainWindowSatelliteComparator::addBaseItemsToScene() {
 }
 
 void MainWindowSatelliteComparator::read_sentinel2_bands_data(
-    QVector<sad::BAND_DATA> &data) {
+    QVector<sad::BAND_DATA> &data, const QString &root_path) {
     for (int i = 0; i < data.size(); ++i) {
         const QString &band_file_name = data[i].file_name;
         int xS = 0;
         int yS = 0;
-        const QString fullPath = m_root_path + "/" + band_file_name + ".jp2";
+        const QString fullPath = root_path + "/" + band_file_name + ".jp2";
         // qDebug() << "FullPathToJP2" << fullPath;
         // QFileInfo fi(fullPath);
         // qDebug() << "Path to JP2 exists..." << fi.exists();
@@ -3576,7 +3578,7 @@ MainWindowSatelliteComparator::getDataForSentinel_TimeRow(
         }
     }
 
-    read_sentinel2_bands_data(bands_data);
+    read_sentinel2_bands_data(bands_data, m_root_path);
 
     QHash<QString, sad::geoTransform> sentinel_geo;
     if (finalFiles.empty() == false) {
@@ -4367,7 +4369,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
     connect(m_dynamic_checkboxes_widget, SIGNAL(choosed_bands_changed()), this,
             SLOT(change_bands()));
 
-    read_sentinel2_bands_data(m_sentinel_data);
+    read_sentinel2_bands_data(m_sentinel_data, m_root_path);
     change_bands_and_show_image(m_sentinel_data);
 
     ui->statusbar->showMessage("");
@@ -4473,13 +4475,35 @@ void MainWindowSatelliteComparator::loadSentinelSen2Cor() {
     }
     qDebug() << "filtered files:" << filteredFiles;
 
+    QStringList finalFiles;
+    QMap<QString, QString> bestResolutionForBand;
+    const QStringList priorityOrder = {"R20m", "R10m", "R60m"};
+
+    // Для каждого band ищем путь с наивысшим приоритетом по разрешению
+    for (const QString &bandKey : sad::sentinel_bands_keys) {
+        for (const QString &resolution : priorityOrder) {
+            for (const QString &file : qAsConst(filteredFiles)) {
+                if (file.contains(resolution) &&
+                    file.contains("_" + bandKey + "_")) {
+                    bestResolutionForBand[bandKey] = file;
+                    break;  // нашли лучший — переходим к следующему band
+                }
+            }
+            if (bestResolutionForBand.contains(bandKey))
+                break;  // если уже найден — не ищем в меньших разрешениях
+        }
+    }
+
+    // Собираем финальный список
+    finalFiles = bestResolutionForBand.values();
+    qDebug() << "final files: " << finalFiles;
+
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
-        QString target = "_" + sad::sentinel_bands_keys[i];
-        QStringList list = filteredFiles.filter(target);
+        QString target = "_" + sad::sentinel_bands_keys[i] + "_";
+        QStringList list = finalFiles.filter(target);
         if (list.size() == 1) {
             m_sentinel_metadata_for_sen2cor.sentinel_missed_channels[i] = false;
             m_sentinel_metadata_for_sen2cor.files[i] = list.at(0);
-            qDebug() << m_sentinel_metadata_for_sen2cor.files[i];
         } else if (list.size() > 1) {
             qDebug() << "DUBLICATED FILES IN FINAL FILES LIST...";
         }
@@ -4512,25 +4536,46 @@ void MainWindowSatelliteComparator::loadSentinelSen2Cor() {
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         if (!m_sentinel_metadata_for_sen2cor.sentinel_missed_channels[i]) {
             sad::BAND_DATA data;
+            // if (gui_channels[i].contains("WV")) continue;
             availableBandNames << gui_channels[i];
+            data.gui_name = gui_channels[i];
             data.solar_irradiance =
                 m_sentinel_metadata_for_sen2cor.solar_irradiance[i];
-            data.gui_name = gui_channels[i];
             data.central_wave_length = central_waves[i];
             data.file_name = m_sentinel_metadata_for_sen2cor.files[i];
-            data.resolution_in_pixel_meters =
-                sad::sentinel_resolution_by_index[i];
-            qDebug() << "file name: -->" << data.file_name;
+
+            bool isResolutionMissed = true;
+            for (const QString &resolution : priorityOrder) {
+                if (data.file_name.contains(resolution)) {
+                    data.resolution_in_pixel_meters = resolution;
+                    data.width =
+                        sad::sentinel_resolutions.value(resolution).first;
+                    data.height =
+                        sad::sentinel_resolutions.value(resolution).second;
+                    isResolutionMissed = false;
+                    qDebug() << "r, w, h: " << data.resolution_in_pixel_meters
+                             << data.width << data.height;
+                    break;
+                };
+            }
+            if (isResolutionMissed) {
+                // TODO EXCEPTION
+                // Мы обязательно должны знать разрешение
+                //  Выбросить исключение
+                qDebug() << "<--------------------- NO RESOLUTION EXCEPTION "
+                            "!!!------------------>";
+            }
             m_sen2cor_data.append(data);
         }
     }
 
-    read_sentinel2_bands_data(m_sen2cor_data);
+    read_sentinel2_bands_data(m_sen2cor_data, root_path);
 
     QHash<QString, sad::geoTransform> sentinel_geo;
     if (filteredFiles.empty() == false) {
         QFileInfo finfo(root_path + "/" + filteredFiles[0] + ".jp2");
         QDir dir(finfo.absolutePath());
+        dir.cdUp();
         dir.cdUp();
         const QString geo_file = dir.path() + "/MTD_TL.xml";
         fi.setFile(geo_file);
@@ -4548,18 +4593,6 @@ void MainWindowSatelliteComparator::loadSentinelSen2Cor() {
 
         m_sentinel_metadata_for_sen2cor.image_attributes.date_acquired =
             date_time;
-        // m_label_date_time->setText(date_time);
-        //  TODO CHECK AND WARN USER ABOUT WRONG VALUES AND ERRORS
-        double sunZenitAngle = satc::getSunZenitAngleForSentinel(xml_doc);
-        double sunAzimutAngle = satc::getSunAzimuthAngleForSentinel(xml_doc);
-
-        m_sentinel_metadata_for_sen2cor.sunZenithAngle = sunZenitAngle;
-        m_sentinel_metadata_for_sen2cor.sunAzimuthAngle = sunAzimutAngle;
-        m_sentinel_metadata_for_sen2cor.cosSunZenithAngle =
-            cos(M_PI / 180.0 * sunZenitAngle);
-        qDebug() << "sza" << sunZenitAngle << "saa" << sunAzimutAngle
-                 << "cosSun"
-                 << m_sentinel_metadata_for_sen2cor.cosSunZenithAngle;
     }
 }
 

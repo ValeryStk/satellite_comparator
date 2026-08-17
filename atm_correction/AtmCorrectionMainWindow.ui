@@ -464,6 +464,7 @@
      <string>Инструменты</string>
     </property>
     <addaction name="action_show_fitting_graph"/>
+    <addaction name="action_sen2cor"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -474,6 +475,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+F</string>
+   </property>
+  </action>
+  <action name="action_sen2cor">
+   <property name="text">
+    <string>Загрузить файл с атмосферной коррекцией sen2cor</string>
    </property>
   </action>
  </widget>

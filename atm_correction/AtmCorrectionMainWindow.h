@@ -61,6 +61,7 @@ signals:
     void resolveBlack(const QString& satellite_name,
                       const QVector<double>& dark_pixels);
     void responseForCreatingImage();
+    void responseForLoadingSen2CorData();
 };
 
 #endif  // ATMCORRECTIONMAINWINDOW_H
