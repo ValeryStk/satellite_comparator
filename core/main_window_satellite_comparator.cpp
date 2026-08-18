@@ -967,7 +967,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         getGeoCoordinates(pos.x(), pos.y(), m_geo, lat, lon, true);
     ui->statusbar->showMessage(geo_coord_str);
     auto speya_data = getSentinelSpeyaValues(pos.x(), pos.y());
-    m_ac.showAlbedoUnderCursor(speya_data);
+    auto sen2cor_ksy = getSen2CorKsy(pos.x(), pos.y());
+    m_ac.showAlbedoUnderCursor(speya_data, sen2cor_ksy);
     m_speya_plot->graph(0)->setData(waves, speya_data);
     m_speya_plot->rescaleAxes(true);
     m_speya_plot->replot();
@@ -3101,6 +3102,26 @@ QVector<double> MainWindowSatelliteComparator::getSentinelKsyValues(
             continue;
         };
         uint16_t value = m_sentinel_data[i].data[(y * xSize) + x];
+        ksy.append((value - 1000) / 10000.0);  // OFFSET
+    }
+    return ksy;
+}
+
+QVector<double> MainWindowSatelliteComparator::getSen2CorKsy(const int x,
+                                                             const int y) {
+    if (m_is_image_created == false) return {};
+    if (m_sen2cor_data.empty()) return {};
+    int xSize = m_sen2cor_data[0].width;
+    int ySize = m_sen2cor_data[0].height;
+    if (x > xSize || y > ySize) return {};
+    if (x < 0 || y < 0) return {};
+    QVector<double> ksy;
+    for (int i = 0; i < m_sen2cor_data.size(); ++i) {
+        if (m_sen2cor_data[i].height != ySize ||
+            m_sen2cor_data[i].width != xSize) {
+            continue;
+        };
+        uint16_t value = m_sen2cor_data[i].data[(y * xSize) + x];
         ksy.append((value - 1000) / 10000.0);  // OFFSET
     }
     return ksy;

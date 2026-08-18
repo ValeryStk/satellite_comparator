@@ -24,16 +24,15 @@ public:
     void setCaptureAzimutAngle(const double value);
     void updateBasePixel(QVector<double> pixel_bands);
     void updateSatelliteType(const QString& satName);
-    void showAlbedoUnderCursor(QVector<double> speya_values);
+    void showAlbedoUnderCursor(QVector<double> speya_values,
+                               QVector<double> sen2cor_ksy_values);
     QVector<double> getAlbedoBySpeya(const QVector<double>& speya_values);
 
 private slots:
     void on_pushButton_calculateBlack_clicked();
     void showResult(result_values);
     void on_comboBox_satellite_type_currentIndexChanged(const QString& arg1);
-
     void on_pushButton_CopyKsy_clicked();
-
     void on_pushButton_create_Image_clicked();
 
 private:
@@ -54,7 +53,7 @@ private:
 
     void setCellStringValue(const QString& name, const QString text);
     void updateInitialValues();
-
+    void copyDataFromPlotToClipboard(const int plotNumber);
     // void solve_dark_pixels(const QString& satellite_name,
     // const QVector<double>& dark_pixels);
 signals:

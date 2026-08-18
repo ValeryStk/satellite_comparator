@@ -465,6 +465,8 @@
     </property>
     <addaction name="action_show_fitting_graph"/>
     <addaction name="action_sen2cor"/>
+    <addaction name="action_CATI"/>
+    <addaction name="action_Sen2Cor"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -480,6 +482,16 @@
   <action name="action_sen2cor">
    <property name="text">
     <string>Загрузить файл с атмосферной коррекцией sen2cor</string>
+   </property>
+  </action>
+  <action name="action_CATI">
+   <property name="text">
+    <string>Копировать КСЯ CATI в буфер обмена</string>
+   </property>
+  </action>
+  <action name="action_Sen2Cor">
+   <property name="text">
+    <string>Копировать КСЯ Sen2Cor в буфер обмена</string>
    </property>
   </action>
  </widget>

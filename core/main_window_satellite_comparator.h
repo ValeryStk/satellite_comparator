@@ -450,6 +450,8 @@ private:
     //! \param x, y - координаты пикселя
     QVector<double> getSentinelKsyValues(const int x, const int y);
 
+    QVector<double> getSen2CorKsy(const int x, const int y);
+
     QVector<double> getSentinelSpeyaValues(const int x, const int y);
 
     //! \brief получение значений КСЯ для любого спутника

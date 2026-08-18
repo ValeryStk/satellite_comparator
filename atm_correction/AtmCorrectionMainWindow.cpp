@@ -80,6 +80,13 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     atm_params_plot->graph(11)->setScatterStyle(
         QCPScatterStyle(QCPScatterStyle::ssDisc, 7));
 
+    QPen pen3("#ffef25");
+    pen.setWidth(3);
+    atm_params_plot->addGraph();  // для Sen2Cor
+    atm_params_plot->graph(12)->setPen(pen3);
+    atm_params_plot->graph(12)->setScatterStyle(
+        QCPScatterStyle(QCPScatterStyle::ssDisc, 7));
+
     /*atm_params_plot->addGraph();
     int next_index = responses.size() - 1;
     atm_params_plot->graph(next_index)->setPen(QPen("#1bcdcd"));
@@ -277,10 +284,13 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
         qDebug() << m_central_waves;
     });
 
-    connect(
-        ui->action_sen2cor, SIGNAL(triggered()), this,
-        SIGNAL(
-            responseForLoadingSen2CorData()));  // responseForLaodingSen2CorData
+    connect(ui->action_sen2cor, SIGNAL(triggered()), this,
+            SIGNAL(responseForLoadingSen2CorData()));
+
+    connect(ui->action_CATI, &QAction::triggered,
+            [this]() { copyDataFromPlotToClipboard(11); });
+    connect(ui->action_Sen2Cor, &QAction::triggered,
+            [this]() { copyDataFromPlotToClipboard(12); });
 }
 
 AtmCorrectionMainWindow::~AtmCorrectionMainWindow() { delete ui; }
@@ -350,7 +360,7 @@ void AtmCorrectionMainWindow::showResult(result_values rv) {
 }
 
 void AtmCorrectionMainWindow::showAlbedoUnderCursor(
-    QVector<double> speya_values) {
+    QVector<double> speya_values, QVector<double> sen2cor_ksy_values) {
     if (speya_values.empty()) return;
     auto albedos = cs->calculateAlbedo(speya_values);
     if (albedos.empty()) return;
@@ -369,7 +379,9 @@ void AtmCorrectionMainWindow::showAlbedoUnderCursor(
             lambdas.append(sad::sentinel_2C_central_wave_lengths[i]);
         }
     }
+    sen2cor_ksy_values.resize(10);
     atm_params_plot->graph(11)->setData(lambdas, albedos);
+    atm_params_plot->graph(12)->setData(lambdas, sen2cor_ksy_values);
     atm_params_plot->replot();
     atm_params_plot->rescaleAxes(true);
 }
@@ -523,9 +535,10 @@ void AtmCorrectionMainWindow::updateInitialValues() {
                            getCellValue("p_1"), getCellValue("p_2")});
 }
 
-void AtmCorrectionMainWindow::on_pushButton_CopyKsy_clicked() {
+void AtmCorrectionMainWindow::copyDataFromPlotToClipboard(
+    const int plotNumber) {
     QString ksy_result;
-    QCPGraph *graph = atm_params_plot->graph(11);
+    QCPGraph *graph = atm_params_plot->graph(plotNumber);
 
     if (graph && !graph->data()->isEmpty()) {
         // Проходим по всем точкам данных графика
@@ -536,12 +549,16 @@ void AtmCorrectionMainWindow::on_pushButton_CopyKsy_clicked() {
             ksy_result += QString("%1\t%2\n").arg(it->key).arg(it->value);
         }
     } else {
-        ksy_result = "График №11 пуст или не существует.";
+        ksy_result = "График пуст или не существует.";
     }
 
     // Копируем полученный текст в буфер обмена
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(ksy_result);
+}
+
+void AtmCorrectionMainWindow::on_pushButton_CopyKsy_clicked() {
+    copyDataFromPlotToClipboard(11);
 }
 
 void AtmCorrectionMainWindow::on_pushButton_create_Image_clicked() {
