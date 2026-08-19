@@ -434,6 +434,7 @@ private:
     // с методом sen2cor
     sad::SENTINEL_METADATA m_sentinel_metadata_for_sen2cor;
     QVector<sad::BAND_DATA> m_sen2cor_data;
+    uint16_t *mask_for_sen2cor_data;
 
     void read_sentinel2_bands_data(QVector<sad::BAND_DATA> &data,
                                    const QString &root_path);

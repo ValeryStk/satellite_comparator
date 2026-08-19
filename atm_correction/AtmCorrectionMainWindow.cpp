@@ -557,10 +557,6 @@ void AtmCorrectionMainWindow::copyDataFromPlotToClipboard(
     clipboard->setText(ksy_result);
 }
 
-void AtmCorrectionMainWindow::on_pushButton_CopyKsy_clicked() {
-    copyDataFromPlotToClipboard(11);
-}
-
 void AtmCorrectionMainWindow::on_pushButton_create_Image_clicked() {
     emit responseForCreatingImage();
 }

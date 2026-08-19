@@ -398,25 +398,6 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
-           <widget class="QPushButton" name="pushButton_CopyKsy">
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>100</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>copy КСЯ</string>
-            </property>
-           </widget>
-          </item>
-          <item>
            <widget class="QPushButton" name="pushButton_create_Image">
             <property name="minimumSize">
              <size>

@@ -968,6 +968,12 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     ui->statusbar->showMessage(geo_coord_str);
     auto speya_data = getSentinelSpeyaValues(pos.x(), pos.y());
     auto sen2cor_ksy = getSen2CorKsy(pos.x(), pos.y());
+    if (!m_sen2cor_data.empty()) {
+        qDebug()
+            << "mask_value: "
+            << mask_for_sen2cor_data[(int)pos.y() * m_sen2cor_data[0].width +
+                                     (int)pos.x()];
+    }
     m_ac.showAlbedoUnderCursor(speya_data, sen2cor_ksy);
     m_speya_plot->graph(0)->setData(waves, speya_data);
     m_speya_plot->rescaleAxes(true);
@@ -2756,6 +2762,7 @@ void MainWindowSatelliteComparator::initSentinelStructs() {
             true;  // Изначально считаем все каналы пропущенными
     }
     m_sentinel_sample = QVector<double>(12, 0.0);
+    mask_for_sen2cor_data = nullptr;
 }
 
 void MainWindowSatelliteComparator::initLandsatStructs() {
@@ -4615,6 +4622,8 @@ void MainWindowSatelliteComparator::loadSentinelSen2Cor() {
         m_sentinel_metadata_for_sen2cor.image_attributes.date_acquired =
             date_time;
     }
+    mask_for_sen2cor_data = loadSCLForSentinel(
+        m_sen2cor_data[0].width, m_sen2cor_data[0].height, root_path);
 }
 
 void MainWindowSatelliteComparator::setCursorByGeo() {

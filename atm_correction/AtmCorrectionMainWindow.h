@@ -32,7 +32,6 @@ private slots:
     void on_pushButton_calculateBlack_clicked();
     void showResult(result_values);
     void on_comboBox_satellite_type_currentIndexChanged(const QString& arg1);
-    void on_pushButton_CopyKsy_clicked();
     void on_pushButton_create_Image_clicked();
 
 private:
