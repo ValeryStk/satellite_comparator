@@ -221,6 +221,8 @@ private slots:
 
     void createImageWithAtmCorrecton();
 
+    void calculateSen2CorCATIaccuracy();
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы

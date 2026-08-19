@@ -448,6 +448,7 @@
     <addaction name="action_sen2cor"/>
     <addaction name="action_CATI"/>
     <addaction name="action_Sen2Cor"/>
+    <addaction name="action_Sen2Cor_CATI"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -473,6 +474,11 @@
   <action name="action_Sen2Cor">
    <property name="text">
     <string>Копировать КСЯ Sen2Cor в буфер обмена</string>
+   </property>
+  </action>
+  <action name="action_Sen2Cor_CATI">
+   <property name="text">
+    <string>Расчёт статистики по точности Sen2Cor - CATI</string>
    </property>
   </action>
  </widget>

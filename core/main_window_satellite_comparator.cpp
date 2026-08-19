@@ -579,6 +579,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             SLOT(createImageWithAtmCorrecton()));  // action_sen2cor
     connect(&m_ac, SIGNAL(responseForLoadingSen2CorData()), this,
             SLOT(loadSentinelSen2Cor()));
+    connect(&m_ac, SIGNAL(calculateStatisticSen2Cor_CATI()), this,
+            SLOT(calculateSen2CorCATIaccuracy()));
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
@@ -4887,6 +4889,46 @@ void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
             QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
         }
     });
+}
+
+void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
+    qDebug() << m_sentinel_data.size();
+    qDebug() << m_sen2cor_data.size();
+    if (m_sen2cor_data.size() < 10 || m_sentinel_data.size() < 10) {
+        qDebug() << "Size is less than required";
+        return;
+    }
+    int width = m_sentinel_data[0].width;
+    int height = m_sentinel_data[0].height;
+    qDebug() << "width: " << width;
+    qDebug() << "height: " << height;
+    qDebug() << "common_pixels_nember: " << width * height;
+    quint32 vegetation_counter = 0;      // 4
+    quint32 not_vegetation_counter = 0;  // 5
+    quint32 water_counter = 0;           // 6
+    quint32 unclassified_counter = 0;    // 7
+
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            auto class_value =
+                mask_for_sen2cor_data[y * m_sen2cor_data[0].width + x];
+
+            if (class_value == 4) {
+                ++vegetation_counter;
+            } else if (class_value == 5) {
+                ++not_vegetation_counter;
+            } else if (class_value == 6) {
+                ++water_counter;
+            } else if (class_value == 7) {
+                ++unclassified_counter;
+            } else
+                continue;
+            for (int i = 0; i < 10; ++i) {
+                // обработка
+            }
+        }
+    }
+    qDebug() << "vegetation pixels number: " << vegetation_counter;
 }
 
 void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,

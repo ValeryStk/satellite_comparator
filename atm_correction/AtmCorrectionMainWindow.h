@@ -61,6 +61,7 @@ signals:
                       const QVector<double>& dark_pixels);
     void responseForCreatingImage();
     void responseForLoadingSen2CorData();
+    void calculateStatisticSen2Cor_CATI();
 };
 
 #endif  // ATMCORRECTIONMAINWINDOW_H

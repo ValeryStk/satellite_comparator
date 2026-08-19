@@ -291,6 +291,9 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
             [this]() { copyDataFromPlotToClipboard(11); });
     connect(ui->action_Sen2Cor, &QAction::triggered,
             [this]() { copyDataFromPlotToClipboard(12); });
+    // calculateStatisticSen2Cor_CATI(
+    connect(ui->action_Sen2Cor_CATI, &QAction::triggered,
+            [this]() { emit calculateStatisticSen2Cor_CATI(); });
 }
 
 AtmCorrectionMainWindow::~AtmCorrectionMainWindow() { delete ui; }
