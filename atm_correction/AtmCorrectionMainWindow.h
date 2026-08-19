@@ -27,6 +27,7 @@ public:
     void showAlbedoUnderCursor(QVector<double> speya_values,
                                QVector<double> sen2cor_ksy_values);
     QVector<double> getAlbedoBySpeya(const QVector<double>& speya_values);
+    void showSentinelClassName(const QString className);
 
 private slots:
     void on_pushButton_calculateBlack_clicked();

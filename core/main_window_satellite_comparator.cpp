@@ -125,6 +125,26 @@ uint16_t *dataCloudMask2 = nullptr;
 
 namespace {
 
+QString getSclClassName(uint8_t classValue) {
+    // static гарантирует инициализацию карты только при первом вызове функции
+    static const QMap<uint8_t, QString> sclClasses = {
+        {0, "No data"},
+        {1, "Saturated or defective"},
+        {2, "Dark area pixels"},
+        {3, "Cloud shadows"},
+        {4, "Vegetation"},
+        {5, "Not vegetated"},
+        {6, "Water"},
+        {7, "Unclassified"},
+        {8, "Cloud medium probability"},
+        {9, "Cloud high probability"},
+        {10, "Thin cirrus"},
+        {11, "Snow or ice"}};
+
+    // Возвращаем имя класса, либо "Unknown value", если код некорректен
+    return sclClasses.value(classValue, "Unknown value");
+}
+
 QColor randomNiceColor() {
     int h = QRandomGenerator::global()->bounded(360);
     int s = QRandomGenerator::global()->bounded(160, 256);
@@ -969,10 +989,12 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     auto speya_data = getSentinelSpeyaValues(pos.x(), pos.y());
     auto sen2cor_ksy = getSen2CorKsy(pos.x(), pos.y());
     if (!m_sen2cor_data.empty()) {
-        qDebug()
-            << "mask_value: "
-            << mask_for_sen2cor_data[(int)pos.y() * m_sen2cor_data[0].width +
-                                     (int)pos.x()];
+        auto class_value =
+            mask_for_sen2cor_data[(int)pos.y() * m_sen2cor_data[0].width +
+                                  (int)pos.x()];
+        auto class_name = getSclClassName(class_value);
+        qDebug() << "sentinel class: " << class_name;
+        m_ac.showSentinelClassName(class_name);
     }
     m_ac.showAlbedoUnderCursor(speya_data, sen2cor_ksy);
     m_speya_plot->graph(0)->setData(waves, speya_data);
