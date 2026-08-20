@@ -4970,8 +4970,10 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     }
 
     double prefix = 1.0 / general_counter;
-    qDebug() << "general RMSE 9 channel"
-             << std::sqrt(prefix * general_RMSEs[8]);
+    for (int i = 0; i < 10; ++i) {
+        QString result = "general RMSE %1 channel: %2";
+        qDebug() << result.arg(i + 1).arg(std::sqrt(prefix * general_RMSEs[i]));
+    }
 }
 
 void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,
