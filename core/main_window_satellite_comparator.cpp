@@ -4898,40 +4898,51 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         qDebug() << "Size is less than required";
         return;
     }
-    int width = m_sentinel_data[0].width;
-    int height = m_sentinel_data[0].height;
+
+    // Возвращаем оригинальное получение размеров из нулевого элемента
+    const int width = m_sentinel_data[0].width;
+    const int height = m_sentinel_data[0].height;
     qDebug() << "width: " << width;
     qDebug() << "height: " << height;
 
-    quint64 total_pixels = static_cast<quint64>(width) * height;
+    const quint64 total_pixels = static_cast<quint64>(width) * height;
     qDebug() << "common_pixels_number: " << total_pixels;
 
-    // Шаг вывода прогресса (например, каждые 10%)
-    quint64 progress_step = total_pixels / 10;
-    if (progress_step == 0)
-        progress_step =
-            1;  // Защита от деления на ноль для маленьких изображений
+    // Шаг прогресса по строкам (вывод в консоль только 10 раз за весь расчет)
+    const int progress_step_y = qMax(1, height / 10);
 
-    quint32 vegetation_counter = 0;      // 4
-    quint32 not_vegetation_counter = 0;  // 5
-    quint32 water_counter = 0;           // 6
-    quint32 unclassified_counter = 0;    // 7
+    quint32 vegetation_counter = 0;
+    quint32 not_vegetation_counter = 0;
+    quint32 water_counter = 0;
+    quint32 unclassified_counter = 0;
     quint32 general_counter = 0;
-    QVector<double> general_RMSEs(10, 0.0);
+
+    // Быстрый массив на стеке для накопления квадратов разностей
+    double general_RMSEs[10] = {0.0};
+
+    // Защита на случай, если указатель на маску нулевой
+    if (!mask_for_sen2cor_data) {
+        qDebug() << "Error: mask_for_sen2cor_data is null!";
+        return;
+    }
 
     for (int y = 0; y < height; ++y) {
+        // Проверка прогресса во внешнем цикле экономит миллионы тяжелых делений
+        if (y % progress_step_y == 0) {
+            int percentage = (y * 100) / height;
+            qDebug() << "Progress:" << percentage << "% (row" << y << "/"
+                     << height << ")";
+        }
+
+        const quint64 row_offset = static_cast<quint64>(y) * width;
+
         for (int x = 0; x < width; ++x) {
-            quint64 current_pixel_index = static_cast<quint64>(y) * width + x;
+            const quint64 current_pixel_index = row_offset + x;
 
-            // Вывод прогресса по общему индексу пикселя
-            if (current_pixel_index % progress_step == 0) {
-                int percentage = (current_pixel_index * 100) / total_pixels;
-                qDebug() << "Progress:" << percentage << "% ("
-                         << current_pixel_index << "/" << total_pixels << ")";
-            }
+            // Прямой доступ к сырому указателю uint16_t* без лишних методов
+            const auto class_value = mask_for_sen2cor_data[current_pixel_index];
 
-            auto class_value = mask_for_sen2cor_data[current_pixel_index];
-
+            // Быстрая фильтрация классов
             if (class_value == 4) {
                 ++vegetation_counter;
             } else if (class_value == 5) {
@@ -4940,25 +4951,29 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 ++water_counter;
             } else if (class_value == 7) {
                 ++unclassified_counter;
-            } else
+            } else {
                 continue;
-            ++general_counter;
-            auto speya = getSentinelSpeyaValues(x, y);
-            auto sen2cor_ksy = getSen2CorKsy(x, y);
-            auto cati = m_ac.calculateAlbedo(speya);
-            if (cati.empty() || cati.size() < 10) {
-                qDebug() << "BAD_CATI_SIZE: " << cati.size();
             }
+
+            ++general_counter;
+
+            // Вызовы функций пиксельной обработки
+            const auto speya = getSentinelSpeyaValues(x, y);
+            const auto sen2cor_ksy = getSen2CorKsy(x, y);
+            const auto cati = m_ac.calculateAlbedo(speya);
+
+            if (cati.size() < 10) {
+                continue;
+            }
+
+            // Быстрый расчет во внутреннем цикле
             for (int i = 0; i < 10; ++i) {
-                // обработка
-                auto sen2cor_value = sen2cor_ksy[i];
-                auto cati_value = cati[i];
-                auto dif = sen2cor_value - cati_value;
-                auto power2 = dif * dif;
-                general_RMSEs[i] += power2;
+                const double dif = sen2cor_ksy[i] - cati[i];
+                general_RMSEs[i] += dif * dif;
             }
         }
     }
+
     qDebug() << "Progress: 100 % (" << total_pixels << "/" << total_pixels
              << ")";
     qDebug() << "vegetation pixels number: " << vegetation_counter;
@@ -4969,7 +4984,7 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         return;
     }
 
-    double prefix = 1.0 / general_counter;
+    const double prefix = 1.0 / general_counter;
     for (int i = 0; i < 10; ++i) {
         QString result = "general RMSE %1 channel: %2";
         qDebug() << result.arg(i + 1).arg(std::sqrt(prefix * general_RMSEs[i]));
