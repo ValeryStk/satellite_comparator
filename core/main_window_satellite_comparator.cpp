@@ -4902,16 +4902,35 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     int height = m_sentinel_data[0].height;
     qDebug() << "width: " << width;
     qDebug() << "height: " << height;
-    qDebug() << "common_pixels_nember: " << width * height;
+
+    quint64 total_pixels = static_cast<quint64>(width) * height;
+    qDebug() << "common_pixels_number: " << total_pixels;
+
+    // Шаг вывода прогресса (например, каждые 10%)
+    quint64 progress_step = total_pixels / 10;
+    if (progress_step == 0)
+        progress_step =
+            1;  // Защита от деления на ноль для маленьких изображений
+
     quint32 vegetation_counter = 0;      // 4
     quint32 not_vegetation_counter = 0;  // 5
     quint32 water_counter = 0;           // 6
     quint32 unclassified_counter = 0;    // 7
-    QVector<double> general_RMSEs = {10, 0.0};
+    quint32 general_counter = 0;
+    QVector<double> general_RMSEs(10, 0.0);
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            auto class_value = mask_for_sen2cor_data[y * width + x];
+            quint64 current_pixel_index = static_cast<quint64>(y) * width + x;
+
+            // Вывод прогресса по общему индексу пикселя
+            if (current_pixel_index % progress_step == 0) {
+                int percentage = (current_pixel_index * 100) / total_pixels;
+                qDebug() << "Progress:" << percentage << "% ("
+                         << current_pixel_index << "/" << total_pixels << ")";
+            }
+
+            auto class_value = mask_for_sen2cor_data[current_pixel_index];
 
             if (class_value == 4) {
                 ++vegetation_counter;
@@ -4923,17 +4942,36 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 ++unclassified_counter;
             } else
                 continue;
+            ++general_counter;
             auto speya = getSentinelSpeyaValues(x, y);
             auto sen2cor_ksy = getSen2CorKsy(x, y);
             auto cati = m_ac.calculateAlbedo(speya);
+            if (cati.empty() || cati.size() < 10) {
+                qDebug() << "BAD_CATI_SIZE: " << cati.size();
+            }
             for (int i = 0; i < 10; ++i) {
                 // обработка
                 auto sen2cor_value = sen2cor_ksy[i];
                 auto cati_value = cati[i];
+                auto dif = sen2cor_value - cati_value;
+                auto power2 = dif * dif;
+                general_RMSEs[i] += power2;
             }
         }
     }
+    qDebug() << "Progress: 100 % (" << total_pixels << "/" << total_pixels
+             << ")";
     qDebug() << "vegetation pixels number: " << vegetation_counter;
+    qDebug() << "general counter: " << general_counter;
+
+    if (general_counter == 0) {
+        qDebug() << "No pixels were processed for RMSE calculation.";
+        return;
+    }
+
+    double prefix = 1.0 / general_counter;
+    qDebug() << "general RMSE 9 channel"
+             << std::sqrt(prefix * general_RMSEs[8]);
 }
 
 void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,
