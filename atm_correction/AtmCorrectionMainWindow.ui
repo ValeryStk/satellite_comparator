@@ -457,9 +457,6 @@
    <property name="text">
     <string>Показать результат фитирования</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+F</string>
-   </property>
   </action>
   <action name="action_sen2cor">
    <property name="text">
