@@ -28,6 +28,7 @@ public:
                                QVector<double> sen2cor_ksy_values);
     QVector<double> getAlbedoBySpeya(const QVector<double>& speya_values);
     void showSentinelClassName(const QString className);
+    QVector<double> calculateAlbedo(QVector<double> speya);
 
 private slots:
     void on_pushButton_calculateBlack_clicked();

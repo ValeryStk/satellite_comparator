@@ -4907,11 +4907,11 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     quint32 not_vegetation_counter = 0;  // 5
     quint32 water_counter = 0;           // 6
     quint32 unclassified_counter = 0;    // 7
+    QVector<double> general_RMSEs = {10, 0.0};
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            auto class_value =
-                mask_for_sen2cor_data[y * m_sen2cor_data[0].width + x];
+            auto class_value = mask_for_sen2cor_data[y * width + x];
 
             if (class_value == 4) {
                 ++vegetation_counter;
@@ -4923,8 +4923,13 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 ++unclassified_counter;
             } else
                 continue;
+            auto speya = getSentinelSpeyaValues(x, y);
+            auto sen2cor_ksy = getSen2CorKsy(x, y);
+            auto cati = m_ac.calculateAlbedo(speya);
             for (int i = 0; i < 10; ++i) {
                 // обработка
+                auto sen2cor_value = sen2cor_ksy[i];
+                auto cati_value = cati[i];
             }
         }
     }

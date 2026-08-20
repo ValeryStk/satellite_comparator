@@ -400,6 +400,11 @@ void AtmCorrectionMainWindow::showSentinelClassName(const QString className) {
     qDebug() << "check status bar...";
 }
 
+QVector<double> AtmCorrectionMainWindow::calculateAlbedo(
+    QVector<double> speya) {
+    return cs->calculateAlbedo(speya);
+}
+
 void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
     const QString &arg1) {
     bands_widget->clear();
