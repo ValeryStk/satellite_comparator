@@ -4929,6 +4929,8 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
 
     double general_SMAPEs[10] = {0.0};
 
+    double general_Biases[10] = {0.0};
+
     // Компоненты для расчета дисперсии эталона (нужны для R^2)
     double sum_X[10] = {0.0};  // Сумма значений sen2cor_ksy
     double sum_X2[10] = {0.0};  // Сумма квадратов значений sen2cor_ksy
@@ -5001,6 +5003,8 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 // Накопление сумм для расчета общей дисперсии эталона
                 sum_X[i] += actual;
                 sum_X2[i] += actual * actual;
+                // Накопление разности для Bias (прогноз минус факт)
+                general_Biases[i] += (forecast - actual);
             }
         }
     }
@@ -5025,7 +5029,8 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
 
     for (int i = 0; i < 10; ++i) {
         QString result =
-            "general RMSE - MAE - SMAPE - R     %1 channel: %2 - %3 - %4 - %5";
+            "general RMSE - MAE - SMAPE - R - Bias    %1 channel: %2 - %3 - %4 "
+            "- %5 - %6";
         const double smape = (prefix * general_SMAPEs[i]) * 100.0;
         // Расчет общей суммы квадратов отклонений эталона (знаменатель для R^2)
         const double total_sum_squares =
@@ -5043,7 +5048,8 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                         .arg(std::sqrt(prefix * general_RMSEs[i]), 0, 'g', 8)
                         .arg(prefix * general_MAEs[i], 0, 'g', 8)
                         .arg(smape, 0, 'g', 8)
-                        .arg(r2_value, 0, 'g', 8);
+                        .arg(r2_value, 0, 'g', 8)
+                        .arg(prefix * general_Biases[i], 0, 'g', 8);
     }
 }
 
