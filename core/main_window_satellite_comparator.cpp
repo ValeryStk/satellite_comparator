@@ -4925,9 +4925,13 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     double general_RMSEs[10] = {0.0};
 
     // массив на стеке для накопления разностей по модулю
-    double general_MAE[10] = {0.0};
+    double general_MAEs[10] = {0.0};
 
-    double sen2corSumValues[10] = {0.0};
+    double general_SMAPEs[10] = {0.0};
+
+    // Компоненты для расчета дисперсии эталона (нужны для R^2)
+    double sum_X[10] = {0.0};  // Сумма значений sen2cor_ksy
+    double sum_X2[10] = {0.0};  // Сумма квадратов значений sen2cor_ksy
 
     // Защита на случай, если указатель на маску нулевой
     if (!mask_for_sen2cor_data) {
@@ -4978,9 +4982,25 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
 
             // Быстрый расчет во внутреннем цикле
             for (int i = 0; i < 10; ++i) {
-                const double dif = sen2cor_ksy[i] - cati[i];
+                const double actual = sen2cor_ksy[i];
+                const double forecast = cati[i];
+                const double dif = actual - forecast;
+                const double abs_dif = std::abs(dif);
+
+                // Накопление RMSE и MAE
                 general_RMSEs[i] += dif * dif;
-                general_MAE[i] += std::abs(dif);
+                general_MAEs[i] += abs_dif;
+
+                // Расчет SMAPE
+                const double denominator =
+                    (std::abs(actual) + std::abs(forecast)) / 2.0;
+                if (denominator > 1e-9) {  // Защита от деления на 0
+                    general_SMAPEs[i] += (abs_dif / denominator);
+                }
+
+                // Накопление сумм для расчета общей дисперсии эталона
+                sum_X[i] += actual;
+                sum_X2[i] += actual * actual;
             }
         }
     }
@@ -5001,11 +5021,29 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     }
 
     const double prefix = 1.0 / general_counter;
+    const double n = static_cast<double>(general_counter);
+
     for (int i = 0; i < 10; ++i) {
-        QString result = "general RMSE - MAE %1 channel: %2 - %3";
+        QString result =
+            "general RMSE - MAE - SMAPE - R     %1 channel: %2 - %3 - %4 - %5";
+        const double smape = (prefix * general_SMAPEs[i]) * 100.0;
+        // Расчет общей суммы квадратов отклонений эталона (знаменатель для R^2)
+        const double total_sum_squares =
+            sum_X2[i] - ((sum_X[i] * sum_X[i]) / n);
+        double r2_value = 0.0;
+        if (total_sum_squares > 1e-9) {
+            // Формула: 1 - (Сумма квадратов разностей / Общая сумма квадратов
+            // эталона)
+            r2_value = 1.0 - (general_RMSEs[i] / total_sum_squares);
+        } else {
+            r2_value =
+                0.0;  // Защита, если весь канал эталона состоит из одного цвета
+        }
         qDebug() << result.arg(i + 1)
-                        .arg(std::sqrt(prefix * general_RMSEs[i]))
-                        .arg(prefix * general_MAE[i]);
+                        .arg(std::sqrt(prefix * general_RMSEs[i]), 0, 'g', 8)
+                        .arg(prefix * general_MAEs[i], 0, 'g', 8)
+                        .arg(smape, 0, 'g', 8)
+                        .arg(r2_value, 0, 'g', 8);
     }
 }
 
