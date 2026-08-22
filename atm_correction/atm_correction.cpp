@@ -21,6 +21,12 @@
 #include "math.h"
 #include "mpfit.h"
 
+bool is_need_recalculate_params_for_final_albedo = true;
+std::vector<double> omega_list;
+std::vector<double> tau_list;
+std::vector<double> T_list;
+std::vector<double> g_list;
+
 // Структура для возврата результата без побочных эффектов
 struct QuadraticResult {
     bool has_roots;  // Флаг: найдены ли действительные корни
@@ -695,18 +701,20 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
         return {};
     }  // TODO exceptions
     origin_speya_pixel_values = speya_values.toStdVector();
-    auto Q = rv.q;
-    auto P = rv.p;
-    auto TAU_M_0 = rv.h2O_power;
+
     auto tau_0_a = rv.tau_0_a;
     auto beta = rv.beta;
     auto tau_e = rv.tau_e;
     auto g = rv.g;
-    auto omega_list = compute_omega(tau_e, tau_0_a, beta, tau_m, lambda_list);
-    auto tau_list =
-        compute_tau_lambda(tau_e, tau_0_a, beta, tau_m, lambda_list);
-    auto T_list = compute_T_lambda(tau_e, tau_0_a, beta, g, tau_m, lambda_list);
-    auto g_list = compute_g(g, tau_0_a, beta, tau_m, lambda_list);
+
+    if (is_need_recalculate_params_for_final_albedo) {
+        omega_list = compute_omega(tau_e, tau_0_a, beta, tau_m, lambda_list);
+        tau_list = compute_tau_lambda(tau_e, tau_0_a, beta, tau_m, lambda_list);
+        T_list = compute_T_lambda(tau_e, tau_0_a, beta, g, tau_m, lambda_list);
+        g_list = compute_g(g, tau_0_a, beta, tau_m, lambda_list);
+        is_need_recalculate_params_for_final_albedo = false;
+    }
+
     std::vector<double> test_ro_result;
     /*qDebug()
         << "START POINT FOR SOLVING FINAL ALBEDO ------------------------>";*/
@@ -1012,6 +1020,7 @@ result_values optimize(const QString& sat_name,
     // auto albedo_pixel = calculateAlbedoFinal(sv);
     //  qDebug() << "albedo: " << albedo_pixel;
     //   dv::show(v_central_waves, albedo_pixel, "final_albedo");
+    is_need_recalculate_params_for_final_albedo = true;
     return rv;
 }
 

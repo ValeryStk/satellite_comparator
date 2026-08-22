@@ -4899,6 +4899,10 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         return;
     }
 
+    // Инициализация и запуск таймера
+    QElapsedTimer timer;
+    timer.start();
+
     // Возвращаем оригинальное получение размеров из нулевого элемента
     const int width = m_sentinel_data[0].width;
     const int height = m_sentinel_data[0].height;
@@ -4908,8 +4912,8 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     const quint64 total_pixels = static_cast<quint64>(width) * height;
     qDebug() << "common_pixels_number: " << total_pixels;
 
-    // Шаг прогресса по строкам (вывод в консоль только 10 раз за весь расчет)
-    const int progress_step_y = qMax(1, height / 10);
+    // Шаг прогресса по строкам (вывод в консоль только 60 раз за весь расчет)
+    const int progress_step_y = qMax(1, height / 60);
 
     quint32 vegetation_counter = 0;
     quint32 not_vegetation_counter = 0;
@@ -4927,11 +4931,12 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     }
 
     for (int y = 0; y < height; ++y) {
-        // Проверка прогресса во внешнем цикле экономит миллионы тяжелых делений
+        // Проверка прогресса во внешнем цикле
         if (y % progress_step_y == 0) {
             int percentage = (y * 100) / height;
             qDebug() << "Progress:" << percentage << "% (row" << y << "/"
-                     << height << ")";
+                     << height << ")"
+                     << "| Elapsed time:" << timer.elapsed() << "ms";
         }
 
         const quint64 row_offset = static_cast<quint64>(y) * width;
@@ -4974,8 +4979,13 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         }
     }
 
+    // Фиксация финального времени
+    const qint64 total_elapsed_ms = timer.elapsed();
+
     qDebug() << "Progress: 100 % (" << total_pixels << "/" << total_pixels
-             << ")";
+             << ")"
+             << "| Total time:" << total_elapsed_ms << "ms ("
+             << (static_cast<double>(total_elapsed_ms) / 1000.0) << "sec)";
     qDebug() << "vegetation pixels number: " << vegetation_counter;
     qDebug() << "general counter: " << general_counter;
 
