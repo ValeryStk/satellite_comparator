@@ -4962,10 +4962,13 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
             if (class_value == 4) {
                 ++vegetation_counter;
             } else if (class_value == 5) {
+                continue;
                 ++not_vegetation_counter;
             } else if (class_value == 6) {
+                continue;
                 ++water_counter;
             } else if (class_value == 7) {
+                continue;
                 ++unclassified_counter;
             } else {
                 continue;
