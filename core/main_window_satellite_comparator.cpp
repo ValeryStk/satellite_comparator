@@ -995,7 +995,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
             mask_for_sen2cor_data[(int)pos.y() * m_sen2cor_data[0].width +
                                   (int)pos.x()];
         auto class_name = getSclClassName(class_value);
-        qDebug() << "sentinel class: " << class_name;
+        // qDebug() << "sentinel class: " << class_name;
         m_ac.showSentinelClassName(class_name);
     }
     m_ac.showAlbedoUnderCursor(speya_data, sen2cor_ksy);
@@ -4920,6 +4920,7 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     quint32 water_counter = 0;
     quint32 unclassified_counter = 0;
     quint32 general_counter = 0;
+    quint32 skipped_counter = 0;
 
     // массив на стеке для накопления квадратов разностей
     double general_RMSEs[10] = {0.0};
@@ -4971,6 +4972,7 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 // continue;
                 ++unclassified_counter;
             } else {
+                ++skipped_counter;
                 continue;
             }
 
@@ -5019,8 +5021,26 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
              << ")"
              << "| Total time:" << total_elapsed_ms << "ms ("
              << (static_cast<double>(total_elapsed_ms) / 1000.0) << "sec)";
-    qDebug() << "vegetation pixels number: " << vegetation_counter;
     qDebug() << "general counter: " << general_counter;
+
+    // Расчёт процентов (с защитой от деления на ноль)
+    double general_d =
+        general_counter > 0 ? static_cast<double>(general_counter) : 1.0;
+    double veg_pct = (vegetation_counter / general_d) * 100.0;
+    double not_veg_pct = (not_vegetation_counter / general_d) * 100.0;
+    double water_pct = (water_counter / general_d) * 100.0;
+    double unclass_pct = (unclassified_counter / general_d) * 100.0;
+    double skipped_pct = (skipped_counter / general_d) * 100.0;
+
+    qDebug() << "vegetation pixels number: " << vegetation_counter << " ("
+             << veg_pct << "%)";
+    qDebug() << "not vegetation pixels number: " << not_vegetation_counter
+             << " (" << not_veg_pct << "%)";
+    qDebug() << "water counter: " << water_counter << " (" << water_pct << "%)";
+    qDebug() << "unclassified counter: " << unclassified_counter << " ("
+             << unclass_pct << "%)";
+    qDebug() << "skipped counter: " << skipped_counter << " (" << skipped_pct
+             << "%)";
 
     if (general_counter == 0) {
         qDebug() << "No pixels were processed for RMSE calculation.";

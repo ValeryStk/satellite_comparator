@@ -397,7 +397,6 @@ QVector<double> AtmCorrectionMainWindow::getAlbedoBySpeya(
 
 void AtmCorrectionMainWindow::showSentinelClassName(const QString className) {
     ui->statusbar->showMessage(className);
-    qDebug() << "check status bar...";
 }
 
 QVector<double> AtmCorrectionMainWindow::calculateAlbedo(

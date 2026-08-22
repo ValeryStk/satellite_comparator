@@ -774,7 +774,7 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
     test_ro_result[6] = test_ro_result[6] - 0.01245;
     test_ro_result[7] = test_ro_result[7] - 0.00497;
     test_ro_result[8] = test_ro_result[8] - 0.03377;
-    test_ro_result[9] = test_ro_result[9] - 0.09168;
+    test_ro_result[9] = test_ro_result[9] - 0.096;
 
     return test_ro_result;
 }
