@@ -4921,8 +4921,13 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     quint32 unclassified_counter = 0;
     quint32 general_counter = 0;
 
-    // Быстрый массив на стеке для накопления квадратов разностей
+    // массив на стеке для накопления квадратов разностей
     double general_RMSEs[10] = {0.0};
+
+    // массив на стеке для накопления разностей по модулю
+    double general_MAE[10] = {0.0};
+
+    double sen2corSumValues[10] = {0.0};
 
     // Защита на случай, если указатель на маску нулевой
     if (!mask_for_sen2cor_data) {
@@ -4975,6 +4980,7 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
             for (int i = 0; i < 10; ++i) {
                 const double dif = sen2cor_ksy[i] - cati[i];
                 general_RMSEs[i] += dif * dif;
+                general_MAE[i] += std::abs(dif);
             }
         }
     }
@@ -4996,8 +5002,10 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
 
     const double prefix = 1.0 / general_counter;
     for (int i = 0; i < 10; ++i) {
-        QString result = "general RMSE %1 channel: %2";
-        qDebug() << result.arg(i + 1).arg(std::sqrt(prefix * general_RMSEs[i]));
+        QString result = "general RMSE - MAE %1 channel: %2 - %3";
+        qDebug() << result.arg(i + 1)
+                        .arg(std::sqrt(prefix * general_RMSEs[i]))
+                        .arg(prefix * general_MAE[i]);
     }
 }
 
