@@ -363,9 +363,10 @@ void AtmCorrectionMainWindow::showResult(result_values rv) {
 }
 
 void AtmCorrectionMainWindow::showAlbedoUnderCursor(
-    QVector<double> speya_values, QVector<double> sen2cor_ksy_values) {
+    QVector<double> speya_values, QVector<double> sen2cor_ksy_values,
+    int classNum) {
     if (speya_values.empty()) return;
-    auto albedos = cs->calculateAlbedo(speya_values);
+    auto albedos = cs->calculateAlbedo(speya_values, classNum);
     if (albedos.empty()) return;
     QVector<double> lambdas;
     // sentinel 2A sentinel 2B sentinel 2C
@@ -382,9 +383,13 @@ void AtmCorrectionMainWindow::showAlbedoUnderCursor(
             lambdas.append(sad::sentinel_2C_central_wave_lengths[i]);
         }
     }
-    sen2cor_ksy_values.resize(10);
+    if (!sen2cor_ksy_values.empty()) {
+        sen2cor_ksy_values.resize(10);
+        atm_params_plot->graph(12)->setData(lambdas, sen2cor_ksy_values);
+    }
+
     atm_params_plot->graph(11)->setData(lambdas, albedos);
-    atm_params_plot->graph(12)->setData(lambdas, sen2cor_ksy_values);
+
     atm_params_plot->replot();
     atm_params_plot->rescaleAxes(true);
 }

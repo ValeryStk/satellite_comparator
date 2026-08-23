@@ -990,15 +990,16 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     ui->statusbar->showMessage(geo_coord_str);
     auto speya_data = getSentinelSpeyaValues(pos.x(), pos.y());
     auto sen2cor_ksy = getSen2CorKsy(pos.x(), pos.y());
+    int class_value = 0;
     if (!m_sen2cor_data.empty()) {
-        auto class_value =
+        class_value =
             mask_for_sen2cor_data[(int)pos.y() * m_sen2cor_data[0].width +
                                   (int)pos.x()];
         auto class_name = getSclClassName(class_value);
         // qDebug() << "sentinel class: " << class_name;
         m_ac.showSentinelClassName(class_name);
     }
-    m_ac.showAlbedoUnderCursor(speya_data, sen2cor_ksy);
+    m_ac.showAlbedoUnderCursor(speya_data, sen2cor_ksy, class_value);
     m_speya_plot->graph(0)->setData(waves, speya_data);
     m_speya_plot->rescaleAxes(true);
     m_speya_plot->replot();
@@ -4990,7 +4991,12 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 // Вызовы функций пиксельной обработки
                 const auto speya = getSentinelSpeyaValues(x, y);
                 const auto sen2cor_ksy = getSen2CorKsy(x, y);
-                const auto cati = m_ac.calculateAlbedo(speya, class_value);
+                QVector<double> cati;
+                if (var == 0) {
+                    cati = m_ac.calculateAlbedo(speya, 0);
+                } else {
+                    cati = m_ac.calculateAlbedo(speya, class_value);
+                }
 
                 if (cati.size() < 10) {
                     continue;

@@ -25,7 +25,8 @@ public:
     void updateBasePixel(QVector<double> pixel_bands);
     void updateSatelliteType(const QString& satName);
     void showAlbedoUnderCursor(QVector<double> speya_values,
-                               QVector<double> sen2cor_ksy_values);
+                               QVector<double> sen2cor_ksy_values,
+                               int classNum = 0);
     QVector<double> getAlbedoBySpeya(const QVector<double>& speya_values,
                                      int classNum = 0);
     void showSentinelClassName(const QString className);
