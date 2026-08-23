@@ -766,15 +766,21 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
         // qDebug() << "band: " << i << qc.has_roots << qc.x1 << qc.x2;
         test_ro_result.push_back(qc.x2);
     }
+    double general_cor[10] = {+0.022465, +0.013715, +0.013381, +0.003451,
+                              +0.002374, -0.011923, -0.006922, -0.004650,
+                              -0.032809, -0.075977};
 
     // Статистические константы на основе BIAS и MAE
-    test_ro_result[0] = test_ro_result[0] + 0.02149;
+    /*test_ro_result[0] = test_ro_result[0] + 0.02149;
     test_ro_result[1] = test_ro_result[1] + 0.01257;
     test_ro_result[2] = test_ro_result[2] + 0.01208;
     test_ro_result[6] = test_ro_result[6] - 0.01245;
     test_ro_result[7] = test_ro_result[7] - 0.00497;
     test_ro_result[8] = test_ro_result[8] - 0.03377;
-    test_ro_result[9] = test_ro_result[9] - 0.096;
+    test_ro_result[9] = test_ro_result[9] - 0.096;*/
+    for (int i = 0; i < 10; ++i) {
+        test_ro_result[i] += general_cor[i];
+    }
 
     return test_ro_result;
 }

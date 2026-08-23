@@ -4899,10 +4899,6 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         return;
     }
 
-    // Инициализация и запуск таймера
-    QElapsedTimer timer;
-    timer.start();
-
     // Возвращаем оригинальное получение размеров из нулевого элемента
     const int width = m_sentinel_data[0].width;
     const int height = m_sentinel_data[0].height;
@@ -4915,164 +4911,193 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     // Шаг прогресса по строкам (вывод в консоль только 60 раз за весь расчет)
     const int progress_step_y = qMax(1, height / 60);
 
-    quint32 vegetation_counter = 0;
-    quint32 not_vegetation_counter = 0;
-    quint32 water_counter = 0;
-    quint32 unclassified_counter = 0;
-    quint32 general_counter = 0;
-    quint32 skipped_counter = 0;
-
-    // массив на стеке для накопления квадратов разностей
-    double general_RMSEs[10] = {0.0};
-
-    // массив на стеке для накопления разностей по модулю
-    double general_MAEs[10] = {0.0};
-
-    double general_SMAPEs[10] = {0.0};
-
-    double general_Biases[10] = {0.0};
-
-    // Компоненты для расчета дисперсии эталона (нужны для R^2)
-    double sum_X[10] = {0.0};  // Сумма значений sen2cor_ksy
-    double sum_X2[10] = {0.0};  // Сумма квадратов значений sen2cor_ksy
-
     // Защита на случай, если указатель на маску нулевой
     if (!mask_for_sen2cor_data) {
         qDebug() << "Error: mask_for_sen2cor_data is null!";
         return;
     }
 
-    for (int y = 0; y < height; ++y) {
-        // Проверка прогресса во внешнем цикле
-        if (y % progress_step_y == 0) {
-            int percentage = (y * 100) / height;
-            qDebug() << "Progress:" << percentage << "% (row" << y << "/"
-                     << height << ")"
-                     << "| Elapsed time:" << timer.elapsed() << "ms";
-        }
+    bool variants[5][4] = {
+        {true, true, true, true},     // General
+        {true, false, false, false},  // Vegetated
+        {false, true, false, false},  // Not vegetated
+        {false, false, true, false},  // Water
+        {false, false, false, true},  // Unclassified
+    };
+    for (int var = 0; var < 5; ++var) {
+        quint32 vegetation_counter = 0;
+        quint32 not_vegetation_counter = 0;
+        quint32 water_counter = 0;
+        quint32 unclassified_counter = 0;
+        quint32 general_counter = 0;
+        quint32 skipped_counter = 0;
 
-        const quint64 row_offset = static_cast<quint64>(y) * width;
+        // массив на стеке для накопления квадратов разностей
+        double general_RMSEs[10] = {0.0};
 
-        for (int x = 0; x < width; ++x) {
-            const quint64 current_pixel_index = row_offset + x;
+        // массив на стеке для накопления разностей по модулю
+        double general_MAEs[10] = {0.0};
 
-            // Прямой доступ к сырому указателю uint16_t* без лишних методов
-            const auto class_value = mask_for_sen2cor_data[current_pixel_index];
+        double general_SMAPEs[10] = {0.0};
 
-            // Быстрая фильтрация классов
-            if (class_value == 4) {
-                ++vegetation_counter;
-            } else if (class_value == 5) {
-                // continue;
-                ++not_vegetation_counter;
-            } else if (class_value == 6) {
-                // continue;
-                ++water_counter;
-            } else if (class_value == 7) {
-                // continue;
-                ++unclassified_counter;
-            } else {
-                ++skipped_counter;
-                continue;
+        double general_Biases[10] = {0.0};
+
+        // Компоненты для расчета дисперсии эталона (нужны для R^2)
+        double sum_X[10] = {0.0};  // Сумма значений sen2cor_ksy
+        double sum_X2[10] = {0.0};  // Сумма квадратов значений sen2cor_ksy
+        // Инициализация и запуск таймера
+        QElapsedTimer timer;
+        timer.start();
+
+        for (int y = 0; y < height; ++y) {
+            // Проверка прогресса во внешнем цикле
+            if (y % progress_step_y == 0) {
+                int percentage = (y * 100) / height;
+                qDebug() << "Progress:" << percentage << "% (row" << y << "/"
+                         << height << ")"
+                         << "| Elapsed time:" << timer.elapsed() << "ms";
             }
 
-            ++general_counter;
+            const quint64 row_offset = static_cast<quint64>(y) * width;
 
-            // Вызовы функций пиксельной обработки
-            const auto speya = getSentinelSpeyaValues(x, y);
-            const auto sen2cor_ksy = getSen2CorKsy(x, y);
-            const auto cati = m_ac.calculateAlbedo(speya);
+            for (int x = 0; x < width; ++x) {
+                const quint64 current_pixel_index = row_offset + x;
 
-            if (cati.size() < 10) {
-                continue;
-            }
+                // Прямой доступ к сырому указателю uint16_t* без лишних методов
+                const auto class_value =
+                    mask_for_sen2cor_data[current_pixel_index];
 
-            // Быстрый расчет во внутреннем цикле
-            for (int i = 0; i < 10; ++i) {
-                const double actual = sen2cor_ksy[i];
-                const double forecast = cati[i];
-                const double dif = actual - forecast;
-                const double abs_dif = std::abs(dif);
-
-                // Накопление RMSE и MAE
-                general_RMSEs[i] += dif * dif;
-                general_MAEs[i] += abs_dif;
-
-                // Расчет SMAPE
-                const double denominator =
-                    (std::abs(actual) + std::abs(forecast)) / 2.0;
-                if (denominator > 1e-9) {  // Защита от деления на 0
-                    general_SMAPEs[i] += (abs_dif / denominator);
+                // Быстрая фильтрация классов
+                if (class_value == 4) {
+                    ++vegetation_counter;
+                    if (!variants[var][0]) continue;
+                } else if (class_value == 5) {
+                    if (!variants[var][1]) continue;
+                    ++not_vegetation_counter;
+                } else if (class_value == 6) {
+                    if (!variants[var][2]) continue;
+                    ++water_counter;
+                } else if (class_value == 7) {
+                    if (!variants[var][3]) continue;
+                    ++unclassified_counter;
+                } else {
+                    ++skipped_counter;
+                    continue;
                 }
 
-                // Накопление сумм для расчета общей дисперсии эталона
-                sum_X[i] += actual;
-                sum_X2[i] += actual * actual;
-                // Накопление разности для Bias (прогноз минус факт)
-                general_Biases[i] += (forecast - actual);
+                ++general_counter;
+
+                // Вызовы функций пиксельной обработки
+                const auto speya = getSentinelSpeyaValues(x, y);
+                const auto sen2cor_ksy = getSen2CorKsy(x, y);
+                const auto cati = m_ac.calculateAlbedo(speya);
+
+                if (cati.size() < 10) {
+                    continue;
+                }
+
+                // Быстрый расчет во внутреннем цикле
+                for (int i = 0; i < 10; ++i) {
+                    const double actual = sen2cor_ksy[i];
+                    const double forecast = cati[i];
+                    const double dif = actual - forecast;
+                    const double abs_dif = std::abs(dif);
+
+                    // Накопление RMSE и MAE
+                    general_RMSEs[i] += dif * dif;
+                    general_MAEs[i] += abs_dif;
+
+                    // Расчет SMAPE
+                    const double denominator =
+                        (std::abs(actual) + std::abs(forecast)) / 2.0;
+                    if (denominator > 1e-9) {  // Защита от деления на 0
+                        general_SMAPEs[i] += (abs_dif / denominator);
+                    }
+
+                    // Накопление сумм для расчета общей дисперсии эталона
+                    sum_X[i] += actual;
+                    sum_X2[i] += actual * actual;
+                    // Накопление разности для Bias (прогноз минус факт)
+                    general_Biases[i] += (forecast - actual);
+                }
             }
         }
-    }
 
-    // Фиксация финального времени
-    const qint64 total_elapsed_ms = timer.elapsed();
+        QString processing_variant;
+        if (var == 0) processing_variant = "Genereal";
+        if (var == 1) processing_variant = "Vegetated";
+        if (var == 2) processing_variant = "Not vegetated";
+        if (var == 3) processing_variant = "Water";
+        if (var == 4) processing_variant = "Unclassified";
+        qDebug() << "*************** START PROCESSING VARIANT : "
+                 << processing_variant.toUpper();
+        // Фиксация финального времени
+        const qint64 total_elapsed_ms = timer.elapsed();
 
-    qDebug() << "Progress: 100 % (" << total_pixels << "/" << total_pixels
-             << ")"
-             << "| Total time:" << total_elapsed_ms << "ms ("
-             << (static_cast<double>(total_elapsed_ms) / 1000.0) << "sec)";
-    qDebug() << "general counter: " << general_counter;
+        qDebug() << "Progress: 100 % (" << total_pixels << "/" << total_pixels
+                 << ")"
+                 << "| Total time:" << total_elapsed_ms << "ms ("
+                 << (static_cast<double>(total_elapsed_ms) / 1000.0) << "sec)";
+        qDebug() << "general counter: " << general_counter;
 
-    // Расчёт процентов (с защитой от деления на ноль)
-    double general_d =
-        general_counter > 0 ? static_cast<double>(general_counter) : 1.0;
-    double veg_pct = (vegetation_counter / general_d) * 100.0;
-    double not_veg_pct = (not_vegetation_counter / general_d) * 100.0;
-    double water_pct = (water_counter / general_d) * 100.0;
-    double unclass_pct = (unclassified_counter / general_d) * 100.0;
-    double skipped_pct = (skipped_counter / general_d) * 100.0;
+        // Расчёт процентов (с защитой от деления на ноль)
+        double general_d =
+            general_counter > 0 ? static_cast<double>(general_counter) : 1.0;
+        double veg_pct = (vegetation_counter / general_d) * 100.0;
+        double not_veg_pct = (not_vegetation_counter / general_d) * 100.0;
+        double water_pct = (water_counter / general_d) * 100.0;
+        double unclass_pct = (unclassified_counter / general_d) * 100.0;
+        double skipped_pct = (skipped_counter / general_d) * 100.0;
 
-    qDebug() << "vegetation pixels number: " << vegetation_counter << " ("
-             << veg_pct << "%)";
-    qDebug() << "not vegetation pixels number: " << not_vegetation_counter
-             << " (" << not_veg_pct << "%)";
-    qDebug() << "water counter: " << water_counter << " (" << water_pct << "%)";
-    qDebug() << "unclassified counter: " << unclassified_counter << " ("
-             << unclass_pct << "%)";
-    qDebug() << "skipped counter: " << skipped_counter << " (" << skipped_pct
-             << "%)";
+        qDebug() << "vegetation pixels number: " << vegetation_counter << " ("
+                 << veg_pct << "%)";
+        qDebug() << "not vegetation pixels number: " << not_vegetation_counter
+                 << " (" << not_veg_pct << "%)";
+        qDebug() << "water counter: " << water_counter << " (" << water_pct
+                 << "%)";
+        qDebug() << "unclassified counter: " << unclassified_counter << " ("
+                 << unclass_pct << "%)";
+        qDebug() << "skipped counter: " << skipped_counter << " ("
+                 << skipped_pct << "%)";
 
-    if (general_counter == 0) {
-        qDebug() << "No pixels were processed for RMSE calculation.";
-        return;
-    }
-
-    const double prefix = 1.0 / general_counter;
-    const double n = static_cast<double>(general_counter);
-
-    for (int i = 0; i < 10; ++i) {
-        QString result =
-            "general RMSE - MAE - SMAPE - R - Bias    %1 channel: %2 - %3 - %4 "
-            "- %5 - %6";
-        const double smape = (prefix * general_SMAPEs[i]) * 100.0;
-        // Расчет общей суммы квадратов отклонений эталона (знаменатель для R^2)
-        const double total_sum_squares =
-            sum_X2[i] - ((sum_X[i] * sum_X[i]) / n);
-        double r2_value = 0.0;
-        if (total_sum_squares > 1e-9) {
-            // Формула: 1 - (Сумма квадратов разностей / Общая сумма квадратов
-            // эталона)
-            r2_value = 1.0 - (general_RMSEs[i] / total_sum_squares);
-        } else {
-            r2_value =
-                0.0;  // Защита, если весь канал эталона состоит из одного цвета
+        if (general_counter == 0) {
+            qDebug() << "No pixels were processed for RMSE calculation.";
+            return;
         }
-        qDebug() << result.arg(i + 1)
-                        .arg(std::sqrt(prefix * general_RMSEs[i]), 0, 'g', 8)
-                        .arg(prefix * general_MAEs[i], 0, 'g', 8)
-                        .arg(smape, 0, 'g', 8)
-                        .arg(r2_value, 0, 'g', 8)
-                        .arg(prefix * general_Biases[i], 0, 'g', 8);
+
+        const double prefix = 1.0 / general_counter;
+        const double n = static_cast<double>(general_counter);
+
+        for (int i = 0; i < 10; ++i) {
+            QString result =
+                "general RMSE - MAE - SMAPE - R - Bias    %1 channel: %2 - %3 "
+                "- %4 "
+                "- %5 - %6";
+            const double smape = (prefix * general_SMAPEs[i]) * 100.0;
+            // Расчет общей суммы квадратов отклонений эталона (знаменатель для
+            // R^2)
+            const double total_sum_squares =
+                sum_X2[i] - ((sum_X[i] * sum_X[i]) / n);
+            double r2_value = 0.0;
+            if (total_sum_squares > 1e-9) {
+                // Формула: 1 - (Сумма квадратов разностей / Общая сумма
+                // квадратов эталона)
+                r2_value = 1.0 - (general_RMSEs[i] / total_sum_squares);
+            } else {
+                r2_value = 0.0;  // Защита, если весь канал эталона состоит из
+                                 // одного цвета
+            }
+            qDebug() << result.arg(i + 1)
+                            .arg(std::sqrt(prefix * general_RMSEs[i]), 0, 'g',
+                                 8)
+                            .arg(prefix * general_MAEs[i], 0, 'g', 8)
+                            .arg(smape, 0, 'g', 8)
+                            .arg(r2_value, 0, 'g', 8)
+                            .arg(prefix * general_Biases[i], 0, 'g', 8);
+        }
+
+        qDebug() << "*************** END PROCESSING VARIANT : "
+                 << processing_variant.toUpper();
     }
 }
 
