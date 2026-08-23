@@ -390,7 +390,7 @@ void AtmCorrectionMainWindow::showAlbedoUnderCursor(
 }
 
 QVector<double> AtmCorrectionMainWindow::getAlbedoBySpeya(
-    const QVector<double> &speya_values) {
+    const QVector<double> &speya_values, int classNum) {
     if (speya_values.empty()) return {};
     return cs->calculateAlbedo(speya_values);
 }
@@ -399,9 +399,9 @@ void AtmCorrectionMainWindow::showSentinelClassName(const QString className) {
     ui->statusbar->showMessage(className);
 }
 
-QVector<double> AtmCorrectionMainWindow::calculateAlbedo(
-    QVector<double> speya) {
-    return cs->calculateAlbedo(speya);
+QVector<double> AtmCorrectionMainWindow::calculateAlbedo(QVector<double> speya,
+                                                         int classNum) {
+    return cs->calculateAlbedo(speya, classNum);
 }
 
 void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(

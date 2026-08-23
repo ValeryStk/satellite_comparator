@@ -21,7 +21,8 @@ public:
     double get_mH2O(double B9, double B8A);
     double get_TO3(int band_index, int X);
     void updateCurrentSatellite(QString sat_name);
-    static QVector<double> calculateAlbedo(QVector<double> speya_values);
+    static QVector<double> calculateAlbedo(QVector<double> speya_values,
+                                           int classNum = 0);
     void start_solve_dark_pixels_async(const QString& satellite_name,
                                        const QVector<double>& dark_pixels);
     std::vector<double> loadDoublesFromFile(const QString& filePath);

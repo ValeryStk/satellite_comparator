@@ -26,9 +26,10 @@ public:
     void updateSatelliteType(const QString& satName);
     void showAlbedoUnderCursor(QVector<double> speya_values,
                                QVector<double> sen2cor_ksy_values);
-    QVector<double> getAlbedoBySpeya(const QVector<double>& speya_values);
+    QVector<double> getAlbedoBySpeya(const QVector<double>& speya_values,
+                                     int classNum = 0);
     void showSentinelClassName(const QString className);
-    QVector<double> calculateAlbedo(QVector<double> speya);
+    QVector<double> calculateAlbedo(QVector<double> speya, int classNum = 0);
 
 private slots:
     void on_pushButton_calculateBlack_clicked();

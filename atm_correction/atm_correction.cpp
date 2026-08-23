@@ -93,7 +93,7 @@ QuadraticResult solveQuadratic(double a, double b, double c) {
 }
 
 inline std::vector<double> calculateAlbedoFinal(
-    const QVector<double>& speya_values);
+    const QVector<double>& speya_values, int classNum = 0);
 
 bool allEqual(const std::vector<double>& v, double eps = 1e-9) {
     if (v.empty())
@@ -693,7 +693,8 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     return 0;
 }
 
-std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
+std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values,
+                                         int classNum) {
     if (speya_values.size() < 10 || B1_result.size() < 10) {
         // throw std::runtime_error("Количество каналов не равно 10");
         // qDebug() << "NO CONDITIONS FOR ATMCORR-->" << speya_values.size()
@@ -766,20 +767,41 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
         // qDebug() << "band: " << i << qc.has_roots << qc.x1 << qc.x2;
         test_ro_result.push_back(qc.x2);
     }
-    double general_cor[10] = {+0.022465, +0.013715, +0.013381, +0.003451,
-                              +0.002374, -0.011923, -0.006922, -0.004650,
-                              -0.032809, -0.075977};
+    if (classNum > 7 || classNum < 4) classNum = 4;
+    if ((classNum != 4 && classNum != 5 && classNum != 6 && classNum != 7)) {
+        classNum = 4;
+    }
+    int index = classNum - 4;
+    // FIRST ITERATION
+    // clang-format off
+    //static const double CORRECTIONS[5][10] = {
+    //    //                        AER         BLUE       GREEN       RED        RE1        RE2        RE3       NIR1        NIR2       WV
+    //    /* 0: GENERAL       */ { +0.022465, +0.013715, +0.013381, +0.003451, +0.002374, -0.011923, -0.006922, -0.004650, -0.032809, -0.075977 },
+    //    /* 1: VEGETATED     */ { +0.022097, +0.013445, +0.012876, +0.002875, +0.002094, -0.011650, -0.006415, -0.004155, -0.033244, -0.075871 },
+    //    /* 2: NOT_VEGETATED */ { +0.026626, +0.016683, +0.019250, +0.010084, +0.006122, -0.015289, -0.012085, -0.009423, -0.031233, -0.084574 },
+    //    /* 3: WATER         */ { +0.021683, +0.013066, +0.011986, +0.002795, -0.000612, -0.009505, -0.009232, -0.008763, -0.012961, -0.033895 },
+    //    /* 4: UNCLASSIFIED  */ { +0.025581, +0.017682, +0.015807, +0.004953, +0.000869, -0.014213, -0.012469, -0.010086, -0.024926, -0.056876 }
+    //};
+    // clang-format on
 
-    // Статистические константы на основе BIAS и MAE
-    /*test_ro_result[0] = test_ro_result[0] + 0.02149;
-    test_ro_result[1] = test_ro_result[1] + 0.01257;
-    test_ro_result[2] = test_ro_result[2] + 0.01208;
-    test_ro_result[6] = test_ro_result[6] - 0.01245;
-    test_ro_result[7] = test_ro_result[7] - 0.00497;
-    test_ro_result[8] = test_ro_result[8] - 0.03377;
-    test_ro_result[9] = test_ro_result[9] - 0.096;*/
+    // clang-format off
+static const double CORRECTIONS[][10] = {
+    //                        AER         BLUE       GREEN       RED        RE1        RE2        RE3       NIR1        NIR2       WV
+    /* 0: GENERAL       */ { +0.020786, +0.012021, +0.012077, +0.002621, +0.001187, -0.012687, -0.007430, -0.005213, -0.033717, -0.062058 },
+    /* 1: VEGETATED     */ { +0.016943, +0.008964, +0.009503, +0.000679, +0.000355, -0.013267, -0.007779, -0.005308, -0.035464, -0.076043 },
+    /* 2: NOT_VEGETATED */ { +0.026794, +0.016000, +0.022805, +0.015537, +0.008522, -0.020614, -0.019272, -0.016021, -0.030634, -0.093544 },
+    /* 3: WATER         */ { +0.012049, +0.005274, +0.001836, -0.006118, -0.008723, -0.004939, -0.007375, -0.008822, +0.004538, +0.016256 },
+    /* 4: UNCLASSIFIED  */ { +0.024928, +0.018267, +0.016761, +0.005461, +0.000904, -0.020409, -0.017025, -0.012574, -0.038035, -0.080228 }
+};
+    // clang-format on
+
+    // Указатель на строку с нужным классом (переход за O(1))
+    const double* current_cor = CORRECTIONS[index];
+
+    // Развертка цикла (Loop Unrolling) компилятором сделает это автоисполняемым
+    // за минимальное число тактов процессора
     for (int i = 0; i < 10; ++i) {
-        test_ro_result[i] += general_cor[i];
+        test_ro_result[i] += current_cor[i];
     }
 
     return test_ro_result;

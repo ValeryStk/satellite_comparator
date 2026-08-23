@@ -4990,7 +4990,7 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 // Вызовы функций пиксельной обработки
                 const auto speya = getSentinelSpeyaValues(x, y);
                 const auto sen2cor_ksy = getSen2CorKsy(x, y);
-                const auto cati = m_ac.calculateAlbedo(speya);
+                const auto cati = m_ac.calculateAlbedo(speya, class_value);
 
                 if (cati.size() < 10) {
                     continue;

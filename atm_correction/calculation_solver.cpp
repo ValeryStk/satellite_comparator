@@ -46,8 +46,9 @@ void calculation_solver::updateCurrentSatellite(QString sat_name) {
 }
 
 QVector<double> calculation_solver::calculateAlbedo(
-    QVector<double> speya_values) {
-    return QVector<double>::fromStdVector(::calculateAlbedoFinal(speya_values));
+    QVector<double> speya_values, int classNum) {
+    return QVector<double>::fromStdVector(
+        ::calculateAlbedoFinal(speya_values, classNum));
 }
 
 void calculation_solver::start_solve_dark_pixels_async(
