@@ -5043,8 +5043,15 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         if (var == 4) processing_variant = "Unclassified";
 
         const qint64 total_elapsed_ms = timer.elapsed();
+
+        // Базовый делитель для обработанных пикселей (защита от деления на 0)
         double general_d =
             general_counter > 0 ? static_cast<double>(general_counter) : 1.0;
+
+        // Базовый делитель для пропущенных пикселей (относительно ВСЕГО
+        // изображения)
+        double total_d =
+            total_pixels > 0 ? static_cast<double>(total_pixels) : 1.0;
 
         // Вспомогательная лямбда без эмодзи
         auto logAndAppend = [&](const QString &line) {
@@ -5069,25 +5076,42 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
             "------------------------------------------------------------------"
             "------");
         logAndAppend("  Pixel Distribution Breakdown:");
-        logAndAppend(
-            QString("    Vegetation     : %1 (%2%)")
-                .arg(vegetation_counter)
-                .arg((vegetation_counter / general_d) * 100.0, 0, 'f', 2));
-        logAndAppend(
-            QString("    Not Vegetation: %1 (%2%)")
-                .arg(not_vegetation_counter)
-                .arg((not_vegetation_counter / general_d) * 100.0, 0, 'f', 2));
+
+        // Выводим проценты только для тех классов, которые были включены в
+        // текущий расчет
+        logAndAppend(QString("    Vegetation     : %1 (%2%)")
+                         .arg(vegetation_counter)
+                         .arg(variants[var][0]
+                                  ? (vegetation_counter / general_d) * 100.0
+                                  : 0.0,
+                              0, 'f', 2));
+
+        logAndAppend(QString("    Not Vegetation: %1 (%2%)")
+                         .arg(not_vegetation_counter)
+                         .arg(variants[var][1]
+                                  ? (not_vegetation_counter / general_d) * 100.0
+                                  : 0.0,
+                              0, 'f', 2));
+
         logAndAppend(QString("    Water          : %1 (%2%)")
                          .arg(water_counter)
-                         .arg((water_counter / general_d) * 100.0, 0, 'f', 2));
-        logAndAppend(
-            QString("    Unclassified   : %1 (%2%)")
-                .arg(unclassified_counter)
-                .arg((unclassified_counter / general_d) * 100.0, 0, 'f', 2));
-        logAndAppend(
-            QString("    Skipped        : %1 (%2%)")
-                .arg(skipped_counter)
-                .arg((skipped_counter / general_d) * 100.0, 0, 'f', 2));
+                         .arg(variants[var][2]
+                                  ? (water_counter / general_d) * 100.0
+                                  : 0.0,
+                              0, 'f', 2));
+
+        logAndAppend(QString("    Unclassified   : %1 (%2%)")
+                         .arg(unclassified_counter)
+                         .arg(variants[var][3]
+                                  ? (unclassified_counter / general_d) * 100.0
+                                  : 0.0,
+                              0, 'f', 2));
+
+        // Процент пропущенных теперь считается корректно от общего размера
+        // изображения
+        logAndAppend(QString("    Skipped        : %1 (%2% of total image)")
+                         .arg(skipped_counter)
+                         .arg((skipped_counter / total_d) * 100.0, 0, 'f', 2));
 
         if (general_counter == 0) {
             logAndAppend(
