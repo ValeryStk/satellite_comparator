@@ -4895,31 +4895,35 @@ void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
     });
 }
 
+#include <QClipboard>
+#include <QGuiApplication>
+#include <iomanip>
+#include <iostream>
+
 void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
-    qDebug() << m_sentinel_data.size();
-    qDebug() << m_sen2cor_data.size();
+    qDebug() << "Total sentinel data size:" << m_sentinel_data.size();
+    qDebug() << "Total sen2cor data size:" << m_sen2cor_data.size();
     if (m_sen2cor_data.size() < 10 || m_sentinel_data.size() < 10) {
         qDebug() << "Size is less than required";
         return;
     }
 
-    // Возвращаем оригинальное получение размеров из нулевого элемента
     const int width = m_sentinel_data[0].width;
     const int height = m_sentinel_data[0].height;
-    qDebug() << "width: " << width;
-    qDebug() << "height: " << height;
+    qDebug() << "Dimensions:" << width << "x" << height;
 
     const quint64 total_pixels = static_cast<quint64>(width) * height;
-    qDebug() << "common_pixels_number: " << total_pixels;
+    qDebug() << "Total pixels number:" << total_pixels;
 
-    // Шаг прогресса по строкам (вывод в консоль только 60 раз за весь расчет)
-    const int progress_step_y = qMax(1, height / 60);
+    const int progress_step_y = qMax(1, height / 100);
 
-    // Защита на случай, если указатель на маску нулевой
     if (!mask_for_sen2cor_data) {
         qDebug() << "Error: mask_for_sen2cor_data is null!";
         return;
     }
+
+    // Строка для буфера обмена (без спецсимволов)
+    QString full_report = "=== SATELLITE COMPARATOR REPORT ===\n\n";
 
     bool variants[5][4] = {
         {true, true, true, true},     // General
@@ -4928,6 +4932,7 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         {false, false, true, false},  // Water
         {false, false, false, true},  // Unclassified
     };
+
     for (int var = 0; var < 5; ++var) {
         quint32 vegetation_counter = 0;
         quint32 not_vegetation_counter = 0;
@@ -4936,32 +4941,36 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         quint32 general_counter = 0;
         quint32 skipped_counter = 0;
 
-        // массив на стеке для накопления квадратов разностей
         double general_RMSEs[10] = {0.0};
-
-        // массив на стеке для накопления разностей по модулю
         double general_MAEs[10] = {0.0};
-
         double general_SMAPEs[10] = {0.0};
-
         double general_Biases[10] = {0.0};
+        double sum_X[10] = {0.0};
+        double sum_X2[10] = {0.0};
 
-        // Компоненты для расчета дисперсии эталона (нужны для R^2)
-        double sum_X[10] = {0.0};  // Сумма значений sen2cor_ksy
-        double sum_X2[10] = {0.0};  // Сумма квадратов значений sen2cor_ksy
-        // Инициализация и запуск таймера
         QElapsedTimer timer;
         timer.start();
 
         for (int y = 0; y < height; ++y) {
-            // Проверка прогресса во внешнем цикле
-            if (y % progress_step_y == 0) {
+            if (y % progress_step_y == 0 || y == height - 1) {
                 int percentage = (y * 100) / height;
-                // '\r' возвращает курсор в начало строки, а std::flush
-                // принудительно обновляет экран
-                std::cerr << "\rProgress: " << percentage << "% (row " << y
-                          << "/" << height << ")"
-                          << " | Elapsed time: " << timer.elapsed() << "ms"
+                const int bar_width = 20;
+                int progress = (y * bar_width) / height;
+
+                std::string bar = "[";
+                for (int i = 0; i < bar_width; ++i) {
+                    if (i < progress)
+                        bar += "=";
+                    else if (i == progress)
+                        bar += ">";
+                    else
+                        bar += " ";
+                }
+                bar += "]";
+
+                std::cerr << "\r" << bar << " " << percentage << "% "
+                          << "(Row " << y << "/" << height << ") "
+                          << "| Elapsed: " << timer.elapsed() << " ms   "
                           << std::flush;
             }
 
@@ -4969,12 +4978,9 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
 
             for (int x = 0; x < width; ++x) {
                 const quint64 current_pixel_index = row_offset + x;
-
-                // Прямой доступ к сырому указателю uint16_t* без лишних методов
                 const auto class_value =
                     mask_for_sen2cor_data[current_pixel_index];
 
-                // Быстрая фильтрация классов
                 if (class_value == 4) {
                     ++vegetation_counter;
                     if (!variants[var][0]) continue;
@@ -4994,7 +5000,6 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
 
                 ++general_counter;
 
-                // Вызовы функций пиксельной обработки
                 const auto speya = getSentinelSpeyaValues(x, y);
                 const auto sen2cor_ksy = getSen2CorKsy(x, y);
                 QVector<double> cati;
@@ -5004,112 +5009,147 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                     cati = m_ac.calculateAlbedo(speya, class_value);
                 }
 
-                if (cati.size() < 10) {
-                    continue;
-                }
+                if (cati.size() < 10) continue;
 
-                // Быстрый расчет во внутреннем цикле
                 for (int i = 0; i < 10; ++i) {
                     const double actual = sen2cor_ksy[i];
                     const double forecast = cati[i];
                     const double dif = actual - forecast;
                     const double abs_dif = std::abs(dif);
 
-                    // Накопление RMSE и MAE
                     general_RMSEs[i] += dif * dif;
                     general_MAEs[i] += abs_dif;
 
-                    // Расчет SMAPE
                     const double denominator =
                         (std::abs(actual) + std::abs(forecast)) / 2.0;
-                    if (denominator > 1e-9) {  // Защита от деления на 0
+                    if (denominator > 1e-9) {
                         general_SMAPEs[i] += (abs_dif / denominator);
                     }
 
-                    // Накопление сумм для расчета общей дисперсии эталона
                     sum_X[i] += actual;
                     sum_X2[i] += actual * actual;
-                    // Накопление разности для Bias (прогноз минус факт)
                     general_Biases[i] += (forecast - actual);
                 }
             }
         }
 
+        std::cerr << std::endl;
+
         QString processing_variant;
-        if (var == 0) processing_variant = "Genereal";
+        if (var == 0) processing_variant = "General";
         if (var == 1) processing_variant = "Vegetated";
         if (var == 2) processing_variant = "Not vegetated";
         if (var == 3) processing_variant = "Water";
         if (var == 4) processing_variant = "Unclassified";
-        qDebug() << "*************** START PROCESSING VARIANT : "
-                 << processing_variant.toUpper();
-        // Фиксация финального времени
+
         const qint64 total_elapsed_ms = timer.elapsed();
-
-        qDebug() << "Progress: 100 % (" << total_pixels << "/" << total_pixels
-                 << ")"
-                 << "| Total time:" << total_elapsed_ms << "ms ("
-                 << (static_cast<double>(total_elapsed_ms) / 1000.0) << "sec)";
-        qDebug() << "general counter: " << general_counter;
-
-        // Расчёт процентов (с защитой от деления на ноль)
         double general_d =
             general_counter > 0 ? static_cast<double>(general_counter) : 1.0;
-        double veg_pct = (vegetation_counter / general_d) * 100.0;
-        double not_veg_pct = (not_vegetation_counter / general_d) * 100.0;
-        double water_pct = (water_counter / general_d) * 100.0;
-        double unclass_pct = (unclassified_counter / general_d) * 100.0;
-        double skipped_pct = (skipped_counter / general_d) * 100.0;
 
-        qDebug() << "vegetation pixels number: " << vegetation_counter << " ("
-                 << veg_pct << "%)";
-        qDebug() << "not vegetation pixels number: " << not_vegetation_counter
-                 << " (" << not_veg_pct << "%)";
-        qDebug() << "water counter: " << water_counter << " (" << water_pct
-                 << "%)";
-        qDebug() << "unclassified counter: " << unclassified_counter << " ("
-                 << unclass_pct << "%)";
-        qDebug() << "skipped counter: " << skipped_counter << " ("
-                 << skipped_pct << "%)";
+        // Вспомогательная лямбда без эмодзи
+        auto logAndAppend = [&](const QString &line) {
+            qDebug().noquote() << line;
+            full_report.append(line + "\n");
+        };
+
+        logAndAppend(
+            "\n================================================================"
+            "========");
+        logAndAppend("  VARIANT SUMMARY: " + processing_variant.toUpper());
+        logAndAppend(
+            "=================================================================="
+            "======");
+        logAndAppend(QString("  Execution Time : %1 ms (%2 sec)")
+                         .arg(total_elapsed_ms)
+                         .arg(total_elapsed_ms / 1000.0, 0, 'f', 2));
+        logAndAppend(QString("  Processed Pixels: %1 / %2")
+                         .arg(general_counter)
+                         .arg(total_pixels));
+        logAndAppend(
+            "------------------------------------------------------------------"
+            "------");
+        logAndAppend("  Pixel Distribution Breakdown:");
+        logAndAppend(
+            QString("    Vegetation     : %1 (%2%)")
+                .arg(vegetation_counter)
+                .arg((vegetation_counter / general_d) * 100.0, 0, 'f', 2));
+        logAndAppend(
+            QString("    Not Vegetation: %1 (%2%)")
+                .arg(not_vegetation_counter)
+                .arg((not_vegetation_counter / general_d) * 100.0, 0, 'f', 2));
+        logAndAppend(QString("    Water          : %1 (%2%)")
+                         .arg(water_counter)
+                         .arg((water_counter / general_d) * 100.0, 0, 'f', 2));
+        logAndAppend(
+            QString("    Unclassified   : %1 (%2%)")
+                .arg(unclassified_counter)
+                .arg((unclassified_counter / general_d) * 100.0, 0, 'f', 2));
+        logAndAppend(
+            QString("    Skipped        : %1 (%2%)")
+                .arg(skipped_counter)
+                .arg((skipped_counter / general_d) * 100.0, 0, 'f', 2));
 
         if (general_counter == 0) {
-            qDebug() << "No pixels were processed for RMSE calculation.";
-            return;
+            logAndAppend(
+                "  Warning: No pixels were processed for metrics calculation.");
+            logAndAppend(
+                "=============================================================="
+                "==========\n");
+            continue;
         }
+
+        logAndAppend(
+            "------------------------------------------------------------------"
+            "------");
+        logAndAppend("  Accuracy Metrics per Channel:");
+        // Заменили R² на R2
+        logAndAppend(QString("%1 | %2 | %3 | %4 | %5 | %6")
+                         .arg("Channel", -10)
+                         .arg("RMSE", -10)
+                         .arg("MAE", -10)
+                         .arg("SMAPE (%)", -11)
+                         .arg("R2 Score", -11)
+                         .arg("Bias", -10));
+        logAndAppend(
+            "-----------+------------+------------+-------------+-------------+"
+            "----------");
 
         const double prefix = 1.0 / general_counter;
         const double n = static_cast<double>(general_counter);
 
         for (int i = 0; i < 10; ++i) {
-            QString result =
-                "general RMSE - MAE - SMAPE - R - Bias    %1 channel: %2 - %3 "
-                "- %4 "
-                "- %5 - %6";
+            const double rmse = std::sqrt(prefix * general_RMSEs[i]);
+            const double mae = prefix * general_MAEs[i];
             const double smape = (prefix * general_SMAPEs[i]) * 100.0;
-            // Расчет общей суммы квадратов отклонений эталона (знаменатель для
-            // R^2)
+            const double bias = prefix * general_Biases[i];
+
             const double total_sum_squares =
                 sum_X2[i] - ((sum_X[i] * sum_X[i]) / n);
-            double r2_value = 0.0;
-            if (total_sum_squares > 1e-9) {
-                // Формула: 1 - (Сумма квадратов разностей / Общая сумма
-                // квадратов эталона)
-                r2_value = 1.0 - (general_RMSEs[i] / total_sum_squares);
-            } else {
-                r2_value = 0.0;  // Защита, если весь канал эталона состоит из
-                                 // одного цвета
-            }
-            qDebug() << result.arg(i + 1)
-                            .arg(std::sqrt(prefix * general_RMSEs[i]), 0, 'g',
-                                 8)
-                            .arg(prefix * general_MAEs[i], 0, 'g', 8)
-                            .arg(smape, 0, 'g', 8)
-                            .arg(r2_value, 0, 'g', 8)
-                            .arg(prefix * general_Biases[i], 0, 'g', 8);
-        }
+            double r2_value =
+                (total_sum_squares > 1e-9)
+                    ? (1.0 - (general_RMSEs[i] / total_sum_squares))
+                    : 0.0;
 
-        qDebug() << "*************** END PROCESSING VARIANT : "
-                 << processing_variant.toUpper();
+            logAndAppend(QString("Ch %1 | %2 | %3 | %4 | %5 | %6")
+                             .arg(QString("#%1").arg(i + 1), -8)
+                             .arg(rmse, -10, 'f', 5)
+                             .arg(mae, -10, 'f', 5)
+                             .arg(smape, -11, 'f', 3)
+                             .arg(r2_value, -11, 'f', 4)
+                             .arg(bias, -10, 'f', 5));
+        }
+        logAndAppend(
+            "=================================================================="
+            "======\n");
+    }
+
+    // Копирование в буфер обмена
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    if (clipboard) {
+        clipboard->setText(full_report);
+        qDebug() << "[Success] Full report copied to clipboard!";
+    } else {
+        qDebug() << "[Warning] Clipboard is not available.";
     }
 }
 
