@@ -89,6 +89,11 @@ private slots:
     void remove_scene_layer(const QString &id);
 
     //!
+    //! \brief Слот для экспорта в геотиф
+    //! \param id - идентификатор слоя
+    //!
+    void exportSearchResultToGeoTiff(const QString &id);
+    //!
     //! \brief Слот для добавления региона интереса в список
     //! \param id - идентификатор региона интереса
     //!

@@ -26,6 +26,7 @@
 #include "QImageReader"
 #include "cpl_conv.h"
 #include "davis.h"
+#include "geotiff_result_exporter.h"
 #include "google_maps_url_maker.h"
 #include "health_ranges.h"
 #include "icon_generator.h"
@@ -34,6 +35,7 @@
 #include "json_utils.h"
 #include "layer_list.h"
 #include "layer_roi_list.h"
+#include "layer_search_results_list.h"
 #include "least_square_solver.h"
 #include "libs/gdal/x64/include/cpl_conv.h"
 #include "libs/gdal/x64/include/gdal_priv.h"
@@ -2542,6 +2544,28 @@ void MainWindowSatelliteComparator::remove_scene_layer(const QString &id) {
     }
 }
 
+void MainWindowSatelliteComparator::exportSearchResultToGeoTiff(
+    const QString &id) {
+    auto *item = m_layers_search_result_items.value(id);
+    if (!item) return;
+
+    sad::geoTransform geo;
+    if (m_satelite_type != sad::TIME_ROW_LANDSAT_COMBINATION &&
+        m_satelite_type != sad::TIME_ROW_SENTINEL_COMBINATION) {
+        geo = m_geo;
+    } else {
+        geo = m_time_row_geo[0];
+    }
+
+    GeoTiffResultExporter::ExportOptions options;
+    options.exportSubstrate = true;
+    options.exportLegendPng = true;
+    options.openFolderAfterSave = true;
+
+    GeoTiffResultExporter::exportSearchResult(item, id, geo, m_satellite_image,
+                                              options, this);
+}
+
 void MainWindowSatelliteComparator::add_roi_to_gui_list(const QString &id) {
     m_layer_roi_list->addItemToList(id, "Класс по умолчанию",
                                     QColor(Qt::yellow));
@@ -2831,13 +2855,15 @@ void MainWindowSatelliteComparator::setUpToolWidget() {
     m_comboBox_calculation_method->addItems(
         {satc::euclid_metrika, satc::spectral_angle});
 
-    m_layer_gui_list = new LayerList;
+    m_layer_gui_list = new LayerSearchResultsList;
     connect(m_layer_gui_list, SIGNAL(showItem(const QString)),
             SLOT(show_layer(const QString)));
     connect(m_layer_gui_list, SIGNAL(hideItem(const QString)),
             SLOT(hide_layer(const QString)));
     connect(m_layer_gui_list, SIGNAL(removeItem(const QString)),
             SLOT(remove_scene_layer(const QString)));
+    connect(m_layer_gui_list, SIGNAL(exportItemRequested(const QString)), this,
+            SLOT(exportSearchResultToGeoTiff(const QString)));
 
     m_layer_roi_list = new LayerRoiList;
     ui->verticalLayout_roi->addWidget(m_layer_roi_list);
@@ -5416,7 +5442,7 @@ QGraphicsPixmapItem *MainWindowSatelliteComparator::buildGradientMaskItem(
             new_layer[offset] = color.red();
             new_layer[offset + 1] = color.green();
             new_layer[offset + 2] = color.blue();
-            new_layer[offset + 3] = 254;
+            new_layer[offset + 3] = 255;
             hasAnyPixel = true;
         }
     }
