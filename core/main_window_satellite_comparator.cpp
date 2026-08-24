@@ -4954,9 +4954,12 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
             // Проверка прогресса во внешнем цикле
             if (y % progress_step_y == 0) {
                 int percentage = (y * 100) / height;
-                qDebug() << "Progress:" << percentage << "% (row" << y << "/"
-                         << height << ")"
-                         << "| Elapsed time:" << timer.elapsed() << "ms";
+                // '\r' возвращает курсор в начало строки, а std::flush
+                // принудительно обновляет экран
+                std::cerr << "\rProgress: " << percentage << "% (row " << y
+                          << "/" << height << ")"
+                          << " | Elapsed time: " << timer.elapsed() << "ms"
+                          << std::flush;
             }
 
             const quint64 row_offset = static_cast<quint64>(y) * width;
