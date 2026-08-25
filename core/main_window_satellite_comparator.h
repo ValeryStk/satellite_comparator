@@ -13,6 +13,7 @@
 #include "bekas/GuiModules/UasvViewWindow.h"
 #include "cross_square.h"
 #include "dynamic_checkbox_widget.h"
+#include "geotiff_result_exporter.h"
 #include "layer_list.h"
 #include "qcustomplot_pro.h"
 #include "satellite_graphics_view.h"
@@ -546,5 +547,7 @@ private:
     const uint16_t *m_current_mask = nullptr;
     int m_current_w = 0;
     int m_current_h = 0;
+
+    QHash<QString, GeoTiffClassLegend> m_layer_legends;
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H

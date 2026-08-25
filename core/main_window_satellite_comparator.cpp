@@ -26,7 +26,6 @@
 #include "QImageReader"
 #include "cpl_conv.h"
 #include "davis.h"
-#include "geotiff_result_exporter.h"
 #include "google_maps_url_maker.h"
 #include "health_ranges.h"
 #include "icon_generator.h"
@@ -517,6 +516,20 @@ static QColor dpClassColor(int dpClass) {
         default:
             return QColor(0, 0, 0, 0);
     }
+}
+
+static GeoTiffClassLegend buildDpGradientLegend() {
+    GeoTiffClassLegend legend;
+    static const char *labels[] = {"0 - Растет",
+                                   "I - Стабильно",
+                                   "II - Слабое ухудшение",
+                                   "III - Умеренное ухудшение",
+                                   "IV - Сильное ухудшение",
+                                   "V - Очень сильное ухудшение"};
+    for (int cls = 0; cls <= 5; ++cls) {
+        legend.append({dpClassColor(cls), QString::fromUtf8(labels[cls])});
+    }
+    return legend;
 }
 
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
@@ -2540,6 +2553,7 @@ void MainWindowSatelliteComparator::remove_scene_layer(const QString &id) {
         m_scene->removeItem(image_item);
         delete image_item;
         m_layers_search_result_items.remove(id);
+        m_layer_legends.remove(id);
         qDebug() << "удалили " << id;
     }
 }
@@ -2561,9 +2575,10 @@ void MainWindowSatelliteComparator::exportSearchResultToGeoTiff(
     options.exportSubstrate = true;
     options.exportLegendPng = true;
     options.openFolderAfterSave = true;
+    const GeoTiffClassLegend legend = m_layer_legends.value(id);
 
     GeoTiffResultExporter::exportSearchResult(item, id, geo, m_satellite_image,
-                                              options, this);
+                                              options, legend, this);
 }
 
 void MainWindowSatelliteComparator::add_roi_to_gui_list(const QString &id) {
@@ -2756,6 +2771,7 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient(
     m_layer_gui_list->addItemToList(
         layerId, buildGradientLegendTooltipDP(startColor, endColor),
         QColor(255, 165, 0), Qt::Checked);
+    m_layer_legends.insert(layerId, buildDpGradientLegend());
 }
 
 void MainWindowSatelliteComparator::processLayer(uchar *layer, int xSize,
@@ -5254,6 +5270,7 @@ void MainWindowSatelliteComparator::create_index_dynamic_maps(
             m_layer_gui_list->addItemToList(ndviLayerId,
                                             buildIndexDynamicsLegendTooltip(),
                                             QColor(34, 139, 34), Qt::Unchecked);
+            m_layer_legends.insert(ndviLayerId, buildDpGradientLegend());
         }
     }
 
@@ -5264,6 +5281,7 @@ void MainWindowSatelliteComparator::create_index_dynamic_maps(
             m_layer_gui_list->addItemToList(
                 ndwiLayerId, buildIndexDynamicsLegendTooltip(),
                 QColor(30, 144, 255), Qt::Unchecked);
+            m_layer_legends.insert(ndwiLayerId, buildDpGradientLegend());
         }
     }
 
@@ -5274,6 +5292,7 @@ void MainWindowSatelliteComparator::create_index_dynamic_maps(
             m_layer_gui_list->addItemToList(summaryLayerId,
                                             buildIndexDynamicsLegendTooltip(),
                                             QColor(200, 200, 30));
+            m_layer_legends.insert(summaryLayerId, buildDpGradientLegend());
         }
     }
 }

@@ -1,7 +1,9 @@
 #ifndef GEOTIFF_RESULT_EXPORTER_H
 #define GEOTIFF_RESULT_EXPORTER_H
 
+#include <QColor>
 #include <QImage>
+#include <QPair>
 #include <QRect>
 #include <QString>
 #include <QVector>
@@ -14,6 +16,20 @@ namespace sad {
 struct geoTransform;
 }
 
+// Явная, опциональная легенда "цвет -> подпись", которую вызывающий код
+// (MainWindowSatelliteComparator) передаёт в экспортёр для тех результатов,
+// у которых есть фиксированный, заранее известный набор классов (например,
+// градиентная DP-маска усыхания: "DP 0", "I".."V" - см. dpClassColor()).
+//
+// Экспортёр НИЧЕГО не знает о конкретных цветах и их смысле - он только
+// сверяет цвет, реально найденный в изображении, с этим списком (если он
+// передан) и берёт оттуда подпись. Если список пуст или совпадения нет -
+// используется generic "Класс N". Это специально избавляет экспортёр от
+// зашитых внутрь цветовых констант: если палитра dpClassColor() когда-нибудь
+// изменится, достаточно поправить её один раз в месте построения легенды,
+// а не искать зависимость внутри экспортёра.
+using GeoTiffClassLegend = QVector<QPair<QColor, QString>>;
+
 // Экспорт одного результата из панели "Результаты поиска" (градиентная маска
 // усыхания, поиск по метрике, MATLAB-классификация) в тематический GeoTIFF.
 //
@@ -22,7 +38,8 @@ struct geoTransform;
 // базовый снимок, где alpha == 0 означает "нет данных" (см. main_window_
 // satellite_comparator.cpp: buildGradientMaskItem, paintSamplePoints,
 // paintMultiSpecPoints, paintTimeRowBadForest). Поэтому экспортёр не должен
-// знать, откуда взялся результат - ему достаточно самого QImage.
+// знать, откуда взялся результат - ему достаточно самого QImage и,
+// опционально, явной легенды для подписей классов.
 //
 // Алгоритм:
 //   1. Сканируем непрозрачные пиксели, собираем уникальные RGB-цвета.
@@ -33,8 +50,8 @@ struct geoTransform;
 //      соответствующим образом сдвигаем geoTransform.
 //   4. Пишем однослойный GDT_Byte GeoTIFF: пиксель = код класса, NoData = 0.
 //   5. В тот же файл встраиваем GDALColorTable (чтобы ГИС сразу красиво
-//      отрисовала слой) и GDALRasterAttributeTable (чтобы в ГИС были видны
-//      подписи классов, а не голые числа).
+//      отрисовала слой) и GDALRasterAttributeTable с подписями классов
+//      (из переданной легенды, либо "Класс N").
 class GeoTiffResultExporter {
 public:
     struct ExportOptions {
@@ -49,11 +66,9 @@ public:
     // QGraphicsPixmapItem
     //                 из m_layers_search_result_items)
     // suggestedName - имя по умолчанию для диалога сохранения (обычно id
-    //                 результата
+    // результата
     //                 из списка "Результаты поиска"). Может содержать символы,
-    //                 недопустимые в именах файлов (":", "/", "\" и т.п.,
-    //                 например из QDateTime::toString("yyyy-MM-dd hh:mm:ss")) -
-    //                 они будут автоматически заменены на "_".
+    //                 недопустимые в именах файлов - они будут заменены на "_".
     // geoTransform  - геопривязка базового снимка. Для обычного режима это
     // m_geo,
     //                 для режима временного ряда - m_time_row_geo[0]
@@ -61,6 +76,11 @@ public:
     // baseImage     - базовый RGB снимок (m_satellite_image), нужен только если
     //                 options.exportSubstrate == true; можно передать пустой
     //                 QImage, если подложка не нужна
+    // knownLegend   - опциональная явная легенда "цвет -> подпись" для
+    // результатов
+    //                 с фиксированным набором классов. Для результатов без
+    //                 такой легенды передайте пустой GeoTiffClassLegend() -
+    //                 будет использована generic-нумерация "Класс N"
     // parent        - родительский виджет для диалогов сохранения/ошибок
     //
     // Возвращает true, если основной GeoTIFF с маской успешно записан
@@ -70,6 +90,7 @@ public:
                                    const sad::geoTransform &geoTransform,
                                    const QImage &baseImage,
                                    const ExportOptions &options,
+                                   const GeoTiffClassLegend &knownLegend,
                                    QWidget *parent);
 
 private:
@@ -94,9 +115,15 @@ private:
     static bool cropToContent(ClassRaster &raster, sad::geoTransform &geo,
                               QRect &cropRectOut);
 
+    // Возвращает подпись для данного цвета: сначала ищет точное совпадение
+    // в knownLegend, если не находит - "Класс classIndex".
+    static QString classLabelFor(QRgb color, int classIndex,
+                                 const GeoTiffClassLegend &knownLegend);
+
     static bool writeClassGeoTiff(const QString &filePath,
                                   const ClassRaster &raster,
-                                  const sad::geoTransform &geo);
+                                  const sad::geoTransform &geo,
+                                  const GeoTiffClassLegend &knownLegend);
 
     static bool writeSubstrateGeoTiff(const QString &filePath,
                                       const QImage &baseImage,
@@ -104,7 +131,8 @@ private:
                                       const sad::geoTransform &geo);
 
     static bool writeLegendPng(const QString &filePath,
-                               const ClassRaster &raster);
+                               const ClassRaster &raster,
+                               const GeoTiffClassLegend &knownLegend);
 };
 
 #endif  // GEOTIFF_RESULT_EXPORTER_H

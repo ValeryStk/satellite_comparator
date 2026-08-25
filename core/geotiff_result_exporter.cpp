@@ -1,3 +1,4 @@
+
 #include "geotiff_result_exporter.h"
 
 #include <QDesktopServices>
@@ -18,17 +19,11 @@
 QString GeoTiffResultExporter::sanitizeFileName(const QString &name) {
     QString result = name.trimmed();
 
-    // Символы, недопустимые в именах файлов Windows (и часть из них - в Linux):
-    // \ / : * ? " < > |
     static const QString forbidden = "\\/:*?\"<>|";
     for (const QChar &ch : forbidden) {
         result.replace(ch, '_');
     }
 
-    // На всякий случай схлопываем последовательные "_", образовавшиеся,
-    // например, из "12:05:30" -> "12_05_30" -> уже нормально, а вот из
-    // "id: something" -> "id_ something" -> "id__something" тоже приемлемо,
-    // но сделаем аккуратнее.
     while (result.contains("__")) {
         result.replace("__", "_");
     }
@@ -78,9 +73,6 @@ GeoTiffResultExporter::ClassRaster GeoTiffResultExporter::buildClassRaster(
             int classCode = colorToClass.value(key, -1);
             if (classCode == -1) {
                 if (colorToClass.size() >= 254) {
-                    // Более 254 уникальных цветов в одной маске не ожидается
-                    // (обычно до десятка классов). Подстраховка от
-                    // переполнения.
                     result.values[idx] = 0;
                     continue;
                 }
@@ -115,14 +107,11 @@ bool GeoTiffResultExporter::cropToContent(ClassRaster &raster,
         }
     }
 
-    if (maxX < minX || maxY < minY)
-        return false;  // валидных пикселей нет вообще
+    if (maxX < minX || maxY < minY) return false;
 
     const int newW = maxX - minX + 1;
     const int newH = maxY - minY + 1;
 
-    // Если содержимое и так занимает весь кадр - обрезка не нужна,
-    // но всё равно возвращаем корректный cropRect для единообразия.
     if (newW != raster.xSize || newH != raster.ySize) {
         QVector<uint8_t> cropped(newW * newH, 0);
         for (int y = 0; y < newH; ++y) {
@@ -137,22 +126,36 @@ bool GeoTiffResultExporter::cropToContent(ClassRaster &raster,
         raster.ySize = newH;
     }
 
-    // Сдвигаем геопривязку на смещение обрезанной области. resY обычно
-    // отрицательный (см. mgeo.resY = -mgeo.resX в остальном коде проекта),
-    // поэтому формула работает одинаково для обеих осей.
-    geo.ulX += minX * geo.resX;
-    geo.ulY += minY * geo.resY;
-
+    // Общая формула сдвига верхнего левого угла с учётом возможного поворота
+    // (rotateX/rotateY), а не только простого случая "снимок строго по
+    // осям север-юг/запад-восток". Для rotateX == rotateY == 0 (обычный
+    // случай для Landsat/Sentinel) формула сводится к простому
+    // geo.ulX += minX*resX; geo.ulY += minY*resY.
+    const double newUlX = geo.ulX + minX * geo.resX + minY * geo.rotateX;
+    const double newUlY = geo.ulY + minX * geo.rotateY + minY * geo.resY;
+    geo.ulX = newUlX;
+    geo.ulY = newUlY;
     cropRectOut = QRect(minX, minY, newW, newH);
     return true;
+}
+
+QString GeoTiffResultExporter::classLabelFor(
+    QRgb color, int classIndex, const GeoTiffClassLegend &knownLegend) {
+    for (const auto &entry : knownLegend) {
+        if (entry.first.rgb() == color) {
+            return entry.second;
+        }
+    }
+    // если нету специальной легенды, то вот дефолтная
+    return QString("Класс %1").arg(classIndex);
 }
 
 static void fillGdalGeoTransform(const sad::geoTransform &geo, double out[6]) {
     out[0] = geo.ulX;
     out[1] = geo.resX;
-    out[2] = 0.0;
+    out[2] = geo.rotateX;
     out[3] = geo.ulY;
-    out[4] = 0.0;
+    out[4] = geo.rotateY;
     out[5] = geo.resY;
 }
 
@@ -167,9 +170,9 @@ static char *buildUtmWkt(const sad::geoTransform &geo) {
     return wkt;  // освобождать через CPLFree
 }
 
-bool GeoTiffResultExporter::writeClassGeoTiff(const QString &filePath,
-                                              const ClassRaster &raster,
-                                              const sad::geoTransform &geo) {
+bool GeoTiffResultExporter::writeClassGeoTiff(
+    const QString &filePath, const ClassRaster &raster,
+    const sad::geoTransform &geo, const GeoTiffClassLegend &knownLegend) {
     if (raster.xSize <= 0 || raster.ySize <= 0) return false;
 
     GDALDriver *driver = GetGDALDriverManager()->GetDriverByName("GTiff");
@@ -199,7 +202,6 @@ bool GeoTiffResultExporter::writeClassGeoTiff(const QString &filePath,
                    const_cast<uint8_t *>(raster.values.constData()),
                    raster.xSize, raster.ySize, GDT_Byte, 0, 0);
 
-    // Палитра - чтобы слой сразу правильно отрисовался в любой ГИС
     GDALColorTable colorTable(GPI_RGB);
     GDALColorEntry noDataEntry = {0, 0, 0, 0};
     colorTable.SetColorEntry(0, &noDataEntry);
@@ -213,8 +215,6 @@ bool GeoTiffResultExporter::writeClassGeoTiff(const QString &filePath,
     band->SetColorTable(&colorTable);
     band->SetColorInterpretation(GCI_PaletteIndex);
 
-    // Таблица атрибутов растра (RAT) - чтобы в ГИС были подписи классов,
-    // а не голые числа 1..N
     GDALDefaultRasterAttributeTable rat;
     rat.CreateColumn("Value", GFT_Integer, GFU_MinMax);
     rat.CreateColumn("ClassName", GFT_String, GFU_Name);
@@ -234,7 +234,7 @@ bool GeoTiffResultExporter::writeClassGeoTiff(const QString &filePath,
         const int row = i + 1;
         rat.SetValue(row, 0, i + 1);
         rat.SetValue(row, 1,
-                     QString("Класс %1").arg(i + 1).toUtf8().constData());
+                     classLabelFor(c, i + 1, knownLegend).toUtf8().constData());
         rat.SetValue(row, 2, qRed(c));
         rat.SetValue(row, 3, qGreen(c));
         rat.SetValue(row, 4, qBlue(c));
@@ -256,9 +256,6 @@ bool GeoTiffResultExporter::writeSubstrateGeoTiff(
     if (cropRect.width() <= 0 || cropRect.height() <= 0) return false;
     if (cropRect.right() >= baseImage.width() ||
         cropRect.bottom() >= baseImage.height()) {
-        // Подложка не совпадает по размеру с маской (например, базовый снимок
-        // сменился после расчёта результата) - пропускаем, чтобы не писать
-        // рассинхронизированный файл.
         return false;
     }
 
@@ -303,8 +300,9 @@ bool GeoTiffResultExporter::writeSubstrateGeoTiff(
     return true;
 }
 
-bool GeoTiffResultExporter::writeLegendPng(const QString &filePath,
-                                           const ClassRaster &raster) {
+bool GeoTiffResultExporter::writeLegendPng(
+    const QString &filePath, const ClassRaster &raster,
+    const GeoTiffClassLegend &knownLegend) {
     if (raster.palette.isEmpty()) return false;
 
     const int swatch = 24;
@@ -327,7 +325,7 @@ bool GeoTiffResultExporter::writeLegendPng(const QString &filePath,
         painter.fillRect(10, y, swatch, swatch, QColor(c));
         painter.drawRect(10, y, swatch, swatch);
         painter.drawText(10 + swatch + 10, y + swatch - 6,
-                         QString("Класс %1").arg(i + 1));
+                         classLabelFor(c, i + 1, knownLegend));
     }
     painter.end();
 
@@ -337,7 +335,8 @@ bool GeoTiffResultExporter::writeLegendPng(const QString &filePath,
 bool GeoTiffResultExporter::exportSearchResult(
     QGraphicsPixmapItem *resultItem, const QString &suggestedName,
     const sad::geoTransform &geoTransform, const QImage &baseImage,
-    const ExportOptions &options, QWidget *parent) {
+    const ExportOptions &options, const GeoTiffClassLegend &knownLegend,
+    QWidget *parent) {
     if (!resultItem) {
         QMessageBox::warning(parent, "Экспорт", "Результат не найден.");
         return false;
@@ -358,8 +357,7 @@ bool GeoTiffResultExporter::exportSearchResult(
         return false;
     }
 
-    sad::geoTransform croppedGeo =
-        geoTransform;  // локальная копия - оригинал не трогаем
+    sad::geoTransform croppedGeo = geoTransform;
     QRect cropRect(0, 0, raster.xSize, raster.ySize);
     if (!cropToContent(raster, croppedGeo, cropRect)) {
         QMessageBox::warning(
@@ -368,7 +366,7 @@ bool GeoTiffResultExporter::exportSearchResult(
         return false;
     }
 
-    if (!writeClassGeoTiff(filePath, raster, croppedGeo)) {
+    if (!writeClassGeoTiff(filePath, raster, croppedGeo, knownLegend)) {
         QMessageBox::warning(parent, "Экспорт", "Не удалось записать GeoTIFF.");
         return false;
     }
@@ -386,7 +384,7 @@ bool GeoTiffResultExporter::exportSearchResult(
     if (options.exportLegendPng) {
         const QString legendPath =
             dirPath + "/" + baseNameNoExt + "_legend.png";
-        writeLegendPng(legendPath, raster);
+        writeLegendPng(legendPath, raster, knownLegend);
     }
 
     if (options.openFolderAfterSave) {
