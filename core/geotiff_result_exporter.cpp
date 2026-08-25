@@ -15,6 +15,31 @@
 #include "libs/gdal/x64/include/ogr_spatialref.h"
 #include "satellites_structs.h"  // sad::geoTransform (ulX, ulY, resX, resY, utmZone, isNorth)
 
+QString GeoTiffResultExporter::sanitizeFileName(const QString &name) {
+    QString result = name.trimmed();
+
+    // Символы, недопустимые в именах файлов Windows (и часть из них - в Linux):
+    // \ / : * ? " < > |
+    static const QString forbidden = "\\/:*?\"<>|";
+    for (const QChar &ch : forbidden) {
+        result.replace(ch, '_');
+    }
+
+    // На всякий случай схлопываем последовательные "_", образовавшиеся,
+    // например, из "12:05:30" -> "12_05_30" -> уже нормально, а вот из
+    // "id: something" -> "id_ something" -> "id__something" тоже приемлемо,
+    // но сделаем аккуратнее.
+    while (result.contains("__")) {
+        result.replace("__", "_");
+    }
+
+    result = result.trimmed();
+    if (result.isEmpty()) {
+        result = "result";
+    }
+    return result;
+}
+
 GeoTiffResultExporter::ClassRaster GeoTiffResultExporter::buildClassRaster(
     const QImage &rgbaImageIn) {
     ClassRaster result;
@@ -318,8 +343,10 @@ bool GeoTiffResultExporter::exportSearchResult(
         return false;
     }
 
+    const QString cleanName = sanitizeFileName(suggestedName);
+
     const QString filePath = QFileDialog::getSaveFileName(
-        parent, "Экспорт результата в GeoTIFF", suggestedName + ".tif",
+        parent, "Экспорт результата в GeoTIFF", cleanName + ".tif",
         "GeoTIFF (*.tif *.tiff)");
     if (filePath.isEmpty()) return false;
 

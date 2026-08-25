@@ -49,8 +49,11 @@ public:
     // QGraphicsPixmapItem
     //                 из m_layers_search_result_items)
     // suggestedName - имя по умолчанию для диалога сохранения (обычно id
-    // результата
-    //                 из списка "Результаты поиска")
+    //                 результата
+    //                 из списка "Результаты поиска"). Может содержать символы,
+    //                 недопустимые в именах файлов (":", "/", "\" и т.п.,
+    //                 например из QDateTime::toString("yyyy-MM-dd hh:mm:ss")) -
+    //                 они будут автоматически заменены на "_".
     // geoTransform  - геопривязка базового снимка. Для обычного режима это
     // m_geo,
     //                 для режима временного ряда - m_time_row_geo[0]
@@ -76,6 +79,10 @@ private:
         int xSize = 0;
         int ySize = 0;
     };
+
+    // Заменяет символы, недопустимые в именах файлов Windows/Linux
+    // (\ / : * ? " < > |), а также пробелы по краям, на "_".
+    static QString sanitizeFileName(const QString &name);
 
     static ClassRaster buildClassRaster(const QImage &rgbaImage);
 
