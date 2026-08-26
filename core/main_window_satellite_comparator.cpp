@@ -1014,15 +1014,16 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     ui->statusbar->showMessage(geo_coord_str);
     auto speya_data = getSentinelSpeyaValues(pos.x(), pos.y());
     auto sen2cor_ksy = getSen2CorKsy(pos.x(), pos.y());
+    int class_value = 0;
     if (!m_sen2cor_data.empty()) {
-        auto class_value =
+        class_value =
             mask_for_sen2cor_data[(int)pos.y() * m_sen2cor_data[0].width +
                                   (int)pos.x()];
         auto class_name = getSclClassName(class_value);
-        qDebug() << "sentinel class: " << class_name;
+        // qDebug() << "sentinel class: " << class_name;
         m_ac.showSentinelClassName(class_name);
     }
-    m_ac.showAlbedoUnderCursor(speya_data, sen2cor_ksy);
+    m_ac.showAlbedoUnderCursor(speya_data, sen2cor_ksy, class_value);
     m_speya_plot->graph(0)->setData(waves, speya_data);
     m_speya_plot->rescaleAxes(true);
     m_speya_plot->replot();
@@ -2486,7 +2487,8 @@ void MainWindowSatelliteComparator::resetColorsToDefaultRGB() {
             m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
             change_bands_and_show_image();
         } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
-                   m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+                   m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B ||
+                   m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2C) {
             change_bands_and_show_image(m_sentinel_data);
         }
     }
@@ -3209,7 +3211,8 @@ QVector<double> MainWindowSatelliteComparator::getKsyValues(const int x,
         m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
         data = getLandsat8Ksy(x, y);
     } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
-               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2C) {
         data = getSentinelKsyValues(x, y);
     }
     return data;
@@ -3221,7 +3224,8 @@ QVector<double> MainWindowSatelliteComparator::getWaves() {
         m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9) {
         waves = waves_landsat9;
     } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
-               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B) {
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B ||
+               m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2C) {
         waves = getSentinelWaves();
     }
     return waves;
@@ -4910,49 +4914,297 @@ void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
     });
 }
 
+#include <QClipboard>
+#include <QGuiApplication>
+#include <iomanip>
+#include <iostream>
+
 void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
-    qDebug() << m_sentinel_data.size();
-    qDebug() << m_sen2cor_data.size();
+    qDebug() << "Total sentinel data size:" << m_sentinel_data.size();
+    qDebug() << "Total sen2cor data size:" << m_sen2cor_data.size();
     if (m_sen2cor_data.size() < 10 || m_sentinel_data.size() < 10) {
         qDebug() << "Size is less than required";
         return;
     }
-    int width = m_sentinel_data[0].width;
-    int height = m_sentinel_data[0].height;
-    qDebug() << "width: " << width;
-    qDebug() << "height: " << height;
-    qDebug() << "common_pixels_nember: " << width * height;
-    quint32 vegetation_counter = 0;      // 4
-    quint32 not_vegetation_counter = 0;  // 5
-    quint32 water_counter = 0;           // 6
-    quint32 unclassified_counter = 0;    // 7
-    QVector<double> general_RMSEs = {10, 0.0};
 
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            auto class_value = mask_for_sen2cor_data[y * width + x];
+    const int width = m_sentinel_data[0].width;
+    const int height = m_sentinel_data[0].height;
+    qDebug() << "Dimensions:" << width << "x" << height;
 
-            if (class_value == 4) {
-                ++vegetation_counter;
-            } else if (class_value == 5) {
-                ++not_vegetation_counter;
-            } else if (class_value == 6) {
-                ++water_counter;
-            } else if (class_value == 7) {
-                ++unclassified_counter;
-            } else
-                continue;
-            auto speya = getSentinelSpeyaValues(x, y);
-            auto sen2cor_ksy = getSen2CorKsy(x, y);
-            auto cati = m_ac.calculateAlbedo(speya);
-            for (int i = 0; i < 10; ++i) {
-                // обработка
-                auto sen2cor_value = sen2cor_ksy[i];
-                auto cati_value = cati[i];
+    const quint64 total_pixels = static_cast<quint64>(width) * height;
+    qDebug() << "Total pixels number:" << total_pixels;
+
+    const int progress_step_y = qMax(1, height / 100);
+
+    if (!mask_for_sen2cor_data) {
+        qDebug() << "Error: mask_for_sen2cor_data is null!";
+        return;
+    }
+
+    // Строка для буфера обмена (без спецсимволов)
+    QString full_report = "=== SATELLITE COMPARATOR REPORT ===\n\n";
+
+    bool variants[5][4] = {
+        {true, true, true, true},     // General
+        {true, false, false, false},  // Vegetated
+        {false, true, false, false},  // Not vegetated
+        {false, false, true, false},  // Water
+        {false, false, false, true},  // Unclassified
+    };
+
+    for (int var = 0; var < 5; ++var) {
+        quint32 vegetation_counter = 0;
+        quint32 not_vegetation_counter = 0;
+        quint32 water_counter = 0;
+        quint32 unclassified_counter = 0;
+        quint32 general_counter = 0;
+        quint32 skipped_counter = 0;
+
+        double general_RMSEs[10] = {0.0};
+        double general_MAEs[10] = {0.0};
+        double general_SMAPEs[10] = {0.0};
+        double general_Biases[10] = {0.0};
+        double sum_X[10] = {0.0};
+        double sum_X2[10] = {0.0};
+
+        QElapsedTimer timer;
+        timer.start();
+
+        for (int y = 0; y < height; ++y) {
+            if (y % progress_step_y == 0 || y == height - 1) {
+                int percentage = (y * 100) / height;
+                const int bar_width = 20;
+                int progress = (y * bar_width) / height;
+
+                std::string bar = "[";
+                for (int i = 0; i < bar_width; ++i) {
+                    if (i < progress)
+                        bar += "=";
+                    else if (i == progress)
+                        bar += ">";
+                    else
+                        bar += " ";
+                }
+                bar += "]";
+
+                std::cerr << "\r" << bar << " " << percentage << "% "
+                          << "(Row " << y << "/" << height << ") "
+                          << "| Elapsed: " << timer.elapsed() << " ms   "
+                          << std::flush;
+            }
+
+            const quint64 row_offset = static_cast<quint64>(y) * width;
+
+            for (int x = 0; x < width; ++x) {
+                const quint64 current_pixel_index = row_offset + x;
+                const auto class_value =
+                    mask_for_sen2cor_data[current_pixel_index];
+
+                if (class_value == 4) {
+                    ++vegetation_counter;
+                    if (!variants[var][0]) continue;
+                } else if (class_value == 5) {
+                    if (!variants[var][1]) continue;
+                    ++not_vegetation_counter;
+                } else if (class_value == 6) {
+                    if (!variants[var][2]) continue;
+                    ++water_counter;
+                } else if (class_value == 7) {
+                    if (!variants[var][3]) continue;
+                    ++unclassified_counter;
+                } else {
+                    ++skipped_counter;
+                    continue;
+                }
+
+                ++general_counter;
+
+                const auto speya = getSentinelSpeyaValues(x, y);
+                const auto sen2cor_ksy = getSen2CorKsy(x, y);
+                QVector<double> cati;
+                if (var == 0) {
+                    cati = m_ac.calculateAlbedo(speya, 0);
+                } else {
+                    cati = m_ac.calculateAlbedo(speya, class_value);
+                }
+
+                if (cati.size() < 10) continue;
+
+                for (int i = 0; i < 10; ++i) {
+                    const double actual = sen2cor_ksy[i];
+                    const double forecast = cati[i];
+                    const double dif = actual - forecast;
+                    const double abs_dif = std::abs(dif);
+
+                    general_RMSEs[i] += dif * dif;
+                    general_MAEs[i] += abs_dif;
+
+                    const double denominator =
+                        (std::abs(actual) + std::abs(forecast)) / 2.0;
+                    if (denominator > 1e-9) {
+                        general_SMAPEs[i] += (abs_dif / denominator);
+                    }
+
+                    sum_X[i] += actual;
+                    sum_X2[i] += actual * actual;
+                    general_Biases[i] += (forecast - actual);
+                }
             }
         }
+
+        std::cerr << std::endl;
+
+        QString processing_variant;
+        if (var == 0) processing_variant = "General";
+        if (var == 1) processing_variant = "Vegetated";
+        if (var == 2) processing_variant = "Not vegetated";
+        if (var == 3) processing_variant = "Water";
+        if (var == 4) processing_variant = "Unclassified";
+
+        const qint64 total_elapsed_ms = timer.elapsed();
+
+        // Базовый делитель для обработанных пикселей (защита от деления на 0)
+        double general_d =
+            general_counter > 0 ? static_cast<double>(general_counter) : 1.0;
+
+        // Базовый делитель для пропущенных пикселей (относительно ВСЕГО
+        // изображения)
+        double total_d =
+            total_pixels > 0 ? static_cast<double>(total_pixels) : 1.0;
+
+        // Вспомогательная лямбда без эмодзи
+        auto logAndAppend = [&](const QString &line) {
+            qDebug().noquote() << line;
+            full_report.append(line + "\n");
+        };
+
+        logAndAppend(
+            "\n================================================================"
+            "========");
+        logAndAppend("  VARIANT SUMMARY: " + processing_variant.toUpper());
+        logAndAppend(
+            "=================================================================="
+            "======");
+        logAndAppend(QString("  Execution Time : %1 ms (%2 sec)")
+                         .arg(total_elapsed_ms)
+                         .arg(total_elapsed_ms / 1000.0, 0, 'f', 2));
+        logAndAppend(QString("  Processed Pixels: %1 / %2")
+                         .arg(general_counter)
+                         .arg(total_pixels));
+        logAndAppend(
+            "------------------------------------------------------------------"
+            "------");
+        logAndAppend("  Pixel Distribution Breakdown:");
+
+        // Массив флагов текущего варианта для проверки целевых классов
+        bool is_veg_target = variants[var][0];
+        bool is_not_veg_target = variants[var][1];
+        bool is_water_target = variants[var][2];
+        bool is_unclassified_target = variants[var][3];
+
+        // 1. Vegetation — только если это целевая группа
+        if (is_veg_target && vegetation_counter > 0) {
+            logAndAppend(
+                QString("    Vegetation     : %1 (%2%)")
+                    .arg(vegetation_counter)
+                    .arg((vegetation_counter / general_d) * 100.0, 0, 'f', 2));
+        }
+
+        // 2. Not Vegetation — только если это целевая группа
+        if (is_not_veg_target && not_vegetation_counter > 0) {
+            logAndAppend(QString("    Not Vegetation: %1 (%2%)")
+                             .arg(not_vegetation_counter)
+                             .arg((not_vegetation_counter / general_d) * 100.0,
+                                  0, 'f', 2));
+        }
+
+        // 3. Water — только если это целевая группа
+        if (is_water_target && water_counter > 0) {
+            logAndAppend(
+                QString("    Water          : %1 (%2%)")
+                    .arg(water_counter)
+                    .arg((water_counter / general_d) * 100.0, 0, 'f', 2));
+        }
+
+        // 4. Unclassified — только если это целевая группа
+        if (is_unclassified_target && unclassified_counter > 0) {
+            logAndAppend(QString("    Unclassified   : %1 (%2%)")
+                             .arg(unclassified_counter)
+                             .arg((unclassified_counter / general_d) * 100.0, 0,
+                                  'f', 2));
+        }
+
+        // 5. Skipped — выводится СТРОГО для первого варианта (General, где var
+        // == 0)
+        if (var == 0 && skipped_counter > 0) {
+            logAndAppend(
+                QString("    Skipped        : %1 (%2% of total image)")
+                    .arg(skipped_counter)
+                    .arg((skipped_counter / total_d) * 100.0, 0, 'f', 2));
+        }
+
+        if (general_counter == 0) {
+            logAndAppend(
+                "  Warning: No pixels were processed for metrics calculation.");
+            logAndAppend(
+                "=============================================================="
+                "==========\n");
+            continue;
+        }
+
+        logAndAppend(
+            "------------------------------------------------------------------"
+            "------");
+        logAndAppend("  Accuracy Metrics per Channel:");
+        // Заменили R² на R2
+        logAndAppend(QString("%1 | %2 | %3 | %4 | %5 | %6")
+                         .arg("Channel", -10)
+                         .arg("RMSE", -10)
+                         .arg("MAE", -10)
+                         .arg("SMAPE (%)", -11)
+                         .arg("R2 Score", -11)
+                         .arg("Bias", -10));
+        logAndAppend(
+            "-----------+------------+------------+-------------+-------------+"
+            "----------");
+
+        const double prefix = 1.0 / general_counter;
+        const double n = static_cast<double>(general_counter);
+
+        for (int i = 0; i < 10; ++i) {
+            const double rmse = std::sqrt(prefix * general_RMSEs[i]);
+            const double mae = prefix * general_MAEs[i];
+            const double smape = (prefix * general_SMAPEs[i]) * 100.0;
+            const double bias = prefix * general_Biases[i];
+
+            const double total_sum_squares =
+                sum_X2[i] - ((sum_X[i] * sum_X[i]) / n);
+            double r2_value =
+                (total_sum_squares > 1e-9)
+                    ? (1.0 - (general_RMSEs[i] / total_sum_squares))
+                    : 0.0;
+
+            logAndAppend(QString("Ch %1 | %2 | %3 | %4 | %5 | %6")
+                             .arg(QString("#%1").arg(i + 1), -8)
+                             .arg(rmse, -10, 'f', 5)
+                             .arg(mae, -10, 'f', 5)
+                             .arg(smape, -11, 'f', 3)
+                             .arg(r2_value, -11, 'f', 4)
+                             .arg(bias, -10, 'f', 5));
+        }
+        logAndAppend(
+            "=================================================================="
+            "======\n");
     }
-    qDebug() << "vegetation pixels number: " << vegetation_counter;
+
+    // Копирование в буфер обмена
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    if (clipboard) {
+        clipboard->setText(full_report);
+        qDebug() << "[Success] Full report copied to clipboard!";
+    } else {
+        qDebug() << "[Warning] Clipboard is not available.";
+    }
 }
 
 void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,

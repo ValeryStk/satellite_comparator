@@ -21,6 +21,12 @@
 #include "math.h"
 #include "mpfit.h"
 
+bool is_need_recalculate_params_for_final_albedo = true;
+std::vector<double> omega_list;
+std::vector<double> tau_list;
+std::vector<double> T_list;
+std::vector<double> g_list;
+
 // Структура для возврата результата без побочных эффектов
 struct QuadraticResult {
     bool has_roots;  // Флаг: найдены ли действительные корни
@@ -87,7 +93,7 @@ QuadraticResult solveQuadratic(double a, double b, double c) {
 }
 
 inline std::vector<double> calculateAlbedoFinal(
-    const QVector<double>& speya_values);
+    const QVector<double>& speya_values, int classNum = 0);
 
 bool allEqual(const std::vector<double>& v, double eps = 1e-9) {
     if (v.empty())
@@ -687,7 +693,8 @@ int albedofunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
     return 0;
 }
 
-std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
+std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values,
+                                         int classNum) {
     if (speya_values.size() < 10 || B1_result.size() < 10) {
         // throw std::runtime_error("Количество каналов не равно 10");
         // qDebug() << "NO CONDITIONS FOR ATMCORR-->" << speya_values.size()
@@ -695,18 +702,20 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
         return {};
     }  // TODO exceptions
     origin_speya_pixel_values = speya_values.toStdVector();
-    auto Q = rv.q;
-    auto P = rv.p;
-    auto TAU_M_0 = rv.h2O_power;
+
     auto tau_0_a = rv.tau_0_a;
     auto beta = rv.beta;
     auto tau_e = rv.tau_e;
     auto g = rv.g;
-    auto omega_list = compute_omega(tau_e, tau_0_a, beta, tau_m, lambda_list);
-    auto tau_list =
-        compute_tau_lambda(tau_e, tau_0_a, beta, tau_m, lambda_list);
-    auto T_list = compute_T_lambda(tau_e, tau_0_a, beta, g, tau_m, lambda_list);
-    auto g_list = compute_g(g, tau_0_a, beta, tau_m, lambda_list);
+
+    if (is_need_recalculate_params_for_final_albedo) {
+        omega_list = compute_omega(tau_e, tau_0_a, beta, tau_m, lambda_list);
+        tau_list = compute_tau_lambda(tau_e, tau_0_a, beta, tau_m, lambda_list);
+        T_list = compute_T_lambda(tau_e, tau_0_a, beta, g, tau_m, lambda_list);
+        g_list = compute_g(g, tau_0_a, beta, tau_m, lambda_list);
+        is_need_recalculate_params_for_final_albedo = false;
+    }
+
     std::vector<double> test_ro_result;
     /*qDebug()
         << "START POINT FOR SOLVING FINAL ALBEDO ------------------------>";*/
@@ -758,9 +767,43 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values) {
         // qDebug() << "band: " << i << qc.has_roots << qc.x1 << qc.x2;
         test_ro_result.push_back(qc.x2);
     }
+    if (classNum > 7 || classNum < 4) classNum = 4;
+    if ((classNum != 4 && classNum != 5 && classNum != 6 && classNum != 7)) {
+        classNum = 3;
+    }
+    int index = classNum - 3;
+    // FIRST ITERATION
+    // clang-format off
+    //static const double CORRECTIONS[5][10] = {
+    //    //                        AER         BLUE       GREEN       RED        RE1        RE2        RE3       NIR1        NIR2       WV
+    //    /* 0: GENERAL       */ { +0.022465, +0.013715, +0.013381, +0.003451, +0.002374, -0.011923, -0.006922, -0.004650, -0.032809, -0.075977 },
+    //    /* 1: VEGETATED     */ { +0.022097, +0.013445, +0.012876, +0.002875, +0.002094, -0.011650, -0.006415, -0.004155, -0.033244, -0.075871 },
+    //    /* 2: NOT_VEGETATED */ { +0.026626, +0.016683, +0.019250, +0.010084, +0.006122, -0.015289, -0.012085, -0.009423, -0.031233, -0.084574 },
+    //    /* 3: WATER         */ { +0.021683, +0.013066, +0.011986, +0.002795, -0.000612, -0.009505, -0.009232, -0.008763, -0.012961, -0.033895 },
+    //    /* 4: UNCLASSIFIED  */ { +0.025581, +0.017682, +0.015807, +0.004953, +0.000869, -0.014213, -0.012469, -0.010086, -0.024926, -0.056876 }
+    //};
+    // clang-format on
 
-    /*test_ro_result[9] =
-        0.49942 * test_ro_result[9] + 0.00741;  // 945 нм (остается прежним)*/
+    // clang-format off
+static const double CORRECTIONS[][10] = {
+    //                        AER         BLUE       GREEN       RED        RE1        RE2        RE3       NIR1        NIR2       WV
+    /* 0: GENERAL       */ { +0.026786, +0.014021, +0.012077, +0.002621, +0.001187, -0.012687, -0.007430, -0.005213, -0.033717, -0.075977 },
+    /* 1: VEGETATED     */ { +0.022097, +0.013445, +0.009503, +0.000679, +0.000355, -0.013267, -0.007779, -0.005308, -0.035464, -0.095871 },
+    /* 2: NOT_VEGETATED */ { +0.026794, +0.016000, +0.022805, +0.015537, +0.008522, -0.020614, -0.019272, -0.016021, -0.030634, -0.094574 },
+    /* 3: WATER         */ { +0.021683, +0.006274, +0.002836, -0.006118, -0.008723, -0.004939, -0.007375, -0.008822, -0.012961, -0.031895 },
+    /* 4: UNCLASSIFIED  */ { +0.024928, +0.018267, +0.016761, +0.005461, +0.000904, -0.020409, -0.017025, -0.012574, -0.038035, -0.085228 }
+};
+    // clang-format on
+
+    // Указатель на строку с нужным классом (переход за O(1))
+    const double* current_cor = CORRECTIONS[index];
+
+    // Развертка цикла (Loop Unrolling) компилятором сделает это автоисполняемым
+    // за минимальное число тактов процессора
+    for (int i = 0; i < 10; ++i) {
+        test_ro_result[i] += current_cor[i];
+    }
+
     return test_ro_result;
 }
 
@@ -1012,6 +1055,7 @@ result_values optimize(const QString& sat_name,
     // auto albedo_pixel = calculateAlbedoFinal(sv);
     //  qDebug() << "albedo: " << albedo_pixel;
     //   dv::show(v_central_waves, albedo_pixel, "final_albedo");
+    is_need_recalculate_params_for_final_albedo = true;
     return rv;
 }
 
