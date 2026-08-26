@@ -254,7 +254,8 @@ bool GeoTiffResultExporter::writeSubstrateGeoTiff(
             : baseImageIn.convertToFormat(QImage::Format_RGB888);
 
     if (cropRect.width() <= 0 || cropRect.height() <= 0) return false;
-    if (cropRect.right() >= baseImage.width() ||
+    if (cropRect.left() < 0 || cropRect.top() < 0 ||
+        cropRect.right() >= baseImage.width() ||
         cropRect.bottom() >= baseImage.height()) {
         return false;
     }
