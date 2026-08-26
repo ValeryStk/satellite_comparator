@@ -118,14 +118,8 @@ private slots:
     //! Слот для открытия данных Landsat 8
     void openLandsat8HeaderData();
 
-    //! Слот для открытия данных Sentinel 2A
-    void openSentinel2AHeaderData();
-
-    //! Слот для открытия данных Sentinel 2B
-    void openSentinel2BHeaderData();
-
-    //! Слот для открытия данных Sentinel 2C
-    void openSentinel2CHeaderData();
+    //! Слот для открытия данных Sentinel 2 уровя L2A (атмкорр)
+    void openSentinel2_l2a_HeaderData();
 
     //! Слот для открытия данных Bekas
     void openBekasSpectraData();
@@ -155,7 +149,8 @@ private slots:
 
     //! \brief openCommonSentinelHeaderData
     //! \param satellite_name
-    void openCommonSentinelHeaderData(const QString &satellite_name);
+    void openCommonSentinelHeaderData(const QString &satellite_name,
+                                      const QString &headerName);
 
     //! \brief processBekasDataForComparing
     //! \param x

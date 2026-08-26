@@ -610,19 +610,43 @@ void MainWindowSatelliteComparator::openLandsat8HeaderData() {
     openCommonLandsatHeaderData(satc::satellite_name_landsat_8);
 }
 
-void MainWindowSatelliteComparator::openSentinel2AHeaderData() {
-    m_satelite_type = sad::SENTINEL_2A;
-    openCommonSentinelHeaderData(satc::satellite_name_sentinel_2A);
-}
+void MainWindowSatelliteComparator::openSentinel2_l2a_HeaderData() {
+    const QString headerName = QFileDialog::getOpenFileName(
+        this, tr("Открыть заголовочный файл Sentinel-2"), QString(),
+        tr("MTD_MSIL2A.xml (MTD_MSIL2A.xml);;XML files (*.xml)"));
 
-void MainWindowSatelliteComparator::openSentinel2BHeaderData() {
-    m_satelite_type = sad::SENTINEL_2B;
-    openCommonSentinelHeaderData(satc::satellite_name_sentinel_2B);
-}
+    if (headerName.isEmpty()) return;
 
-void MainWindowSatelliteComparator::openSentinel2CHeaderData() {
-    m_satelite_type = sad::SENTINEL_2C;
-    openCommonSentinelHeaderData(satc::satellite_name_sentinel_2C);
+    const QString spacecraftName =
+        satc::extractSpacecraftName(headerName).trimmed().toUpper();
+
+    QString satelliteName;
+
+    if (spacecraftName == satc::satellite_name_sentinel_2A) {
+        m_satelite_type = sad::SENTINEL_2A;
+        satelliteName = satc::satellite_name_sentinel_2A;
+    } else if (spacecraftName == satc::satellite_name_sentinel_2B) {
+        m_satelite_type = sad::SENTINEL_2B;
+        satelliteName = satc::satellite_name_sentinel_2B;
+    } else if (spacecraftName == satc::satellite_name_sentinel_2C) {
+        m_satelite_type = sad::SENTINEL_2C;
+        satelliteName = satc::satellite_name_sentinel_2C;
+    } else {
+        m_satelite_type = sad::UNKNOWN_SATELLITE;
+
+        QMessageBox::warning(
+            this, tr("Sentinel-2"),
+            tr("Не удалось определить платформу Sentinel-2.\n"
+               "Выберите исходный файл MTD_MSIL2A.xml продукта L2A.\n\n"
+               "Значение SPACECRAFT_NAME: %1")
+                .arg(spacecraftName));
+
+        return;
+    }
+
+    qDebug() << "Sentinel platform detected:" << spacecraftName;
+
+    openCommonSentinelHeaderData(satelliteName, headerName);
 }
 
 void MainWindowSatelliteComparator::openBekasSpectraData() {
@@ -1226,9 +1250,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
 }
 
 void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
-    const QString &satellite_name) {
-    QString headerName = getPathToSentinelHeader(this, satellite_name);
-
+    const QString &satellite_name, const QString &headerName) {
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
     clear_satellite_data();
@@ -2944,12 +2966,9 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
             SLOT(openLandsat9HeaderData()));
     connect(ui->actionOpenLandsat8Header, SIGNAL(triggered()), this,
             SLOT(openLandsat8HeaderData()));
-    connect(ui->actionSentinel_2A, SIGNAL(triggered()), this,
-            SLOT(openSentinel2AHeaderData()));
-    connect(ui->actionSentinel_2B, SIGNAL(triggered()), this,
-            SLOT(openSentinel2BHeaderData()));
-    connect(ui->actionSentinel_2C, SIGNAL(triggered()), this,
-            SLOT(openSentinel2CHeaderData()));
+    connect(ui->actionOpenSentinel2, SIGNAL(triggered()), this,
+            SLOT(openSentinel2_l2a_HeaderData()));
+
     connect(ui->action_LoadTimeRow, SIGNAL(triggered()), this,
             SLOT(openTimeRowData()));
 
