@@ -405,7 +405,8 @@ private:
     //! оизображения
     void paintMultiSpecPoints(const QVector<int> &pixelX,
                               const QVector<int> &pixelY,
-                              const QVector<QColor> &colors);
+                              const QVector<QColor> &colors,
+                              const QVector<int> &clusterIndexes);
 
     QString getGeoCoordinates(const int x, const int y,
                               const sad::geoTransform &geo, double &latitude,

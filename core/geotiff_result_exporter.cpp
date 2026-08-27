@@ -1,4 +1,3 @@
-
 #include "geotiff_result_exporter.h"
 
 #include <QDesktopServices>
@@ -14,7 +13,7 @@
 #include "libs/gdal/x64/include/gdal_priv.h"
 #include "libs/gdal/x64/include/gdal_rat.h"
 #include "libs/gdal/x64/include/ogr_spatialref.h"
-#include "satellites_structs.h"  // sad::geoTransform (ulX, ulY, resX, resY, utmZone, isNorth)
+#include "satellites_structs.h"  // sad::geoTransform (ulX, ulY, resX, resY, rotateX, rotateY, utmZone, isNorth)
 
 QString GeoTiffResultExporter::sanitizeFileName(const QString &name) {
     QString result = name.trimmed();
@@ -51,7 +50,10 @@ GeoTiffResultExporter::ClassRaster GeoTiffResultExporter::buildClassRaster(
     result.values.fill(0, result.xSize * result.ySize);
 
     // Ключ - цвет без альфы. Класс 0 зарезервирован под NoData,
-    // поэтому реальные классы нумеруются с 1.
+    // поэтому реальные классы нумеруются с 1. ВАЖНО: код класса
+    // присваивается в порядке ОБНАРУЖЕНИЯ цвета при сканировании
+    // изображения - это не связано с семантическим порядком легенды
+    // (см. writeLegendPng, где порядок восстанавливается по knownLegend).
     QHash<QRgb, int> colorToClass;
 
     for (int y = 0; y < result.ySize; ++y) {
@@ -126,15 +128,11 @@ bool GeoTiffResultExporter::cropToContent(ClassRaster &raster,
         raster.ySize = newH;
     }
 
-    // Общая формула сдвига верхнего левого угла с учётом возможного поворота
-    // (rotateX/rotateY), а не только простого случая "снимок строго по
-    // осям север-юг/запад-восток". Для rotateX == rotateY == 0 (обычный
-    // случай для Landsat/Sentinel) формула сводится к простому
-    // geo.ulX += minX*resX; geo.ulY += minY*resY.
     const double newUlX = geo.ulX + minX * geo.resX + minY * geo.rotateX;
     const double newUlY = geo.ulY + minX * geo.rotateY + minY * geo.resY;
     geo.ulX = newUlX;
     geo.ulY = newUlY;
+
     cropRectOut = QRect(minX, minY, newW, newH);
     return true;
 }
@@ -146,7 +144,6 @@ QString GeoTiffResultExporter::classLabelFor(
             return entry.second;
         }
     }
-    // если нету специальной легенды, то вот дефолтная
     return QString("Класс %1").arg(classIndex);
 }
 
@@ -306,10 +303,38 @@ bool GeoTiffResultExporter::writeLegendPng(
     const GeoTiffClassLegend &knownLegend) {
     if (raster.palette.isEmpty()) return false;
 
+    // Порядок строк в PNG-легенде: если есть явная (семантическая) легенда,
+    // рисуем СТРОГО в её порядке (например, "0, I, II, III, IV, V"), а не
+    // в порядке обнаружения цвета при сканировании изображения - тот
+    // порядок зависит от геометрии конкретного результата и произволен.
+    // Классы, которых нет в этом конкретном экспортированном результате,
+    // просто пропускаются.
+    struct LegendRow {
+        QRgb color;
+        QString label;
+    };
+    QVector<LegendRow> rows;
+
+    if (!knownLegend.isEmpty()) {
+        for (const auto &entry : knownLegend) {
+            const QRgb c = entry.first.rgb();
+            if (raster.palette.contains(c)) {
+                rows.append({c, entry.second});
+            }
+        }
+    } else {
+        for (int i = 0; i < raster.palette.size(); ++i) {
+            const QRgb c = raster.palette.at(i);
+            rows.append({c, classLabelFor(c, i + 1, knownLegend)});
+        }
+    }
+
+    if (rows.isEmpty()) return false;
+
     const int swatch = 24;
     const int rowH = 30;
     const int width = 260;
-    const int height = rowH * raster.palette.size() + 10;
+    const int height = rowH * rows.size() + 10;
 
     QImage legend(width, height, QImage::Format_RGB888);
     legend.fill(Qt::white);
@@ -320,13 +345,11 @@ bool GeoTiffResultExporter::writeLegendPng(
     font.setPointSize(10);
     painter.setFont(font);
 
-    for (int i = 0; i < raster.palette.size(); ++i) {
+    for (int i = 0; i < rows.size(); ++i) {
         const int y = 5 + i * rowH;
-        const QRgb c = raster.palette.at(i);
-        painter.fillRect(10, y, swatch, swatch, QColor(c));
+        painter.fillRect(10, y, swatch, swatch, QColor(rows.at(i).color));
         painter.drawRect(10, y, swatch, swatch);
-        painter.drawText(10 + swatch + 10, y + swatch - 6,
-                         classLabelFor(c, i + 1, knownLegend));
+        painter.drawText(10 + swatch + 10, y + swatch - 6, rows.at(i).label);
     }
     painter.end();
 
