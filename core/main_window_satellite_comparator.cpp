@@ -124,7 +124,9 @@ uint16_t *dataCloudMask = nullptr;
 uint16_t *dataCloudMask2 = nullptr;
 
 namespace {
-
+inline double calculate_m(const double B8a, const double B9) {
+    return std::exp((0.588 * B9 - 0.258 * B8a) / (0.00087 * B9 - 0.147 * B8a));
+};
 QString getSclClassName(uint8_t classValue) {
     // static гарантирует инициализацию карты только при первом вызове функции
     static const QMap<uint8_t, QString> sclClasses = {
@@ -4939,6 +4941,7 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         quint32 water_counter = 0;
         quint32 unclassified_counter = 0;
         quint32 general_counter = 0;
+        double m_sum = 0.0;
         quint32 skipped_counter = 0;
 
         double general_RMSEs[10] = {0.0};
@@ -5010,7 +5013,9 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 }
 
                 if (cati.size() < 10) continue;
-
+                double B8A_value = speya[8];
+                double B9_value = speya[9];
+                m_sum += calculate_m(B8A_value, B9_value);
                 for (int i = 0; i < 10; ++i) {
                     const double actual = sen2cor_ksy[i];
                     const double forecast = cati[i];
@@ -5059,6 +5064,8 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
             full_report.append(line + "\n");
         };
 
+        qDebug() << "M_SUM_AVERAGE :" << m_sum / general_counter;
+        m_sum = 0;
         logAndAppend(
             "\n================================================================"
             "========");
