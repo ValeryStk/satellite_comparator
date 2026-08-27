@@ -2282,6 +2282,9 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor &color) {
     auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
     m_layers_search_result_items.insert(stamp, new_image_item);
     m_layer_gui_list->addItemToList(stamp, searchParams, color);
+    GeoTiffClassLegend searchLegend;
+    searchLegend.append({color, searchParams});
+    m_layer_legends.insert(stamp, searchLegend);
 }
 
 void MainWindowSatelliteComparator::paintMultiSpecPoints(

@@ -399,10 +399,12 @@ private:
     QDoubleSpinBox *euclid_param_spinbox;
     QGraphicsTextItem *m_scene_text_item_metric_value;
     UasvViewWindow *bekas_window;
+
+    //! Отрисовка точек после расчета близости по спек. метрике
     void paintSamplePoints(const QColor &color);
 
-    //! Отрисовка точек после классификации Матлабом по данным мултиспектральног
-    //! оизображения
+    //! Отрисовка точек после классификации Матлабом по данным
+    //! мультиспектрального изображения
     void paintMultiSpecPoints(const QVector<int> &pixelX,
                               const QVector<int> &pixelY,
                               const QVector<QColor> &colors,
