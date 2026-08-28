@@ -457,6 +457,7 @@ void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
         if (i < 10 - 1) base_pixel_speya_valuesStr.append(" ");
     }
     auto ln_m_H2O = cs->get_mH2O(pixel_bands[9], pixel_bands[8]);
+    // ln_m_H2O = 1.01519;
     ui->doubleSpinBox_mH2O->setValue(std::exp(ln_m_H2O));
     auto a = cs->get_a_H2O();
     auto b = cs->get_b_H2O();

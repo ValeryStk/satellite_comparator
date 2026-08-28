@@ -592,7 +592,7 @@ inline vector<double> compute_EQ(
 
     return EQ;
 }
-
+// Возращает натуральный логарифм массы воды
 inline double compute_mH2O(double B9, double B8a) {
     return (0.588 * B9 - 0.258 * B8a) / (0.00087 * B9 - 0.147 * B8a);
 };
@@ -638,16 +638,16 @@ inline double compute_ro(double ro,  // albedo искомое
 // clang-format on
 
 int quadfunc(int m, int n, double* p, double* dy, double** dvec, void* vars) {
-    auto X = p[X_INDEX];
-    auto Q = p[q_INDEX];
-    auto P = p[p_INDEX];
-    auto H20_power = p[H2O_INDEX];
-    auto tau_0_a = p[tau_0_a_INDEX];
-    auto beta = p[beta_INDEX];
-    auto tau_e = p[tau_e_INDEX];
-    auto g = p[g_INDEX];
-    auto ro_1 = p[ro_1_INDEX];
-    auto ro_2 = p[ro_2_INDEX];
+    double X = p[X_INDEX];
+    double Q = p[q_INDEX];
+    double P = p[p_INDEX];
+    double H20_power = p[H2O_INDEX];
+    double tau_0_a = p[tau_0_a_INDEX];
+    double beta = p[beta_INDEX];
+    double tau_e = p[tau_e_INDEX];
+    double g = p[g_INDEX];
+    double ro_1 = p[ro_1_INDEX];
+    double ro_2 = p[ro_2_INDEX];
 
     compute_TO3_list(X);
     tau_m = compute_tau_m(lambda_list, 0.098);
@@ -801,7 +801,7 @@ static const double CORRECTIONS[][10] = {
     // Развертка цикла (Loop Unrolling) компилятором сделает это автоисполняемым
     // за минимальное число тактов процессора
     for (int i = 0; i < 10; ++i) {
-        test_ro_result[i] += current_cor[i];
+        // test_ro_result[i] += current_cor[i];
     }
 
     return test_ro_result;
@@ -870,6 +870,8 @@ void updateSatelliteResponses(const QString& satellite_name) {
     qDebug() << "Responses: " << S_lambda_lists[0].size()
              << S_lambda_lists.size();
     calculDividerList(S_lambda_lists);
+    qDebug() << "divider list: " << divider_list
+             << "   size: " << divider_list.size();
 }
 
 result_values optimize(const QString& sat_name,

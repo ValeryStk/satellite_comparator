@@ -103,6 +103,7 @@ std::vector<double> calculation_solver::loadDoublesFromFile(
 }
 
 void calculation_solver::setH2O(QVector<double> new_h20_list) {
+    // Добавить поправку по каналам чувствительности 8A и 9
     T_H2O_list = new_h20_list.toStdVector();
 }
 

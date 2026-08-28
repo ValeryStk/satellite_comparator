@@ -125,7 +125,7 @@ uint16_t *dataCloudMask2 = nullptr;
 
 namespace {
 inline double calculate_m(const double B8a, const double B9) {
-    return std::exp((0.588 * B9 - 0.258 * B8a) / (0.00087 * B9 - 0.147 * B8a));
+    return (0.588 * B9 - 0.258 * B8a) / (0.00087 * B9 - 0.147 * B8a);
 };
 QString getSclClassName(uint8_t classValue) {
     // static гарантирует инициализацию карты только при первом вызове функции
@@ -4897,11 +4897,6 @@ void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
     });
 }
 
-#include <QClipboard>
-#include <QGuiApplication>
-#include <iomanip>
-#include <iostream>
-
 void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     qDebug() << "Total sentinel data size:" << m_sentinel_data.size();
     qDebug() << "Total sen2cor data size:" << m_sen2cor_data.size();
@@ -4942,6 +4937,7 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         quint32 unclassified_counter = 0;
         quint32 general_counter = 0;
         double m_sum = 0.0;
+        double ln_H2O_sum = 0.0;
         quint32 skipped_counter = 0;
 
         double general_RMSEs[10] = {0.0};
@@ -5015,7 +5011,9 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 if (cati.size() < 10) continue;
                 double B8A_value = speya[8];
                 double B9_value = speya[9];
-                m_sum += calculate_m(B8A_value, B9_value);
+                double ln_H20_value = calculate_m(B8A_value, B9_value);
+                ln_H2O_sum += ln_H20_value;
+                m_sum += std::exp(ln_H20_value);
                 for (int i = 0; i < 10; ++i) {
                     const double actual = sen2cor_ksy[i];
                     const double forecast = cati[i];
@@ -5065,7 +5063,9 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         };
 
         qDebug() << "M_SUM_AVERAGE :" << m_sum / general_counter;
+        qDebug() << "LN_M_SUM_AVERAGE :" << ln_H2O_sum / general_counter;
         m_sum = 0;
+        ln_H2O_sum = 0;
         logAndAppend(
             "\n================================================================"
             "========");
