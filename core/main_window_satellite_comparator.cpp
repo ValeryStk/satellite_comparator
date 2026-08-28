@@ -362,20 +362,30 @@ static QString buildIndexDynamicsLegendTooltip() {
            "ухудшение<br>";
 }
 
-static QString buildGradientLegendTooltipDP(const QColor &startColor,
-                                            const QColor &endColor) {
-    return QString(
-               "<b>Градиент усыхания по NDVI (DP)</b><br><br>"
-               "<span style='color: rgb(%1,%2,%3);'>■</span> DP = 0 — нет "
-               "усыханий <br>"
-               "<span style='color: rgb(%4,%5,%6);'>■</span> DP = 3 — усыхание "
-               "в течение всего периода <br>")
-        .arg(startColor.red())
-        .arg(startColor.green())
-        .arg(startColor.blue())
-        .arg(endColor.red())
-        .arg(endColor.green())
-        .arg(endColor.blue());
+static QString dpGradientLabel(int index) {
+    static const char *descriptions[] = {
+        "стабильно / без спада", "спад 1 период подряд",
+        "спад 2 периода подряд", "спад 3+ периода подряд"};
+    if (index < 0 || index >= 4) return QString("DP %1").arg(index);
+    return QString("DP %1 — %2")
+        .arg(index)
+        .arg(QString::fromUtf8(descriptions[index]));
+}
+
+static QString buildGradientLegendTooltipDP(
+    const QVector<QColor> &gradientColors) {
+    QString html =
+        "<b>Градиент усыхания (DP)</b><br>"
+        "<i>число подряд идущих периодов снижения NDVI</i><br><br>";
+    const int count = qMin(4, gradientColors.size());
+    for (int i = 0; i < count; ++i) {
+        html += QString("<span style='color: rgb(%1,%2,%3)'>■</span> %4<br>")
+                    .arg(gradientColors[i].red())
+                    .arg(gradientColors[i].green())
+                    .arg(gradientColors[i].blue())
+                    .arg(dpGradientLabel(i));
+    }
+    return html;
 }
 
 struct GradientFitResult {
@@ -2787,17 +2797,13 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient(
         ui->graphicsView_satellite_image->getMaxZValue(m_scene));
     m_scene->addItem(newimageitem);
 
-    const QColor startColor = gradientColors.first();
-    const QColor endColor = gradientColors.last();
     m_layers_search_result_items.insert(layerId, newimageitem);
     m_layer_gui_list->addItemToList(
-        layerId, buildGradientLegendTooltipDP(startColor, endColor),
+        layerId, buildGradientLegendTooltipDP(gradientColors),
         QColor(255, 165, 0), Qt::Checked);
     GeoTiffClassLegend orangeGradientLegend;
-    static const char *dpHeatmapLabels[] = {"DP 0", "DP 1", "DP 2", "DP 3"};
     for (int i = 0; i < 4 && i < gradientColors.size(); ++i) {
-        orangeGradientLegend.append(
-            {gradientColors[i], QString::fromUtf8(dpHeatmapLabels[i])});
+        orangeGradientLegend.append({gradientColors[i], dpGradientLabel(i)});
     }
     m_layer_legends.insert(layerId, orangeGradientLegend);
 }
