@@ -209,9 +209,9 @@ void calculDividerList(vector<vector<double>>& responses) {
             divider_list[i] += responses[i][j];
         }
     }
-    /*for (int i = 0; i < divider_list.size(); ++i) {
-        //qDebug() << "DIVIDED: " << divider_list[i];
-    }*/
+    for (int i = 0; i < divider_list.size(); ++i) {
+        qDebug() << "DIVIDED: " << i << " -> " << divider_list[i];
+    }
 }
 
 inline vector<double> compute_tau_m(const vector<double>& list,
@@ -594,7 +594,8 @@ inline vector<double> compute_EQ(
 }
 
 inline double compute_mH2O(double B9, double B8a) {
-    return (0.588 * B9 - 0.258 * B8a) / (0.00087 * B9 - 0.147 * B8a);
+    return ((0.588 * B9 - 0.258 * B8a) / (0.00087 * B9 - 0.147 * B8a)) *
+           (divider_list[9] / divider_list[8]);
 };
 
 inline double compute_TO3(double TiO3, double alfa_i, double X) {
@@ -787,11 +788,11 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values,
     // clang-format off
 static const double CORRECTIONS[][10] = {
     //                        AER         BLUE       GREEN       RED        RE1        RE2        RE3       NIR1        NIR2       WV
-    /* 0: GENERAL       */ { +0.026786, +0.014021, +0.012077, +0.002621, +0.001187, -0.012687, -0.007430, -0.005213, -0.033717, -0.075977 },
-    /* 1: VEGETATED     */ { +0.022097, +0.013445, +0.009503, +0.000679, +0.000355, -0.013267, -0.007779, -0.005308, -0.035464, -0.095871 },
-    /* 2: NOT_VEGETATED */ { +0.026794, +0.016000, +0.022805, +0.015537, +0.008522, -0.020614, -0.019272, -0.016021, -0.030634, -0.094574 },
-    /* 3: WATER         */ { +0.021683, +0.006274, +0.002836, -0.006118, -0.008723, -0.004939, -0.007375, -0.008822, -0.012961, -0.031895 },
-    /* 4: UNCLASSIFIED  */ { +0.024928, +0.018267, +0.016761, +0.005461, +0.000904, -0.020409, -0.017025, -0.012574, -0.038035, -0.085228 }
+    /* 0: GENERAL       */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, -0.02 },
+    /* 1: VEGETATED     */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, -0.02 },
+    /* 2: NOT_VEGETATED */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, -0.02 },
+    /* 3: WATER         */ { +0, +0, +0, -0, +0, 0, 0, 0, 0, -0.02 },
+    /* 4: UNCLASSIFIED  */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, -0.02 }
 };
     // clang-format on
 
