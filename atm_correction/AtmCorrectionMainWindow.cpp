@@ -294,6 +294,8 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     // calculateStatisticSen2Cor_CATI(
     connect(ui->action_Sen2Cor_CATI, &QAction::triggered,
             [this]() { emit calculateStatisticSen2Cor_CATI(); });
+    connect(ui->action_find_base_pixels, &QAction::triggered,
+            [this]() { emit findBasePixels(); });
 }
 
 AtmCorrectionMainWindow::~AtmCorrectionMainWindow() { delete ui; }

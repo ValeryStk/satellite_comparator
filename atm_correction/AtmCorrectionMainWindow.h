@@ -65,6 +65,7 @@ signals:
     void responseForCreatingImage();
     void responseForLoadingSen2CorData();
     void calculateStatisticSen2Cor_CATI();
+    void findBasePixels();
 };
 
 #endif  // ATMCORRECTIONMAINWINDOW_H

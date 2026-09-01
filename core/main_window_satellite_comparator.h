@@ -223,6 +223,8 @@ private slots:
 
     void calculateSen2CorCATIaccuracy();
 
+    void basePixelAnalyzer();
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы

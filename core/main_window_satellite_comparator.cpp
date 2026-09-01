@@ -581,6 +581,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             SLOT(loadSentinelSen2Cor()));
     connect(&m_ac, SIGNAL(calculateStatisticSen2Cor_CATI()), this,
             SLOT(calculateSen2CorCATIaccuracy()));
+    connect(&m_ac, SIGNAL(findBasePixels()), this, SLOT(basePixelAnalyzer()));
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
@@ -4895,11 +4896,6 @@ void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
     });
 }
 
-#include <QClipboard>
-#include <QGuiApplication>
-#include <iomanip>
-#include <iostream>
-
 void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     qDebug() << "Total sentinel data size:" << m_sentinel_data.size();
     qDebug() << "Total sen2cor data size:" << m_sen2cor_data.size();
@@ -5185,6 +5181,102 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         qDebug() << "[Success] Full report copied to clipboard!";
     } else {
         qDebug() << "[Warning] Clipboard is not available.";
+    }
+}
+
+void MainWindowSatelliteComparator::basePixelAnalyzer() {
+    qDebug() << "................. BASE PIXEL ANALYZER ...............";
+    qDebug() << "Total sentinel data size:" << m_sentinel_data.size();
+    if (m_sentinel_data.size() < 10) {
+        return;
+    }
+    const int width = m_sentinel_data[0].width;
+    const int height = m_sentinel_data[0].height;
+
+    // Структура/переменные для хранения лучшего результата
+    int bestX = -1;
+    int bestY = -1;
+    double minSseError = std::numeric_limits<double>::max();
+    QVector<double>
+        bestSpeya;  // Предполагаем, что getSentinelSpeyaValues возвращает
+                    // QVector<double> или аналогичный контейнер
+
+    // Лямбда для расчета ошибки аппроксимации прямой (МНК)
+    auto calculateLinearError = [](const auto &vector10) -> double {
+        const int n = 10;  // Размер строго 10 по условию
+
+        double sumX = 0.0, sumY = 0.0, sumXY = 0.0, sumX2 = 0.0;
+        for (int i = 0; i < n; ++i) {
+            double x = i;
+            double y = static_cast<double>(vector10[i]);
+
+            sumX += x;
+            sumY += y;
+            sumXY += x * y;
+            sumX2 += x * x;
+        }
+
+        double denominator = n * sumX2 - sumX * sumX;
+
+        // Если знаменатель 0 (что математически невозможно для X от 0 до 9, но
+        // для безопасности оставим)
+        if (qFuzzyIsNull(denominator))
+            return std::numeric_limits<double>::max();
+
+        // Коэффициенты прямой y = m*x + c
+        double m = (n * sumXY - sumX * sumY) / denominator;
+        double c = (sumY - m * sumX) / n;
+
+        // Считаем сумму квадратов остатков (SSE)
+        double sse = 0.0;
+        for (int i = 0; i < n; ++i) {
+            double x = i;
+            double predictedY = m * x + c;
+            double residual = static_cast<double>(vector10[i]) - predictedY;
+            sse += residual * residual;
+        }
+
+        return sse;
+    };
+
+    // Основной цикл обхода изображения
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            const auto speya = getSentinelKsyValues(x, y);
+
+            // Защита: если вектор вернулся пустым или поврежденным
+            if (speya.size() < 10) continue;
+
+            // Считаем ошибку для текущего пикселя
+            double currentError = calculateLinearError(speya);
+
+            // Ищем глобальный минимум
+            if (currentError < minSseError) {
+                minSseError = currentError;
+                bestX = x;
+                bestY = y;
+                // Сохраняем вектор (может потребоваться явное приведение типов
+                // в зависимости от getSentinelSpeyaValues)
+                bestSpeya.resize(10);
+                std::copy_n(speya.begin(), 10, bestSpeya.begin());
+            }
+        }
+    }
+
+    // Вывод результатов анализа
+    if (bestX != -1) {
+        qDebug() << "=== Best Linear Vector Found ===";
+        qDebug() << "Coordinates X:" << bestX << "Y:" << bestY;
+        qDebug() << "Minimal SSE Error:" << minSseError;
+
+        QString vectorStr = "Values: [";
+        for (double v : bestSpeya) vectorStr += QString::number(v) + " ";
+        vectorStr += "]";
+        qDebug().noquote() << vectorStr;
+        samplePointOnSceneChangedEvent(QPointF(bestX, bestY));
+
+    } else {
+        qDebug() << "No valid vectors were processed.";
     }
 }
 

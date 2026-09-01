@@ -788,11 +788,11 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values,
     // clang-format off
 static const double CORRECTIONS[][10] = {
     //                        AER         BLUE       GREEN       RED        RE1        RE2        RE3       NIR1        NIR2       WV
-    /* 0: GENERAL       */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, -0.02 },
-    /* 1: VEGETATED     */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, -0.02 },
-    /* 2: NOT_VEGETATED */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, -0.02 },
-    /* 3: WATER         */ { +0, +0, +0, -0, +0, 0, 0, 0, 0, -0.02 },
-    /* 4: UNCLASSIFIED  */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, -0.02 }
+    /* 0: GENERAL       */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, 0 },
+    /* 1: VEGETATED     */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, 0 },
+    /* 2: NOT_VEGETATED */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, 0 },
+    /* 3: WATER         */ { +0, +0, +0, -0, +0, 0, 0, 0, 0, 0 },
+    /* 4: UNCLASSIFIED  */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, 0 }
 };
     // clang-format on
 
