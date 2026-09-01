@@ -178,6 +178,9 @@
     <addaction name="action_SpectraClassifer"/>
     <addaction name="action_setCursorByGeoCoord"/>
     <addaction name="action_copy_geo_coords"/>
+    <addaction name="action_copy_pixel_Speya"/>
+    <addaction name="action_copy_pixel_Ksy"/>
+    <addaction name="action_copy_pixel_image_coord"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_3"/>
@@ -297,7 +300,7 @@
   </action>
   <action name="action_copy_geo_coords">
    <property name="text">
-    <string>Копировать координату выбранного пикселя</string>
+    <string>Копировать гео-координату выбранного пикселя</string>
    </property>
   </action>
   <action name="action_speya">
@@ -309,6 +312,21 @@
    </property>
    <property name="text">
     <string>СПЭЯ</string>
+   </property>
+  </action>
+  <action name="action_copy_pixel_Speya">
+   <property name="text">
+    <string>Копировать СПЭЯ пикселя</string>
+   </property>
+  </action>
+  <action name="action_copy_pixel_Ksy">
+   <property name="text">
+    <string>Копировать КСЯ пикселя</string>
+   </property>
+  </action>
+  <action name="action_copy_pixel_image_coord">
+   <property name="text">
+    <string>Копировать координату изображения</string>
    </property>
   </action>
  </widget>

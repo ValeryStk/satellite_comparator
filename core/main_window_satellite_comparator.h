@@ -378,6 +378,8 @@ private:
     double m_lattitude = NAN;  //!< географическая широта для выбранного пикселя
     double m_longitude =
         NAN;  //!< географическая долгота для выбранного пикселя
+    quint32 m_x_image = 0;
+    quint32 m_y_image = 0;
 
     bool m_is_image_created;  //!< флаг созданного базового изображения
     bool m_is_bekas;  //!< флаг использования образца БЕКАС

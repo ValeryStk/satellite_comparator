@@ -1009,20 +1009,24 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
 void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
     QPointF pos) {
     m_is_bekas = false;
-    m_scene_cross_square_item->setPos(pos);
+    m_x_image = pos.x();
+    m_y_image = pos.y();
+    QPointF posRounded = QPointF(m_x_image, m_y_image);
+    m_scene_cross_square_item->setPos(posRounded);
     m_scene_cross_square_item->update();
     double lat = 0.0;
     double longitude = 0.0;
 
     if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION ||
         m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
-        getGeoCoordinates(pos.x(), pos.y(), m_time_row_geo[0], lat, longitude,
-                          false);
+        getGeoCoordinates(posRounded.x(), posRounded.y(), m_time_row_geo[0],
+                          lat, longitude, false);
         m_lattitude = lat;
         m_longitude = longitude;
         return;
     }
-    getGeoCoordinates(pos.x(), pos.y(), m_geo, lat, longitude, false);
+    getGeoCoordinates(posRounded.x(), posRounded.y(), m_geo, lat, longitude,
+                      false);
     m_lattitude = lat;
     m_longitude = longitude;
 
@@ -1031,7 +1035,7 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
     QVector<double> waves;
     if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9 ||
         m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8) {
-        data = getLandsat8Ksy(pos.x(), pos.y());
+        data = getLandsat8Ksy(posRounded.x(), posRounded.y());
 
         if (data.empty()) return;
         if (data.size() != (int)LANDSAT_BANDS_NUMBER - 4) {
@@ -1046,13 +1050,13 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
     } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
                m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B ||
                m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2C) {
-        auto w_k = getSentinelKsy(pos.x(), pos.y());
+        auto w_k = getSentinelKsy(posRounded.x(), posRounded.y());
         data = w_k.second;
         waves = w_k.first;
         m_sentinel_sample = data;
         sample = m_sentinel_sample;
     }
-    auto speya_values = getSentinelSpeyaValues(pos.x(), pos.y());
+    auto speya_values = getSentinelSpeyaValues(posRounded.x(), posRounded.y());
     copyVectorsToClipboard(m_lattitude, m_longitude, waves,
                            sample);  // speya_values);
     m_ac.updateBasePixel(speya_values);
@@ -2959,6 +2963,41 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
     });
+
+    connect(ui->action_copy_pixel_Speya, &QAction::triggered, this, [this]() {
+        auto speya = getSentinelSpeyaValues(m_x_image, m_y_image);
+        auto waves = getWaves();
+        QString text;
+        for (int i = 0; i < speya.size(); ++i) {
+            text.append(QString::number(waves[i]));
+            text.append("\t");
+            text.append(QString::number(speya[i]));
+            if (i < speya.size() - 1) text.append("\n");
+        }
+        QClipboard *clipboard = QApplication::clipboard();
+        clipboard->setText(text);
+    });
+
+    connect(ui->action_copy_pixel_Ksy, &QAction::triggered, this, [this]() {
+        auto ksy = getKsyValues(m_x_image, m_y_image);
+        auto waves = getWaves();
+        QString text;
+        for (int i = 0; i < ksy.size(); ++i) {
+            text.append(QString::number(waves[i]));
+            text.append("\t");
+            text.append(QString::number(ksy[i]));
+            if (i < ksy.size() - 1) text.append("\n");
+        }
+        QClipboard *clipboard = QApplication::clipboard();
+        clipboard->setText(text);
+    });
+
+    connect(ui->action_copy_pixel_image_coord, &QAction::triggered, this,
+            [this]() {
+                QString text("%1 %2");
+                QClipboard *clipboard = QApplication::clipboard();
+                clipboard->setText(text.arg(m_x_image).arg(m_y_image));
+            });
 
     connect(ui->action_spectral_indicies, &QAction::triggered, this,
             [this](bool checked) {
