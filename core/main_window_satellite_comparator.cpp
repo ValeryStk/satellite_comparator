@@ -5285,6 +5285,14 @@ void MainWindowSatelliteComparator::basePixelAnalyzer() {
 
             // Защита: если вектор вернулся пустым или поврежденным
             if (speya.size() < 10) continue;
+            bool isNegative = false;
+            for (int i = 0; i < speya.size(); ++i) {
+                if (speya[i] < 0) {
+                    isNegative = true;
+                    break;
+                }
+            }
+            if (isNegative) continue;
 
             // Считаем ошибку для текущего пикселя
             double currentError = calculateLinearError(speya);
