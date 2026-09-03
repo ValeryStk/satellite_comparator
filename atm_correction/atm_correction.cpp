@@ -787,12 +787,12 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values,
 
     // clang-format off
 static const double CORRECTIONS[][10] = {
-    //                        AER         BLUE       GREEN       RED        RE1        RE2        RE3       NIR1        NIR2       WV
-    /* 0: GENERAL       */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, 0 },
-    /* 1: VEGETATED     */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, 0 },
-    /* 2: NOT_VEGETATED */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, 0 },
-    /* 3: WATER         */ { +0, +0, +0, -0, +0, 0, 0, 0, 0, 0 },
-    /* 4: UNCLASSIFIED  */ { +0, +0, +0, +0, +0, 0, 0, 0, 0, 0 }
+    //                      AER   BLUE     GREEN   RED    RE1  RE2           RE3        NIR1     NIR2          WV
+    /* 0: GENERAL       */ { -0.015,  -0.0109,   +0,     +0,    +0,   -0.00986,    -0.01121,   0,    -0.03241,    +0.15547},
+    /* 1: VEGETATED     */ { -0.0159,  -0.0113,   +0,     +0,    +0,   -0.00949,    -0.01082,   0,    -0.03294,    +0.1626},
+    /* 2: NOT_VEGETATED */ { -0.01,  -0.0083,   +0,     +0,    +0,   -0.01229,    -0.01378,   0,    -0.0308,     +0.12188},
+    /* 3: WATER         */ { -0.0157,  -0.0112,   +0,     -0,    +0,   -0.00921,    -0.00980,   0,    -0.011563,   +0.01892},
+    /* 4: UNCLASSIFIED  */ { -0.012,  -0.0081,   +0,     +0,    +0,   -0.012377,   -0.0138,    0,    -0.024597,   +0.09319}
 };
     // clang-format on
 
