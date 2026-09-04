@@ -768,12 +768,18 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values,
         // qDebug() << "band: " << i << qc.has_roots << qc.x1 << qc.x2;
         test_ro_result.push_back(qc.x2);
     }
-    if (classNum > 7 || classNum < 4) classNum = 4;
-    if ((classNum != 4 && classNum != 5 && classNum != 6 && classNum != 7)) {
-        classNum = 3;
+    int index = 0;
+
+    if ((classNum == 4 || classNum == 5 || classNum == 6 || classNum == 7)) {
+        index = classNum - 3;
+    } else if (classNum == 2) {
+        index = 5;
+        // qDebug() << "Dark Area Index....";
+    } else {
+        index = 0;
     }
-    int index = classNum - 3;
-    // FIRST ITERATION
+    // qDebug() << "ClassNum: " << classNum << "Index: " << index;
+    //  FIRST ITERATION
     // clang-format off
     //static const double CORRECTIONS[5][10] = {
     //    //                        AER         BLUE       GREEN       RED        RE1        RE2        RE3       NIR1        NIR2       WV
@@ -788,11 +794,12 @@ std::vector<double> calculateAlbedoFinal(const QVector<double>& speya_values,
     // clang-format off
 static const double CORRECTIONS[][10] = {
     //                      AER   BLUE     GREEN   RED    RE1  RE2           RE3        NIR1     NIR2          WV
-    /* 0: GENERAL       */ { -0.015,  -0.0109,   +0,     +0,    +0,   -0.00986,    -0.01121,   0,    -0.03241,    +0.15547},
-    /* 1: VEGETATED     */ { -0.0159,  -0.0113,   +0,     +0,    +0,   -0.00949,    -0.01082,   0,    -0.03294,    +0.1626},
-    /* 2: NOT_VEGETATED */ { -0.01,  -0.0083,   +0,     +0,    +0,   -0.01229,    -0.01378,   0,    -0.0308,     +0.12188},
-    /* 3: WATER         */ { -0.0157,  -0.0112,   +0,     -0,    +0,   -0.00921,    -0.00980,   0,    -0.011563,   +0.01892},
-    /* 4: UNCLASSIFIED  */ { -0.012,  -0.0081,   +0,     +0,    +0,   -0.012377,   -0.0138,    0,    -0.024597,   +0.09319}
+    /* 0: GENERAL       */   { -0.015,  -0.0109,   +0,     +0,    +0,   -0.00986,    -0.01121,   0,    -0.03241,    +0.15547},
+    /* 1: VEGETATED     */   { -0.0159,  -0.0113,   +0,     +0,    +0,   -0.00949,    -0.01082,   0,    -0.03294,    +0.1626},
+    /* 2: NOT_VEGETATED */   { 0,  0,   0,     0,    0,   0,    0,   0,    0,     0},
+    /* 3: WATER         */   { -0.0157,  -0.0112,   +0,     -0,    +0,   -0.00921,    -0.00980,   0,    -0.011563,   +0.01892},
+    /* 4: UNCLASSIFIED  */   { -0.012,  -0.0081,   +0,     +0,    +0,   -0.012377,   -0.0138,    0,    -0.024597,   +0.09319},
+    /* 5: DARK AREA PIXELS*/ { 0.1,  0.1,   0.1,     0.1,    0.1,   0.1,   0.1,    0.1,    0.1,   0.1}
 };
     // clang-format on
 
@@ -802,6 +809,8 @@ static const double CORRECTIONS[][10] = {
     // Развертка цикла (Loop Unrolling) компилятором сделает это автоисполняемым
     // за минимальное число тактов процессора
     for (int i = 0; i < 10; ++i) {
+        if (test_ro_result[i] < 0) test_ro_result[i] = 0.0001;
+        if (test_ro_result[i] > 1) test_ro_result[i] = 1;
         test_ro_result[i] += current_cor[i];
     }
 

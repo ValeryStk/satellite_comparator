@@ -4957,22 +4957,30 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         return;
     }
 
-    // Строка для буфера обмена (без спецсимволов)
-    QString full_report = "=== SATELLITE COMPARATOR REPORT ===\n\n";
+    // Использование QTextStream гарантирует, что огромный текст соберется без
+    // потерь
+    QString full_report;
+    full_report.reserve(
+        50000);  // Резервируем память заранее во избежание фрагментации
+    QTextStream report_stream(&full_report);
+    report_stream << "=== SATELLITE COMPARATOR REPORT ===\n\n";
 
-    bool variants[5][4] = {
-        {true, true, true, true},     // General
-        {true, false, false, false},  // Vegetated
-        {false, true, false, false},  // Not vegetated
-        {false, false, true, false},  // Water
-        {false, false, false, true},  // Unclassified
+    // Матрица фильтрации: добавили Dark area pixels 6-й строкой и 5-м столбцом
+    bool variants[6][5] = {
+        {true, true, true, true, true},  // General (включает все 5 классов)
+        {true, false, false, false, false},  // Vegetated
+        {false, true, false, false, false},  // Not vegetated
+        {false, false, true, false, false},  // Water
+        {false, false, false, true, false},  // Unclassified
+        {false, false, false, false, true}   // Dark area pixels
     };
 
-    for (int var = 0; var < 5; ++var) {
+    for (int var = 0; var < 6; ++var) {
         quint32 vegetation_counter = 0;
         quint32 not_vegetation_counter = 0;
         quint32 water_counter = 0;
         quint32 unclassified_counter = 0;
+        quint32 dark_area_counter = 0;  // Наш новый счетчик
         quint32 general_counter = 0;
         quint32 skipped_counter = 0;
 
@@ -5016,18 +5024,22 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 const auto class_value =
                     mask_for_sen2cor_data[current_pixel_index];
 
+                // Проверка классов SCL Sentinel-2
                 if (class_value == 4) {
                     ++vegetation_counter;
                     if (!variants[var][0]) continue;
                 } else if (class_value == 5) {
-                    if (!variants[var][1]) continue;
                     ++not_vegetation_counter;
+                    if (!variants[var][1]) continue;
                 } else if (class_value == 6) {
-                    if (!variants[var][2]) continue;
                     ++water_counter;
+                    if (!variants[var][2]) continue;
                 } else if (class_value == 7) {
-                    if (!variants[var][3]) continue;
                     ++unclassified_counter;
+                    if (!variants[var][3]) continue;
+                } else if (class_value == 2) {  // Класс Dark area pixels
+                    ++dark_area_counter;
+                    if (!variants[var][4]) continue;
                 } else {
                     ++skipped_counter;
                     continue;
@@ -5067,8 +5079,9 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 }
             }
         }
-
         std::cerr << std::endl;
+        // ... Продолжение цикла по var (вставлять сразу после std::cerr <<
+        // std::endl;)
 
         QString processing_variant;
         if (var == 0) processing_variant = "General";
@@ -5076,22 +5089,19 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         if (var == 2) processing_variant = "Not vegetated";
         if (var == 3) processing_variant = "Water";
         if (var == 4) processing_variant = "Unclassified";
+        if (var == 5)
+            processing_variant = "Dark area pixels";  // Имя нового варианта
 
         const qint64 total_elapsed_ms = timer.elapsed();
 
-        // Базовый делитель для обработанных пикселей (защита от деления на 0)
         double general_d =
             general_counter > 0 ? static_cast<double>(general_counter) : 1.0;
-
-        // Базовый делитель для пропущенных пикселей (относительно ВСЕГО
-        // изображения)
         double total_d =
             total_pixels > 0 ? static_cast<double>(total_pixels) : 1.0;
 
-        // Вспомогательная лямбда без эмодзи
         auto logAndAppend = [&](const QString &line) {
             qDebug().noquote() << line;
-            full_report.append(line + "\n");
+            report_stream << line << "\n";
         };
 
         logAndAppend(
@@ -5112,46 +5122,43 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
             "------");
         logAndAppend("  Pixel Distribution Breakdown:");
 
-        // Массив флагов текущего варианта для проверки целевых классов
         bool is_veg_target = variants[var][0];
         bool is_not_veg_target = variants[var][1];
         bool is_water_target = variants[var][2];
         bool is_unclassified_target = variants[var][3];
+        bool is_dark_area_target = variants[var][4];
 
-        // 1. Vegetation — только если это целевая группа
         if (is_veg_target && vegetation_counter > 0) {
             logAndAppend(
                 QString("    Vegetation     : %1 (%2%)")
                     .arg(vegetation_counter)
                     .arg((vegetation_counter / general_d) * 100.0, 0, 'f', 2));
         }
-
-        // 2. Not Vegetation — только если это целевая группа
         if (is_not_veg_target && not_vegetation_counter > 0) {
             logAndAppend(QString("    Not Vegetation: %1 (%2%)")
                              .arg(not_vegetation_counter)
                              .arg((not_vegetation_counter / general_d) * 100.0,
                                   0, 'f', 2));
         }
-
-        // 3. Water — только если это целевая группа
         if (is_water_target && water_counter > 0) {
             logAndAppend(
                 QString("    Water          : %1 (%2%)")
                     .arg(water_counter)
                     .arg((water_counter / general_d) * 100.0, 0, 'f', 2));
         }
-
-        // 4. Unclassified — только если это целевая группа
         if (is_unclassified_target && unclassified_counter > 0) {
             logAndAppend(QString("    Unclassified   : %1 (%2%)")
                              .arg(unclassified_counter)
                              .arg((unclassified_counter / general_d) * 100.0, 0,
                                   'f', 2));
         }
+        if (is_dark_area_target && dark_area_counter > 0) {
+            logAndAppend(
+                QString("    Dark area pixels: %1 (%2%)")
+                    .arg(dark_area_counter)
+                    .arg((dark_area_counter / general_d) * 100.0, 0, 'f', 2));
+        }
 
-        // 5. Skipped — выводится СТРОГО для первого варианта (General, где var
-        // == 0)
         if (var == 0 && skipped_counter > 0) {
             logAndAppend(
                 QString("    Skipped        : %1 (%2% of total image)")
@@ -5172,7 +5179,6 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
             "------------------------------------------------------------------"
             "------");
         logAndAppend("  Accuracy Metrics per Channel:");
-        // Заменили R² на R2
         logAndAppend(QString("%1 | %2 | %3 | %4 | %5 | %6")
                          .arg("Channel", -10)
                          .arg("RMSE", -10)
@@ -5211,13 +5217,17 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         logAndAppend(
             "=================================================================="
             "======\n");
-    }
+    }  // Конец цикла по var
 
-    // Копирование в буфер обмена
+    report_stream.flush();
+
+    // Запись в системный буфер обмена
     QClipboard *clipboard = QGuiApplication::clipboard();
     if (clipboard) {
+        clipboard->clear();
         clipboard->setText(full_report);
-        qDebug() << "[Success] Full report copied to clipboard!";
+        qDebug() << "[Success] Full report (" << full_report.size()
+                 << " characters) copied to clipboard!";
     } else {
         qDebug() << "[Warning] Clipboard is not available.";
     }
