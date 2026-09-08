@@ -809,9 +809,9 @@ static const double CORRECTIONS[][10] = {
     // Развертка цикла (Loop Unrolling) компилятором сделает это автоисполняемым
     // за минимальное число тактов процессора
     for (int i = 0; i < 10; ++i) {
+        test_ro_result[i] += current_cor[i];
         if (test_ro_result[i] < 0) test_ro_result[i] = 0.0001;
         if (test_ro_result[i] > 1) test_ro_result[i] = 1;
-        test_ro_result[i] += current_cor[i];
     }
 
     return test_ro_result;
