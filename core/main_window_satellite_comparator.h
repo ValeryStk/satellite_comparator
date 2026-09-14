@@ -13,6 +13,7 @@
 #include "bekas/GuiModules/UasvViewWindow.h"
 #include "cross_square.h"
 #include "dynamic_checkbox_widget.h"
+#include "geotiff_result_exporter.h"
 #include "layer_list.h"
 #include "qcustomplot_pro.h"
 #include "satellite_graphics_view.h"
@@ -88,6 +89,11 @@ private slots:
     //!
     void remove_scene_layer(const QString &id);
 
+    //!
+    //! \brief Слот для экспорта в геотиф
+    //! \param id - идентификатор слоя
+    //!
+    void exportSearchResultToGeoTiff(const QString &id);
     //!
     //! \brief Слот для добавления региона интереса в список
     //! \param id - идентификатор региона интереса
@@ -392,13 +398,16 @@ private:
     QDoubleSpinBox *euclid_param_spinbox;
     QGraphicsTextItem *m_scene_text_item_metric_value;
     UasvViewWindow *bekas_window;
+
+    //! Отрисовка точек после расчета близости по спек. метрике
     void paintSamplePoints(const QColor &color);
 
-    //! Отрисовка точек после классификации Матлабом по данным мултиспектральног
-    //! оизображения
+    //! Отрисовка точек после классификации Матлабом по данным
+    //! мультиспектрального изображения
     void paintMultiSpecPoints(const QVector<int> &pixelX,
                               const QVector<int> &pixelY,
-                              const QVector<QColor> &colors);
+                              const QVector<QColor> &colors,
+                              const QVector<int> &clusterIndexes);
 
     QString getGeoCoordinates(const int x, const int y,
                               const sad::geoTransform &geo, double &latitude,
@@ -540,5 +549,7 @@ private:
     const uint16_t *m_current_mask = nullptr;
     int m_current_w = 0;
     int m_current_h = 0;
+
+    QHash<QString, GeoTiffClassLegend> m_layer_legends;
 };
 #endif  // MAIN_WINDOW_SATELLITE_COMPARATOR_H

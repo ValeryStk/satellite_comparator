@@ -34,6 +34,7 @@
 #include "json_utils.h"
 #include "layer_list.h"
 #include "layer_roi_list.h"
+#include "layer_search_results_list.h"
 #include "least_square_solver.h"
 #include "libs/gdal/x64/include/cpl_conv.h"
 #include "libs/gdal/x64/include/gdal_priv.h"
@@ -361,20 +362,30 @@ static QString buildIndexDynamicsLegendTooltip() {
            "ухудшение<br>";
 }
 
-static QString buildGradientLegendTooltipDP(const QColor &startColor,
-                                            const QColor &endColor) {
-    return QString(
-               "<b>Градиент усыхания по NDVI (DP)</b><br><br>"
-               "<span style='color: rgb(%1,%2,%3);'>■</span> DP = 0 — нет "
-               "усыханий <br>"
-               "<span style='color: rgb(%4,%5,%6);'>■</span> DP = 3 — усыхание "
-               "в течение всего периода <br>")
-        .arg(startColor.red())
-        .arg(startColor.green())
-        .arg(startColor.blue())
-        .arg(endColor.red())
-        .arg(endColor.green())
-        .arg(endColor.blue());
+static QString dpGradientLabel(int index) {
+    static const char *descriptions[] = {
+        "стабильно / без спада", "спад 1 период подряд",
+        "спад 2 периода подряд", "спад 3+ периода подряд"};
+    if (index < 0 || index >= 4) return QString("DP %1").arg(index);
+    return QString("DP %1 — %2")
+        .arg(index)
+        .arg(QString::fromUtf8(descriptions[index]));
+}
+
+static QString buildGradientLegendTooltipDP(
+    const QVector<QColor> &gradientColors) {
+    QString html =
+        "<b>Градиент усыхания (DP)</b><br>"
+        "<i>число подряд идущих периодов снижения NDVI</i><br><br>";
+    const int count = qMin(4, gradientColors.size());
+    for (int i = 0; i < count; ++i) {
+        html += QString("<span style='color: rgb(%1,%2,%3)'>■</span> %4<br>")
+                    .arg(gradientColors[i].red())
+                    .arg(gradientColors[i].green())
+                    .arg(gradientColors[i].blue())
+                    .arg(dpGradientLabel(i));
+    }
+    return html;
 }
 
 struct GradientFitResult {
@@ -515,6 +526,20 @@ static QColor dpClassColor(int dpClass) {
         default:
             return QColor(0, 0, 0, 0);
     }
+}
+
+static GeoTiffClassLegend buildDpGradientLegend() {
+    GeoTiffClassLegend legend;
+    static const char *labels[] = {"0 - Растет",
+                                   "I - Стабильно",
+                                   "II - Слабое ухудшение",
+                                   "III - Умеренное ухудшение",
+                                   "IV - Сильное ухудшение",
+                                   "V - Очень сильное ухудшение"};
+    for (int cls = 0; cls <= 5; ++cls) {
+        legend.append({dpClassColor(cls), QString::fromUtf8(labels[cls])});
+    }
+    return legend;
 }
 
 MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
@@ -1532,7 +1557,8 @@ void MainWindowSatelliteComparator::processpClassifiedMultiSpecMatlabRequest(
         return;
     }
     paintMultiSpecPoints(dataReaded.pixelX, dataReaded.pixelY,
-                         dataReaded.colorsOfEachSpectr);
+                         dataReaded.colorsOfEachSpectr,
+                         dataReaded.selectedClustIndxs);
 }
 
 void MainWindowSatelliteComparator::updateImage() {
@@ -2294,71 +2320,92 @@ void MainWindowSatelliteComparator::paintSamplePoints(const QColor &color) {
     auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
     m_layers_search_result_items.insert(stamp, new_image_item);
     m_layer_gui_list->addItemToList(stamp, searchParams, color);
+    GeoTiffClassLegend searchLegend;
+    searchLegend.append({color, searchParams});
+    m_layer_legends.insert(stamp, searchLegend);
 }
 
 void MainWindowSatelliteComparator::paintMultiSpecPoints(
     const QVector<int> &pixelX, const QVector<int> &pixelY,
-    const QVector<QColor> &colors) {
+    const QVector<QColor> &colors, const QVector<int> &clusterIndexes) {
     if (!m_image_item) {
         qWarning() << "paintMultiSpecPoints: base image item is null";
         return;
     }
-
     if (pixelX.isEmpty() || pixelY.isEmpty() || colors.isEmpty()) {
         qWarning() << "paintMultiSpecPoints: empty input data";
         return;
     }
-
     if (pixelX.size() != pixelY.size() || pixelX.size() != colors.size()) {
-        qWarning() << "paintMultiSpecPoints: size mismatch"
-                   << "pixelX =" << pixelX.size() << "pixelY =" << pixelY.size()
-                   << "colors =" << colors.size();
+        qWarning() << "paintMultiSpecPoints: size mismatch" << pixelX.size()
+                   << pixelY.size() << colors.size();
         return;
+    }
+
+    // Если MATLAB прислал selectedClustIndxs не того размера (или не прислал
+    // вовсе) - просто не подписываем классы реальными номерами кластеров,
+    // но саму отрисовку это не ломает.
+    const bool hasClusterIndexes = (clusterIndexes.size() == pixelX.size());
+    if (!clusterIndexes.isEmpty() && !hasClusterIndexes) {
+        qWarning() << "paintMultiSpecPoints: clusterIndexes size mismatch, "
+                      "легенда по номерам кластеров не будет построена";
     }
 
     const int xSize = m_satellite_image.width();
     const int ySize = m_satellite_image.height();
-
     if (xSize <= 0 || ySize <= 0) {
         qWarning() << "paintMultiSpecPoints: invalid image size" << xSize
                    << ySize;
         return;
     }
 
-    auto new_layer = new uchar[xSize * ySize * 4];
-    memset(new_layer, 0, xSize * ySize * 4);
+    auto *newlayer = new uchar[xSize * ySize * 4];
+    memset(newlayer, 0, xSize * ySize * 4);
+
+    GeoTiffClassLegend clusterLegend;
+    QSet<int> seenClusters;
 
     for (int i = 0; i < pixelX.size(); ++i) {
         const int x = pixelX[i];
         const int y = pixelY[i];
-
         if (x < 0 || y < 0 || x >= xSize || y >= ySize) {
             qWarning() << "paintMultiSpecPoints: point out of bounds" << x << y;
             continue;
         }
-
         const QColor &color = colors[i];
         const int offset = (y * xSize + x) * 4;
+        newlayer[offset + 0] = static_cast<uchar>(color.red());
+        newlayer[offset + 1] = static_cast<uchar>(color.green());
+        newlayer[offset + 2] = static_cast<uchar>(color.blue());
+        newlayer[offset + 3] = 255;
 
-        new_layer[offset] = static_cast<uchar>(color.red());
-        new_layer[offset + 1] = static_cast<uchar>(color.green());
-        new_layer[offset + 2] = static_cast<uchar>(color.blue());
-        new_layer[offset + 3] = 255;
+        if (hasClusterIndexes) {
+            const int clusterIdx = clusterIndexes[i];
+            if (!seenClusters.contains(clusterIdx)) {
+                seenClusters.insert(clusterIdx);
+                clusterLegend.append(
+                    {color, QString("Кластер %1").arg(clusterIdx)});
+            }
+        }
     }
 
     auto cleanup = [](void *info) { delete[] static_cast<uchar *>(info); };
-    QImage img(new_layer, xSize, ySize, xSize * 4, QImage::Format_RGBA8888,
-               cleanup, new_layer);
-
+    QImage img(newlayer, xSize, ySize, xSize * 4, QImage::Format_RGBA8888,
+               cleanup, newlayer);
     auto pixmap = QPixmap::fromImage(img);
-    auto new_image_item = new QGraphicsPixmapItem(pixmap);
-    new_image_item->setZValue(
+    auto *newimageitem = new QGraphicsPixmapItem(pixmap);
+    newimageitem->setZValue(
         ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+    m_scene->addItem(newimageitem);
 
-    m_scene->addItem(new_image_item);
-    auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
-    m_layers_search_result_items.insert(stamp, new_image_item);
+    auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+    m_layers_search_result_items.insert(stamp, newimageitem);
     m_layer_gui_list->addItemToList(stamp, "", QColor(0, 255, 0));
+
+    if (!clusterLegend.isEmpty()) {
+        m_layer_legends.insert(stamp, clusterLegend);
+    }
+
     m_scene->update();
 }
 
@@ -2566,8 +2613,32 @@ void MainWindowSatelliteComparator::remove_scene_layer(const QString &id) {
         m_scene->removeItem(image_item);
         delete image_item;
         m_layers_search_result_items.remove(id);
+        m_layer_legends.remove(id);
         qDebug() << "удалили " << id;
     }
+}
+
+void MainWindowSatelliteComparator::exportSearchResultToGeoTiff(
+    const QString &id) {
+    auto *item = m_layers_search_result_items.value(id);
+    if (!item) return;
+
+    sad::geoTransform geo;
+    if (m_satelite_type != sad::TIME_ROW_LANDSAT_COMBINATION &&
+        m_satelite_type != sad::TIME_ROW_SENTINEL_COMBINATION) {
+        geo = m_geo;
+    } else {
+        geo = m_time_row_geo[0];
+    }
+
+    GeoTiffResultExporter::ExportOptions options;
+    options.exportSubstrate = true;
+    options.exportLegendPng = true;
+    options.openFolderAfterSave = true;
+    const GeoTiffClassLegend legend = m_layer_legends.value(id);
+
+    GeoTiffResultExporter::exportSearchResult(item, id, geo, m_satellite_image,
+                                              options, legend, this);
 }
 
 void MainWindowSatelliteComparator::add_roi_to_gui_list(const QString &id) {
@@ -2754,12 +2825,15 @@ void MainWindowSatelliteComparator::calculate_time_row_gradient(
         ui->graphicsView_satellite_image->getMaxZValue(m_scene));
     m_scene->addItem(newimageitem);
 
-    const QColor startColor = gradientColors.first();
-    const QColor endColor = gradientColors.last();
     m_layers_search_result_items.insert(layerId, newimageitem);
     m_layer_gui_list->addItemToList(
-        layerId, buildGradientLegendTooltipDP(startColor, endColor),
+        layerId, buildGradientLegendTooltipDP(gradientColors),
         QColor(255, 165, 0), Qt::Checked);
+    GeoTiffClassLegend orangeGradientLegend;
+    for (int i = 0; i < 4 && i < gradientColors.size(); ++i) {
+        orangeGradientLegend.append({gradientColors[i], dpGradientLabel(i)});
+    }
+    m_layer_legends.insert(layerId, orangeGradientLegend);
 }
 
 void MainWindowSatelliteComparator::processLayer(uchar *layer, int xSize,
@@ -2859,13 +2933,15 @@ void MainWindowSatelliteComparator::setUpToolWidget() {
     m_comboBox_calculation_method->addItems(
         {satc::euclid_metrika, satc::spectral_angle});
 
-    m_layer_gui_list = new LayerList;
+    m_layer_gui_list = new LayerSearchResultsList;
     connect(m_layer_gui_list, SIGNAL(showItem(const QString)),
             SLOT(show_layer(const QString)));
     connect(m_layer_gui_list, SIGNAL(hideItem(const QString)),
             SLOT(hide_layer(const QString)));
     connect(m_layer_gui_list, SIGNAL(removeItem(const QString)),
             SLOT(remove_scene_layer(const QString)));
+    connect(m_layer_gui_list, SIGNAL(exportItemRequested(const QString)), this,
+            SLOT(exportSearchResultToGeoTiff(const QString)));
 
     m_layer_roi_list = new LayerRoiList;
     ui->verticalLayout_roi->addWidget(m_layer_roi_list);
@@ -5472,6 +5548,7 @@ void MainWindowSatelliteComparator::create_index_dynamic_maps(
             m_layer_gui_list->addItemToList(ndviLayerId,
                                             buildIndexDynamicsLegendTooltip(),
                                             QColor(34, 139, 34), Qt::Unchecked);
+            m_layer_legends.insert(ndviLayerId, buildDpGradientLegend());
         }
     }
 
@@ -5482,6 +5559,7 @@ void MainWindowSatelliteComparator::create_index_dynamic_maps(
             m_layer_gui_list->addItemToList(
                 ndwiLayerId, buildIndexDynamicsLegendTooltip(),
                 QColor(30, 144, 255), Qt::Unchecked);
+            m_layer_legends.insert(ndwiLayerId, buildDpGradientLegend());
         }
     }
 
@@ -5492,6 +5570,7 @@ void MainWindowSatelliteComparator::create_index_dynamic_maps(
             m_layer_gui_list->addItemToList(summaryLayerId,
                                             buildIndexDynamicsLegendTooltip(),
                                             QColor(200, 200, 30));
+            m_layer_legends.insert(summaryLayerId, buildDpGradientLegend());
         }
     }
 }
@@ -5660,7 +5739,7 @@ QGraphicsPixmapItem *MainWindowSatelliteComparator::buildGradientMaskItem(
             new_layer[offset] = color.red();
             new_layer[offset + 1] = color.green();
             new_layer[offset + 2] = color.blue();
-            new_layer[offset + 3] = 254;
+            new_layer[offset + 3] = 255;
             hasAnyPixel = true;
         }
     }

@@ -30,6 +30,7 @@ SOURCES += \
     json_utils.cpp \
     layer_list.cpp \
     layer_roi_list.cpp \
+    layer_search_results_list.cpp \
     main.cpp \
     main_window_satellite_comparator.cpp \
     MatFilesOperator.cpp \
@@ -44,7 +45,8 @@ SOURCES += \
     sliders_of_image_corrector.cpp \
     text_constants.cpp\
     satellite_xml_reader.cpp \
-    udpjsonrpc.cpp
+    udpjsonrpc.cpp \
+    geotiff_result_exporter.cpp
 
 HEADERS += \
     GeoPointFinder.h \
@@ -55,6 +57,7 @@ HEADERS += \
     json_utils.h \
     layer_list.h \
     layer_roi_list.h \
+    layer_search_results_list.h \
     main_window_satellite_comparator.h \
     MatFilesOperator.h \
     matlab_app_controller.h \
@@ -69,7 +72,8 @@ HEADERS += \
     satellite_xml_reader.h \
     satellites_structs.h \
     udpjsonrpc.h \
-    version.h
+    version.h \
+    geotiff_result_exporter.h
 
 FORMS += \
     GeoPointFinder.ui \
