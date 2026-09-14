@@ -1422,6 +1422,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
         qDebug() << "sza" << sunZenitAngle << "saa" << sunAzimutAngle
                  << "cosSun" << m_sentinel_metadata.cosSunZenithAngle;
     }
+    // saveSentinelToGeoTiff(m_sentinel_data, m_geo, "slabodka");
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(
