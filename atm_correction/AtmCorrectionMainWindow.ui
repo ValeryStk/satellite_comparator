@@ -449,6 +449,7 @@
     <addaction name="action_CATI"/>
     <addaction name="action_Sen2Cor"/>
     <addaction name="action_Sen2Cor_CATI"/>
+    <addaction name="action_find_base_pixels"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -476,6 +477,11 @@
   <action name="action_Sen2Cor_CATI">
    <property name="text">
     <string>Расчёт статистики по точности Sen2Cor - CATI</string>
+   </property>
+  </action>
+  <action name="action_find_base_pixels">
+   <property name="text">
+    <string>Найти базовые пиксели</string>
    </property>
   </action>
  </widget>

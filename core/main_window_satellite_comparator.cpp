@@ -581,6 +581,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
             SLOT(loadSentinelSen2Cor()));
     connect(&m_ac, SIGNAL(calculateStatisticSen2Cor_CATI()), this,
             SLOT(calculateSen2CorCATIaccuracy()));
+    connect(&m_ac, SIGNAL(findBasePixels()), this, SLOT(basePixelAnalyzer()));
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
@@ -1032,20 +1033,24 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
 void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
     QPointF pos) {
     m_is_bekas = false;
-    m_scene_cross_square_item->setPos(pos);
+    m_x_image = pos.x();
+    m_y_image = pos.y();
+    QPointF posRounded = QPointF(m_x_image, m_y_image);
+    m_scene_cross_square_item->setPos(posRounded);
     m_scene_cross_square_item->update();
     double lat = 0.0;
     double longitude = 0.0;
 
     if (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION ||
         m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
-        getGeoCoordinates(pos.x(), pos.y(), m_time_row_geo[0], lat, longitude,
-                          false);
+        getGeoCoordinates(posRounded.x(), posRounded.y(), m_time_row_geo[0],
+                          lat, longitude, false);
         m_lattitude = lat;
         m_longitude = longitude;
         return;
     }
-    getGeoCoordinates(pos.x(), pos.y(), m_geo, lat, longitude, false);
+    getGeoCoordinates(posRounded.x(), posRounded.y(), m_geo, lat, longitude,
+                      false);
     m_lattitude = lat;
     m_longitude = longitude;
 
@@ -1054,7 +1059,7 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
     QVector<double> waves;
     if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_9 ||
         m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8) {
-        data = getLandsat8Ksy(pos.x(), pos.y());
+        data = getLandsat8Ksy(posRounded.x(), posRounded.y());
 
         if (data.empty()) return;
         if (data.size() != (int)LANDSAT_BANDS_NUMBER - 4) {
@@ -1069,13 +1074,13 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
     } else if (m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2A ||
                m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B ||
                m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2C) {
-        auto w_k = getSentinelKsy(pos.x(), pos.y());
+        auto w_k = getSentinelKsy(posRounded.x(), posRounded.y());
         data = w_k.second;
         waves = w_k.first;
         m_sentinel_sample = data;
         sample = m_sentinel_sample;
     }
-    auto speya_values = getSentinelSpeyaValues(pos.x(), pos.y());
+    auto speya_values = getSentinelSpeyaValues(posRounded.x(), posRounded.y());
     copyVectorsToClipboard(m_lattitude, m_longitude, waves,
                            sample);  // speya_values);
     m_ac.updateBasePixel(speya_values);
@@ -1439,6 +1444,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
         qDebug() << "sza" << sunZenitAngle << "saa" << sunAzimutAngle
                  << "cosSun" << m_sentinel_metadata.cosSunZenithAngle;
     }
+    // saveSentinelToGeoTiff(m_sentinel_data, m_geo, "slabodka");
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(
@@ -2977,6 +2983,41 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
     });
+
+    connect(ui->action_copy_pixel_Speya, &QAction::triggered, this, [this]() {
+        auto speya = getSentinelSpeyaValues(m_x_image, m_y_image);
+        auto waves = getWaves();
+        QString text;
+        for (int i = 0; i < speya.size(); ++i) {
+            text.append(QString::number(waves[i]));
+            text.append("\t");
+            text.append(QString::number(speya[i]));
+            if (i < speya.size() - 1) text.append("\n");
+        }
+        QClipboard *clipboard = QApplication::clipboard();
+        clipboard->setText(text);
+    });
+
+    connect(ui->action_copy_pixel_Ksy, &QAction::triggered, this, [this]() {
+        auto ksy = getKsyValues(m_x_image, m_y_image);
+        auto waves = getWaves();
+        QString text;
+        for (int i = 0; i < ksy.size(); ++i) {
+            text.append(QString::number(waves[i]));
+            text.append("\t");
+            text.append(QString::number(ksy[i]));
+            if (i < ksy.size() - 1) text.append("\n");
+        }
+        QClipboard *clipboard = QApplication::clipboard();
+        clipboard->setText(text);
+    });
+
+    connect(ui->action_copy_pixel_image_coord, &QAction::triggered, this,
+            [this]() {
+                QString text("%1 %2");
+                QClipboard *clipboard = QApplication::clipboard();
+                clipboard->setText(text.arg(m_x_image).arg(m_y_image));
+            });
 
     connect(ui->action_spectral_indicies, &QAction::triggered, this,
             [this](bool checked) {
@@ -4914,11 +4955,6 @@ void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
     });
 }
 
-#include <QClipboard>
-#include <QGuiApplication>
-#include <iomanip>
-#include <iostream>
-
 void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     qDebug() << "Total sentinel data size:" << m_sentinel_data.size();
     qDebug() << "Total sen2cor data size:" << m_sen2cor_data.size();
@@ -4941,22 +4977,30 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         return;
     }
 
-    // Строка для буфера обмена (без спецсимволов)
-    QString full_report = "=== SATELLITE COMPARATOR REPORT ===\n\n";
+    // Использование QTextStream гарантирует, что огромный текст соберется без
+    // потерь
+    QString full_report;
+    full_report.reserve(
+        50000);  // Резервируем память заранее во избежание фрагментации
+    QTextStream report_stream(&full_report);
+    report_stream << "=== SATELLITE COMPARATOR REPORT ===\n\n";
 
-    bool variants[5][4] = {
-        {true, true, true, true},     // General
-        {true, false, false, false},  // Vegetated
-        {false, true, false, false},  // Not vegetated
-        {false, false, true, false},  // Water
-        {false, false, false, true},  // Unclassified
+    // Матрица фильтрации: добавили Dark area pixels 6-й строкой и 5-м столбцом
+    bool variants[6][5] = {
+        {true, true, true, true, true},  // General (включает все 5 классов)
+        {true, false, false, false, false},  // Vegetated
+        {false, true, false, false, false},  // Not vegetated
+        {false, false, true, false, false},  // Water
+        {false, false, false, true, false},  // Unclassified
+        {false, false, false, false, true}   // Dark area pixels
     };
 
-    for (int var = 0; var < 5; ++var) {
+    for (int var = 0; var < 6; ++var) {
         quint32 vegetation_counter = 0;
         quint32 not_vegetation_counter = 0;
         quint32 water_counter = 0;
         quint32 unclassified_counter = 0;
+        quint32 dark_area_counter = 0;  // Наш новый счетчик
         quint32 general_counter = 0;
         quint32 skipped_counter = 0;
 
@@ -5000,18 +5044,22 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 const auto class_value =
                     mask_for_sen2cor_data[current_pixel_index];
 
+                // Проверка классов SCL Sentinel-2
                 if (class_value == 4) {
                     ++vegetation_counter;
                     if (!variants[var][0]) continue;
                 } else if (class_value == 5) {
-                    if (!variants[var][1]) continue;
                     ++not_vegetation_counter;
+                    if (!variants[var][1]) continue;
                 } else if (class_value == 6) {
-                    if (!variants[var][2]) continue;
                     ++water_counter;
+                    if (!variants[var][2]) continue;
                 } else if (class_value == 7) {
-                    if (!variants[var][3]) continue;
                     ++unclassified_counter;
+                    if (!variants[var][3]) continue;
+                } else if (class_value == 2) {  // Класс Dark area pixels
+                    ++dark_area_counter;
+                    if (!variants[var][4]) continue;
                 } else {
                     ++skipped_counter;
                     continue;
@@ -5051,8 +5099,9 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
                 }
             }
         }
-
         std::cerr << std::endl;
+        // ... Продолжение цикла по var (вставлять сразу после std::cerr <<
+        // std::endl;)
 
         QString processing_variant;
         if (var == 0) processing_variant = "General";
@@ -5060,22 +5109,19 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         if (var == 2) processing_variant = "Not vegetated";
         if (var == 3) processing_variant = "Water";
         if (var == 4) processing_variant = "Unclassified";
+        if (var == 5)
+            processing_variant = "Dark area pixels";  // Имя нового варианта
 
         const qint64 total_elapsed_ms = timer.elapsed();
 
-        // Базовый делитель для обработанных пикселей (защита от деления на 0)
         double general_d =
             general_counter > 0 ? static_cast<double>(general_counter) : 1.0;
-
-        // Базовый делитель для пропущенных пикселей (относительно ВСЕГО
-        // изображения)
         double total_d =
             total_pixels > 0 ? static_cast<double>(total_pixels) : 1.0;
 
-        // Вспомогательная лямбда без эмодзи
         auto logAndAppend = [&](const QString &line) {
             qDebug().noquote() << line;
-            full_report.append(line + "\n");
+            report_stream << line << "\n";
         };
 
         logAndAppend(
@@ -5096,46 +5142,43 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
             "------");
         logAndAppend("  Pixel Distribution Breakdown:");
 
-        // Массив флагов текущего варианта для проверки целевых классов
         bool is_veg_target = variants[var][0];
         bool is_not_veg_target = variants[var][1];
         bool is_water_target = variants[var][2];
         bool is_unclassified_target = variants[var][3];
+        bool is_dark_area_target = variants[var][4];
 
-        // 1. Vegetation — только если это целевая группа
         if (is_veg_target && vegetation_counter > 0) {
             logAndAppend(
                 QString("    Vegetation     : %1 (%2%)")
                     .arg(vegetation_counter)
                     .arg((vegetation_counter / general_d) * 100.0, 0, 'f', 2));
         }
-
-        // 2. Not Vegetation — только если это целевая группа
         if (is_not_veg_target && not_vegetation_counter > 0) {
             logAndAppend(QString("    Not Vegetation: %1 (%2%)")
                              .arg(not_vegetation_counter)
                              .arg((not_vegetation_counter / general_d) * 100.0,
                                   0, 'f', 2));
         }
-
-        // 3. Water — только если это целевая группа
         if (is_water_target && water_counter > 0) {
             logAndAppend(
                 QString("    Water          : %1 (%2%)")
                     .arg(water_counter)
                     .arg((water_counter / general_d) * 100.0, 0, 'f', 2));
         }
-
-        // 4. Unclassified — только если это целевая группа
         if (is_unclassified_target && unclassified_counter > 0) {
             logAndAppend(QString("    Unclassified   : %1 (%2%)")
                              .arg(unclassified_counter)
                              .arg((unclassified_counter / general_d) * 100.0, 0,
                                   'f', 2));
         }
+        if (is_dark_area_target && dark_area_counter > 0) {
+            logAndAppend(
+                QString("    Dark area pixels: %1 (%2%)")
+                    .arg(dark_area_counter)
+                    .arg((dark_area_counter / general_d) * 100.0, 0, 'f', 2));
+        }
 
-        // 5. Skipped — выводится СТРОГО для первого варианта (General, где var
-        // == 0)
         if (var == 0 && skipped_counter > 0) {
             logAndAppend(
                 QString("    Skipped        : %1 (%2% of total image)")
@@ -5156,7 +5199,6 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
             "------------------------------------------------------------------"
             "------");
         logAndAppend("  Accuracy Metrics per Channel:");
-        // Заменили R² на R2
         logAndAppend(QString("%1 | %2 | %3 | %4 | %5 | %6")
                          .arg("Channel", -10)
                          .arg("RMSE", -10)
@@ -5195,15 +5237,123 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         logAndAppend(
             "=================================================================="
             "======\n");
-    }
+    }  // Конец цикла по var
 
-    // Копирование в буфер обмена
+    report_stream.flush();
+
+    // Запись в системный буфер обмена
     QClipboard *clipboard = QGuiApplication::clipboard();
     if (clipboard) {
+        clipboard->clear();
         clipboard->setText(full_report);
-        qDebug() << "[Success] Full report copied to clipboard!";
+        qDebug() << "[Success] Full report (" << full_report.size()
+                 << " characters) copied to clipboard!";
     } else {
         qDebug() << "[Warning] Clipboard is not available.";
+    }
+}
+
+void MainWindowSatelliteComparator::basePixelAnalyzer() {
+    qDebug() << "................. BASE PIXEL ANALYZER ...............";
+    qDebug() << "Total sentinel data size:" << m_sentinel_data.size();
+    if (m_sentinel_data.size() < 10) {
+        return;
+    }
+    const int width = m_sentinel_data[0].width;
+    const int height = m_sentinel_data[0].height;
+
+    // Структура/переменные для хранения лучшего результата
+    int bestX = -1;
+    int bestY = -1;
+    double minSseError = std::numeric_limits<double>::max();
+    QVector<double>
+        bestSpeya;  // Предполагаем, что getSentinelSpeyaValues возвращает
+                    // QVector<double> или аналогичный контейнер
+
+    // Лямбда для расчета ошибки аппроксимации прямой (МНК)
+    auto calculateLinearError = [](const auto &vector10) -> double {
+        const int n = 10;  // Размер строго 10 по условию
+
+        double sumX = 0.0, sumY = 0.0, sumXY = 0.0, sumX2 = 0.0;
+        for (int i = 0; i < n; ++i) {
+            double x = i;
+            double y = static_cast<double>(vector10[i]);
+
+            sumX += x;
+            sumY += y;
+            sumXY += x * y;
+            sumX2 += x * x;
+        }
+
+        double denominator = n * sumX2 - sumX * sumX;
+
+        // Если знаменатель 0 (что математически невозможно для X от 0 до 9, но
+        // для безопасности оставим)
+        if (qFuzzyIsNull(denominator))
+            return std::numeric_limits<double>::max();
+
+        // Коэффициенты прямой y = m*x + c
+        double m = (n * sumXY - sumX * sumY) / denominator;
+        double c = (sumY - m * sumX) / n;
+
+        // Считаем сумму квадратов остатков (SSE)
+        double sse = 0.0;
+        for (int i = 0; i < n; ++i) {
+            double x = i;
+            double predictedY = m * x + c;
+            double residual = static_cast<double>(vector10[i]) - predictedY;
+            sse += residual * residual;
+        }
+
+        return sse;
+    };
+
+    // Основной цикл обхода изображения
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            const auto speya = getSentinelKsyValues(x, y);
+
+            // Защита: если вектор вернулся пустым или поврежденным
+            if (speya.size() < 10) continue;
+            bool isNegative = false;
+            for (int i = 0; i < speya.size(); ++i) {
+                if (speya[i] < 0) {
+                    isNegative = true;
+                    break;
+                }
+            }
+            if (isNegative) continue;
+
+            // Считаем ошибку для текущего пикселя
+            double currentError = calculateLinearError(speya);
+
+            // Ищем глобальный минимум
+            if (currentError < minSseError) {
+                minSseError = currentError;
+                bestX = x;
+                bestY = y;
+                // Сохраняем вектор (может потребоваться явное приведение типов
+                // в зависимости от getSentinelSpeyaValues)
+                bestSpeya.resize(10);
+                std::copy_n(speya.begin(), 10, bestSpeya.begin());
+            }
+        }
+    }
+
+    // Вывод результатов анализа
+    if (bestX != -1) {
+        qDebug() << "=== Best Linear Vector Found ===";
+        qDebug() << "Coordinates X:" << bestX << "Y:" << bestY;
+        qDebug() << "Minimal SSE Error:" << minSseError;
+
+        QString vectorStr = "Values: [";
+        for (double v : bestSpeya) vectorStr += QString::number(v) + " ";
+        vectorStr += "]";
+        qDebug().noquote() << vectorStr;
+        samplePointOnSceneChangedEvent(QPointF(bestX, bestY));
+
+    } else {
+        qDebug() << "No valid vectors were processed.";
     }
 }
 
