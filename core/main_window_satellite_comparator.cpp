@@ -2658,6 +2658,52 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id) {
     auto br = polItem->boundingRect();
     qDebug() << "bounding TL x -- y: " << br.x() << br.y();
     qDebug() << "bounding width -- height: " << br.width() << br.height();
+
+    if (!m_sentinel_data.empty()) {
+        QVector<double> ksys;
+        int bands_number = m_sentinel_data.size();
+        ksys.resize(bands_number);
+        for (int i = 0; i < points.size(); ++i) {
+            auto point = points[i];
+            auto ksy = getSentinelKsy(point.x(), point.y());
+            for (int j = 0; j < bands_number; ++j) {
+                ksys[j] += ksy.second[j];
+            }
+        }
+        double divisor = points.size();
+        auto waves = getSentinelKsy(0, 0).first;
+        std::transform(ksys.begin(), ksys.end(), ksys.begin(),
+                       [divisor](double val) { return val / divisor; });
+        QString text;
+        for (int i = 0; i < ksys.size(); ++i) {
+            text += QString::number(waves[i]) + " " + QString::number(ksys[i]) +
+                    "\n";
+        }
+
+        QClipboard *clipboard = QApplication::clipboard();
+        clipboard->setText(text);
+    }
+    if (!m_sen2cor_data.empty()) {
+        QVector<double> ksys;
+        ksys.resize(10);
+        for (int i = 0; i < points.size(); ++i) {
+            auto point = points[i];
+            auto speya = getSentinelSpeyaValues(point.x(), point.y());
+            speya.resize(10);
+            auto cati = m_ac.calculateAlbedo(speya);
+
+            for (int j = 0; j < 10; ++j) {
+                ksys[j] += cati[j] / (double)points.size();
+            }
+        }
+        QString text = "//CATI\n";
+        for (int i = 0; i < ksys.size(); ++i) {
+            text += QString::number(ksys[i]) + "\n";
+        }
+
+        QClipboard *clipboard = QApplication::clipboard();
+        clipboard->setText(text);
+    }
 }
 
 void MainWindowSatelliteComparator::send_roi_spectrs_to_matlab(
