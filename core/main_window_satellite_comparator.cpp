@@ -2707,6 +2707,37 @@ void MainWindowSatelliteComparator::show_roi_average_cati(const QString &id) {
     }
 }
 
+void MainWindowSatelliteComparator::show_roi_average_sen2cor(
+    const QString &id) {
+    auto polItem = ui->graphicsView_satellite_image->getPolygonById(id);
+    auto points = ui->graphicsView_satellite_image->getPointsInsidePolygon(
+        polItem, m_image_item);
+
+    if (!m_sen2cor_data.empty()) {
+        auto waves = getSentinelWaves();
+        QVector<double> ksys;
+        ksys.resize(10);
+        waves.resize(10);
+        for (int i = 0; i < points.size(); ++i) {
+            auto point = points[i];
+            auto sen2cor = getSen2CorKsy(point.x(), point.y());
+            sen2cor.resize(10);
+
+            for (int j = 0; j < 10; ++j) {
+                ksys[j] += sen2cor[j] / (double)points.size();
+            }
+        }
+        QString text = "//Sen2Cor\n";
+        for (int i = 0; i < ksys.size(); ++i) {
+            text += QString::number(waves[i]) + " " + QString::number(ksys[i]) +
+                    "\n";
+        }
+
+        QClipboard *clipboard = QApplication::clipboard();
+        clipboard->setText(text);
+    }
+}
+
 void MainWindowSatelliteComparator::send_roi_spectrs_to_matlab(
     const QString &id) {
     qDebug() << "слот для отправки спектрво в матлаб";
@@ -3012,6 +3043,8 @@ void MainWindowSatelliteComparator::setUpToolWidget() {
             SLOT(show_roi_average(const QString)));
     connect(m_layer_roi_list, SIGNAL(roiPolygonAverageCATI(const QString)),
             this, SLOT(show_roi_average_cati(const QString)));
+    connect(m_layer_roi_list, SIGNAL(roiPolygonAverageSen2Cor(const QString)),
+            this, SLOT(show_roi_average_sen2cor(const QString)));
     connect(m_layer_roi_list, SIGNAL(polygonForMatlabSelected(const QString)),
             this, SLOT(send_roi_spectrs_to_matlab(const QString)));
     connect(m_layer_roi_list, SIGNAL(createTimeRowGradient(const QString)),

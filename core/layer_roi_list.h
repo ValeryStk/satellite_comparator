@@ -16,6 +16,7 @@ signals:
     void roi_item_selected(const QString& id);
     void roiPolygonAverage(const QString& id);
     void roiPolygonAverageCATI(const QString& id);
+    void roiPolygonAverageSen2Cor(const QString& id);
     void createTimeRowGradient(const QString& id);
     void polygonForMatlabSelected(const QString& id);
     void changeDetectionRegion(const QString& id);
