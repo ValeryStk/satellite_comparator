@@ -2647,14 +2647,9 @@ void MainWindowSatelliteComparator::add_roi_to_gui_list(const QString &id) {
 }
 
 void MainWindowSatelliteComparator::show_roi_average(const QString &id) {
-    qDebug() << "TEST ROI POLYGON INTERSECTION CONNECTION....";
     auto polItem = ui->graphicsView_satellite_image->getPolygonById(id);
     auto points = ui->graphicsView_satellite_image->getPointsInsidePolygon(
         polItem, m_image_item);
-
-    // auto br = polItem->boundingRect();
-    // qDebug() << "bounding TL x -- y: " << br.x() << br.y();
-    // qDebug() << "bounding width -- height: " << br.width() << br.height();
 
     if (!m_sentinel_data.empty()) {
         QVector<double> ksys;
@@ -2671,14 +2666,13 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id) {
         auto waves = getSentinelKsy(0, 0).first;
         std::transform(ksys.begin(), ksys.end(), ksys.begin(),
                        [divisor](double val) { return val / divisor; });
-        QString text = "//Sen2Cor\n";
+        QString text = "//BaseSentinelKSY\n";
         for (int i = 0; i < ksys.size(); ++i) {
             text += QString::number(waves[i]) + " " + QString::number(ksys[i]) +
                     "\n";
         }
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
-        QThread::msleep(100);
     }
 }
 
