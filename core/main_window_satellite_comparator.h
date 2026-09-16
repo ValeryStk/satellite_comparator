@@ -106,6 +106,8 @@ private slots:
     //!
     void show_roi_average(const QString &id);
 
+    void show_roi_average_cati(const QString &id);
+
     //!
     //! \brief  Слот для отправки данных внутри региона интереса в матлаб
     //! \param id - идентификатор региона интереса

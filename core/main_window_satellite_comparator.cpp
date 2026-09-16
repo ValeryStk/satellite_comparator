@@ -2651,13 +2651,10 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id) {
     auto polItem = ui->graphicsView_satellite_image->getPolygonById(id);
     auto points = ui->graphicsView_satellite_image->getPointsInsidePolygon(
         polItem, m_image_item);
-    /*qDebug() << "POINTS SIZE: " << points.size();
-    for (int i = 0; i < points.size(); ++i) {
-        qDebug() << points[i].x() << points[i].y();
-    }*/
-    auto br = polItem->boundingRect();
-    qDebug() << "bounding TL x -- y: " << br.x() << br.y();
-    qDebug() << "bounding width -- height: " << br.width() << br.height();
+
+    // auto br = polItem->boundingRect();
+    // qDebug() << "bounding TL x -- y: " << br.x() << br.y();
+    // qDebug() << "bounding width -- height: " << br.width() << br.height();
 
     if (!m_sentinel_data.empty()) {
         QVector<double> ksys;
@@ -2674,18 +2671,27 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id) {
         auto waves = getSentinelKsy(0, 0).first;
         std::transform(ksys.begin(), ksys.end(), ksys.begin(),
                        [divisor](double val) { return val / divisor; });
-        QString text;
+        QString text = "//Sen2Cor\n";
         for (int i = 0; i < ksys.size(); ++i) {
             text += QString::number(waves[i]) + " " + QString::number(ksys[i]) +
                     "\n";
         }
-
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
+        QThread::msleep(100);
     }
+}
+
+void MainWindowSatelliteComparator::show_roi_average_cati(const QString &id) {
+    auto polItem = ui->graphicsView_satellite_image->getPolygonById(id);
+    auto points = ui->graphicsView_satellite_image->getPointsInsidePolygon(
+        polItem, m_image_item);
+
     if (!m_sen2cor_data.empty()) {
+        auto waves = getSentinelWaves();
         QVector<double> ksys;
         ksys.resize(10);
+        waves.resize(10);
         for (int i = 0; i < points.size(); ++i) {
             auto point = points[i];
             auto speya = getSentinelSpeyaValues(point.x(), point.y());
@@ -2698,7 +2704,8 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id) {
         }
         QString text = "//CATI\n";
         for (int i = 0; i < ksys.size(); ++i) {
-            text += QString::number(ksys[i]) + "\n";
+            text += QString::number(waves[i]) + " " + QString::number(ksys[i]) +
+                    "\n";
         }
 
         QClipboard *clipboard = QApplication::clipboard();
@@ -3009,6 +3016,8 @@ void MainWindowSatelliteComparator::setUpToolWidget() {
             SLOT(setRoiSelectEffect(const QString)));
     connect(m_layer_roi_list, SIGNAL(roiPolygonAverage(const QString)), this,
             SLOT(show_roi_average(const QString)));
+    connect(m_layer_roi_list, SIGNAL(roiPolygonAverageCATI(const QString)),
+            this, SLOT(show_roi_average_cati(const QString)));
     connect(m_layer_roi_list, SIGNAL(polygonForMatlabSelected(const QString)),
             this, SLOT(send_roi_spectrs_to_matlab(const QString)));
     connect(m_layer_roi_list, SIGNAL(createTimeRowGradient(const QString)),

@@ -9,6 +9,7 @@ namespace {
 
 const QString STR_CHNG_COLOR("Изменить цвет");
 const QString STR_AVG("Среднее арифметическое");
+const QString STR_AVG_CATI("Среднее арифметическое CATI");
 const QString STR_GRADIENT_V1("Градиент усыхания");
 const QString STR_GRADIENT_INDEXES("Градиент усыхания по индексам");
 const QString STR_SPETRA_PLOTTER("Анализ спектров");
@@ -24,6 +25,7 @@ QMenu *LayerRoiList::createContextMenu() {
     auto base_menu = LayerList::createContextMenu();
     base_menu->addAction(STR_CHNG_COLOR);
     base_menu->addAction(STR_AVG);
+    base_menu->addAction(STR_AVG_CATI);
     base_menu->addAction(STR_GRADIENT_V1);
     base_menu->addAction(STR_GRADIENT_INDEXES);
     base_menu->addAction(STR_SPETRA_PLOTTER);
@@ -42,8 +44,9 @@ void LayerRoiList::handle_other_contextAction(const QString &actionId,
             iut::createIcon(color.red(), color.green(), color.blue()));
         emit roi_color_changed(id, color);
     } else if (actionId == STR_AVG) {
-        qDebug() << "average...";
         emit roiPolygonAverage(id);
+    } else if (actionId == STR_AVG_CATI) {
+        emit roiPolygonAverageCATI(id);
     } else if (actionId == STR_GRADIENT_V1) {
         emit createTimeRowGradient(id);
     } else if (actionId == STR_GRADIENT_INDEXES) {
