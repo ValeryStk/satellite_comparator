@@ -110,6 +110,8 @@ private slots:
 
     void show_roi_average_sen2cor(const QString &id);
 
+    void set_roi_average_for_cati(const QString &id);
+
     //!
     //! \brief  Слот для отправки данных внутри региона интереса в матлаб
     //! \param id - идентификатор региона интереса

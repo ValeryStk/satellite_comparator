@@ -2738,6 +2738,28 @@ void MainWindowSatelliteComparator::show_roi_average_sen2cor(
     }
 }
 
+void MainWindowSatelliteComparator::set_roi_average_for_cati(
+    const QString &id) {
+    auto polItem = ui->graphicsView_satellite_image->getPolygonById(id);
+    auto points = ui->graphicsView_satellite_image->getPointsInsidePolygon(
+        polItem, m_image_item);
+    qDebug() << "set base pixel for CATI --------------------------->";
+    if (!m_sen2cor_data.empty()) {
+        QVector<double> aver_speya;
+        aver_speya.resize(10);
+        for (int i = 0; i < points.size(); ++i) {
+            auto point = points[i];
+            auto speya = getSentinelSpeyaValues(point.x(), point.y());
+            speya.resize(10);
+
+            for (int j = 0; j < 10; ++j) {
+                aver_speya[j] += speya[j] / (double)points.size();
+            }
+        }
+        m_ac.updateBasePixel(aver_speya);
+    }
+}
+
 void MainWindowSatelliteComparator::send_roi_spectrs_to_matlab(
     const QString &id) {
     qDebug() << "слот для отправки спектрво в матлаб";
@@ -3045,6 +3067,8 @@ void MainWindowSatelliteComparator::setUpToolWidget() {
             this, SLOT(show_roi_average_cati(const QString)));
     connect(m_layer_roi_list, SIGNAL(roiPolygonAverageSen2Cor(const QString)),
             this, SLOT(show_roi_average_sen2cor(const QString)));
+    connect(m_layer_roi_list, SIGNAL(roiPolygonAverageBaseCATI(const QString)),
+            this, SLOT(set_roi_average_for_cati(const QString)));
     connect(m_layer_roi_list, SIGNAL(polygonForMatlabSelected(const QString)),
             this, SLOT(send_roi_spectrs_to_matlab(const QString)));
     connect(m_layer_roi_list, SIGNAL(createTimeRowGradient(const QString)),
