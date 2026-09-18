@@ -2765,9 +2765,53 @@ void MainWindowSatelliteComparator::set_roi_average_for_cati(
 }
 
 void MainWindowSatelliteComparator::add_polygon_from_geo_route() {
-    qDebug() << "Add polygon from geo route.....";
-    emit setROIpolygonFromRoute(
-        {{200, 200}, {300, 200}, {300, 300}, {200, 300}});
+    qDebug() << "Parsing geo route from clipboard.....";
+
+    // Получаем текст из буфера обмена
+    QString clipboardText = QApplication::clipboard()->text().trimmed();
+    if (clipboardText.isEmpty()) {
+        qWarning() << "Clipboard is empty!";
+        return;
+    }
+
+    QVector<QPoint> pixels;
+    // Поддержка Qt 5 и Qt 6 для split
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    auto splitBehavior = Qt::SkipEmptyParts;
+#else
+    auto splitBehavior = QString::SplitBehavior::SkipEmptyParts;
+#endif
+    QStringList lines = clipboardText.split('\n', splitBehavior);
+    for (const QString &line : lines) {
+        // Разбиваем строку по пробельным символам
+        QStringList coordinates = line.simplified().split(' ', splitBehavior);
+
+        // Проверяем, что в строке ровно два числа (широта и долгота)
+        if (coordinates.size() == 2) {
+            bool okLat = false;
+            bool okLon = false;
+
+            double lat = coordinates[0].toDouble(&okLat);
+            double lon = coordinates[1].toDouble(&okLon);
+
+            if (okLat && okLon) {
+                // Преобразуем гео-координаты в пиксели и округляем до QPoint
+                QPointF pixelF = geoToPixel(lat, lon, m_geo);
+                pixels.append(pixelF.toPoint());
+            } else {
+                qWarning() << "Invalid number format in line:" << line;
+            }
+        } else {
+            qWarning() << "Invalid line format (expected 2 numbers):" << line;
+        }
+    }
+
+    // Если удалось распарсить точки, отправляем сигнал
+    if (!pixels.isEmpty()) {
+        emit setROIpolygonFromRoute(pixels);
+    } else {
+        qWarning() << "No valid coordinates found in clipboard.";
+    }
 }
 
 void MainWindowSatelliteComparator::send_roi_spectrs_to_matlab(
