@@ -50,6 +50,7 @@ private slots:
     void remove_roi_scene_layer(const QString& id);
     void changeRoiColor(const QString& roi_id, const QColor& new_color);
     void setRoiSelectEffect(const QString& roi_id);
+    void addPolygon(QVector<QPoint> points);
 };
 
 #endif  // SATELLITE_GRAPHICS_VIEW_H

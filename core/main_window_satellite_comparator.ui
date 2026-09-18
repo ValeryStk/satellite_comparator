@@ -179,6 +179,7 @@
     <addaction name="action_copy_pixel_Speya"/>
     <addaction name="action_copy_pixel_Ksy"/>
     <addaction name="action_copy_pixel_image_coord"/>
+    <addaction name="action_add_ROI_from_clippboard"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_3"/>
@@ -315,6 +316,11 @@
   <action name="action_copy_pixel_image_coord">
    <property name="text">
     <string>Копировать координату изображения</string>
+   </property>
+  </action>
+  <action name="action_add_ROI_from_clippboard">
+   <property name="text">
+    <string>Добавить область интереса из буфера обмена</string>
    </property>
   </action>
  </widget>

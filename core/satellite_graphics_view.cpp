@@ -66,6 +66,19 @@ QVector<QPoint> SatelliteGraphicsView::getPointsInsidePolygon(
     return pixelCoords;
 }
 
+void SatelliteGraphicsView::addPolygon(QVector<QPoint> points) {
+    // Создаем полигон на основе переданных точек
+    auto new_polygon = new QGraphicsPolygonItem(QPolygonF(points));
+
+    new_polygon->setBrush(QBrush(Qt::yellow, Qt::SolidPattern));
+    new_polygon->setZValue(getMaxZValue(scene()));
+    scene()->addItem(new_polygon);
+
+    auto stamp = QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
+    m_roi_polygons.insert(stamp, new_polygon);
+    emit roiPolygonAdded(stamp);
+}
+
 void SatelliteGraphicsView::setIsSignal(bool value) { isSignal = value; }
 
 void SatelliteGraphicsView::setUp(QGraphicsScene *scene) {
@@ -108,6 +121,7 @@ void SatelliteGraphicsView::keyPressEvent(QKeyEvent *event) {
         polygon.clear();
         polygonItem->setPolygon(polygon);
         polygonItem->setBrush(QBrush());
+        QGraphicsView::keyPressEvent(event);
     } else if (event->key() == Qt::Key_Return) {
         auto new_polygon = new QGraphicsPolygonItem(polygonItem->polygon());
         new_polygon->setBrush(QBrush(Qt::yellow, Qt::SolidPattern));
@@ -121,8 +135,6 @@ void SatelliteGraphicsView::keyPressEvent(QKeyEvent *event) {
         polygonItem->setPolygon(polygon);
         polygonItem->setBrush(QBrush());
     }
-
-    QGraphicsView::keyPressEvent(event);
 }
 
 void SatelliteGraphicsView::zoomIn() { scale(1.2, 1.2); }

@@ -57,6 +57,9 @@ public:
     //! Деструктор
     ~MainWindowSatelliteComparator();
 
+signals:
+    void setROIpolygonFromRoute(QVector<QPoint> route);
+
 private slots:
 
     void create_index_dynamic_maps(const QString &roiId);
@@ -111,6 +114,8 @@ private slots:
     void show_roi_average_sen2cor(const QString &id);
 
     void set_roi_average_for_cati(const QString &id);
+
+    void add_polygon_from_geo_route();
 
     //!
     //! \brief  Слот для отправки данных внутри региона интереса в матлаб

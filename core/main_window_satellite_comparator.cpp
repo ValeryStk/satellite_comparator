@@ -586,6 +586,10 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     connect(ui->graphicsView_satellite_image,
             SIGNAL(roiPolygonAdded(const QString)), this,
             SLOT(add_roi_to_gui_list(const QString)));
+    connect(this, SIGNAL(setROIpolygonFromRoute(QVector<QPoint>)),
+            ui->graphicsView_satellite_image,
+            SLOT(addPolygon(QVector<QPoint>)));
+
     connect(ui->widget_image_saturation_light_corrector,
             SIGNAL(slidersWereChanged()), SLOT(updateImage()));
 
@@ -2760,6 +2764,12 @@ void MainWindowSatelliteComparator::set_roi_average_for_cati(
     }
 }
 
+void MainWindowSatelliteComparator::add_polygon_from_geo_route() {
+    qDebug() << "Add polygon from geo route.....";
+    emit setROIpolygonFromRoute(
+        {{200, 200}, {300, 200}, {300, 300}, {200, 300}});
+}
+
 void MainWindowSatelliteComparator::send_roi_spectrs_to_matlab(
     const QString &id) {
     qDebug() << "слот для отправки спектрво в матлаб";
@@ -3252,6 +3262,8 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
 
     connect(ui->action_load_external_spectr, &QAction::triggered, this,
             &MainWindowSatelliteComparator::setExternalSampleFromClipboard);
+    connect(ui->action_add_ROI_from_clippboard, &QAction::triggered, this,
+            &MainWindowSatelliteComparator::add_polygon_from_geo_route);
 }
 
 void MainWindowSatelliteComparator::addBaseItemsToScene() {
