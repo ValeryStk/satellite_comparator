@@ -5919,3 +5919,11 @@ QGraphicsPixmapItem *MainWindowSatelliteComparator::buildGradientMaskItem(
     item->setZValue(ui->graphicsView_satellite_image->getMaxZValue(m_scene));
     return item;
 }
+
+void MainWindowSatelliteComparator::
+    on_action_load_hyper_spectral_data_triggered() {
+    const QString SignaturaPath = QDir(QCoreApplication::applicationDirPath())
+                                      .filePath("hypercube/BadForest.exe");
+
+    QDesktopServices::openUrl(QUrl::fromLocalFile(SignaturaPath));
+}
