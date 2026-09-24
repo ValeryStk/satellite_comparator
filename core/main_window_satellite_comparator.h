@@ -237,6 +237,8 @@ private slots:
 
     void basePixelAnalyzer();
 
+    void on_action_load_hyper_spectral_data_triggered();
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
