@@ -4780,6 +4780,8 @@ void MainWindowSatelliteComparator::loadSentinelSen2Cor() {
     QFile file(headerName);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "Не удалось открыть файл Sentinel XML";
+        uts::showWarnigMessage("Файл не доступен для чтения",
+                               "Проверьте путь к файлу и права доступа");
         return;
     }
     QDomDocument doc;
