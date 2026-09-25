@@ -124,7 +124,7 @@
      <x>0</x>
      <y>0</y>
      <width>811</width>
-     <height>26</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -176,9 +176,9 @@
     <addaction name="action_SpectraClassifer"/>
     <addaction name="action_setCursorByGeoCoord"/>
     <addaction name="action_copy_geo_coords"/>
+    <addaction name="action_copy_pixel_image_coord"/>
     <addaction name="action_copy_pixel_Speya"/>
     <addaction name="action_copy_pixel_Ksy"/>
-    <addaction name="action_copy_pixel_image_coord"/>
     <addaction name="action_add_ROI_from_clippboard"/>
    </widget>
    <addaction name="menu"/>

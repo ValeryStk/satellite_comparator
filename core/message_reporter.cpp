@@ -1,4 +1,4 @@
-﻿#include "message_reporter.h"
+#include "message_reporter.h"
 
 #include <stddef.h>
 
@@ -51,4 +51,20 @@ void showOkStatus() {
     showSimpleBox("Успеx", "Операция успешно выполнена.",
                   QMessageBox::Information);
 }
+
+void showOperationFailed() {
+    showSimpleBox("Не удалось выполнить операцию",
+                  "Пожалуйста, проверьте правильность введенных данных и "
+                  "повторите попытку. "
+                  "Если ошибка повторится, обратитесь в техническую поддержку.",
+                  QMessageBox::Warning);
+}
+
+void showNoDataAvailable() {
+    uts::showWarnigMessage(
+        "Изображение не доступно",
+        "Пожалуйста, проверьте загрузку данных. "
+        "Если ошибка повторится, обратитесь в техническую поддержку.");
+}
+
 }  // end namespace uts

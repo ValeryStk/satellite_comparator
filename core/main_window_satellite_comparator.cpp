@@ -558,8 +558,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 {
     ui->setupUi(this);
-    m_lattitude = 0.0;
-    m_longitude = 0.0;
+    m_lattitude = NAN;
+    m_longitude = NAN;
     m_is_external_spectr = false;
     m_label_scene_coord = new QLabel;
     m_label_date_time = new QLabel;
@@ -2526,8 +2526,7 @@ inline double MainWindowSatelliteComparator::calculateSpectralAngle(
 
 void MainWindowSatelliteComparator::showGoogleMap() {
     if (std::isnan(m_lattitude) || std::isnan(m_longitude)) {
-        uts::showWarnigMessage("Точка на карте не выбрана.",
-                               "Выберите точку на карте.");
+        uts::showNoDataAvailable();
         return;
     };
     std::string command = "start ";
@@ -3215,9 +3214,14 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
             SLOT(openTimeRowData()));
 
     connect(ui->action_copy_geo_coords, &QAction::triggered, this, [this]() {
+        if (std::isnan(m_lattitude) || std::isnan(m_longitude)) {
+            uts::showNoDataAvailable();
+            return;
+        };
         QString text = QString("%1 %2").arg(m_lattitude).arg(m_longitude);
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
+        uts::showOkStatus();
     });
 
     connect(ui->action_copy_pixel_Speya, &QAction::triggered, this, [this]() {
