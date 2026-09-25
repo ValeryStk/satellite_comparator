@@ -560,6 +560,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     ui->setupUi(this);
     m_lattitude = NAN;
     m_longitude = NAN;
+    m_x_image = -1;
+    m_y_image = -1;
     m_is_external_spectr = false;
     m_label_scene_coord = new QLabel;
     m_label_date_time = new QLabel;
@@ -3230,6 +3232,10 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
     });
 
     connect(ui->action_copy_pixel_Speya, &QAction::triggered, this, [this]() {
+        if (m_sentinel_data.empty() || m_x_image < 0 || m_y_image < 0) {
+            uts::showNoDataAvailable();
+            return;
+        }
         auto speya = getSentinelSpeyaValues(m_x_image, m_y_image);
         auto waves = getWaves();
         QString text;
@@ -3241,9 +3247,14 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
         }
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
+        uts::showOkStatus();
     });
 
     connect(ui->action_copy_pixel_Ksy, &QAction::triggered, this, [this]() {
+        if (m_sentinel_data.empty() || m_x_image < 0 || m_y_image < 0) {
+            uts::showNoDataAvailable();
+            return;
+        }
         auto ksy = getKsyValues(m_x_image, m_y_image);
         auto waves = getWaves();
         QString text;
@@ -3255,13 +3266,19 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
         }
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
+        uts::showOkStatus();
     });
 
     connect(ui->action_copy_pixel_image_coord, &QAction::triggered, this,
             [this]() {
+                if (m_sentinel_data.empty() || m_x_image < 0 || m_y_image < 0) {
+                    uts::showNoDataAvailable();
+                    return;
+                }
                 QString text("%1 %2");
                 QClipboard *clipboard = QApplication::clipboard();
                 clipboard->setText(text.arg(m_x_image).arg(m_y_image));
+                uts::showOkStatus();
             });
 
     connect(ui->action_spectral_indicies, &QAction::triggered, this,
