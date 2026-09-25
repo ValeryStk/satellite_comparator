@@ -1474,6 +1474,11 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
                  << "cosSun" << m_sentinel_metadata.cosSunZenithAngle;
     }
     // saveSentinelToGeoTiff(m_sentinel_data, m_geo, "slabodka");
+
+    auto x = m_sentinel_data[0].width / 2;
+    auto y = m_sentinel_data[0].height / 2;
+    samplePointOnSceneChangedEvent(QPointF(x, y));
+    centerSceneOnCrossSquare();
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(
@@ -4773,7 +4778,10 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         qDebug() << "sza" << sunZenitAngle << "saa" << sunAzimutAngle
                  << "cosSun" << m_sentinel_metadata.cosSunZenithAngle;
     }
-
+    auto x = m_sentinel_data[0].width / 2;
+    auto y = m_sentinel_data[0].height / 2;
+    samplePointOnSceneChangedEvent(QPointF(x, y));
+    centerSceneOnCrossSquare();
     // saveSentinelToGeoTiff(m_sentinel_data, m_geo, "test2.tiff");
 }
 
