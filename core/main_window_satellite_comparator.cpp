@@ -558,8 +558,10 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 
 {
     ui->setupUi(this);
-    m_lattitude = 0.0;
-    m_longitude = 0.0;
+    m_lattitude = NAN;
+    m_longitude = NAN;
+    m_x_image = -1;
+    m_y_image = -1;
     m_is_external_spectr = false;
     m_label_scene_coord = new QLabel;
     m_label_date_time = new QLabel;
@@ -616,6 +618,35 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
     delete ui;
     gdal_close_driver();
+}
+
+void MainWindowSatelliteComparator::openQStringInNotepad(const QString &text) {
+    // 1. Помещаем ваш QString в системный буфер обмена
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(text);
+
+    // 2. Запускаем стандартный Блокнот Windows (notepad.exe)
+    // Используем startDetached, чтобы Блокнот работал независимо от вашей
+    // программы
+    QProcess::startDetached("notepad.exe");
+
+    // 3. Небольшая пауза (например, 250 мс), чтобы Блокнот успел открыться и
+    // получить фокус
+    QThread::msleep(250);
+
+// 4. Эмулируем нажатие Ctrl+V для вставки текста из буфера
+// Для этого используем стандартное Windows API (требуется #include
+// <windows.h>)
+#ifdef Q_OS_WIN
+    // Нажимаем Ctrl
+    keybd_event(VK_CONTROL, 0, 0, 0);
+    // Нажимаем V
+    keybd_event('V', 0, 0, 0);
+    // Отпускаем V
+    keybd_event('V', 0, KEYEVENTF_KEYUP, 0);
+    // Отпускаем Ctrl
+    keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+#endif
 }
 
 void MainWindowSatelliteComparator::toggleMouseTracking() {
@@ -1474,6 +1505,11 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
                  << "cosSun" << m_sentinel_metadata.cosSunZenithAngle;
     }
     // saveSentinelToGeoTiff(m_sentinel_data, m_geo, "slabodka");
+
+    auto x = m_sentinel_data[0].width / 2;
+    auto y = m_sentinel_data[0].height / 2;
+    samplePointOnSceneChangedEvent(QPointF(x, y));
+    centerSceneOnCrossSquare();
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(
@@ -2526,8 +2562,7 @@ inline double MainWindowSatelliteComparator::calculateSpectralAngle(
 
 void MainWindowSatelliteComparator::showGoogleMap() {
     if (std::isnan(m_lattitude) || std::isnan(m_longitude)) {
-        uts::showWarnigMessage("Точка на карте не выбрана.",
-                               "Выберите точку на карте.");
+        uts::showNoDataAvailable();
         return;
     };
     std::string command = "start ";
@@ -3215,12 +3250,21 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
             SLOT(openTimeRowData()));
 
     connect(ui->action_copy_geo_coords, &QAction::triggered, this, [this]() {
+        if (std::isnan(m_lattitude) || std::isnan(m_longitude)) {
+            uts::showNoDataAvailable();
+            return;
+        };
         QString text = QString("%1 %2").arg(m_lattitude).arg(m_longitude);
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
+        uts::showOkStatus();
     });
 
     connect(ui->action_copy_pixel_Speya, &QAction::triggered, this, [this]() {
+        if (m_sentinel_data.empty() || m_x_image < 0 || m_y_image < 0) {
+            uts::showNoDataAvailable();
+            return;
+        }
         auto speya = getSentinelSpeyaValues(m_x_image, m_y_image);
         auto waves = getWaves();
         QString text;
@@ -3232,9 +3276,14 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
         }
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
+        uts::showOkStatus();
     });
 
     connect(ui->action_copy_pixel_Ksy, &QAction::triggered, this, [this]() {
+        if (m_sentinel_data.empty() || m_x_image < 0 || m_y_image < 0) {
+            uts::showNoDataAvailable();
+            return;
+        }
         auto ksy = getKsyValues(m_x_image, m_y_image);
         auto waves = getWaves();
         QString text;
@@ -3246,13 +3295,19 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
         }
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
+        uts::showOkStatus();
     });
 
     connect(ui->action_copy_pixel_image_coord, &QAction::triggered, this,
             [this]() {
+                if (m_sentinel_data.empty() || m_x_image < 0 || m_y_image < 0) {
+                    uts::showNoDataAvailable();
+                    return;
+                }
                 QString text("%1 %2");
                 QClipboard *clipboard = QApplication::clipboard();
                 clipboard->setText(text.arg(m_x_image).arg(m_y_image));
+                uts::showOkStatus();
             });
 
     connect(ui->action_spectral_indicies, &QAction::triggered, this,
@@ -4769,7 +4824,10 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         qDebug() << "sza" << sunZenitAngle << "saa" << sunAzimutAngle
                  << "cosSun" << m_sentinel_metadata.cosSunZenithAngle;
     }
-
+    auto x = m_sentinel_data[0].width / 2;
+    auto y = m_sentinel_data[0].height / 2;
+    samplePointOnSceneChangedEvent(QPointF(x, y));
+    centerSceneOnCrossSquare();
     // saveSentinelToGeoTiff(m_sentinel_data, m_geo, "test2.tiff");
 }
 
@@ -4780,6 +4838,8 @@ void MainWindowSatelliteComparator::loadSentinelSen2Cor() {
     QFile file(headerName);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "Не удалось открыть файл Sentinel XML";
+        uts::showWarnigMessage("Файл не доступен для чтения",
+                               "Проверьте путь к файлу и права доступа");
         return;
     }
     QDomDocument doc;
@@ -5489,6 +5549,8 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     } else {
         qDebug() << "[Warning] Clipboard is not available.";
     }
+
+    openQStringInNotepad(full_report);
 }
 
 void MainWindowSatelliteComparator::basePixelAnalyzer() {

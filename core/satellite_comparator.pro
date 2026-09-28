@@ -80,6 +80,8 @@ FORMS += \
     main_window_satellite_comparator.ui \
     sliders_of_image_corrector.ui
 
+win32: LIBS += -luser32
+
 # Копируем network_config.ini в папку с exe после сборки
 CONFIG_FILE = $$PWD/../config/network_config.ini
 QMAKE_POST_LINK += $$QMAKE_COPY \"$$shell_path($$CONFIG_FILE)\" \"$$shell_path($$OUT_PWD)\"

@@ -545,6 +545,8 @@ private:
                                const sad::geoTransform &gt,
                                const QString &outputFilePath);
 
+    void openQStringInNotepad(const QString &text);
+
     bool m_mouse_tracking_enabled = true;
     QShortcut *m_toggle_mouse_tracking_shortcut;
     AtmCorrectionMainWindow m_ac;

@@ -9,6 +9,8 @@ void showWarnigMessage(const QString& windowTitle, const QString& message);
 void showErrorMessage(const QString& windowTitle, const QString& message);
 void showInfoMessage(const QString& windowTitle, const QString& message);
 void showOkStatus();
+void showOperationFailed();
+void showNoDataAvailable();
 
 }  // end namespace uts
 
