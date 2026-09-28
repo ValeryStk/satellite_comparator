@@ -620,6 +620,35 @@ MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
     gdal_close_driver();
 }
 
+void MainWindowSatelliteComparator::openQStringInNotepad(const QString &text) {
+    // 1. Помещаем ваш QString в системный буфер обмена
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(text);
+
+    // 2. Запускаем стандартный Блокнот Windows (notepad.exe)
+    // Используем startDetached, чтобы Блокнот работал независимо от вашей
+    // программы
+    QProcess::startDetached("notepad.exe");
+
+    // 3. Небольшая пауза (например, 250 мс), чтобы Блокнот успел открыться и
+    // получить фокус
+    QThread::msleep(250);
+
+// 4. Эмулируем нажатие Ctrl+V для вставки текста из буфера
+// Для этого используем стандартное Windows API (требуется #include
+// <windows.h>)
+#ifdef Q_OS_WIN
+    // Нажимаем Ctrl
+    keybd_event(VK_CONTROL, 0, 0, 0);
+    // Нажимаем V
+    keybd_event('V', 0, 0, 0);
+    // Отпускаем V
+    keybd_event('V', 0, KEYEVENTF_KEYUP, 0);
+    // Отпускаем Ctrl
+    keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+#endif
+}
+
 void MainWindowSatelliteComparator::toggleMouseTracking() {
     m_mouse_tracking_enabled = !m_mouse_tracking_enabled;
     qDebug() << m_mouse_tracking_enabled << "- m_mouse_tracking_enabled";
@@ -5520,6 +5549,8 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     } else {
         qDebug() << "[Warning] Clipboard is not available.";
     }
+
+    openQStringInNotepad(full_report);
 }
 
 void MainWindowSatelliteComparator::basePixelAnalyzer() {
