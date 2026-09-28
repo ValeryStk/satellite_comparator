@@ -3154,8 +3154,12 @@ void MainWindowSatelliteComparator::setUpToolWidget() {
             SLOT(show_roi_average(const QString)));
     connect(m_layer_roi_list, SIGNAL(roiPolygonAverageCATI(const QString)),
             this, SLOT(show_roi_average_cati(const QString)));
+    connect(m_layer_roi_list, SIGNAL(saveCATIasGeoTiff(const QString)), this,
+            SLOT(save_cati_as_geotiff(const QString)));
+
     connect(m_layer_roi_list, SIGNAL(roiPolygonAverageSen2Cor(const QString)),
             this, SLOT(show_roi_average_sen2cor(const QString)));
+
     connect(m_layer_roi_list, SIGNAL(roiPolygonAverageBaseCATI(const QString)),
             this, SLOT(set_roi_average_for_cati(const QString)));
     connect(m_layer_roi_list, SIGNAL(polygonForMatlabSelected(const QString)),
@@ -5204,6 +5208,7 @@ void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
     if (m_sentinel_data.empty()) {
         qDebug() << "Create Image with Atm correction Failed.....Because "
                     "sentinel data EMPTY";
+        uts::showNoDataAvailable();
         return;
     };
     QtConcurrent::run([this]() {
@@ -5655,6 +5660,13 @@ void MainWindowSatelliteComparator::basePixelAnalyzer() {
     } else {
         qDebug() << "No valid vectors were processed.";
     }
+}
+
+void MainWindowSatelliteComparator::save_cati_as_geotiff(const QString id) {
+    qDebug() << "Check Geo tiff info...." << id;
+    auto polItem =
+        ui->graphicsView_satellite_image->getPolygonById(id)->boundingRect();
+    // createImageWithAtmCorrecton()
 }
 
 void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,

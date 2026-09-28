@@ -237,6 +237,8 @@ private slots:
 
     void basePixelAnalyzer();
 
+    void save_cati_as_geotiff(const QString id);
+
     void on_action_load_hyper_spectral_data_triggered();
 
 private:
