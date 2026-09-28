@@ -22,6 +22,7 @@ signals:
     void polygonForMatlabSelected(const QString& id);
     void changeDetectionRegion(const QString& id);
     void createTimeRowIndexesGradient(const QString& id);
+    void saveCATIasGeoTiff(const QString& id);
 
     // LayerList interface
 private:
