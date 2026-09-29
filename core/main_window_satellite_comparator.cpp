@@ -1504,7 +1504,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
         qDebug() << "sza" << sunZenitAngle << "saa" << sunAzimutAngle
                  << "cosSun" << m_sentinel_metadata.cosSunZenithAngle;
     }
-    // saveSentinelToGeoTiff(m_sentinel_data, m_geo, "slabodka");
+    saveSentinelToGeoTiff(m_sentinel_data, m_geo, "slabodka");
 
     auto x = m_sentinel_data[0].width / 2;
     auto y = m_sentinel_data[0].height / 2;
@@ -5038,68 +5038,6 @@ void MainWindowSatelliteComparator::setCursorByGeo() {
 }
 
 void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
-    /*QJsonObject jo_source;
-    QJsonObject satellites;
-    QJsonArray responses;
-    jsn::getJsonObjectFromFile(":/res/sd.json", jo_source);
-    QString str = QJsonDocument(jo_source).toJson(QJsonDocument::Indented);
-    qDebug() << "load external spectr from clipboard...." <<
-jo_source.keys(); satellites = jo_source["satellites"].toObject();
-
-    QVector<QVector<double>> result;
-    const QString path =
-        QApplication::applicationDirPath() + "/S2Cresponses.txt";
-    QFileInfo fi(path);
-    qDebug() << "is sentinel 2C exists: " << fi.isFile();
-    QFile file(path);
-
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qDebug() << "sentinel 2c file open error......";
-        return;
-    };
-
-    QTextStream in(&file);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    in.setCodec("UTF-8");
-#endif
-
-    while (!in.atEnd()) {
-        const QString line = in.readLine().trimmed();
-        if (line.isEmpty()) continue;
-
-        QStringList parts = line.split('\t');
-        if (parts.size() < 14) continue;
-        qDebug() << "--->" << parts;
-        parts.removeFirst();  // игнорируем первый столбец
-
-        QVector<double> row;
-        row.reserve(parts.size());
-        QJsonArray jarr;
-        for (const QString &s : qAsConst(parts)) {
-            bool ok = false;
-            double value = s.toDouble(&ok);
-            if (!ok) continue;  // или return result; если нужно строгое
-чтение row.push_back(value); jarr.append(value);
-        }
-
-        if (!row.isEmpty()) {
-            result.push_back(row);
-            responses.append(jarr);
-        }
-    }
-
-    qDebug() << "result size: " << result.size();
-    QJsonObject temp;
-    temp["responses"] = responses;
-    temp["alias"] = "SENTINEL 2C";
-    QJsonArray central_waves = {443, 490, 560, 665,  705,  740, 783,
-                                842, 865, 945, 1375, 1610, 2190};
-
-    temp["central_waves"] = central_waves;
-    satellites["sentinel2C"] = temp;
-    jo_source["satellites"] = satellites;
-    jsn::saveJsonObjectToFile(QApplication::applicationDirPath() +
-"/test.json", jo_source);*/
     // Очищаем векторы перед записью новых данных
     QVector<double> waves;
     QVector<double> valuesw;
