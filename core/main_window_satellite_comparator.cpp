@@ -1031,12 +1031,16 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
                m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2B ||
                m_satelite_type == sad::SATELLITE_TYPE::SENTINEL_2C) {
         if (m_is_bekas) {
+            QVector<double> cutted_data;
+            QVector<double> c_waves;
+            for (int i = 0; i < m_bekas_sample.size(); ++i) {
+                c_waves.push_back(m_sentinel_data[i].central_wave_length);
+                cutted_data.push_back(data[i]);
+            }
+            waves = c_waves;
+            trimmed_satellite_data = cutted_data;
             sample = m_bekas_sample;
-            waves = waves_sentinel_2c_5;
-            size_t elems_to_copy = std::min(static_cast<size_t>(data.size()),
-                                            static_cast<size_t>(9));
-            trimmed_satellite_data =
-                data.mid(0, static_cast<int>(elems_to_copy));
+            qDebug() << "BEKAS FOLDED";
         } else {
             QVector<double> c_waves;
             for (int i = 0; i < m_sentinel_data.size(); ++i) {
@@ -1045,6 +1049,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
             sample = m_sentinel_sample;
             waves = c_waves;
             trimmed_satellite_data = data;
+            qDebug() << "USUAL CASE WITHOUT FOLDED";
         }
     }
 
@@ -5040,7 +5045,7 @@ void MainWindowSatelliteComparator::setCursorByGeo() {
 void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
     // Очищаем векторы перед записью новых данных
     QVector<double> waves;
-    QVector<double> valuesw;
+    QVector<double> values;
 
     // 1. Забираем текст из системного буфера обмена
     QClipboard *clipboard = QApplication::clipboard();
@@ -5079,16 +5084,20 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
             // соответствующие векторы
             if (okWave && okVal) {
                 waves.append(wave);
-                valuesw.append(val);
+                values.append(val);
             } else {
                 qWarning() << "Не удалось распознать числа в строке:" << line;
             }
         }
     }
-
+    if (waves.empty() || values.empty() || waves.size() != values.size()) {
+        uts::showWarnigMessage("Ошибка разбора данных",
+                               "Внешний спектр не установлен");
+        return;
+    }
     qDebug() << "Считано точек:" << waves.size();
     m_is_bekas = true;
-    processBekasDataForComparing(waves, valuesw);
+    processBekasDataForComparing(waves, values);
     QString bekas_sample;
     for (int i = 0; i < m_bekas_sample.size(); ++i) {
         bekas_sample.append(QString::number(m_bekas_sample[i]));
