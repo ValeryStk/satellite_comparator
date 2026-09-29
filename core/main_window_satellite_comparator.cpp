@@ -1090,6 +1090,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         m_ac.showSentinelClassName(class_name);
     }
     m_ac.showAlbedoUnderCursor(speya_data, sen2cor_ksy, class_value);
+    speya_data.resize(waves.size());
     m_speya_plot->graph(0)->setData(waves, speya_data);
     m_speya_plot->rescaleAxes(true);
     m_speya_plot->replot();
