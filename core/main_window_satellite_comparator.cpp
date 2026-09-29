@@ -5178,12 +5178,12 @@ void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
 
         for (int i = 1000; i < 1300; ++i) {
             for (int j = 1000; j < 1300; ++j) {
-                auto ksy = getSentinelKsy(j, i);
-                ksy.second.resize(10);
-                m_ac.getAlbedoBySpeya(ksy.second);
-                BLUE_band = ksy.second[1];
-                GREEN_band = ksy.second[2];
-                RED_band = ksy.second[3];
+                auto speya = getSentinelSpeyaValues(j, i);
+                speya.resize(10);
+                auto result = m_ac.getAlbedoBySpeya(speya);
+                BLUE_band = result[1];
+                GREEN_band = result[2];
+                RED_band = result[3];
 
                 // Перевод нормированных 0..1 в RGB 0..255
                 int r = static_cast<int>(RED_band * 255);
@@ -5199,7 +5199,7 @@ void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
                 // Записываем пиксель в локальные координаты QImage (от 0 до
                 // 999)
                 img.setPixel(j - 1000, i - 1000, qRgb(r, g, b));
-                qDebug() << "pixel: " << i << " - " << j;
+                // qDebug() << "pixel: " << i << " - " << j;
             }
         }
 
@@ -5512,6 +5512,7 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     }
 
     openQStringInNotepad(full_report);
+    // createImageWithAtmCorrecton();
 }
 
 void MainWindowSatelliteComparator::basePixelAnalyzer() {
