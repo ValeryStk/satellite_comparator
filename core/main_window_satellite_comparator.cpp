@@ -1040,7 +1040,6 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
             waves = c_waves;
             trimmed_satellite_data = cutted_data;
             sample = m_bekas_sample;
-            qDebug() << "BEKAS FOLDED";
         } else {
             QVector<double> c_waves;
             for (int i = 0; i < m_sentinel_data.size(); ++i) {
@@ -1049,7 +1048,6 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
             sample = m_sentinel_sample;
             waves = c_waves;
             trimmed_satellite_data = data;
-            qDebug() << "USUAL CASE WITHOUT FOLDED";
         }
     }
 
@@ -3052,7 +3050,9 @@ void MainWindowSatelliteComparator::processLayer(uchar *layer, int xSize,
             if (m_is_bekas) {
                 size_t elems_to_copy = std::min(
                     static_cast<size_t>(ksy.size()),
-                    static_cast<size_t>(5));  // TO DO DEFINE NUMBER OF CHANNELS
+                    static_cast<size_t>(
+                        m_bekas_sample
+                            .size()));  // TO DO DEFINE NUMBER OF CHANNELS
                 std::vector<double> temp(ksy.begin(),
                                          ksy.begin() + elems_to_copy);
                 ksy = QVector<double>::fromStdVector(temp);
@@ -3066,6 +3066,8 @@ void MainWindowSatelliteComparator::processLayer(uchar *layer, int xSize,
                        satc::euclid_metrika) {
                 result = euclideanDistance(ksy, sample);
             }
+
+            // qDebug() << "FIND RESULT: " << result;
 
             layer[offset] = color.red();
             layer[offset + 1] = color.green();
