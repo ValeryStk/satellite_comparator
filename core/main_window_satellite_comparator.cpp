@@ -3379,14 +3379,17 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
     connect(ui->action_save_Sentinel_as_20_geotiff, &QAction::triggered, this,
             [this]() {
                 QDateTime dt;
-                QString fileName =
+                const QString fileName =
                     dt.currentDateTime().toString("yyyyMMdd_hhmmss");
+                const QString folderName = "exported_data";
+                QString fullPath = folderName + "/" + fileName;
                 QDir dir;
-                if (!dir.exists("exported_data")) dir.mkdir("exported_data");
+                if (!dir.exists(folderName)) dir.mkdir(folderName);
 
-                saveSentinelToGeoTiff(m_sentinel_data, m_geo,
-                                      "exported_data/" + fileName);
-                uts::showInfoMessage("Успех", fileName + " записан на диск.");
+                saveSentinelToGeoTiff(m_sentinel_data, m_geo, fullPath);
+                uts::showInfoMessage(
+                    "Успех",
+                    "Файл записан на диск.\n Путь к файлу: " + fullPath);
             });
 }
 
