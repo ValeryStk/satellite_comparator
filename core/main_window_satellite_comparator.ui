@@ -151,6 +151,12 @@
      </property>
      <addaction name="actionSentinel2_TOA"/>
     </widget>
+    <widget class="QMenu" name="menu_7">
+     <property name="title">
+      <string>Экспорт</string>
+     </property>
+     <addaction name="action_save_Sentinel_as_20_geotiff"/>
+    </widget>
     <addaction name="menu_2"/>
     <addaction name="actionBekas"/>
     <addaction name="action_LoadTimeRow"/>
@@ -158,6 +164,7 @@
     <addaction name="menu_6"/>
     <addaction name="action_load_hyper_spectral_data"/>
     <addaction name="action_load_external_spectr"/>
+    <addaction name="menu_7"/>
    </widget>
    <widget class="QMenu" name="menu_3">
     <property name="title">
@@ -321,6 +328,11 @@
   <action name="action_add_ROI_from_clippboard">
    <property name="text">
     <string>Добавить область интереса из буфера обмена</string>
+   </property>
+  </action>
+  <action name="action_save_Sentinel_as_20_geotiff">
+   <property name="text">
+    <string>Сохранить данные Sentinel как 20 м geotiff</string>
    </property>
   </action>
  </widget>

@@ -3375,6 +3375,19 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
             &MainWindowSatelliteComparator::setExternalSampleFromClipboard);
     connect(ui->action_add_ROI_from_clippboard, &QAction::triggered, this,
             &MainWindowSatelliteComparator::add_polygon_from_geo_route);
+
+    connect(ui->action_save_Sentinel_as_20_geotiff, &QAction::triggered, this,
+            [this]() {
+                QDateTime dt;
+                QString fileName =
+                    dt.currentDateTime().toString("yyyyMMdd_hhmmss");
+                QDir dir;
+                if (!dir.exists("exported_data")) dir.mkdir("exported_data");
+
+                saveSentinelToGeoTiff(m_sentinel_data, m_geo,
+                                      "exported_data/" + fileName);
+                uts::showInfoMessage("Успех", fileName + " записан на диск.");
+            });
 }
 
 void MainWindowSatelliteComparator::addBaseItemsToScene() {
