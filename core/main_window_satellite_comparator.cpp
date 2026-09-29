@@ -5048,23 +5048,13 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
 
     if (clipboardText.isEmpty()) {
         qWarning() << "Буфер обмена пуст!";
+        uts::showWarnigMessage("Внешний образец не установлен!",
+                               "Буфер обмена пуст.");
         return;
     }
 
-    // 2. Создаем поток для построчного чтения текста
     QTextStream stream(&clipboardText, QIODevice::ReadOnly);
 
-    // 3. Игнорируем первые 3 строки заголовка
-    /*for (int i = 0; i < 3; ++i) {
-        if (stream.atEnd()) {
-            qWarning() << "Ошибка: В буфере обмена слишком мало строк!";
-            return;
-        }
-        stream.readLine();
-    }*/
-
-    // 4. Принудительно используем точку '.' как разделитель дроби
-    // (C-локаль)
     QLocale cLocale(QLocale::C);
     bool okWave = false;
     bool okVal = false;
