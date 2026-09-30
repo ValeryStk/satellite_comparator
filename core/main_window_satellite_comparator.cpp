@@ -2724,7 +2724,7 @@ void MainWindowSatelliteComparator::show_roi_average_cati(const QString &id) {
     auto points = ui->graphicsView_satellite_image->getPointsInsidePolygon(
         polItem, m_image_item);
 
-    if (!m_sen2cor_data.empty()) {
+    if (!m_sentinel_data.empty()) {
         auto waves = getSentinelWaves();
         QVector<double> ksys;
         ksys.resize(10);
@@ -2747,6 +2747,7 @@ void MainWindowSatelliteComparator::show_roi_average_cati(const QString &id) {
 
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
+        openQStringInNotepad(text);
     }
 }
 
@@ -2778,6 +2779,7 @@ void MainWindowSatelliteComparator::show_roi_average_sen2cor(
 
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
+        openQStringInNotepad(text);
     }
 }
 
@@ -2786,8 +2788,9 @@ void MainWindowSatelliteComparator::set_roi_average_for_cati(
     auto polItem = ui->graphicsView_satellite_image->getPolygonById(id);
     auto points = ui->graphicsView_satellite_image->getPointsInsidePolygon(
         polItem, m_image_item);
+    auto waves = getSentinelWaves();
     qDebug() << "set base pixel for CATI --------------------------->";
-    if (!m_sen2cor_data.empty()) {
+    if (!m_sentinel_data.empty()) {
         QVector<double> aver_speya;
         aver_speya.resize(10);
         for (int i = 0; i < points.size(); ++i) {
@@ -2800,6 +2803,12 @@ void MainWindowSatelliteComparator::set_roi_average_for_cati(
             }
         }
         m_ac.updateBasePixel(aver_speya);
+        QString text = "//Average Speya CATI\n";
+        for (int i = 0; i < aver_speya.size(); ++i) {
+            text += QString::number(waves[i]) + " " +
+                    QString::number(aver_speya[i]) + "\n";
+        }
+        openQStringInNotepad(text);
     }
 }
 
