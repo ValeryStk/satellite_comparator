@@ -2780,6 +2780,8 @@ void MainWindowSatelliteComparator::show_roi_average_sen2cor(
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
         openQStringInNotepad(text);
+    } else {
+        uts::showNoDataAvailable();
     }
 }
 
