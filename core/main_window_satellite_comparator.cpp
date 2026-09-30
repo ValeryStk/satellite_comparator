@@ -2716,6 +2716,7 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id) {
         }
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
+        openQStringInNotepad(text);
     }
 }
 
