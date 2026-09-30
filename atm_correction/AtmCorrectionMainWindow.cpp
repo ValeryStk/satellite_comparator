@@ -20,7 +20,6 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AtmCorrectionMainWindow) {
     ui->setupUi(this);
     fitting_plot = nullptr;
-    ui->pushButton_create_Image->setVisible(false);
     m_central_waves.resize(SENTINEL_BANDS_NUMBER);
     atm_params_plot = ui->widget_atm_params;
     QColor bg(45, 45, 45);  // тёмно-серый
@@ -296,6 +295,8 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
             [this]() { emit calculateStatisticSen2Cor_CATI(); });
     connect(ui->action_find_base_pixels, &QAction::triggered,
             [this]() { emit findBasePixels(); });
+    connect(ui->action_save_atm_cor_as_RGB_image, &QAction::triggered,
+            [this]() { emit responseForCreatingImage(); });
 }
 
 AtmCorrectionMainWindow::~AtmCorrectionMainWindow() { delete ui; }
@@ -574,8 +575,4 @@ void AtmCorrectionMainWindow::copyDataFromPlotToClipboard(
     // Копируем полученный текст в буфер обмена
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(ksy_result);
-}
-
-void AtmCorrectionMainWindow::on_pushButton_create_Image_clicked() {
-    emit responseForCreatingImage();
 }

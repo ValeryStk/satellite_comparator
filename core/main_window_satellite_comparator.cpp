@@ -4857,6 +4857,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
     samplePointOnSceneChangedEvent(QPointF(x, y));
     centerSceneOnCrossSquare();
     // saveSentinelToGeoTiff(m_sentinel_data, m_geo, "test2.tiff");
+    // createImageWithAtmCorrecton();
 }
 
 // WIP (подгрузка данных Sentinel c коррекцией sen2cor для сравнения)
@@ -5160,58 +5161,49 @@ void MainWindowSatelliteComparator::onStretchParamsChanged() {
 }
 
 void MainWindowSatelliteComparator::createImageWithAtmCorrecton() {
-    // Запускаем весь процесс асинхронно в фоновом потоке
     if (m_sentinel_data.empty()) {
         qDebug() << "Create Image with Atm correction Failed.....Because "
                     "sentinel data EMPTY";
         uts::showNoDataAvailable();
         return;
-    };
-    QtConcurrent::run([this]() {
-        const int x = m_sentinel_data[0].width;
-        const int y = m_sentinel_data[0].height;
-        double BLUE_band = 0.0;
-        double GREEN_band = 0.0;
-        double RED_band = 0.0;
+    }
+    auto sd = m_sentinel_data[0];
+    const int width = sd.width;
+    const int height = sd.height;
+    const int startX = 0;
+    const int startY = 0;
 
-        QImage img(300, 300, QImage::Format_RGB32);
+    QImage img(width, height, QImage::Format_RGB32);
+    QVector<double> speya;
+    speya.resize(10);
 
-        for (int i = 1000; i < 1300; ++i) {
-            for (int j = 1000; j < 1300; ++j) {
-                auto speya = getSentinelSpeyaValues(j, i);
-                speya.resize(10);
-                auto result = m_ac.getAlbedoBySpeya(speya);
-                BLUE_band = result[1];
-                GREEN_band = result[2];
-                RED_band = result[3];
+    for (int i = 0; i < height; ++i) {
+        const int globalY = startY + i;
+        QRgb *scanline = reinterpret_cast<QRgb *>(img.scanLine(i));
 
-                // Перевод нормированных 0..1 в RGB 0..255
-                int r = static_cast<int>(RED_band * 255);
-                int g = static_cast<int>(GREEN_band * 255);
-                int b = static_cast<int>(BLUE_band * 255);
+        for (int j = 0; j < width; ++j) {
+            const int globalX = startX + j;
 
-                // Ограничиваем значения в диапазон 0..255 на случай выхода за
-                // 0..1
-                r = qBound(0, r, 255);
-                g = qBound(0, g, 255);
-                b = qBound(0, b, 255);
+            QVector<double> rawValues =
+                getSentinelSpeyaValues(globalX, globalY);
 
-                // Записываем пиксель в локальные координаты QImage (от 0 до
-                // 999)
-                img.setPixel(j - 1000, i - 1000, qRgb(r, g, b));
-                // qDebug() << "pixel: " << i << " - " << j;
+            for (int k = 0; k < 10; ++k) {
+                speya[k] = rawValues[k];
             }
-        }
+            auto result = m_ac.getAlbedoBySpeya(speya);
 
-        // Путь для сохранения во временную директорию ОС
-        QString filePath = QDir::tempPath() + "/sentinel_output.png";
+            int r = qBound(0, static_cast<int>(result[1] * 255), 255);
+            int g = qBound(0, static_cast<int>(result[2] * 255), 255);
+            int b = qBound(0, static_cast<int>(result[3] * 255), 255);
 
-        // Сохраняем картинку на диск
-        if (img.save(filePath)) {
-            // Открываем файл программой по умолчанию в ОС
-            QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
+            scanline[j] = qRgb(r, g, b);
         }
-    });
+    }
+
+    QString filePath = QDir::tempPath() + "/sentinel_output.png";
+    if (img.save(filePath)) {
+        QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
+    }
 }
 
 void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
