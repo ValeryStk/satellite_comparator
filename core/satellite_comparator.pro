@@ -20,6 +20,7 @@ include($$DAVIS_DIR/davis.pri)
 include($$MPFIT_DIR/mpfit_wrapper.pri)
 include($$BASE_DIR/image_utils/image_utils.pri)
 include($$ATM_CORR_DIR/atm_correction.pri)
+include($$COMMON_UTILS/common_utils.pri)
 
 SOURCES += \
     GeoPointFinder.cpp \

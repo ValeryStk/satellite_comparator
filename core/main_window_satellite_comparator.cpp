@@ -45,6 +45,7 @@
 #include "rgb_stretch.h"
 #include "sam.cpp"
 #include "satellite_xml_reader.h"
+#include "system_utils.h"
 #include "text_constants.h"
 #include "ui_main_window_satellite_comparator.h"
 #include "version.h"
@@ -2714,9 +2715,7 @@ void MainWindowSatelliteComparator::show_roi_average(const QString &id) {
             text += QString::number(waves[i]) + " " + QString::number(ksys[i]) +
                     "\n";
         }
-        QClipboard *clipboard = QApplication::clipboard();
-        clipboard->setText(text);
-        openQStringInNotepad(text);
+        su::openInNotepad(text);
     }
 }
 
@@ -2745,10 +2744,7 @@ void MainWindowSatelliteComparator::show_roi_average_cati(const QString &id) {
             text += QString::number(waves[i]) + " " + QString::number(ksys[i]) +
                     "\n";
         }
-
-        QClipboard *clipboard = QApplication::clipboard();
-        clipboard->setText(text);
-        openQStringInNotepad(text);
+        su::openInNotepad(text);
     }
 }
 
@@ -2777,10 +2773,7 @@ void MainWindowSatelliteComparator::show_roi_average_sen2cor(
             text += QString::number(waves[i]) + " " + QString::number(ksys[i]) +
                     "\n";
         }
-
-        QClipboard *clipboard = QApplication::clipboard();
-        clipboard->setText(text);
-        openQStringInNotepad(text);
+        su::openInNotepad(text);
     } else {
         uts::showNoDataAvailable();
     }
@@ -2811,7 +2804,7 @@ void MainWindowSatelliteComparator::set_roi_average_for_cati(
             text += QString::number(waves[i]) + " " +
                     QString::number(aver_speya[i]) + "\n";
         }
-        openQStringInNotepad(text);
+        su::openInNotepad(text);
     }
 }
 
@@ -5494,20 +5487,7 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     }  // Конец цикла по var
 
     report_stream.flush();
-
-    // Запись в системный буфер обмена
-    QClipboard *clipboard = QGuiApplication::clipboard();
-    if (clipboard) {
-        clipboard->clear();
-        clipboard->setText(full_report);
-        qDebug() << "[Success] Full report (" << full_report.size()
-                 << " characters) copied to clipboard!";
-    } else {
-        qDebug() << "[Warning] Clipboard is not available.";
-    }
-
-    openQStringInNotepad(full_report);
-    // createImageWithAtmCorrecton();
+    su::openInNotepad(full_report);
 }
 
 void MainWindowSatelliteComparator::basePixelAnalyzer() {
