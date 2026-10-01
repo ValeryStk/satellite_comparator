@@ -3397,11 +3397,14 @@ void MainWindowSatelliteComparator::makeConnectsForMenuActions() {
                 QString fullPath = folderName + "/" + fileName;
                 QDir dir;
                 if (!dir.exists(folderName)) dir.mkdir(folderName);
-
-                saveSentinelToGeoTiff(m_sentinel_data, m_geo, fullPath);
-                uts::showInfoMessage(
-                    "Успех",
-                    "Файл записан на диск.\n Путь к файлу: " + fullPath);
+                if (!m_sentinel_data.empty()) {
+                    saveSentinelToGeoTiff(m_sentinel_data, m_geo, fullPath);
+                    uts::showInfoMessage(
+                        "Успех",
+                        "Файл записан на диск.\n Путь к файлу: " + fullPath);
+                } else {
+                    uts::showNoDataAvailable();
+                }
             });
 }
 

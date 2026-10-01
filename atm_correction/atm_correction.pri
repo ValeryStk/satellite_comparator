@@ -13,6 +13,7 @@ SOURCES += \
     $$PWD/calculation_solver.cpp \
     $$PWD/AtmCorrectionMainWindow.cpp \
     $$CORE_DIR/satellites_structs.cpp \
+    $$CORE_DIR/message_reporter.cpp \
     $$PWD/bands_widget.cpp \
     $$CORE_DIR/qcustomplot.cpp \
     $$PWD/sentinel_fitting_evaluator.cpp \
@@ -26,6 +27,7 @@ HEADERS += \
     $$PWD/calculation_solver.h \
     $$PWD/AtmCorrectionMainWindow.h \
     $$CORE_DIR/satellite_structs.h \
+    $$CORE_DIR/message_reporter.h \
     $$PWD/bands_widget.h \
     $$CORE_DIR/qcustomplot.h \
 

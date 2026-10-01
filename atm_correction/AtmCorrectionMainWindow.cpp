@@ -5,6 +5,7 @@
 
 #include "QStringList"
 #include "double_delegate.cpp"
+#include "message_reporter.h"
 #include "satellites_structs.h"
 #include "sentinel_fitting_evaluator.cpp"
 #include "ui_AtmCorrectionMainWindow.h"
@@ -570,6 +571,8 @@ void AtmCorrectionMainWindow::copyDataFromPlotToClipboard(
         }
     } else {
         ksy_result = "График пуст или не существует.";
+        uts::showNoDataAvailable();
+        return;
     }
 
     // Копируем полученный текст в буфер обмена
