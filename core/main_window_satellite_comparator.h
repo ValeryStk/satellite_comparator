@@ -496,8 +496,7 @@ private:
     int extractUTMZoneFromXML(const QString &xmlFilePath,
                               sad::geoTransform &gt);
     QDateTime getDateTimeFromXML(const QString &xmlFilePath);
-    void getKSY(const QPointF &pos, QVector<double> &waves,
-                QVector<double> &ksy);
+
     QImage createModifiedImage(const QImage &img, double coefSat,
                                double coefLight);
     void initUdpRpcConnection();

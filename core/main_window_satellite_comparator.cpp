@@ -3724,14 +3724,6 @@ QDateTime MainWindowSatelliteComparator::getDateTimeFromXML(
     return dt;
 }
 
-void MainWindowSatelliteComparator::getKSY(const QPointF &pos,
-                                           QVector<double> &waves,
-                                           QVector<double> &ksy) {
-    Q_UNUSED(pos)
-    Q_UNUSED(waves)
-    Q_UNUSED(ksy)
-}
-
 QImage MainWindowSatelliteComparator::createModifiedImage(const QImage &img,
                                                           double coefSat,
                                                           double coefLight) {
