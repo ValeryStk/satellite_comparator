@@ -8,6 +8,7 @@
 #include "message_reporter.h"
 #include "satellites_structs.h"
 #include "sentinel_fitting_evaluator.cpp"
+#include "system_utils.h"
 #include "ui_AtmCorrectionMainWindow.h"
 
 QVector<QColor> channelColors = {
@@ -291,7 +292,6 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
             [this]() { copyDataFromPlotToClipboard(11); });
     connect(ui->action_Sen2Cor, &QAction::triggered,
             [this]() { copyDataFromPlotToClipboard(12); });
-    // calculateStatisticSen2Cor_CATI(
     connect(ui->action_Sen2Cor_CATI, &QAction::triggered,
             [this]() { emit calculateStatisticSen2Cor_CATI(); });
     connect(ui->action_find_base_pixels, &QAction::triggered,
@@ -559,23 +559,20 @@ void AtmCorrectionMainWindow::updateInitialValues() {
 void AtmCorrectionMainWindow::copyDataFromPlotToClipboard(
     const int plotNumber) {
     QString ksy_result;
+    if (plotNumber == 11) ksy_result.prepend("//CATI\n");
+    if (plotNumber == 12) ksy_result.prepend("//Sen2Cor\n");
     QCPGraph *graph = atm_params_plot->graph(plotNumber);
 
     if (graph && !graph->data()->isEmpty()) {
         // Проходим по всем точкам данных графика
         for (auto it = graph->data()->constBegin();
              it != graph->data()->constEnd(); ++it) {
-            // Форматируем строку: "X \t Y \n" (табуляция удобна для вставки в
-            // Excel)
             ksy_result += QString("%1\t%2\n").arg(it->key).arg(it->value);
         }
     } else {
-        ksy_result = "График пуст или не существует.";
         uts::showNoDataAvailable();
         return;
     }
 
-    // Копируем полученный текст в буфер обмена
-    QClipboard *clipboard = QApplication::clipboard();
-    clipboard->setText(ksy_result);
+    su::openInNotepad(ksy_result);
 }

@@ -5,3 +5,5 @@ SOURCES += \
 
 HEADERS += \
     $$PWD/system_utils.h \
+
+win32: LIBS += -luser32

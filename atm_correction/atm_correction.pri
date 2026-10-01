@@ -2,6 +2,7 @@ QT+=core gui widgets concurrent
 include(../pathes.pri)
 include($$MPFIT_DIR/mpfit_wrapper.pri)
 include(resources.pri)
+include($$COMMON_UTILS/common_utils.pri)
 
 INCLUDEPATH += $$PWD
 INCLUDEPATH += $$CORE_DIR
