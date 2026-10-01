@@ -4757,8 +4757,6 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
     }
     qDebug() << "filtered files:" << filteredFiles;
 
-    // title_satellite_name->setText(satellite_name);
-
     for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
         QString target = "_" + sad::sentinel_bands_keys[i];
         QStringList list = filteredFiles.filter(target);
@@ -4868,11 +4866,9 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
     auto y = m_sentinel_data[0].height / 2;
     samplePointOnSceneChangedEvent(QPointF(x, y));
     centerSceneOnCrossSquare();
-    // saveSentinelToGeoTiff(m_sentinel_data, m_geo, "test2.tiff");
-    // createImageWithAtmCorrecton();
 }
 
-// WIP (подгрузка данных Sentinel c коррекцией sen2cor для сравнения)
+// подгрузка данных Sentinel c коррекцией sen2cor для сравнения
 void MainWindowSatelliteComparator::loadSentinelSen2Cor() {
     QString headerName = getPathToSentinelHeader(this, "Sen2Cor");
 
