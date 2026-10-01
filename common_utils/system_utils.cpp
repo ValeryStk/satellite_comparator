@@ -22,7 +22,7 @@ void openInNotepad(const QString &text) {
     QProcess::startDetached("notepad.exe");
 
     // 3. Пауза, чтобы Блокнот успел открыться и получить фокус
-    QThread::msleep(250);
+    QThread::msleep(500);
 
     // 4. Эмулируем нажатие Ctrl+V для вставки текста из буфера
 #ifdef Q_OS_WIN

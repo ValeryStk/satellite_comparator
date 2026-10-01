@@ -426,7 +426,6 @@
      <string>Инструменты</string>
     </property>
     <addaction name="action_show_fitting_graph"/>
-    <addaction name="action_sen2cor"/>
     <addaction name="action_CATI"/>
     <addaction name="action_Sen2Cor"/>
     <addaction name="action_Sen2Cor_CATI"/>
@@ -436,6 +435,7 @@
     <property name="title">
      <string>Файл</string>
     </property>
+    <addaction name="action_sen2cor"/>
     <addaction name="action_save_atm_cor_as_RGB_image"/>
    </widget>
    <addaction name="menu_2"/>
@@ -469,7 +469,7 @@
   </action>
   <action name="action_find_base_pixels">
    <property name="text">
-    <string>Найти базовые пиксели</string>
+    <string>Найти базовый пиксель (линейный способ)</string>
    </property>
   </action>
   <action name="action_save_atm_cor_as_RGB_image">
