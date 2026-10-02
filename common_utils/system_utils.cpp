@@ -2,7 +2,10 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QDir>
+#include <QFileInfo>
 #include <QProcess>
+#include <QTemporaryFile>
 #include <QThread>
 
 #ifdef Q_OS_WIN
@@ -18,23 +21,14 @@ void openInNotepad(const QString &text) {
         clipboard->setText(text);
     }
 
-    // 2. Запускаем стандартный Блокнот Windows (notepad.exe)
-    QProcess::startDetached("notepad.exe");
+    QTemporaryFile *tempFile = new QTemporaryFile();
+    tempFile->setFileTemplate(QDir::tempPath() + "/notepad_temp.txt");
 
-    // 3. Пауза, чтобы Блокнот успел открыться и получить фокус
-    QThread::msleep(500);
-
-    // 4. Эмулируем нажатие Ctrl+V для вставки текста из буфера
-#ifdef Q_OS_WIN
-    // Нажимаем Ctrl
-    keybd_event(VK_CONTROL, 0, 0, 0);
-    // Нажимаем V
-    keybd_event('V', 0, 0, 0);
-    // Отпускаем V
-    keybd_event('V', 0, KEYEVENTF_KEYUP, 0);
-    // Отпускаем Ctrl
-    keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
-#endif
+    if (tempFile->open()) {
+        tempFile->write(text.toUtf8());
+        tempFile->close();
+        QProcess::startDetached("notepad.exe", QStringList()
+                                                   << tempFile->fileName());
+    }
 }
-
 }  // namespace su
