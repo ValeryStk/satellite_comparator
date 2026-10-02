@@ -319,6 +319,12 @@ void AtmCorrectionMainWindow::setCaptureAzimutAngle(const double value) {
 }
 
 void AtmCorrectionMainWindow::on_pushButton_calculateBlack_clicked() {
+    if (!isTOASentinelLoaded) {
+        uts::showInfoMessage(
+            "Файл не загружен!",
+            "Пожалуйста, загрузите файл без атмосферной коррекции.");
+        return;
+    }
     cs->setSunZenitAngle(ui->doubleSpinBox_sunZenitAngle->value());
     cs->setCaptruretZenitAngle(ui->doubleSpinBox_CaptureZenitAngle->value());
     cs->setFiAngle(ui->doubleSpinBox_sunAzimutAngle->value(),
@@ -451,8 +457,19 @@ void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
     atm_params_plot->rescaleAxes(true);
 }
 
+void AtmCorrectionMainWindow::setIsTOASentinelLoaded(
+    bool newIsTOASentinelLoaded) {
+    isTOASentinelLoaded = newIsTOASentinelLoaded;
+}
+
 void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
-    if (pixel_bands.size() < 10) return;
+    if (!isTOASentinelLoaded) return;
+    if (pixel_bands.size() < 10) {
+        QString message = "факт %1, должно быть 10";
+        uts::showInfoMessage("неверное количество каналов",
+                             message.arg(pixel_bands.size()));
+        return;
+    }
 
     base_pixel_speya_values.clear();
     for (int i = 0; i < 10; ++i) {
@@ -476,6 +493,9 @@ void AtmCorrectionMainWindow::updateBasePixel(QVector<double> pixel_bands) {
     cs->setH2O(T_H2O);
     atm_params_plot->rescaleAxes();
     atm_params_plot->replot();
+    uts::showInfoMessage("Базовый пиксель установлен.",
+                         "Для проведения предварительного расчёта атмосферной "
+                         "коррекции нажмите кнопку \"Расчитать.\"");
 }
 
 void AtmCorrectionMainWindow::updateSatelliteType(const QString &satName) {

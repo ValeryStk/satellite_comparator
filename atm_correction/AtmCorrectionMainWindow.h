@@ -32,6 +32,8 @@ public:
     void showSentinelClassName(const QString className);
     QVector<double> calculateAlbedo(QVector<double> speya, int classNum = 0);
 
+    void setIsTOASentinelLoaded(bool newIsTOASentinelLoaded);
+
 private slots:
     void on_pushButton_calculateBlack_clicked();
     void showResult(result_values);
@@ -39,6 +41,7 @@ private slots:
 
 private:
     Ui::AtmCorrectionMainWindow* ui;
+    bool isTOASentinelLoaded = false;
     BandsWidget* bands_widget;
     QCustomPlot* atm_params_plot;
     QVector<double> m_central_waves;

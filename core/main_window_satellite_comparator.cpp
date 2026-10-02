@@ -4854,6 +4854,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
     auto y = m_sentinel_data[0].height / 2;
     samplePointOnSceneChangedEvent(QPointF(x, y));
     centerSceneOnCrossSquare();
+    m_ac.setIsTOASentinelLoaded(true);
 }
 
 // подгрузка данных Sentinel c коррекцией sen2cor для сравнения
@@ -5207,6 +5208,7 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
     qDebug() << "Total sen2cor data size:" << m_sen2cor_data.size();
     if (m_sen2cor_data.size() < 10 || m_sentinel_data.size() < 10) {
         qDebug() << "Size is less than required";
+        uts::showNoDataAvailable();
         return;
     }
 
@@ -5494,6 +5496,7 @@ void MainWindowSatelliteComparator::basePixelAnalyzer() {
     qDebug() << "................. BASE PIXEL ANALYZER ...............";
     qDebug() << "Total sentinel data size:" << m_sentinel_data.size();
     if (m_sentinel_data.size() < 10) {
+        uts::showNoDataAvailable();
         return;
     }
     const int width = m_sentinel_data[0].width;
