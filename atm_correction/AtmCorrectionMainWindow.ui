@@ -418,7 +418,7 @@
      <x>0</x>
      <y>0</y>
      <width>480</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -437,6 +437,7 @@
     </property>
     <addaction name="action_sen2cor"/>
     <addaction name="action_save_atm_cor_as_RGB_image"/>
+    <addaction name="action_save_as_GeoTiff_with_CATI"/>
    </widget>
    <addaction name="menu_2"/>
    <addaction name="menu"/>
@@ -475,6 +476,11 @@
   <action name="action_save_atm_cor_as_RGB_image">
    <property name="text">
     <string>Сохранить RGB изображение с атмосферной коррекцией</string>
+   </property>
+  </action>
+  <action name="action_save_as_GeoTiff_with_CATI">
+   <property name="text">
+    <string>Сохранить как GeoTiff с коррекцией CATI</string>
    </property>
   </action>
  </widget>

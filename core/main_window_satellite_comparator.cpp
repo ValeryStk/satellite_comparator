@@ -614,6 +614,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     connect(&m_ac, SIGNAL(calculateStatisticSen2Cor_CATI()), this,
             SLOT(calculateSen2CorCATIaccuracy()));
     connect(&m_ac, SIGNAL(findBasePixels()), this, SLOT(basePixelAnalyzer()));
+    connect(&m_ac, &AtmCorrectionMainWindow::responseForSavingCATItoGeoTiff,
+            this, &MainWindowSatelliteComparator::saveCATIasGeoTiff);
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
@@ -5602,6 +5604,50 @@ void MainWindowSatelliteComparator::save_cati_as_geotiff(const QString id) {
     auto polItem =
         ui->graphicsView_satellite_image->getPolygonById(id)->boundingRect();
     // createImageWithAtmCorrecton()
+}
+
+void MainWindowSatelliteComparator::saveCATIasGeoTiff() {
+    qDebug() << "Check SAVE ALL IMAGE CATI TO Geo tiff";
+    if (m_sentinel_data.empty()) {
+        uts::showNoDataAvailable();
+        return;
+    }
+    if (!m_ac.getIsBasePixelChoosedAndProcessed()) {
+        uts::showInfoMessage(
+            "Базовый пиксель не расчитан.",
+            "Выберите базовый пиксель и нажмите кнопку расчитать.");
+        return;
+    };
+
+    int width = m_sentinel_data[0].width;
+    int height = m_sentinel_data[0].height;
+    qDebug() << "CATI size: " << width * height;
+    QVector<sad::BAND_DATA> temp_cati(10);
+    qDebug() << "TempCati size: " << temp_cati.size();
+    for (int i = 0; i < 10; ++i) {
+        temp_cati[i].resolution_in_pixel_meters =
+            m_sentinel_data[i].resolution_in_pixel_meters;
+        temp_cati[i].gui_name = m_sentinel_data[i].gui_name;
+        temp_cati[i].width = width;
+        temp_cati[i].height = height;
+        temp_cati[i].data = new uint16_t[width * height]{};
+    }
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            auto speya = getSentinelSpeyaValues(j, i);
+            auto ksy_value = m_ac.calculateAlbedo(speya);  //*10000 +1000
+            for (int k = 0; k < 10; ++k) {
+                double value = ksy_value[k] * 10000 + 1000;
+                uint16_t uvalue = static_cast<uint16_t>(value);
+                temp_cati[k].data[(i * width) + j] = uvalue;
+            }
+        }
+    }
+    saveSentinelToGeoTiff(temp_cati, m_geo, "cati");
+    for (int i = 0; i < temp_cati.size(); ++i) {
+        delete[] temp_cati[i].data;
+        temp_cati[i].data = nullptr;
+    }
 }
 
 void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,

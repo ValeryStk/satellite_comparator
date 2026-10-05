@@ -298,6 +298,9 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
             [this]() { emit findBasePixels(); });
     connect(ui->action_save_atm_cor_as_RGB_image, &QAction::triggered,
             [this]() { emit responseForCreatingImage(); });
+    connect(
+        ui->action_save_as_GeoTiff_with_CATI, &QAction::triggered,
+        [this]() { emit responseForSavingCATItoGeoTiff(QPrivateSignal()); });
 }
 
 AtmCorrectionMainWindow::~AtmCorrectionMainWindow() { delete ui; }
@@ -370,6 +373,7 @@ void AtmCorrectionMainWindow::showResult(result_values rv) {
     qDebug() << "Статус мягкой проверки фитинга: "
              << evaluator.evaluateSoftFit(base_pixel_speya_values.toStdVector(),
                                           rv.fitted_speya);
+    isBasePixelProcessed = true;
 }
 
 void AtmCorrectionMainWindow::showAlbedoUnderCursor(
@@ -455,6 +459,14 @@ void AtmCorrectionMainWindow::on_comboBox_satellite_type_currentIndexChanged(
 
     atm_params_plot->replot();
     atm_params_plot->rescaleAxes(true);
+}
+
+bool AtmCorrectionMainWindow::getIsTOASentinelLoaded() const {
+    return isTOASentinelLoaded;
+}
+
+bool AtmCorrectionMainWindow::getIsBasePixelChoosedAndProcessed() const {
+    return !base_pixel_speya_values.empty() && isBasePixelProcessed;
 }
 
 void AtmCorrectionMainWindow::setIsTOASentinelLoaded(

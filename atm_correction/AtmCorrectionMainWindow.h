@@ -34,6 +34,9 @@ public:
 
     void setIsTOASentinelLoaded(bool newIsTOASentinelLoaded);
 
+    bool getIsTOASentinelLoaded() const;
+    bool getIsBasePixelChoosedAndProcessed() const;
+
 private slots:
     void on_pushButton_calculateBlack_clicked();
     void showResult(result_values);
@@ -42,6 +45,7 @@ private slots:
 private:
     Ui::AtmCorrectionMainWindow* ui;
     bool isTOASentinelLoaded = false;
+    bool isBasePixelProcessed = false;
     BandsWidget* bands_widget;
     QCustomPlot* atm_params_plot;
     QVector<double> m_central_waves;
@@ -66,6 +70,7 @@ signals:
                       const QVector<double>& dark_pixels);
     void responseForCreatingImage();
     void responseForLoadingSen2CorData();
+    void responseForSavingCATItoGeoTiff(QPrivateSignal);
     void calculateStatisticSen2Cor_CATI();
     void findBasePixels();
 };
