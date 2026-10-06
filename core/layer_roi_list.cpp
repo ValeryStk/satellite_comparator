@@ -31,7 +31,7 @@ QMenu *LayerRoiList::createContextMenu() {
     base_menu->addAction(STR_AVG_CATI);
     base_menu->addAction(STR_AVG_Sen2Cor);
     base_menu->addAction(STR_AVG_base_CATI);
-    base_menu->addAction(STR_SAVE_CATI_as_GEOTIFF);
+    // base_menu->addAction(STR_SAVE_CATI_as_GEOTIFF);
     base_menu->addAction(STR_GRADIENT_V1);
     base_menu->addAction(STR_GRADIENT_INDEXES);
     base_menu->addAction(STR_SPETRA_PLOTTER);
