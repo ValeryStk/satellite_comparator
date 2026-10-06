@@ -5643,7 +5643,13 @@ void MainWindowSatelliteComparator::saveCATIasGeoTiff() {
             }
         }
     }
-    saveSentinelToGeoTiff(temp_cati, m_geo, "cati");
+    QString dtS;
+    if (m_label_date_time) {
+        dtS = m_label_date_time->text();
+    }
+    QDateTime dt = QDateTime::fromString(dtS, "yyyy/MM/dd hh:mm:ss");
+    dtS = dt.toString("yyyyMMdd_hhmmss");
+    saveSentinelToGeoTiff(temp_cati, m_geo, dtS + "_cati.tiff");
     for (int i = 0; i < temp_cati.size(); ++i) {
         delete[] temp_cati[i].data;
         temp_cati[i].data = nullptr;
