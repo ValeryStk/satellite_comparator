@@ -1811,8 +1811,35 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod(
             m_sentinel_metadata.image_attributes.date_acquired);
         label->setAttribute(Qt::WA_DeleteOnClose);
         label->setScaledContents(true);
-        label->setPixmap(change_detection_future->result());
+        auto pixMap = change_detection_future->result();
+        label->setPixmap(pixMap);
         label->show();
+        auto polItem =
+            ui->graphicsView_satellite_image->getPolygonById(polygonId);
+        auto br = polItem->boundingRect();
+        auto new_image_item = new QGraphicsPixmapItem(pixMap);
+        new_image_item->setZValue(
+            ui->graphicsView_satellite_image->getMaxZValue(m_scene));
+        // 1. Переводим верхний левый угол bounding-бокса из локальных координат
+        // полигона в координаты сцены
+        QPointF scenePos = polItem->mapToScene(br.topLeft());
+
+        // 2. Устанавливаем позицию нового элемента на сцене
+        new_image_item->setPos(scenePos);
+        m_scene->addItem(new_image_item);
+        ui->graphicsView_satellite_image->centerOn(m_scene_cross_square_item);
+
+        const QString searchParams =
+            m_comboBox_calculation_method->currentText() + ": " +
+            QString::number(euclid_param_spinbox->value());
+        auto stamp =
+            QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
+        m_layers_search_result_items.insert(stamp, new_image_item);
+        m_layer_gui_list->addItemToList(stamp, searchParams, QColor());
+        GeoTiffClassLegend searchLegend;
+        searchLegend.append({QColor(), searchParams});
+        m_layer_legends.insert(stamp, searchLegend);
+
         change_detection_future->deleteLater();
     });
 
