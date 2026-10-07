@@ -1805,39 +1805,26 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod(
     qDebug() << "SWIR3" << m_sentinel_data[10].gui_name;
 
     connect(change_detection_future, &QFutureWatcher<QPixmap>::finished, [=]() {
-        QLabel *label = new QLabel;
-        label->setWindowTitle(
-            date_time_str + " --- " +
-            m_sentinel_metadata.image_attributes.date_acquired);
-        label->setAttribute(Qt::WA_DeleteOnClose);
-        label->setScaledContents(true);
         auto pixMap = change_detection_future->result();
-        label->setPixmap(pixMap);
-        label->show();
         auto polItem =
             ui->graphicsView_satellite_image->getPolygonById(polygonId);
         auto br = polItem->boundingRect();
         auto new_image_item = new QGraphicsPixmapItem(pixMap);
         new_image_item->setZValue(
             ui->graphicsView_satellite_image->getMaxZValue(m_scene));
-        // 1. Переводим верхний левый угол bounding-бокса из локальных координат
-        // полигона в координаты сцены
+
         QPointF scenePos = polItem->mapToScene(br.topLeft());
 
-        // 2. Устанавливаем позицию нового элемента на сцене
         new_image_item->setPos(scenePos);
         m_scene->addItem(new_image_item);
-        ui->graphicsView_satellite_image->centerOn(m_scene_cross_square_item);
+        ui->graphicsView_satellite_image->centerOn(new_image_item);
 
-        const QString searchParams =
-            m_comboBox_calculation_method->currentText() + ": " +
-            QString::number(euclid_param_spinbox->value());
         auto stamp =
             QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
         m_layers_search_result_items.insert(stamp, new_image_item);
-        m_layer_gui_list->addItemToList(stamp, searchParams, QColor());
+        m_layer_gui_list->addItemToList(stamp, "", QColor());
         GeoTiffClassLegend searchLegend;
-        searchLegend.append({QColor(), searchParams});
+        searchLegend.append({QColor(), ""});
         m_layer_legends.insert(stamp, searchLegend);
 
         change_detection_future->deleteLater();
@@ -1944,11 +1931,11 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod(
         }
 
         QImage img(data, nXSize, nYSize, nXSize * 3, QImage::Format_RGB888);
-        img.save("last_change_detection.png", "PNG");
-        QImage imgCopy = img;
-        applyContrast(imgCopy, 0.6);
-        imgCopy.save(QApplication::applicationDirPath() + "/cd_contrasted.png");
-        openImageByDesktop("cd_contrasted.png");
+        // img.save("last_change_detection.png", "PNG");
+        // QImage imgCopy = img;
+        // applyContrast(imgCopy, 0.6);
+        // imgCopy.save(QApplication::applicationDirPath() +
+        // "/cd_contrasted.png"); openImageByDesktop("cd_contrasted.png");
         QPixmap pixmap = QPixmap::fromImage(img);
         delete[] data;
         delete[] dataCloudMask;
