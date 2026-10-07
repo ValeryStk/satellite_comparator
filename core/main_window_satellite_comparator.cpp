@@ -1821,6 +1821,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod(
 
         auto stamp =
             QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
+        stamp += "change_detection";
         m_layers_search_result_items.insert(stamp, new_image_item);
         m_layer_gui_list->addItemToList(stamp, "", QColor());
         GeoTiffClassLegend searchLegend;
@@ -2695,6 +2696,10 @@ void MainWindowSatelliteComparator::exportSearchResultToGeoTiff(
     options.exportSubstrate = true;
     options.exportLegendPng = true;
     options.openFolderAfterSave = true;
+    if (id.contains("change_detection")) {
+        options.exportSubstrate = false;
+        options.exportLegendPng = false;
+    }
     const GeoTiffClassLegend legend = m_layer_legends.value(id);
 
     GeoTiffResultExporter::exportSearchResult(item, id, geo, m_satellite_image,
