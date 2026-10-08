@@ -65,6 +65,7 @@ public:
 
 private:
     QJsonObject m_sdb;
+    QJsonObject m_sat_responses;
     QStringList m_satellites_list;
     QHash<QString, satellites_data> m_all_satellites_data;
     QVector<double> m_common_wave_grid;
@@ -75,6 +76,7 @@ private:
                                       const QVector<double> &y,
                                       const double target_x);
 
+    QJsonArray get_sat_responses();
     QJsonObject get_sdb();
     QVector<double> get_common_waves();
     QVector<QVector<double>> get_bands(const QString &satellite_name);

@@ -73,6 +73,13 @@ double SatteliteComparator::linearInterpolation(const QVector<double>& x,
     return y1 + (target_x - x1) * (y2 - y1) / (x2 - x1);
 }
 
+QJsonArray SatteliteComparator::get_sat_responses() {
+    QJsonArray sat_resp;
+    jsn::getJsonArrayFromFile(
+        ":/responses/sentinel2A/sentinel2A_responses.json", sat_resp);
+    return sat_resp;
+}
+
 QHash<QString, satellites_data> SatteliteComparator::get_satellites_data() {
     satellites_data sd;
     QJsonObject json_satellites = m_sdb["satellites"].toObject();
