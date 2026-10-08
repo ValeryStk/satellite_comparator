@@ -24,6 +24,7 @@ SatteliteComparator::SatteliteComparator(QVector<double> device_waves,
 {
     initial_fill_data_to_show(device_waves, device_values, satellite_waves,
                               satellite_values);
+    get_sat_responses();
 }
 
 SatteliteComparator::~SatteliteComparator() {}
@@ -73,11 +74,15 @@ double SatteliteComparator::linearInterpolation(const QVector<double>& x,
     return y1 + (target_x - x1) * (y2 - y1) / (x2 - x1);
 }
 
-QJsonArray SatteliteComparator::get_sat_responses() {
-    QJsonArray sat_resp;
+void SatteliteComparator::get_sat_responses() {
+    QJsonArray s2A_resp;
     jsn::getJsonArrayFromFile(
-        ":/responses/sentinel2A/sentinel2A_responses.json", sat_resp);
-    return sat_resp;
+        ":/responses/sentinel2A/sentinel2A_responses.json", s2A_resp);
+    QJsonArray s2B_resp;
+    jsn::getJsonArrayFromFile(
+        ":/responses/sentinel2B/sentinel2B_responses.json", s2B_resp);
+    qDebug() << "Responses sizes: " << s2A_resp.size() << "---"
+             << s2B_resp.size();
 }
 
 QHash<QString, satellites_data> SatteliteComparator::get_satellites_data() {

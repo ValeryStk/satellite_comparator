@@ -76,7 +76,7 @@ private:
                                       const QVector<double> &y,
                                       const double target_x);
 
-    QJsonArray get_sat_responses();
+    void get_sat_responses();
     QJsonObject get_sdb();
     QVector<double> get_common_waves();
     QVector<QVector<double>> get_bands(const QString &satellite_name);
