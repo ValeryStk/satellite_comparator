@@ -1066,7 +1066,10 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     if (waves.size() == sample.size()) {
         m_preview_plot->graph(1)->setData(waves, sample);
     }
-
+    if (trimmed_satellite_data.size() != sample.size()) {
+        qDebug() << "TRIMMED NOT EQUAL SAMPLE";
+        return;
+    }
     double result = 999;
     if (m_comboBox_calculation_method->currentText() == satc::spectral_angle) {
         result = calculateSpectralAngle(trimmed_satellite_data, sample);

@@ -24,7 +24,8 @@ SatteliteComparator::SatteliteComparator(QVector<double> device_waves,
 {
     initial_fill_data_to_show(device_waves, device_values, satellite_waves,
                               satellite_values);
-    get_sat_responses();
+    // get_sat_responses(); //вспомогательная функция для редактирования sdb
+    // JSON
 }
 
 SatteliteComparator::~SatteliteComparator() {}
@@ -83,6 +84,92 @@ void SatteliteComparator::get_sat_responses() {
         ":/responses/sentinel2B/sentinel2B_responses.json", s2B_resp);
     qDebug() << "Responses sizes: " << s2A_resp.size() << "---"
              << s2B_resp.size();
+    QJsonObject sen2a_obj;
+    QJsonObject sen2b_obj;
+
+    sen2a_obj["alias"] = "SENTINEL 2A";
+    sen2b_obj["alias"] = "SENTINEL 2B";
+    QJsonArray centralWaves2A;
+    QJsonArray bands2A;
+    QJsonArray centralWaves2B;
+    QJsonArray bands2B;
+    QJsonArray responses2A;
+    QJsonArray responses2B;
+    for (int i = 0; i < s2A_resp.size(); ++i) {
+        QJsonArray temp2A;
+        QJsonArray temp2B;
+        centralWaves2A.append(s2A_resp[i].toObject()["wavelength_CENTRAL_nm"]);
+        centralWaves2B.append(s2B_resp[i].toObject()["wavelength_CENTRAL_nm"]);
+        auto valueMin2A = s2A_resp[i].toObject()["wavelength_MIN_nm"];
+        auto valueMax2A = s2A_resp[i].toObject()["wavelength_MAX_nm"];
+        auto valueMin2B = s2B_resp[i].toObject()["wavelength_MIN_nm"];
+        auto valueMax2B = s2B_resp[i].toObject()["wavelength_MAX_nm"];
+        temp2A.append(valueMin2A);
+        temp2A.append(valueMax2A);
+        temp2B.append(valueMin2B);
+        temp2B.append(valueMax2B);
+        bands2A.append(temp2A);
+        bands2B.append(temp2B);
+        responses2A.append(
+            s2A_resp[i].toObject()["spectral_response"].toArray());
+        responses2B.append(
+            s2B_resp[i].toObject()["spectral_response"].toArray());
+    }
+    sen2a_obj["bands"] = bands2A;
+    sen2b_obj["bands"] = bands2B;
+    sen2a_obj["central_waves"] = centralWaves2A;
+    sen2b_obj["central_waves"] = centralWaves2B;
+
+    QVector<QPair<int, int>> min_max2A;
+    QVector<QPair<int, int>> min_max2B;
+    for (int i = 0; i < bands2A.size(); ++i) {
+        min_max2A.append(
+            {bands2A[i].toArray()[0].toInt(), bands2A[i].toArray()[1].toInt()});
+        min_max2B.append(
+            {bands2B[i].toArray()[0].toInt(), bands2B[i].toArray()[1].toInt()});
+    }
+    qDebug() << "Responses size: --> "
+             << m_sdb["satellites"]
+                    .toObject()["sentinel2C"]
+                    .toObject()["responses"]
+                    .toArray()
+                    .size();
+    const int OFFSET_INDEX = 400;
+    QJsonArray resp2AFinalArray;
+    QJsonArray resp2BFinalArray;
+
+    for (int i = 0; i < 601; ++i) {
+        const int WAVELENGTH = OFFSET_INDEX + i;
+        QJsonArray temp2A;
+        QJsonArray temp2B;
+        for (int j = 0; j < min_max2A.size(); ++j) {
+            auto min2A = min_max2A[j].first;
+            auto min2B = min_max2B[j].first;
+            auto max2A = min_max2A[j].second;
+            auto max2B = min_max2B[j].second;
+            if (WAVELENGTH >= min2A && WAVELENGTH <= max2A) {
+                temp2A.append(responses2A[j].toArray()[WAVELENGTH - min2A]);
+            } else {
+                temp2A.append(0);
+            }
+            if (WAVELENGTH >= min2B && WAVELENGTH <= max2B) {
+                temp2B.append(responses2B[j].toArray()[WAVELENGTH - min2B]);
+            } else {
+                temp2B.append(0);
+            }
+        }
+        resp2AFinalArray.append(temp2A);
+        resp2BFinalArray.append(temp2B);
+    }
+
+    sen2a_obj["responses"] = resp2AFinalArray;
+    sen2b_obj["responses"] = resp2BFinalArray;
+    QJsonObject root_obj = m_sdb;
+    QJsonObject sat_obj = m_sdb["satellites"].toObject();
+    sat_obj["sentinel2A"] = sen2a_obj;
+    sat_obj["sentinel2B"] = sen2b_obj;
+    root_obj["satellites"] = sat_obj;
+    jsn::saveJsonObjectToFile("test_updated_json.json", root_obj);
 }
 
 QHash<QString, satellites_data> SatteliteComparator::get_satellites_data() {
@@ -193,8 +280,15 @@ QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses() {
                            m_comparator_data.device_values, m_common_wave_grid,
                            status);
     qDebug() << "FOLDED STATUS:" << (int)status;
+    qDebug() << "CHECK SIZES BANDS X_Y: " << m_sat_data.bands.size()
+             << x_y.first.size() << "--" << x_y.second.size();
+    if (x_y.first.size() < m_sat_data.bands.size()) {
+        // uts::showOperationFailed();
+        qDebug() << "Kosyak is here..";
+        return {};
+    }
     if (status == BASE_CHECK_RESULT::OK) {
-        for (int i = 0; i < m_sat_data.bands.size(); ++i) {
+        for (int i = 0; i < 10; ++i) {  // TEMP SOLUTION
             int start = m_sat_data.bands[i][0] - SATTELITE_WAVE_OFFSET;
             int end = m_sat_data.bands[i][1] - SATTELITE_WAVE_OFFSET;
             for (int j = start; j < end; ++j) {
@@ -203,11 +297,21 @@ QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses() {
                     x_y.second[j] * m_sat_data.responses[j][i];
             }
         }
-        for (int i = 0; i < device_spectr_bands_sum.size(); ++i) {
+        qDebug() << "CHECK SIZES: " << m_sat_data.bands.size();
+        for (int i = 0; i < 10; ++i) {  // TEMP SOLUTION
             folded_spectr[i] =
                 device_spectr_bands_sum[i] / satellite_bands_sum[i];
         }
-        return folded_spectr;
+        QVector<double> trimmed_spectr;
+
+        for (int i = 0; i < folded_spectr.size(); ++i) {
+            if (folded_spectr[i] < 0 || std::isnan(folded_spectr[i]) ||
+                folded_spectr[i] > 1 || qFuzzyIsNull(folded_spectr[i]))
+                continue;
+            trimmed_spectr.push_back(folded_spectr[i]);
+        }
+
+        return trimmed_spectr;
     }
     return {};
 }
