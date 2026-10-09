@@ -5171,8 +5171,11 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
     if (isNeedToFold) {
         processBekasDataForComparing(waves, values);
     }
-    QString bekas_sample;
+    QString bekas_sample = "//EXTERNAL FOLDED SPECTR\n";
+
     for (int i = 0; i < m_bekas_sample.size(); ++i) {
+        bekas_sample.append(QString::number(sat_waves[i]));
+        bekas_sample.append("\t");
         bekas_sample.append(QString::number(m_bekas_sample[i]));
         bekas_sample.append("\n");
     }
