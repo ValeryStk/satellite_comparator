@@ -125,6 +125,8 @@ QVector<ImageViewer *> m_viewers;
 uint16_t *dataCloudMask = nullptr;
 uint16_t *dataCloudMask2 = nullptr;
 
+int minNumInTimerowForGradient = 2;
+
 namespace {
 
 QString getSclClassName(uint8_t classValue) {
@@ -402,7 +404,8 @@ static GradientFitResult fitLinear(const QVector<double> &x,
                                    const QVector<double> &y) {
     GradientFitResult res;
     int n = x.size();
-    if (n < 3) return res;  // нужно минимум 3 точки
+    if (n < minNumInTimerowForGradient)
+        return res;  // нужно минимум столько точек
 
     double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
     for (int i = 0; i < n; ++i) {
@@ -5888,7 +5891,7 @@ GradientMaskResult MainWindowSatelliteComparator::buildGradientClassMap(
             xValid.push_back(julianDays[i]);
         }
 
-        if (xValid.size() < 3) continue;
+        if (xValid.size() < minNumInTimerowForGradient) continue;
 
         auto fit = fitLinear(xValid, indexSeries);
         if (!fit.valid) continue;
