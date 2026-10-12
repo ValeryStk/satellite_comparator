@@ -101,6 +101,10 @@ PixelGeo *base_pixel_geo;
 QCPTextElement *title_satellite_name;
 QVector<double> waves_landsat9 = {443, 482, 562, 655, 865, 1610, 2200};
 QVector<double> waves_landsat9_5 = {443, 482, 562, 655, 865};
+QVector<double> waves_sentinel_2a = {443, 493, 560, 665,  704,  740, 783,
+                                     833, 865, 945, 1374, 1614, 2202};
+QVector<double> waves_sentinel_2b = {442, 492, 559, 665,  704,  739, 780,
+                                     833, 864, 943, 1377, 1610, 2186};
 QVector<double> waves_sentinel_2c = {444, 489, 560, 666,  707,  741, 785,
                                      835, 866, 947, 1372, 1612, 2191};
 QVector<double> waves_sentinel_2c_5 = {444, 489, 560, 666, 707,
@@ -1065,7 +1069,10 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     if (waves.size() == sample.size()) {
         m_preview_plot->graph(1)->setData(waves, sample);
     }
-
+    if (trimmed_satellite_data.size() != sample.size()) {
+        qDebug() << "TRIMMED NOT EQUAL SAMPLE";
+        return;
+    }
     double result = 999;
     if (m_comboBox_calculation_method->currentText() == satc::spectral_angle) {
         result = calculateSpectralAngle(trimmed_satellite_data, sample);
@@ -1536,21 +1543,30 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_landsat9,
                                                     m_landsat9_sample);
     } else if (m_satelite_type == sad::SENTINEL_2A) {
-        m_sat_comparator->set_satellite_responses("sentinel2A");  // sentinel2C
-        m_sat_comparator->initial_fill_data_to_show(x, y,
-                                                    waves_sentinel_2c,  // TEMP
+        if (!m_sat_comparator->set_satellite_responses("sentinel2A")) {
+            uts::showNoSatResponsesSetted();
+            return;
+        };
+        m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2a,
                                                     m_sentinel_sample);
+        qDebug() << "waves_sentinel_2a: " << waves_sentinel_2a;
+        qDebug() << "sentinel_sample: " << m_sentinel_sample;
     } else if (m_satelite_type == sad::SENTINEL_2B) {
-        m_sat_comparator->set_satellite_responses("sentinel2B");  // sentinel2C
-        m_sat_comparator->initial_fill_data_to_show(x, y,
-                                                    waves_sentinel_2c,  // TEMP
+        if (!m_sat_comparator->set_satellite_responses("sentinel2B")) {
+            uts::showNoSatResponsesSetted();
+            return;
+        };
+        m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2b,
                                                     m_sentinel_sample);
+        qDebug() << "waves_sentinel_2b: " << waves_sentinel_2b;
+        qDebug() << "sentinel_sample: " << m_sentinel_sample;
     } else if (m_satelite_type == sad::SENTINEL_2C) {
-        m_sat_comparator->set_satellite_responses("sentinel2C");  // sentinel2C
+        if (!m_sat_comparator->set_satellite_responses("sentinel2C")) {
+            uts::showNoSatResponsesSetted();
+            return;
+        }
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_sentinel_2c,
                                                     m_sentinel_sample);
-        // qDebug() << "x: " << x;
-        // qDebug() << "y: " << y;
         qDebug() << "waves_sentinel_2c: " << waves_sentinel_2c;
         qDebug() << "sentinel_sample: " << m_sentinel_sample;
     }
@@ -1559,6 +1575,8 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(
     qDebug() << "folded_device_spectr: " << folded_device_spectr.size();
     if (folded_device_spectr.empty()) {
         m_is_bekas = false;
+        uts::showWarnigMessage("Ошибка свёртки!",
+                               "Проверьте коректность входных данных.");
         return;
     }
     m_bekas_sample = folded_device_spectr;
@@ -1824,6 +1842,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod(
 
         auto stamp =
             QDateTime::currentDateTime().toString("yyyy-MM-dd/hh:mm:ss");
+        stamp += "change_detection";
         m_layers_search_result_items.insert(stamp, new_image_item);
         m_layer_gui_list->addItemToList(stamp, "", QColor());
         GeoTiffClassLegend searchLegend;
@@ -2698,6 +2717,10 @@ void MainWindowSatelliteComparator::exportSearchResultToGeoTiff(
     options.exportSubstrate = true;
     options.exportLegendPng = true;
     options.openFolderAfterSave = true;
+    if (id.contains("change_detection")) {
+        options.exportSubstrate = false;
+        options.exportLegendPng = false;
+    }
     const GeoTiffClassLegend legend = m_layer_legends.value(id);
 
     GeoTiffResultExporter::exportSearchResult(item, id, geo, m_satellite_image,
@@ -5133,13 +5156,33 @@ void MainWindowSatelliteComparator::setExternalSampleFromClipboard() {
     }
     qDebug() << "Считано точек:" << waves.size();
     m_is_bekas = true;
-    processBekasDataForComparing(waves, values);
-    QString bekas_sample;
+    auto sat_waves = getWaves();
+    bool isNeedToFold = true;
+    int true_counter = 0;
+    if (sat_waves.size() >= waves.size()) {
+        for (int i = 0; i < waves.size(); ++i) {
+            if (sat_waves[i] == waves[i] &&
+                (values[i] <= 1 && values[i] >= 0)) {
+                ++true_counter;
+            }
+        }
+    }
+    if (true_counter == waves.size()) {
+        isNeedToFold = false;
+        m_bekas_sample = values;
+    }
+    if (isNeedToFold) {
+        processBekasDataForComparing(waves, values);
+    }
+    QString bekas_sample = "//EXTERNAL FOLDED SPECTR\n";
+
     for (int i = 0; i < m_bekas_sample.size(); ++i) {
+        bekas_sample.append(QString::number(sat_waves[i]));
+        bekas_sample.append("\t");
         bekas_sample.append(QString::number(m_bekas_sample[i]));
         bekas_sample.append("\n");
     }
-    clipboard->setText(bekas_sample);
+    su::openInNotepad(bekas_sample);
 }
 
 void MainWindowSatelliteComparator::onStretchParamsChanged() {

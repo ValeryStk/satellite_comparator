@@ -11,6 +11,7 @@ void showInfoMessage(const QString& windowTitle, const QString& message);
 void showOkStatus();
 void showOperationFailed();
 void showNoDataAvailable();
+void showNoSatResponsesSetted();
 
 }  // end namespace uts
 
