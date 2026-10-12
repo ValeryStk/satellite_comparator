@@ -6,6 +6,7 @@
 class ProgressInformator : public QLabel {
 public:
     ProgressInformator(QWidget* parent, const QString& text);
+    ~ProgressInformator();
 };
 
 #endif  // PROGRESSINFORMATOR_H

@@ -1,5 +1,6 @@
 #include "progress_informator.h"
 
+#include <QApplication>
 #include <QScreen>
 
 #include "QGuiApplication"
@@ -14,4 +15,11 @@ ProgressInformator::ProgressInformator(QWidget* parent, const QString& text) {
     int x = (parent->width() - this->width()) / 2;
     int y = (parent->height() - this->height()) / 2;
     this->move(x, y);
+    show();
+    QApplication::processEvents();
+}
+
+ProgressInformator::~ProgressInformator() {
+    this->hide();
+    this->setParent(nullptr);
 }

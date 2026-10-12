@@ -4932,6 +4932,11 @@ void MainWindowSatelliteComparator::loadSentinelSen2Cor() {
         satelite_type = sad::SENTINEL_2C;
     }
 
+    QString message = QString(
+        "Пожалуйста подождите,\nпроисходит загрузка данных\nс атомосферной "
+        "коррекцией...");
+    ProgressInformator progress_info(this, message);
+
     QFileInfo fi(headerName);
     const QString root_path = fi.path();
     m_sentinel_metadata_for_sen2cor.root_path = fi.path();
