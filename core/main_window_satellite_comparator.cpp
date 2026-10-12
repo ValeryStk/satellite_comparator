@@ -5292,7 +5292,10 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         qDebug() << "Error: mask_for_sen2cor_data is null!";
         return;
     }
-
+    QString message = QString(
+        "Пожалуйста подождите,\nпроисходит расчёт метрик  для оценки схожести "
+        "Sen2Cor vs CATI");
+    ProgressInformator progress_info(this, message);
     // Использование QTextStream гарантирует, что огромный текст соберется без
     // потерь
     QString full_report;
