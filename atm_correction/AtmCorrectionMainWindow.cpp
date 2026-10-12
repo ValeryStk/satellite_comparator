@@ -256,6 +256,20 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
         fitting_plot->addGraph();
         auto waves = m_central_waves;
         waves.resize(10);
+        const QString arg1 = ui->comboBox_satellite_type->currentText();
+        if (arg1 == "sentinel 2A") {
+            for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
+                waves[i] = sad::sentinel_2A_central_wave_lengths[i];
+            }
+        } else if (arg1 == "sentinel 2B") {
+            for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
+                waves[i] = sad::sentinel_2B_central_wave_lengths[i];
+            }
+        } else if (arg1 == "sentinel 2C") {
+            for (int i = 0; i < SENTINEL_BANDS_NUMBER; ++i) {
+                waves[i] = sad::sentinel_2C_central_wave_lengths[i];
+            }
+        }
 
         QPen pen2("#0aef25");
         pen2.setWidth(3);
