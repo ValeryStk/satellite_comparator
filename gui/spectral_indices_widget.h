@@ -2,7 +2,7 @@
 #ifndef SPECTRAL_INDICES_WIDGET_H
 #define SPECTRAL_INDICES_WIDGET_H
 
-#include <qcustomplot.h>
+#include <qcustomplot_pro.h>
 
 #include <QMap>
 #include <QString>
@@ -19,7 +19,7 @@ public slots:
     void updateDisplay();
 
 private:
-    QCustomPlot *m_plot;
+    QCustomPlot_pro *m_plot;
     QMap<QString, double> m_indices;
 
     void setupUI();

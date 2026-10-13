@@ -17,6 +17,7 @@ SOURCES += \
     $$CORE_DIR/message_reporter.cpp \
     $$PWD/bands_widget.cpp \
     $$CORE_DIR/qcustomplot.cpp \
+    $$CORE_DIR/qcustomplot_pro.cpp \
     $$PWD/sentinel_fitting_evaluator.cpp \
 
 
@@ -31,6 +32,7 @@ HEADERS += \
     $$CORE_DIR/message_reporter.h \
     $$PWD/bands_widget.h \
     $$CORE_DIR/qcustomplot.h \
+    $$CORE_DIR/qcustomplot_pro.h \
 
 FORMS += \
 $$PWD/AtmCorrectionMainWindow.ui \

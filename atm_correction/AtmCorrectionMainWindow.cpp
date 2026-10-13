@@ -240,7 +240,7 @@ AtmCorrectionMainWindow::AtmCorrectionMainWindow(QWidget *parent)
             fitting_plot->activateWindow();
             return;
         }
-        fitting_plot = new QCustomPlot;
+        fitting_plot = new QCustomPlot_pro;
         // Сбрасываем указатель в nullptr строго при уничтожении виджета
         connect(fitting_plot, &QObject::destroyed, this,
                 [this]() { fitting_plot = nullptr; });
