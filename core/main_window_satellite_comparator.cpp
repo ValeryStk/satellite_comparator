@@ -1161,6 +1161,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
         QString("Загрузка данных %1...").arg(satellite_name);
     ui->statusbar->showMessage(dataLoadingMessage);
     QApplication::processEvents();
+    ProgressInformator pi(this, msg::kLoadSingleLandsatTask);
     QList<QString> landsat_gui_available_bands;
 
     if (extension == "json") {
@@ -1329,6 +1330,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
     m_sentinel_metadata.root_path = fi.path();
     QString dataLoadingMessage =
         QString("Загрузка данных %1...").arg(satellite_name);
+    ProgressInformator pi(this, msg::kLoadSingleSentinelTask);
     ui->statusbar->showMessage(dataLoadingMessage);
     QApplication::processEvents();
 
