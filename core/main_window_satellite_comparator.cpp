@@ -4531,7 +4531,7 @@ bool MainWindowSatelliteComparator::saveSentinelToGeoTiff(
         qDebug() << "Error: No bands or data provided.";
         return false;
     }
-
+    ProgressInformator pi(this, msg::kSaveBaseSentinelAs20mGeoTiff);
     // 1. Инициализация GDAL
     GDALAllRegister();
     GDALDriver *poDriver = GetGDALDriverManager()->GetDriverByName("GTiff");
@@ -5545,6 +5545,7 @@ void MainWindowSatelliteComparator::basePixelAnalyzer() {
         uts::showNoDataAvailable();
         return;
     }
+    ProgressInformator pi(this, msg::kFindBasePixelAsMoreLinear);
     const int width = m_sentinel_data[0].width;
     const int height = m_sentinel_data[0].height;
 
@@ -5666,6 +5667,7 @@ void MainWindowSatelliteComparator::saveCATIasGeoTiff() {
     int width = m_sentinel_data[0].width;
     int height = m_sentinel_data[0].height;
     qDebug() << "CATI size: " << width * height;
+    ProgressInformator pi(this, msg::kSaveCATIasGeoTiff);
     QVector<sad::BAND_DATA> temp_cati(10);
     qDebug() << "TempCati size: " << temp_cati.size();
     for (int i = 0; i < 10; ++i) {

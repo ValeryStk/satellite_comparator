@@ -19,7 +19,7 @@ const char kLoadSingleSentinelTask[] =
     "Пожалуйста, подождите...\n"
     "Загружается базовый снимок со спутника Sentinel";
 
-extern const char kLoadSentinel_Level_1_no_atm_correction[] =
+const char kLoadSentinel_Level_1_no_atm_correction[] =
     "Пожалуйста, подождите...\n"
     "Загружается снимок со спутника Sentinel\n без атмосферной коррекции";
 
@@ -31,17 +31,25 @@ const char kLoadSentinelWithAtmCorrection[] =
     "Пожалуйста, подождите...\n"
     "Загружаются данные Sentinel с атмосферной коррекцией...";
 
-extern const char kFindProcessIsRunning[] =
+const char kFindProcessIsRunning[] =
     "Пожалуйста, подождите...\n"
     "Выполняется поиск областей с использованием: %1...";
 
-extern const char kCalculateSen2Cor_vs_CATI_metrics[] =
+const char kCalculateSen2Cor_vs_CATI_metrics[] =
     "Пожалуйста подождите...\nВыполняется расчёт метрик  для оценки схожести\n "
     "Sen2Cor vs CATI";
 
-extern const char kFindBasePixelAsMoreLinear[] =
+const char kFindBasePixelAsMoreLinear[] =
     "Пожалуйста подождите...\nВыполняется поиск базового пикселя\n(линейный "
     "метод)";
+
+const char kSaveCATIasGeoTiff[] =
+    "Пожалуйста подождите...\nВыполняется экспорт CATI в Geo TIFF...";
+
+const char kSaveBaseSentinelAs20mGeoTiff[] =
+    "Пожалуйста подождите...\nВыполняется экспорт данных Sentinel в Geo "
+    "TIFF...";
+
 }  // namespace msg
 
 ProgressInformator::ProgressInformator(QWidget *parent, const QString &text) {
