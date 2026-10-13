@@ -130,13 +130,6 @@ struct BAND_DATA {
     int width;
     QString file_name;
     uint16_t* data = nullptr;
-    ~BAND_DATA() {
-        if (data) {
-            // qDebug() << "BAND_DATA destructor...." << gui_name;
-            //  delete[] data;
-            //  data = nullptr;
-        };
-    }
 };
 
 struct QA_MASK_DATA {
