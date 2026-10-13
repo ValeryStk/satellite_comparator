@@ -882,7 +882,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
     ui->statusbar->showMessage("");
     m_is_image_created = true;
     m_scene_cross_square_item->setVisible(true);
-    ui->graphicsView_satellite_image->setIsSignal(true);
+
     change_bands_and_show_image(m_time_row[0]);  // NEED REFACTORING
 
     syncManager = new ViewSyncManager;
@@ -939,7 +939,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
     m_time_row_widget.setWindowTitle("Временной ряд");
 
     m_time_row_widget.show();
-    // paintTimeRowBadForest(Qt::black);
+    ui->graphicsView_satellite_image->setIsSignal(true);
 }
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric() {
@@ -4108,7 +4108,13 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(
     double lowPct = ui->widget_image_saturation_light_corrector->getLowPct();
     double highPct = ui->widget_image_saturation_light_corrector->getHighPct();
     double gamma = ui->widget_image_saturation_light_corrector->getGamma();
-
+    QVector<QPair<int, int>> w_h;
+    for (int i = 0; i < m_time_row.size(); ++i) {
+        const int w = m_time_row[i][0].width;
+        const int h = m_time_row[i][0].height;
+        w_h.append(qMakePair(w, h));
+        // qDebug() << "width-height: " << w << "----" << h;
+    }
     const int w = m_time_row[0][0].width;
     const int h = m_time_row[0][0].height;
 
@@ -4119,6 +4125,7 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(
         allR.push_back(bands[3].data);
         allG.push_back(bands[2].data);
         allB.push_back(bands[1].data);
+        if (st == sad::SATELLITE_TYPE::TIME_ROW_LANDSAT_COMBINATION) break;
     }
 
     // --- Вычисляем единые границы по всему ряду ---
@@ -4129,12 +4136,16 @@ QVector<QImage> MainWindowSatelliteComparator::get_cropedImages_for_time_row(
 
     // --- Рендерим каждый снимок с одинаковыми границами ---
     QVector<QImage> images;
+    int index = 0;
     for (const auto &bands : m_time_row) {
         if (bands.size() < 4) continue;
+        int width = w_h[index].first;
+        int height = w_h[index].second;
         QImage img = buildRgbPercentileFixed(
-            bands[3].data, bands[2].data, bands[1].data, w, h, ploR, phiR, ploG,
-            phiG, ploB, phiB, gamma, nullptr);
+            bands[3].data, bands[2].data, bands[1].data, width, height, ploR,
+            phiR, ploG, phiG, ploB, phiB, gamma, nullptr);
         if (!img.isNull()) images.push_back(img);
+        ++index;
     }
     return images;
 }
