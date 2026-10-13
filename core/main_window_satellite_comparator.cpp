@@ -773,6 +773,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
         m_satelite_type = sad::TIME_ROW_LANDSAT_COMBINATION;
         subdirs = sortLandsatFilesByDateTime(landsat_subdirs);
         qDebug() << "landsat after sorting by date time" << subdirs;
+        ProgressInformator pi(this, msg::kLoadLandSatTimeRowTask);
         //!!!!! FILTER SUBDIRS
 
         m_time_row.resize(subdirs.size());
@@ -805,7 +806,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
         m_satelite_type = sad::TIME_ROW_SENTINEL_COMBINATION;
         subdirs = sortSentinelFilesByDateTime(sentinel_subdirs);
         qDebug() << "sentinel time row after sorting by date time" << subdirs;
-
+        ProgressInformator pi(this, msg::kLoadSentinelTimeRowTask);
         // WORK IN PROGRESS (WIP)
         m_time_row.resize(subdirs.size());
         m_time_row_geo.resize(m_time_row.size());
@@ -944,12 +945,9 @@ void MainWindowSatelliteComparator::openTimeRowData() {
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric() {
     QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
-    QString message =
-        QString("Пожалуйста подождите,\nпроисходит поиск областей\n(%1)...")
-            .arg(m_comboBox_calculation_method->currentText());
-    ProgressInformator progress_info(ui->graphicsView_satellite_image, message);
-    progress_info.show();
-    QApplication::processEvents();
+    QString message = QString(msg::kFindProcessIsRunning)
+                          .arg(m_comboBox_calculation_method->currentText());
+    ProgressInformator progress_info(this, message);
     paintSamplePoints(color);
     progress_info.close();
 }
@@ -4769,6 +4767,7 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         m_ac.updateSatelliteType("sentinel 2C");
     }
     title_satellite_name->setText(sentinelTOAname);
+    ProgressInformator pi(this, msg::kLoadSentinel_Level_1_no_atm_correction);
     QFileInfo fi(headerName);
     m_root_path = fi.path();
     m_sentinel_metadata.root_path = fi.path();
@@ -4943,10 +4942,7 @@ void MainWindowSatelliteComparator::loadSentinelSen2Cor() {
         satelite_type = sad::SENTINEL_2C;
     }
 
-    QString message = QString(
-        "Пожалуйста подождите,\nпроисходит загрузка данных\nс атомосферной "
-        "коррекцией...");
-    ProgressInformator progress_info(this, message);
+    ProgressInformator progress_info(this, msg::kLoadSentinelWithAtmCorrection);
 
     QFileInfo fi(headerName);
     const QString root_path = fi.path();
@@ -5303,12 +5299,8 @@ void MainWindowSatelliteComparator::calculateSen2CorCATIaccuracy() {
         qDebug() << "Error: mask_for_sen2cor_data is null!";
         return;
     }
-    QString message = QString(
-        "Пожалуйста подождите,\nпроисходит расчёт метрик  для оценки схожести "
-        "Sen2Cor vs CATI");
-    ProgressInformator progress_info(this, message);
-    // Использование QTextStream гарантирует, что огромный текст соберется без
-    // потерь
+    ProgressInformator progress_info(this,
+                                     msg::kCalculateSen2Cor_vs_CATI_metrics);
     QString full_report;
     full_report.reserve(
         50000);  // Резервируем память заранее во избежание фрагментации
@@ -5741,10 +5733,7 @@ void MainWindowSatelliteComparator::showRgbImage(const uint16_t *r,
                                                  int height, double lowPct,
                                                  double highPct, double gamma,
                                                  const uint16_t *cloudMask) {
-    ProgressInformator progress_info(ui->graphicsView_satellite_image,
-                                     satc::message_changing_bands);
-    progress_info.show();
-    QApplication::processEvents();
+    // ProgressInformator progress_info(this, satc::message_changing_bands);
 
     // Сохраняем сырые указатели для возможного пересчёта при изменении
     // параметров
