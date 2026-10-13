@@ -7,6 +7,7 @@
 
 #include "bands_widget.h"
 #include "calculation_solver.h"
+#include "qcustomplot_pro.h"
 
 namespace Ui {
 class AtmCorrectionMainWindow;
@@ -47,13 +48,13 @@ private:
     bool isTOASentinelLoaded = false;
     bool isBasePixelProcessed = false;
     BandsWidget* bands_widget;
-    QCustomPlot* atm_params_plot;
+    QCustomPlot_pro* atm_params_plot;
     QVector<double> m_central_waves;
     QVector<double> base_pixel_speya_values;
     QString base_pixel_speya_valuesStr;
     result_values m_atm_cor_result;
     QMap<QString, QPoint> cellMap;
-    QCustomPlot* fitting_plot;
+    QCustomPlot_pro* fitting_plot;
     // Метод для получения вещественного числа из ячейки по имени
     double getCellValue(const QString& name);
 
