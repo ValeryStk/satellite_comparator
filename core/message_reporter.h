@@ -12,6 +12,7 @@ void showOkStatus();
 void showOperationFailed();
 void showNoDataAvailable();
 void showNoSatResponsesSetted();
+void showFoldingResultError();
 
 }  // end namespace uts
 

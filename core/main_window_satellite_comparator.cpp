@@ -1546,8 +1546,7 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(
     qDebug() << "folded_device_spectr: " << folded_device_spectr.size();
     if (folded_device_spectr.empty()) {
         m_is_bekas = false;
-        uts::showWarnigMessage("Ошибка свёртки!",
-                               "Проверьте коректность входных данных.");
+        uts::showFoldingResultError();
         return;
     }
     m_bekas_sample = folded_device_spectr;

@@ -74,4 +74,9 @@ void showNoSatResponsesSetted() {
         "Если ошибка повторится, обратитесь в техническую поддержку.");
 }
 
+void showFoldingResultError() {
+    uts::showErrorMessage("Ошибка свёртки!",
+                          "Проверьте коректность входных данных.");
+}
+
 }  // end namespace uts
