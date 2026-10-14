@@ -31,6 +31,7 @@ void message_reporter_UnitTests::showMessages() {
                           "Заголовочный файл TXT повреждён");
     uts::showErrorMessage("Ошибка разбора JSON",
                           "Заголовочный файл JSON повреждён");
+    uts::showNoSatResponsesSetted();
 }
 
 QTEST_MAIN(message_reporter_UnitTests)
