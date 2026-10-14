@@ -15,6 +15,7 @@ extern const char kCalculateSen2Cor_vs_CATI_metrics[];
 extern const char kFindBasePixelAsMoreLinear[];
 extern const char kSaveCATIasGeoTiff[];
 extern const char kSaveBaseSentinelAs20mGeoTiff[];
+extern const char kChangeDetectionMetodProcessing[];
 }  // namespace msg
 
 class ProgressInformator : public QLabel {

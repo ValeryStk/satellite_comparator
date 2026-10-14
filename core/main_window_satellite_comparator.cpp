@@ -1640,7 +1640,7 @@ void MainWindowSatelliteComparator::runChangeDetectionMethod(
     }
     file.close();
     int wCloudM, hCloudM;
-
+    ProgressInformator pi(this, msg::kChangeDetectionMetodProcessing);
     dataCloudMask =
         loadMaskForSentinel(wCloudM, hCloudM, m_sentinel_metadata.root_path);
 

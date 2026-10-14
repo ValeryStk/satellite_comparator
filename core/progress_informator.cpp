@@ -50,6 +50,10 @@ const char kSaveBaseSentinelAs20mGeoTiff[] =
     "Пожалуйста подождите...\nВыполняется экспорт данных Sentinel в Geo "
     "TIFF...";
 
+const char kChangeDetectionMetodProcessing[] =
+    "Пожалуйста подождите...\nВыполняется поиск гарей\nметодом 'Change "
+    "Detection...'";
+
 }  // namespace msg
 
 ProgressInformator::ProgressInformator(QWidget *parent, const QString &text) {
