@@ -130,8 +130,25 @@ uint16_t *dataCloudMask = nullptr;
 uint16_t *dataCloudMask2 = nullptr;
 
 int minNumInTimerowForGradient = 2;
+int SENTINEL_BASELINE_OFFSET = 0;
 
 namespace {
+
+// Функция принимает объект QDateTime (например, дату съемки из метаданных)
+bool isOffsetRequired(const QDateTime &imageDateTime) {
+    // 1. Проверяем, что объект содержит корректные дату и время
+    if (!imageDateTime.isValid() || imageDateTime.isNull()) {
+        qWarning() << "Ошибка: Передан невалидный объект QDateTime!";
+        return false;
+    }
+
+    // 2. Дата внедрения Baseline 04.00 (25 января 2022 года)
+    // Используем Qt::UTC, так как метаданные Sentinel всегда в UTC
+    QDateTime baselineDate(QDate(2022, 1, 25), QTime(0, 0, 0), Qt::UTC);
+
+    // 3. Если дата снимка равна или позже базовой — офсет -1000 присутствует
+    return imageDateTime >= baselineDate;
+}
 
 QString getSclClassName(uint8_t classValue) {
     // static гарантирует инициализацию карты только при первом вызове функции
@@ -1459,7 +1476,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
     ui->statusbar->showMessage("");
     m_is_image_created = true;
     m_scene_cross_square_item->setVisible(true);
-    ui->graphicsView_satellite_image->setIsSignal(true);
+
     QHash<QString, sad::geoTransform> sentinel_geo;
     if (finalFiles.empty() == false) {
         QFileInfo finfo(m_root_path + "/" + finalFiles[0] + ".jp2");
@@ -1492,8 +1509,15 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
         qDebug() << "sza" << sunZenitAngle << "saa" << sunAzimutAngle
                  << "cosSun" << m_sentinel_metadata.cosSunZenithAngle;
     }
-    // saveSentinelToGeoTiff(m_sentinel_data, m_geo, "slabodka");
-
+    auto dt = QDateTime::fromString(
+        m_sentinel_metadata.image_attributes.date_acquired,
+        "yyyy/MM/dd hh:mm:ss");
+    if (isOffsetRequired(dt)) {
+        SENTINEL_BASELINE_OFFSET = -1000;
+    } else {
+        SENTINEL_BASELINE_OFFSET = 0;
+    }
+    ui->graphicsView_satellite_image->setIsSignal(true);
     auto x = m_sentinel_data[0].width / 2;
     auto y = m_sentinel_data[0].height / 2;
     samplePointOnSceneChangedEvent(QPointF(x, y));
@@ -3501,10 +3525,10 @@ MainWindowSatelliteComparator::getSentinelKsy(const int x, const int y) {
             m_sentinel_data[i].width != xSize) {
             continue;
         };
-        uint16_t value = m_sentinel_data[i].data[(y * xSize) + x] -
-                         1000;  // BOA_ADD_OFFSET TODO READ FROM MTD
-        // double ksy_d =
-        // m_reflectance_mult_add_arrays[i][0]*value+m_reflectance_mult_add_arrays[i][1];
+
+        uint16_t value =
+            m_sentinel_data[i].data[(y * xSize) + x] - SENTINEL_BASELINE_OFFSET;
+
         ksy.append(value / 10000.0);
         waves.append(m_sentinel_data[i].central_wave_length);
     }
@@ -3575,9 +3599,9 @@ QVector<double> MainWindowSatelliteComparator::getSentinelSpeyaValues(
             m_sentinel_data[i].width != xSize) {
             continue;
         };
+
         uint16_t value =
-            m_sentinel_data[i].data[(y * xSize) + x] -
-            1000;  // OFFSET TODO CHECKK ALL CODE --> READ IT FROM FILE
+            m_sentinel_data[i].data[(y * xSize) + x] - SENTINEL_BASELINE_OFFSET;
         double speya = sam::calculateSpeyaFromSentinelDN(
             value, m_sentinel_data[i].solar_irradiance,
             m_sentinel_metadata.cosSunZenithAngle);
@@ -4855,6 +4879,14 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
             getDateTimeFromXML(xml_doc).toString("yyyy/MM/dd hh:mm:ss");
 
         m_sentinel_metadata.image_attributes.date_acquired = date_time;
+        auto dt = QDateTime::fromString(
+            m_sentinel_metadata.image_attributes.date_acquired,
+            "yyyy/MM/dd hh:mm:ss");
+        if (isOffsetRequired(dt)) {
+            SENTINEL_BASELINE_OFFSET = -1000;
+        } else {
+            SENTINEL_BASELINE_OFFSET = 0;
+        }
         m_label_date_time->setText(date_time);
         // TODO CHECK AND WARN USER ABOUT WRONG VALUES AND ERRORS
         double sunZenitAngle = satc::getSunZenitAngleForSentinel(xml_doc);
