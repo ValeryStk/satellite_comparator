@@ -23,6 +23,7 @@ signals:
     void changeDetectionRegion(const QString& id);
     void createTimeRowIndexesGradient(const QString& id);
     void saveCATIasGeoTiff(const QString& id);
+    void createTimeRowIndexesDynamics(const QString& id);
 
     // LayerList interface
 private:

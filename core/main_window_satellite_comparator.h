@@ -243,6 +243,8 @@ private slots:
 
     void on_action_load_hyper_spectral_data_triggered();
 
+    void export_roi_indexes_dynamics(const QString &roiId);
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы

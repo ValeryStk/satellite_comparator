@@ -8,12 +8,14 @@
 #include <QDomDocument>
 #include <QFile>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QShortcut>
 #include <QSpacerItem>
 #include <QTextCodec>
 #include <QTextStream>
 #include <QUrl>
 #include <algorithm>
+#include <cmath>
 #include <limits>
 
 #include "GeoPointFinder.h"
@@ -3218,6 +3220,9 @@ void MainWindowSatelliteComparator::setUpToolWidget() {
     connect(m_layer_roi_list,
             SIGNAL(createTimeRowIndexesGradient(const QString)), this,
             SLOT(create_index_dynamic_maps(const QString)));
+    connect(static_cast<LayerRoiList *>(m_layer_roi_list),
+            &LayerRoiList::createTimeRowIndexesDynamics, this,
+            &MainWindowSatelliteComparator::export_roi_indexes_dynamics);
     connect(m_layer_roi_list, SIGNAL(changeDetectionRegion(const QString)),
             this, SLOT(runChangeDetectionMethod(const QString)));
 
@@ -6061,4 +6066,338 @@ void MainWindowSatelliteComparator::
                                       .filePath("hypercube/BadForest.exe");
 
     QDesktopServices::openUrl(QUrl::fromLocalFile(SignaturaPath));
+}
+
+void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
+    const QString &roiId) {
+    auto showError = [this](const QString &message) {
+        QMessageBox::warning(this, tr("Динамика индексов"), message);
+    };
+
+    if (m_time_row.isEmpty()) {
+        showError(tr("Сначала загрузите временной ряд."));
+        return;
+    }
+
+    const int dateCount = m_time_row.size();
+
+    if (m_time_row_geo.size() != dateCount ||
+        m_time_row_qa_mask.size() != dateCount ||
+        m_time_row_dates_unix_time.second.size() != dateCount) {
+        showError(
+            tr("Количество снимков, геопривязок, масок "
+               "и подписей дат не совпадает."));
+        return;
+    }
+
+    const bool isLandsat = m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION;
+
+    const bool isSentinel =
+        m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION;
+
+    if (!isLandsat && !isSentinel) {
+        showError(
+            tr("Открытые данные не являются поддерживаемым временным рядом."));
+        return;
+    }
+
+    const int redIndex = 3;
+    const int nirIndex = isLandsat ? 4 : 6;
+    const int swirIndex = isLandsat ? 5 : 9;
+
+    const int maxBandIndex = std::max(redIndex, std::max(nirIndex, swirIndex));
+
+    auto *roiItem = ui->graphicsView_satellite_image->getPolygonById(roiId);
+
+    if (!roiItem) {
+        showError(tr("Область интереса не найдена."));
+        return;
+    }
+
+    // Существующие функции используют координаты каналов и масок
+    // в одной пиксельной сетке. Здесь явно проверяем это условие.
+    for (int i = 0; i < dateCount; ++i) {
+        const auto &bands = m_time_row[i];
+
+        if (bands.size() <= maxBandIndex) {
+            showError(
+                tr("Снимок №%1: отсутствуют необходимые каналы.").arg(i + 1));
+            return;
+        }
+
+        const int width = bands[0].width;
+        const int height = bands[0].height;
+
+        if (width <= 0 || height <= 0) {
+            showError(
+                tr("Снимок №%1: некорректный размер изображения.").arg(i + 1));
+            return;
+        }
+
+        for (int bandIndex : {redIndex, nirIndex, swirIndex}) {
+            const auto &band = bands[bandIndex];
+
+            if (!band.data || band.width != width || band.height != height) {
+                showError(tr("Снимок №%1: необходимые каналы не загружены "
+                             "или имеют разные размеры.\n"
+                             "Расчёт требует каналов в общей пиксельной сетке.")
+                              .arg(i + 1));
+                return;
+            }
+        }
+
+        const auto &qa = m_time_row_qa_mask[i];
+
+        if (!qa.data || qa.width != width || qa.height != height) {
+            showError(tr("Снимок №%1: маска качества отсутствует "
+                         "или её размер отличается от размера каналов.")
+                          .arg(i + 1));
+            return;
+        }
+
+        if (isSentinel && (!qa.scl_data || qa.scl_width != width ||
+                           qa.scl_height != height)) {
+            showError(tr("Снимок №%1: маска SCL отсутствует "
+                         "или её размер отличается от размера каналов.")
+                          .arg(i + 1));
+            return;
+        }
+    }
+
+    const QPolygonF polygon = roiItem->mapToScene(roiItem->polygon());
+
+    if (polygon.isEmpty()) {
+        showError(tr("Полигон области интереса пуст."));
+        return;
+    }
+
+    const QRectF bounds = polygon.boundingRect();
+
+    if (!std::isfinite(bounds.left()) || !std::isfinite(bounds.right()) ||
+        !std::isfinite(bounds.top()) || !std::isfinite(bounds.bottom())) {
+        showError(tr("Полигон содержит некорректные координаты."));
+        return;
+    }
+
+    const int baseWidth = m_time_row[0][0].width;
+    const int baseHeight = m_time_row[0][0].height;
+
+    const double clippedLeft = std::max(0.0, bounds.left());
+
+    const double clippedRight =
+        std::min(static_cast<double>(baseWidth - 1), bounds.right());
+
+    const double clippedTop = std::max(0.0, bounds.top());
+
+    const double clippedBottom =
+        std::min(static_cast<double>(baseHeight - 1), bounds.bottom());
+
+    if (clippedLeft > clippedRight || clippedTop > clippedBottom) {
+        showError(tr("Область интереса находится за пределами изображения."));
+        return;
+    }
+
+    const int left = static_cast<int>(std::ceil(clippedLeft));
+    const int right = static_cast<int>(std::floor(clippedRight));
+    const int top = static_cast<int>(std::ceil(clippedTop));
+    const int bottom = static_cast<int>(std::floor(clippedBottom));
+
+    QVector<double> sumNdvi(dateCount, 0.0);
+    QVector<double> sumNdwi(dateCount, 0.0);
+
+    QVector<double> pixelNdvi(dateCount);
+    QVector<double> pixelNdwi(dateCount);
+    QVector<QPointF> points(dateCount);
+
+    quint64 roiPixelCount = 0;
+    quint64 acceptedPixelCount = 0;
+
+    // Такая же трактовка координат пикселей, как в существующем
+    // calculate_time_row_gradient(): проверяются точки (x, y).
+    for (int y = top; y <= bottom; ++y) {
+        for (int x = left; x <= right; ++x) {
+            const QPointF scenePoint(x, y);
+
+            if (!polygon.containsPoint(scenePoint, Qt::OddEvenFill)) {
+                continue;
+            }
+
+            ++roiPixelCount;
+
+            double latitude = 0.0;
+            double longitude = 0.0;
+
+            getGeoCoordinates(x, y, m_time_row_geo[0], latitude, longitude,
+                              false);
+
+            if (!std::isfinite(latitude) || !std::isfinite(longitude)) {
+                continue;
+            }
+
+            points[0] = scenePoint;
+
+            bool valid = true;
+
+            for (int i = 1; i < dateCount; ++i) {
+                points[i] = geoToPixel(latitude, longitude, m_time_row_geo[i]);
+
+                const double px = points[i].x();
+                const double py = points[i].y();
+
+                const int width = m_time_row[i][0].width;
+                const int height = m_time_row[i][0].height;
+
+                if (!std::isfinite(px) || !std::isfinite(py) || px < 0.0 ||
+                    py < 0.0 || px >= width || py >= height) {
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (!valid) {
+                continue;
+            }
+
+            // Отбрасывает пиксель целиком, если хотя бы на одной
+            // дате есть облако, тень или неподходящая маска.
+            if (!isDataCloudShadow_OK(points)) {
+                continue;
+            }
+
+            // Проверяем значения индексов на ВСЕХ датах.
+            // Пока ничего не добавляем к общим суммам.
+            for (int i = 0; i < dateCount; ++i) {
+                const int px = static_cast<int>(points[i].x());
+                const int py = static_cast<int>(points[i].y());
+
+                const auto &bands = m_time_row[i];
+
+                if (isSentinel) {
+                    const auto &qa = m_time_row_qa_mask[i];
+
+                    const qint64 sclOffset =
+                        static_cast<qint64>(py) * qa.scl_width + px;
+
+                    const uint16_t scl = qa.scl_data[sclOffset];
+
+                    // Дополнение к существующей проверке:
+                    // исключаем NoData и дефектные пиксели SCL.
+                    if (scl == 0 || scl == 1) {
+                        valid = false;
+                        break;
+                    }
+                }
+
+                auto readReflectance = [&](int bandIndex,
+                                           double &result) -> bool {
+                    const auto &band = bands[bandIndex];
+
+                    const qint64 offset =
+                        static_cast<qint64>(py) * band.width + px;
+
+                    const uint16_t raw = band.data[offset];
+
+                    // Для текущих uint16_t-данных считаем
+                    // исходное значение 0 отсутствующими данными.
+                    if (raw == 0) {
+                        return false;
+                    }
+
+                    if (isLandsat) {
+                        result =
+                            band.reflectance_mult * raw + band.reflectance_add;
+                    } else {
+                        // Как в существующем getIndexesForTimeRow().
+                        result = raw / 10000.0;
+                    }
+
+                    return std::isfinite(result);
+                };
+
+                double red = 0.0;
+                double nir = 0.0;
+                double swir = 0.0;
+
+                if (!readReflectance(redIndex, red) ||
+                    !readReflectance(nirIndex, nir) ||
+                    !readReflectance(swirIndex, swir)) {
+                    valid = false;
+                    break;
+                }
+
+                if (std::abs(nir + red) < 1e-12 ||
+                    std::abs(nir + swir) < 1e-12) {
+                    valid = false;
+                    break;
+                }
+
+                pixelNdvi[i] = sam::calculateNDVI(nir, red);
+                pixelNdwi[i] = sam::calculateSWVI(nir, swir);
+
+                if (!std::isfinite(pixelNdvi[i]) ||
+                    !std::isfinite(pixelNdwi[i])) {
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (!valid) {
+                continue;
+            }
+
+            // Пиксель пригоден на всех датах — принимаем весь ряд.
+            for (int i = 0; i < dateCount; ++i) {
+                sumNdvi[i] += pixelNdvi[i];
+                sumNdwi[i] += pixelNdwi[i];
+            }
+
+            ++acceptedPixelCount;
+        }
+    }
+
+    if (roiPixelCount == 0) {
+        showError(tr("Внутри области интереса нет пикселей изображения."));
+        return;
+    }
+
+    if (acceptedPixelCount == 0) {
+        showError(tr(
+            "В выбранной ROI нет пикселей, пригодных на всех датах.\n"
+            "Проверяются облака, тени, NoData и корректность обоих индексов."));
+        return;
+    }
+
+    QString text;
+    QTextStream out(&text);
+
+    out << "Динамика индексов по области интереса\n";
+    out << "ROI: " << roiId << "\n";
+    out << "Количество дат: " << dateCount << "\n";
+    out << "Пикселей ROI в пределах базового изображения: " << roiPixelCount
+        << "\n";
+    out << "Использовано пикселей: " << acceptedPixelCount << "\n";
+    out << "Исключено пикселей: " << (roiPixelCount - acceptedPixelCount)
+        << "\n";
+
+    out << "На всех датах используется один и тот же набор пикселей.\n";
+    out << "Пиксель исключается целиком при непригодности "
+           "хотя бы на одной дате.\n\n";
+
+    out << "Дата\tNDVI_mean\tNDWI_mean\tN\n";
+
+    const double count = static_cast<double>(acceptedPixelCount);
+
+    for (int i = 0; i < dateCount; ++i) {
+        const double meanNdvi = sumNdvi[i] / count;
+        const double meanNdwi = sumNdwi[i] / count;
+
+        out << m_time_row_dates_unix_time.second[i] << "\t"
+            << QString::number(meanNdvi, 'f', 6) << "\t"
+            << QString::number(meanNdwi, 'f', 6) << "\t" << acceptedPixelCount
+            << "\n";
+    }
+
+    out.flush();
+
+    su::openInNotepad(text);
 }
