@@ -131,6 +131,7 @@ uint16_t *dataCloudMask2 = nullptr;
 
 int minNumInTimerowForGradient = 2;
 int SENTINEL_BASELINE_OFFSET = 0;
+int SENTINEL_BASELINE_Sen2Cor_OFFSET = 0;
 
 namespace {
 
@@ -3580,7 +3581,8 @@ QVector<double> MainWindowSatelliteComparator::getSen2CorKsy(const int x,
             continue;
         };
         uint16_t value = m_sen2cor_data[i].data[(y * xSize) + x];
-        ksy.append((value - 1000) / 10000.0);  // OFFSET
+        ksy.append((value - SENTINEL_BASELINE_Sen2Cor_OFFSET) /
+                   10000.0);  // OFFSET
     }
     return ksy;
 }
@@ -5094,6 +5096,14 @@ void MainWindowSatelliteComparator::loadSentinelSen2Cor() {
     }
     mask_for_sen2cor_data = loadSCLForSentinel(
         m_sen2cor_data[0].width, m_sen2cor_data[0].height, root_path);
+    auto dt = QDateTime::fromString(
+        m_sentinel_metadata_for_sen2cor.image_attributes.date_acquired,
+        "yyyy/MM/dd hh:mm:ss");
+    if (isOffsetRequired(dt)) {
+        SENTINEL_BASELINE_Sen2Cor_OFFSET = -1000;
+    } else {
+        SENTINEL_BASELINE_Sen2Cor_OFFSET = 0;
+    }
 }
 
 void MainWindowSatelliteComparator::setCursorByGeo() {
