@@ -6370,20 +6370,22 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
     QString text;
     QTextStream out(&text);
 
-    out << "Динамика индексов по области интереса\n";
+    out << "Index time series for ROI\n";
     out << "ROI: " << roiId << "\n";
-    out << "Количество дат: " << dateCount << "\n";
-    out << "Пикселей ROI в пределах базового изображения: " << roiPixelCount
-        << "\n";
-    out << "Использовано пикселей: " << acceptedPixelCount << "\n";
-    out << "Исключено пикселей: " << (roiPixelCount - acceptedPixelCount)
-        << "\n";
+    out << "Number of dates: " << dateCount << "\n";
 
-    out << "На всех датах используется один и тот же набор пикселей.\n";
-    out << "Пиксель исключается целиком при непригодности "
-           "хотя бы на одной дате.\n\n";
+    out << "ROI pixels within the reference image: " << roiPixelCount << "\n";
 
-    out << "Дата\tNDVI_mean\tNDWI_mean\tN\n";
+    out << "Accepted pixels: " << acceptedPixelCount << "\n";
+
+    out << "Rejected pixels: " << (roiPixelCount - acceptedPixelCount) << "\n";
+
+    out << "The same set of pixels is used for all dates.\n";
+
+    out << "A pixel is rejected for the entire time series "
+           "if it is invalid on any date.\n\n";
+
+    out << "Date\tNDVI_mean\tNDWI_mean\tN\n";
 
     const double count = static_cast<double>(acceptedPixelCount);
 
@@ -6400,4 +6402,73 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
     out.flush();
 
     su::openInNotepad(text);
+
+    // Формируем данные для Дэвиса.
+    // По X — количество дней от первой даты временного ряда.
+    std::vector<double> plotX;
+    std::vector<double> plotNdvi;
+    std::vector<double> plotNdwi;
+
+    plotX.reserve(dateCount);
+    plotNdvi.reserve(dateCount);
+    plotNdwi.reserve(dateCount);
+
+    auto parseDate = [](const QString &value) -> QDate {
+        const QString dateText = value.trimmed();
+
+        QDate date = QDate::fromString(dateText, "yyyy_MM_dd");
+
+        if (!date.isValid()) {
+            date = QDate::fromString(dateText, "yyyy-MM-dd");
+        }
+
+        return date;
+    };
+
+    const QDate firstDate = parseDate(m_time_row_dates_unix_time.second[0]);
+
+    if (!firstDate.isValid()) {
+        showError(
+            tr("Текстовый результат сформирован, "
+               "но не удалось распознать первую дату для графика."));
+        return;
+    }
+
+    for (int i = 0; i < dateCount; ++i) {
+        const QDate date = parseDate(m_time_row_dates_unix_time.second[i]);
+
+        if (!date.isValid()) {
+            showError(tr("Текстовый результат сформирован, "
+                         "но не удалось распознать дату: %1")
+                          .arg(m_time_row_dates_unix_time.second[i]));
+            return;
+        }
+
+        plotX.push_back(static_cast<double>(firstDate.daysTo(date)));
+
+        plotNdvi.push_back(sumNdvi[i] / count);
+        plotNdwi.push_back(sumNdwi[i] / count);
+    }
+
+    dv::Config config;
+
+    config.chart.title = QString("ROI: %1 | NDVI / NDWI | N = %2")
+                             .arg(roiId)
+                             .arg(static_cast<qulonglong>(acceptedPixelCount))
+                             .toUtf8()
+                             .toStdString();
+
+    config.chart.xLabel = QString("Days since %1")
+                              .arg(firstDate.toString("yyyy-MM-dd"))
+                              .toStdString();
+
+    config.chart.yLabel = "Mean index";
+    config.chart.isFitPlotToWindow = true;
+
+    dv::holdOn();
+
+    dv::show(plotX, plotNdvi, "NDVI");
+    dv::show(plotX, plotNdwi, "NDWI");
+
+    dv::holdOff(config);
 }
