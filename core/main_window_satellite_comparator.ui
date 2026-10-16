@@ -124,7 +124,7 @@
      <x>0</x>
      <y>0</y>
      <width>811</width>
-     <height>27</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -179,7 +179,6 @@
     <property name="title">
      <string>Инструменты</string>
     </property>
-    <addaction name="action_change_detection_CD"/>
     <addaction name="action_SpectraClassifer"/>
     <addaction name="action_setCursorByGeoCoord"/>
     <addaction name="action_copy_geo_coords"/>
