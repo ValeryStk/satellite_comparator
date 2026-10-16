@@ -17,6 +17,7 @@ const QString STR_GRADIENT_V1("Градиент усыхания");
 const QString STR_GRADIENT_INDEXES("Градиент усыхания по индексам");
 const QString STR_SPETRA_PLOTTER("Анализ спектров");
 const QString STR_CHANG_DETECTION("Метод 'Change detection'");
+const QString STR_INDEXES_DYNAMICS("Расчет динамики индексов");
 }  // namespace
 
 LayerRoiList::LayerRoiList() {
@@ -34,6 +35,7 @@ QMenu *LayerRoiList::createContextMenu() {
     // base_menu->addAction(STR_SAVE_CATI_as_GEOTIFF);
     base_menu->addAction(STR_GRADIENT_V1);
     base_menu->addAction(STR_GRADIENT_INDEXES);
+    base_menu->addAction(STR_INDEXES_DYNAMICS);
     base_menu->addAction(STR_SPETRA_PLOTTER);
     base_menu->addAction(STR_CHANG_DETECTION);
     return base_menu;
@@ -63,6 +65,8 @@ void LayerRoiList::handle_other_contextAction(const QString &actionId,
         emit createTimeRowGradient(id);
     } else if (actionId == STR_GRADIENT_INDEXES) {
         emit createTimeRowIndexesGradient(id);
+    } else if (actionId == STR_INDEXES_DYNAMICS) {
+        emit createTimeRowIndexesDynamics(id);
     } else if (actionId == STR_SPETRA_PLOTTER) {
         emit polygonForMatlabSelected(id);
     } else if (actionId == STR_CHANG_DETECTION) {

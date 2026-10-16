@@ -25,6 +25,7 @@ void openInNotepad(const QString &text) {
     tempFile->setFileTemplate(QDir::tempPath() + "/notepad_temp.txt");
 
     if (tempFile->open()) {
+        tempFile->write("\xEF\xBB\xBF", 3);  // UTF-8 BOM
         tempFile->write(text.toUtf8());
         tempFile->close();
         QProcess::startDetached("notepad.exe", QStringList()
