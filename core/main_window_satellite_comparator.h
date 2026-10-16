@@ -245,6 +245,8 @@ private slots:
 
     void export_roi_indexes_dynamics(const QString &roiId);
 
+    void classify_roi_by_indexes(const QString &roiId);
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
