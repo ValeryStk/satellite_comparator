@@ -1,0 +1,8 @@
+{
+  "views": [
+    {"view_name": "spectral_indicies", "state": false},
+    {"view_name": "index_time_series", "state": false},
+    {"view_name": "atmospheric_correction", "state": false},
+    {"view_name": "speya", "state": false}
+  ]
+}
