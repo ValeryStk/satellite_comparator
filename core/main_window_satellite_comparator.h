@@ -515,6 +515,7 @@ private:
         sad::SENTINEL_METADATA &metadata, sad::geoTransform &gt);
 
     QVector<QVector<sad::BAND_DATA>> m_time_row;
+    QVector<sad::SENTINEL_METADATA> m_time_row_sentinel_metadatas;
     QVector<sad::QA_MASK_DATA> m_time_row_qa_mask;
     QVector<sad::geoTransform> m_time_row_geo;
     sad::geoTransform getGeo(const QJsonObject &jo);

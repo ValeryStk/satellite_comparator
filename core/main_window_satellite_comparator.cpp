@@ -809,6 +809,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
             m_time_row[i] = getDataForSentinel_TimeRow(
                 directory.absolutePath() + "/" + subdirs[i] + "/MTD_MSIL2A.xml",
                 sad::SENTINEL_2A, sentinel_metadata, gt);
+            m_time_row_sentinel_metadatas.push_back(sentinel_metadata);
 
             /*sad::QA_MASK_DATA qa_mask;
             qa_mask.file_name = directory.absolutePath() + "/" + subdirs[i]+"/"
@@ -835,11 +836,11 @@ void MainWindowSatelliteComparator::openTimeRowData() {
                      << qa_mask.scl_height;
 
             m_time_row_qa_mask[i] = qa_mask;
-
             date_time_row_stamps.push_back(
                 sentinel_metadata.image_attributes.date_acquired);
             qDebug() << "Date time row stamp: "
                      << sentinel_metadata.image_attributes.date_acquired;
+
             qDebug() << QString(
                             "######## load image^. Number of its bands = %1")
                             .arg(m_time_row[i].size());
@@ -2199,7 +2200,9 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(
                 one_ksy_value = m_time_row[i][j].reflectance_mult * value +
                                 m_time_row[i][j].reflectance_add;
             } else {
-                one_ksy_value = value / 10000.0;
+                int SENTINEL_OFFSET =
+                    m_time_row_sentinel_metadatas[i].BASE_LINE_OFFSET;
+                one_ksy_value = (value + SENTINEL_OFFSET) / 10000.0;
             }
 
             if (one_ksy_value == 0 || one_ksy_value > 1) continue;
@@ -3533,7 +3536,7 @@ MainWindowSatelliteComparator::getSentinelKsy(const int x, const int y) {
         };
 
         uint16_t value =
-            m_sentinel_data[i].data[(y * xSize) + x] - SENTINEL_BASELINE_OFFSET;
+            m_sentinel_data[i].data[(y * xSize) + x] + SENTINEL_BASELINE_OFFSET;
 
         ksy.append(value / 10000.0);
         waves.append(m_sentinel_data[i].central_wave_length);
@@ -3586,7 +3589,7 @@ QVector<double> MainWindowSatelliteComparator::getSen2CorKsy(const int x,
             continue;
         };
         uint16_t value = m_sen2cor_data[i].data[(y * xSize) + x];
-        ksy.append((value - SENTINEL_BASELINE_Sen2Cor_OFFSET) /
+        ksy.append((value + SENTINEL_BASELINE_Sen2Cor_OFFSET) /
                    10000.0);  // OFFSET
     }
     return ksy;
@@ -3608,7 +3611,7 @@ QVector<double> MainWindowSatelliteComparator::getSentinelSpeyaValues(
         };
 
         uint16_t value =
-            m_sentinel_data[i].data[(y * xSize) + x] - SENTINEL_BASELINE_OFFSET;
+            m_sentinel_data[i].data[(y * xSize) + x] + SENTINEL_BASELINE_OFFSET;
         double speya = sam::calculateSpeyaFromSentinelDN(
             value, m_sentinel_data[i].solar_irradiance,
             m_sentinel_metadata.cosSunZenithAngle);
@@ -4073,7 +4076,10 @@ MainWindowSatelliteComparator::getDataForSentinel_TimeRow(
         gt.utmZone = extractUTMZoneFromXML(xml_doc, gt);
         sentinel_geo = extractGeoPositions(xml_doc);
         QDateTime dt = getDateTimeFromXML(xml_doc);
-
+        metadata.date_time_capture = dt;
+        bool isOffset = isOffsetRequired(dt);
+        metadata.BASE_LINE_OFFSET = isOffset;
+        if (isOffset) metadata.BASE_LINE_OFFSET = -1000;
         metadata.image_attributes.date_acquired =
             dt.toString("yyyy/MM/dd hh:mm:s");
         m_time_row_dates_unix_time.first.push_back(dt.toSecsSinceEpoch());
@@ -4504,6 +4510,7 @@ void MainWindowSatelliteComparator::deleteTimeRowData() {
             m_time_row_qa_mask[i].scl_data = nullptr;
         }
     }
+    m_time_row_sentinel_metadatas.clear();
     m_time_row.clear();
 }
 

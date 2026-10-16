@@ -110,6 +110,8 @@ struct SENTINEL_METADATA {
     bool sentinel_missed_channels[SENTINEL_BANDS_NUMBER];
     QString root_path;
     QString files[SENTINEL_BANDS_NUMBER];
+    QDateTime date_time_capture;
+    int BASE_LINE_OFFSET = 0;
     IMAGE_ATTRIBUTES image_attributes;
     PROJECTION_ATTRIBUTES projection_attributes;
     std::unordered_map<int, double>
