@@ -6325,7 +6325,9 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
                             band.reflectance_mult * raw + band.reflectance_add;
                     } else {
                         // Как в существующем getIndexesForTimeRow().
-                        result = raw / 10000.0;
+                        int OFFSET =
+                            m_time_row_sentinel_metadatas[i].BASE_LINE_OFFSET;
+                        result = (raw + OFFSET) / 10000.0;
                     }
 
                     return std::isfinite(result);
