@@ -551,6 +551,12 @@ private:
                                const sad::geoTransform &gt,
                                const QString &outputFilePath);
 
+    QHash<QString, QPair<QDockWidget *, QAction *>> view_names_keys_and_docks;
+
+    void checkViewStatesExists();
+    void loadViewStates();
+    void saveViewStates();
+
     bool m_mouse_tracking_enabled = true;
     QShortcut *m_toggle_mouse_tracking_shortcut;
     AtmCorrectionMainWindow m_ac;

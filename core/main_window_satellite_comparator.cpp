@@ -643,9 +643,11 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     connect(&m_ac, SIGNAL(findBasePixels()), this, SLOT(basePixelAnalyzer()));
     connect(&m_ac, &AtmCorrectionMainWindow::responseForSavingCATItoGeoTiff,
             this, &MainWindowSatelliteComparator::saveCATIasGeoTiff);
+    loadViewStates();
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
+    saveViewStates();
     delete ui;
     gdal_close_driver();
 }
@@ -4495,6 +4497,18 @@ void MainWindowSatelliteComparator::setUpUi() {
     m_time_row_spectralIndicesDock.setWidget(time_row_indexes_plot);
     m_time_row_spectralIndicesDock.setWindowTitle("Временной ряд индексов");
     addDockWidget(Qt::RightDockWidgetArea, &m_time_row_spectralIndicesDock);
+
+    view_names_keys_and_docks.insert(
+        "spectral_indicies",
+        qMakePair(m_spectralDock, ui->action_spectral_indicies));
+    view_names_keys_and_docks.insert(
+        "index_time_series",
+        qMakePair(&m_time_row_spectralIndicesDock, ui->actionTimeRowIndices));
+    view_names_keys_and_docks.insert(
+        "atmospheric_correction",
+        qMakePair(m_acDock, ui->action_atm_correction));
+    view_names_keys_and_docks.insert("speya",
+                                     qMakePair(m_speyaDock, ui->action_speya));
 }
 
 void MainWindowSatelliteComparator::deleteTimeRowData() {
@@ -4644,6 +4658,37 @@ bool MainWindowSatelliteComparator::saveSentinelToGeoTiff(
 
     qDebug() << "File saved successfully:" << outputFilePath;
     return true;
+}
+
+void MainWindowSatelliteComparator::checkViewStatesExists() {
+    QFileInfo fi("view_states.json");
+    if (fi.exists()) return;
+    saveViewStates();
+}
+
+void MainWindowSatelliteComparator::loadViewStates() {
+    checkViewStatesExists();
+    QJsonArray vs;
+    jsn::getJsonArrayFromFile("view_states.json", vs);
+    view_names_keys_and_docks.keys();
+    for (int i = 0; i < vs.size(); ++i) {
+        auto name = vs[i].toObject()["view_name"].toString();
+        auto state = vs[i].toObject()["state"].toBool();
+        view_names_keys_and_docks[name].second->setChecked(state);
+        view_names_keys_and_docks[name].first->setVisible(state);
+    }
+}
+
+void MainWindowSatelliteComparator::saveViewStates() {
+    QStringList keys = view_names_keys_and_docks.keys();
+    QJsonArray ja;
+    for (int i = 0; i < keys.size(); ++i) {
+        QJsonObject jo;
+        jo["view_name"] = keys[i];
+        jo["state"] = view_names_keys_and_docks[keys[i]].second->isChecked();
+        ja.append(jo);
+    }
+    jsn::saveJsonArrayToFile("view_states.json", ja);
 }
 
 void MainWindowSatelliteComparator::loadMaskForSentinelMenu() {
