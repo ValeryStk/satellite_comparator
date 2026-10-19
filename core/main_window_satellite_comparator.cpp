@@ -4741,8 +4741,8 @@ void MainWindowSatelliteComparator::restartApplication(const QString path,
 
 void MainWindowSatelliteComparator::handleRestartedApplication(
     const QString path, const int id) {
-    if (id == 0) {
-        QString tempPath = path;
+    // Надо добавить перечисления и обработать через Switch case
+    if (id == 0) {  // Это перезагрузка для Sentinel с атмосферной коррекцией
         openSentinel2_l2a_HeaderData(path);
     }
 }
