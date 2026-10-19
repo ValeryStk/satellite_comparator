@@ -939,6 +939,12 @@ void MainWindowSatelliteComparator::openTimeRowData() {
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric() {
     QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
+
+    if (!color.isValid()) {
+        uts::showOperationWasCancelled();
+        return;
+    }
+
     QString message = QString(msg::kFindProcessIsRunning)
                           .arg(m_comboBox_calculation_method->currentText());
     ProgressInformator progress_info(this, message);

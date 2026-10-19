@@ -79,4 +79,8 @@ void showFoldingResultError() {
                           "Проверьте коректность входных данных.");
 }
 
+void showOperationWasCancelled() {
+    uts::showInfoMessage("Отмена операции.", "Задание отклонено.");
+}
+
 }  // end namespace uts
