@@ -7046,9 +7046,15 @@ void MainWindowSatelliteComparator::classify_roi_by_indexes(
         }
 
         progress.close();
-
-        const QString runId =
-            QUuid::createUuid().toString(QUuid::WithoutBraces);
+        auto getUuidWithoutBraces = [](const QUuid &uuid) -> QString {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+            return uuid.toString(QUuid::WithoutBraces);
+#else
+            return uuid.toString().mid(1, 36);
+#endif
+        };
+        const QString runId;
+        getUuidWithoutBraces(runId);
 
         const qreal nextZ = view->getMaxZValue(m_scene);
         const qreal availableZ = qreal(Z_INDEX_ROI_AREA_POLYGON) - nextZ;
