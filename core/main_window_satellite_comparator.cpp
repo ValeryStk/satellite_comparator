@@ -6948,7 +6948,7 @@ void MainWindowSatelliteComparator::classify_roi_by_indexes(
         m_scene->update();
 
         ui->statusbar->showMessage(
-            tr("Создано 7 масок классификации по индексам. "
+            tr("Создано 6 масок классификации по индексам. "
                "Показана NDVI; остальные включаются в списке слоёв."),
             10000);
 
@@ -6956,7 +6956,7 @@ void MainWindowSatelliteComparator::classify_roi_by_indexes(
         progress.close();
 
         QMessageBox::warning(this, tr("Классификация по индексам"),
-                             tr("Недостаточно памяти для создания семи масок.\n"
+                             tr("Недостаточно памяти для создания всех масок.\n"
                                 "Уменьшите размер исходного изображения "
                                 "или освободите оперативную память."));
     }
