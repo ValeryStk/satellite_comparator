@@ -1002,11 +1002,17 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         double evi = sam::calculateEVI(bv.nir1, bv.red, bv.blue);
         double ndvi = sam::calculateNDVI(bv.nir1, bv.red);
         double swvi = sam::calculateSWVI(bv.nir1, bv.swir2);
+        double NBR = sam::calculateNBR(bv.nir2, bv.swir3);
+        double NDSWIR = sam::calculateNDSWIR(bv.nir2, bv.swir2);
 
-        m_spectralWidget->setIndices({{sam::kSpectralIndexNDVI, ndvi},
-                                      {{sam::kSpectralIndexSWVI}, {swvi}},
-                                      {{sam::kSpectralIndexDSWI}, {dswi}},
-                                      {sam::kSpectralIndexEVI, evi}});
+        m_spectralWidget->setIndices({
+            {sam::kSpectralIndexNDVI, ndvi},
+            {{sam::kSpectralIndexSWVI}, {swvi}},
+            {{sam::kSpectralIndexDSWI}, {dswi}},
+            {sam::kSpectralIndexEVI, evi},
+            {sam::kSpectralIndexNBR, NBR},
+            {sam::kSpectralIndexNDSWIR, NDSWIR},
+        });
     }
     if (data.empty()) {
         return;
@@ -6497,7 +6503,7 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
 
 namespace {
 
-constexpr int kRoiClassificationIndexCount = 7;
+constexpr int kRoiClassificationIndexCount = 6;
 
 using RoiIndexValues = std::array<double, kRoiClassificationIndexCount>;
 
@@ -6508,15 +6514,14 @@ const std::array<QString, kRoiClassificationIndexCount>
          QString::fromLatin1(sam::kSpectralIndexDSWI),
          QString::fromLatin1(sam::kSpectralIndexEVI),
          QString::fromLatin1(sam::kSpectralIndexNBR),
-         QString::fromLatin1(sam::kSpectralIndexNDSWIR),
-         QString::fromLatin1(sam::kSpectralIndexNBRSWIR)}};
+         QString::fromLatin1(sam::kSpectralIndexNDSWIR)}};
 
 RoiIndexValues calculateRoiClassificationIndices(
     const sam::BandIndicesValues &bands) {
     return {
         {sam::calculateNDVI(bands.nir1, bands.red),
 
-         sam::calculateSWVI(bands.nir1, bands.swir1),
+         sam::calculateSWVI(bands.nir1, bands.swir2),
 
          sam::calculateDSWI(bands.nir1, bands.green, bands.swir2, bands.red),
 
@@ -6524,9 +6529,7 @@ RoiIndexValues calculateRoiClassificationIndices(
 
          sam::calculateNBR(bands.nir2, bands.swir3),
 
-         sam::calculateNDSWIR(bands.nir2, bands.swir2),
-
-         sam::calculateNBRSWIR(bands.swir3, bands.swir2)}};
+         sam::calculateNDSWIR(bands.nir2, bands.swir2)}};
 }
 
 bool hasUsableRoiClassificationSpectrum(const QVector<double> &waves,
@@ -6582,7 +6585,7 @@ QString buildRoiClassificationTooltip(const QString &roiId,
                                       const QString &indexName,
                                       const PlantHealth &classifier,
                                       qint64 classifiedPixelCount) {
-    QString tooltip = QStringLiteral(
+    QString tooltip = QString(
                           "<b>Классификация по индексу %1</b><br>"
                           "ROI: %2<br>"
                           "Классифицировано пикселей: %3<br><br>")
@@ -6597,13 +6600,12 @@ QString buildRoiClassificationTooltip(const QString &roiId,
         const QString name =
             QString::fromUtf8(sam::kHealthClassesRussian[healthClass - 1]);
 
-        tooltip +=
-            QStringLiteral("<span style=\"color:%1;\">&#9632;</span> %2<br>")
-                .arg(color.toHtmlEscaped())
-                .arg(name.toHtmlEscaped());
+        tooltip += QString("<span style=\"color:%1;\">&#9632;</span> %2<br>")
+                       .arg(color.toHtmlEscaped())
+                       .arg(name.toHtmlEscaped());
     }
 
-    tooltip += QStringLiteral(
+    tooltip += QString(
         "<br>Вне ROI и при невалидном значении индекса — "
         "прозрачный фон.");
 
@@ -6730,7 +6732,7 @@ void MainWindowSatelliteComparator::classify_roi_by_indexes(
         // Классы временно храним только в прямоугольнике ROI.
         std::array<QImage, kRoiClassificationIndexCount> roiMasks;
         std::array<qint64, kRoiClassificationIndexCount> classifiedCounts = {
-            {0, 0, 0, 0, 0, 0, 0}};
+            {0, 0, 0, 0, 0, 0}};
 
         for (int i = 0; i < kRoiClassificationIndexCount; ++i) {
             classifiers.emplace_back(
@@ -6928,7 +6930,7 @@ void MainWindowSatelliteComparator::classify_roi_by_indexes(
 
         for (int i = 0; i < kRoiClassificationIndexCount; ++i) {
             const QString layerId =
-                QStringLiteral("Классификация %1 | ROI %2 | %3")
+                QStringLiteral("Classification %1 | ROI %2 | %3")
                     .arg(kRoiClassificationIndexNames[i])
                     .arg(roiId)
                     .arg(runId);

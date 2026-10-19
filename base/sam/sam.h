@@ -67,7 +67,7 @@ ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
 
 inline double calculateNDVI(const double nir1, const double red);
 
-inline double calculateSWVI(const double nir1, const double swir1);
+inline double calculateSWVI(const double nir1, const double swir2);
 
 inline double calculateDSWI(const double nir1, const double green,
                             const double swir2, const double red);
