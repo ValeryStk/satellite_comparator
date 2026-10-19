@@ -650,9 +650,11 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     connect(static_cast<LayerRoiList *>(m_layer_roi_list),
             &LayerRoiList::classifyRoiByIndexes, this,
             &MainWindowSatelliteComparator::classify_roi_by_indexes);
+    loadViewStates();
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
+    saveViewStates();
     delete ui;
     gdal_close_driver();
 }
@@ -944,6 +946,12 @@ void MainWindowSatelliteComparator::openTimeRowData() {
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric() {
     QColor color = QColorDialog::getColor(Qt::white, this, "Выберите цвет");
+
+    if (!color.isValid()) {
+        uts::showOperationWasCancelled();
+        return;
+    }
+
     QString message = QString(msg::kFindProcessIsRunning)
                           .arg(m_comboBox_calculation_method->currentText());
     ProgressInformator progress_info(this, message);
@@ -4549,6 +4557,18 @@ void MainWindowSatelliteComparator::setUpUi() {
     m_time_row_spectralIndicesDock.setWidget(time_row_indexes_plot);
     m_time_row_spectralIndicesDock.setWindowTitle("Временной ряд индексов");
     addDockWidget(Qt::RightDockWidgetArea, &m_time_row_spectralIndicesDock);
+
+    view_names_keys_and_docks.insert(
+        "spectral_indicies",
+        qMakePair(m_spectralDock, ui->action_spectral_indicies));
+    view_names_keys_and_docks.insert(
+        "index_time_series",
+        qMakePair(&m_time_row_spectralIndicesDock, ui->actionTimeRowIndices));
+    view_names_keys_and_docks.insert(
+        "atmospheric_correction",
+        qMakePair(m_acDock, ui->action_atm_correction));
+    view_names_keys_and_docks.insert("speya",
+                                     qMakePair(m_speyaDock, ui->action_speya));
 }
 
 void MainWindowSatelliteComparator::deleteTimeRowData() {
@@ -4698,6 +4718,37 @@ bool MainWindowSatelliteComparator::saveSentinelToGeoTiff(
 
     qDebug() << "File saved successfully:" << outputFilePath;
     return true;
+}
+
+void MainWindowSatelliteComparator::checkViewStatesExists() {
+    QFileInfo fi("view_states.json");
+    if (fi.exists()) return;
+    saveViewStates();
+}
+
+void MainWindowSatelliteComparator::loadViewStates() {
+    checkViewStatesExists();
+    QJsonArray vs;
+    jsn::getJsonArrayFromFile("view_states.json", vs);
+    view_names_keys_and_docks.keys();
+    for (int i = 0; i < vs.size(); ++i) {
+        auto name = vs[i].toObject()["view_name"].toString();
+        auto state = vs[i].toObject()["state"].toBool();
+        view_names_keys_and_docks[name].second->setChecked(state);
+        view_names_keys_and_docks[name].first->setVisible(state);
+    }
+}
+
+void MainWindowSatelliteComparator::saveViewStates() {
+    QStringList keys = view_names_keys_and_docks.keys();
+    QJsonArray ja;
+    for (int i = 0; i < keys.size(); ++i) {
+        QJsonObject jo;
+        jo["view_name"] = keys[i];
+        jo["state"] = view_names_keys_and_docks[keys[i]].second->isChecked();
+        ja.append(jo);
+    }
+    jsn::saveJsonArrayToFile("view_states.json", ja);
 }
 
 void MainWindowSatelliteComparator::loadMaskForSentinelMenu() {
