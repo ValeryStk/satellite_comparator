@@ -9,11 +9,13 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QPoint>
 #include <QShortcut>
 #include <QSpacerItem>
 #include <QTextCodec>
 #include <QTextStream>
 #include <QUrl>
+#include <QVariant>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -369,7 +371,9 @@ void copyVectorsToClipboard(const double latitude, const double longitude,
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(text);
 }
-
+// Начало растра результата в пиксельных координатах
+// исходного снимка. Значение хранится как QPoint.
+constexpr int kResultRasterOriginDataKey = 0x524F4901;
 }  // end of namespace
 
 // ─── Вспомогательные структуры/функции ────────────────────────────────────
@@ -2730,7 +2734,48 @@ void MainWindowSatelliteComparator::exportSearchResultToGeoTiff(
         options.exportSubstrate = false;
         options.exportLegendPng = false;
     }
+    if (id.contains("change_detection")) {
+        options.exportSubstrate = false;
+        options.exportLegendPng = false;
+    }
     const GeoTiffClassLegend legend = m_layer_legends.value(id);
+
+    // Полноразмерные старые результаты по умолчанию начинаются
+    // в начале исходного снимка.
+    options.rasterOrigin = QPoint(0, 0);
+
+    const QVariant originData = item->data(kResultRasterOriginDataKey);
+
+    if (originData.isValid()) {
+        if (!originData.canConvert<QPoint>()) {
+            QMessageBox::warning(this, tr("Экспорт"),
+                                 tr("У результата повреждены данные "
+                                    "о начале растра."));
+            return;
+        }
+
+        const QPoint rasterOrigin = originData.toPoint();
+
+        if (rasterOrigin.x() < 0 || rasterOrigin.y() < 0) {
+            QMessageBox::warning(
+                this, tr("Экспорт"),
+                tr("У результата некорректное смещение растра."));
+            return;
+        }
+
+        options.rasterOrigin = rasterOrigin;
+
+    } else if (item->pixmap().size() != m_satellite_image.size()) {
+        // Защита от экспорта старой маленькой маски,
+        // созданной до добавления метаданных.
+        // Не подставляем (0, 0) молча: это дало бы неверную привязку.
+        QMessageBox::warning(this, tr("Экспорт"),
+                             tr("У обрезанной маски не сохранено её положение "
+                                "в исходном снимке.\n\n"
+                                "Удалите этот результат и заново выполните "
+                                "классификацию после обновления программы."));
+        return;
+    }
 
     GeoTiffResultExporter::exportSearchResult(item, id, geo, m_satellite_image,
                                               options, legend, this);
@@ -6879,9 +6924,14 @@ void MainWindowSatelliteComparator::classify_roi_by_indexes(
 
             // Маска хранит только прямоугольник ROI.
             // Offset размещает его в координатах исходного изображения.
+            // Визуальное положение маски на сцене.
             item->setOffset(imageOffset + QPointF(roiRect.topLeft()));
-
             item->setTransform(m_image_item->sceneTransform());
+
+            // Положение растра маски в пиксельной сетке исходного снимка.
+            // Экспортёр получает это значение через ExportOptions.
+            item->setData(kResultRasterOriginDataKey,
+                          QVariant::fromValue(roiRect.topLeft()));
 
             preparedItems.push_back(std::move(item));
 
