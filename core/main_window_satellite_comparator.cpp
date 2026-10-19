@@ -570,8 +570,9 @@ static GeoTiffClassLegend buildDpGradientLegend() {
     return legend;
 }
 
-MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
-    : QMainWindow(parent),
+MainWindowSatelliteComparator::MainWindowSatelliteComparator(
+    const QString path2File, const int idContext)
+    : QMainWindow(nullptr),
       ui(new Ui::MainWindowSatelliteComparator),
       m_scene(new QGraphicsScene),
       m_scene_cross_square_item(new CrossSquare(100)),
@@ -644,6 +645,12 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(QWidget *parent)
     connect(&m_ac, &AtmCorrectionMainWindow::responseForSavingCATItoGeoTiff,
             this, &MainWindowSatelliteComparator::saveCATIasGeoTiff);
     loadViewStates();
+    if (!path2File.isEmpty() && (idContext >= 0)) {
+        qDebug() << "CLI args:" << path2File << " -- " << idContext;
+        QTimer::singleShot(1000, this, [=]() {
+            handleRestartedApplication(path2File, idContext);
+        });
+    }
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
@@ -674,10 +681,13 @@ void MainWindowSatelliteComparator::openLandsat8HeaderData() {
     openCommonLandsatHeaderData(satc::satellite_name_landsat_8);
 }
 
-void MainWindowSatelliteComparator::openSentinel2_l2a_HeaderData() {
-    const QString headerName = QFileDialog::getOpenFileName(
-        this, tr("Открыть заголовочный файл Sentinel-2"), QString(),
-        tr("MTD_MSIL2A.xml (MTD_MSIL2A.xml);;XML files (*.xml)"));
+void MainWindowSatelliteComparator::openSentinel2_l2a_HeaderData(
+    QString headerName) {
+    if (headerName.isEmpty()) {
+        headerName = QFileDialog::getOpenFileName(
+            this, tr("Открыть заголовочный файл Sentinel-2"), QString(),
+            tr("MTD_MSIL2A.xml (MTD_MSIL2A.xml);;XML files (*.xml)"));
+    }
 
     if (headerName.isEmpty()) return;
 
@@ -1333,6 +1343,10 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
 void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
     const QString &satellite_name, const QString &headerName) {
     ui->graphicsView_satellite_image->setIsSignal(false);
+    if (!m_sentinel_data.empty()) {
+        restartApplication(headerName, 0);
+        return;
+    }
     clearLandsat9DataBands();
     clear_satellite_data();
     clear_all_layers();
@@ -4695,6 +4709,42 @@ void MainWindowSatelliteComparator::saveViewStates() {
         ja.append(jo);
     }
     jsn::saveJsonArrayToFile("view_states.json", ja);
+}
+
+void MainWindowSatelliteComparator::restartApplication(const QString path,
+                                                       int id) {
+    // 1. Получаем путь к текущему исполняемому файлу
+    QString program = QCoreApplication::applicationFilePath();
+
+    // 2. Получаем исходные аргументы в правильной Юникод-кодировке
+    QStringList arguments = QCoreApplication::arguments();
+
+    // Удаляем первый аргумент (путь к самому файлу), если он есть
+    if (!arguments.isEmpty()) {
+        arguments.removeFirst();
+    }
+
+    // 3. Формируем новые аргументы для процесса
+    if (!path.isEmpty()) {
+        arguments << "--file"
+                  << path;  // Передаем путь КАК ЕСТЬ, без ручных кавычек!
+        arguments << "--context" << QString::number(id);
+    }
+
+    // 4. Запускаем копию приложения.
+    // QProcess сам корректно экранирует пробелы и кириллицу для Windows API.
+    QProcess::startDetached(program, arguments);
+
+    // 5. Закрываем текущее приложение
+    QCoreApplication::quit();
+}
+
+void MainWindowSatelliteComparator::handleRestartedApplication(
+    const QString path, const int id) {
+    if (id == 0) {
+        QString tempPath = path;
+        openSentinel2_l2a_HeaderData(path);
+    }
 }
 
 void MainWindowSatelliteComparator::loadMaskForSentinelMenu() {

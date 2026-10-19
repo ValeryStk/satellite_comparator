@@ -52,7 +52,8 @@ class MainWindowSatelliteComparator : public QMainWindow {
 
 public:
     //! Конcтруктор
-    explicit MainWindowSatelliteComparator(QWidget *parent = nullptr);
+    explicit MainWindowSatelliteComparator(const QString path2File = "",
+                                           const int idContext = -1);
 
     //! Деструктор
     ~MainWindowSatelliteComparator();
@@ -136,7 +137,7 @@ private slots:
     void openLandsat8HeaderData();
 
     //! Слот для открытия данных Sentinel 2 уровя L2A (атмкорр)
-    void openSentinel2_l2a_HeaderData();
+    void openSentinel2_l2a_HeaderData(QString headerName = "");
 
     //! Слот для открытия данных Bekas
     void openBekasSpectraData();
@@ -556,6 +557,8 @@ private:
     void checkViewStatesExists();
     void loadViewStates();
     void saveViewStates();
+    void restartApplication(const QString path, int id);
+    void handleRestartedApplication(const QString path, const int id);
 
     bool m_mouse_tracking_enabled = true;
     QShortcut *m_toggle_mouse_tracking_shortcut;
