@@ -9,11 +9,13 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QPoint>
 #include <QShortcut>
 #include <QSpacerItem>
 #include <QTextCodec>
 #include <QTextStream>
 #include <QUrl>
+#include <QVariant>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -369,7 +371,9 @@ void copyVectorsToClipboard(const double latitude, const double longitude,
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(text);
 }
-
+// Начало растра результата в пиксельных координатах
+// исходного снимка. Значение хранится как QPoint.
+constexpr int kResultRasterOriginDataKey = 0x524F4901;
 }  // end of namespace
 
 // ─── Вспомогательные структуры/функции ────────────────────────────────────
@@ -644,6 +648,9 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(
     connect(&m_ac, SIGNAL(findBasePixels()), this, SLOT(basePixelAnalyzer()));
     connect(&m_ac, &AtmCorrectionMainWindow::responseForSavingCATItoGeoTiff,
             this, &MainWindowSatelliteComparator::saveCATIasGeoTiff);
+    connect(static_cast<LayerRoiList *>(m_layer_roi_list),
+            &LayerRoiList::classifyRoiByIndexes, this,
+            &MainWindowSatelliteComparator::classify_roi_by_indexes);
     loadViewStates();
     if (!path2File.isEmpty() && (idContext >= 0)) {
         qDebug() << "CLI args:" << path2File << " -- " << idContext;
@@ -1017,11 +1024,17 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         double evi = sam::calculateEVI(bv.nir1, bv.red, bv.blue);
         double ndvi = sam::calculateNDVI(bv.nir1, bv.red);
         double swvi = sam::calculateSWVI(bv.nir1, bv.swir2);
+        double NBR = sam::calculateNBR(bv.nir2, bv.swir3);
+        double NDSWIR = sam::calculateNDSWIR(bv.nir2, bv.swir2);
 
-        m_spectralWidget->setIndices({{sam::kSpectralIndexNDVI, ndvi},
-                                      {{sam::kSpectralIndexSWVI}, {swvi}},
-                                      {{sam::kSpectralIndexDSWI}, {dswi}},
-                                      {sam::kSpectralIndexEVI, evi}});
+        m_spectralWidget->setIndices({
+            {sam::kSpectralIndexNDVI, ndvi},
+            {{sam::kSpectralIndexSWVI}, {swvi}},
+            {{sam::kSpectralIndexDSWI}, {dswi}},
+            {sam::kSpectralIndexEVI, evi},
+            {sam::kSpectralIndexNBR, NBR},
+            {sam::kSpectralIndexNDSWIR, NDSWIR},
+        });
     }
     if (data.empty()) {
         return;
@@ -2743,7 +2756,48 @@ void MainWindowSatelliteComparator::exportSearchResultToGeoTiff(
         options.exportSubstrate = false;
         options.exportLegendPng = false;
     }
+    if (id.contains("change_detection")) {
+        options.exportSubstrate = false;
+        options.exportLegendPng = false;
+    }
     const GeoTiffClassLegend legend = m_layer_legends.value(id);
+
+    // Полноразмерные старые результаты по умолчанию начинаются
+    // в начале исходного снимка.
+    options.rasterOrigin = QPoint(0, 0);
+
+    const QVariant originData = item->data(kResultRasterOriginDataKey);
+
+    if (originData.isValid()) {
+        if (!originData.canConvert<QPoint>()) {
+            QMessageBox::warning(this, tr("Экспорт"),
+                                 tr("У результата повреждены данные "
+                                    "о начале растра."));
+            return;
+        }
+
+        const QPoint rasterOrigin = originData.toPoint();
+
+        if (rasterOrigin.x() < 0 || rasterOrigin.y() < 0) {
+            QMessageBox::warning(
+                this, tr("Экспорт"),
+                tr("У результата некорректное смещение растра."));
+            return;
+        }
+
+        options.rasterOrigin = rasterOrigin;
+
+    } else if (item->pixmap().size() != m_satellite_image.size()) {
+        // Защита от экспорта старой маленькой маски,
+        // созданной до добавления метаданных.
+        // Не подставляем (0, 0) молча: это дало бы неверную привязку.
+        QMessageBox::warning(this, tr("Экспорт"),
+                             tr("У обрезанной маски не сохранено её положение "
+                                "в исходном снимке.\n\n"
+                                "Удалите этот результат и заново выполните "
+                                "классификацию после обновления программы."));
+        return;
+    }
 
     GeoTiffResultExporter::exportSearchResult(item, id, geo, m_satellite_image,
                                               options, legend, this);
@@ -6591,4 +6645,470 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
     dv::show(plotX, plotNdwi, "NDWI");
 
     dv::holdOff(config);
+}
+
+namespace {
+
+constexpr int kRoiClassificationIndexCount = 6;
+
+using RoiIndexValues = std::array<double, kRoiClassificationIndexCount>;
+
+const std::array<QString, kRoiClassificationIndexCount>
+    kRoiClassificationIndexNames = {
+        {QString::fromLatin1(sam::kSpectralIndexNDVI),
+         QString::fromLatin1(sam::kSpectralIndexSWVI),
+         QString::fromLatin1(sam::kSpectralIndexDSWI),
+         QString::fromLatin1(sam::kSpectralIndexEVI),
+         QString::fromLatin1(sam::kSpectralIndexNBR),
+         QString::fromLatin1(sam::kSpectralIndexNDSWIR)}};
+
+RoiIndexValues calculateRoiClassificationIndices(
+    const sam::BandIndicesValues &bands) {
+    return {
+        {sam::calculateNDVI(bands.nir1, bands.red),
+
+         sam::calculateSWVI(bands.nir1, bands.swir2),
+
+         sam::calculateDSWI(bands.nir1, bands.green, bands.swir2, bands.red),
+
+         sam::calculateEVI(bands.nir1, bands.red, bands.blue),
+
+         sam::calculateNBR(bands.nir2, bands.swir3),
+
+         sam::calculateNDSWIR(bands.nir2, bands.swir2)}};
+}
+
+bool hasUsableRoiClassificationSpectrum(const QVector<double> &waves,
+                                        const QVector<double> &values) {
+    if (waves.isEmpty() || waves.size() != values.size()) {
+        return false;
+    }
+
+    // Полностью нулевой спектр рассматриваем как отсутствие данных.
+    bool hasNonZeroFiniteValue = false;
+
+    for (double value : values) {
+        if (std::isfinite(value) && value != 0.0) {
+            hasNonZeroFiniteValue = true;
+            break;
+        }
+    }
+
+    return hasNonZeroFiniteValue;
+}
+
+QVector<QRgb> buildRoiClassificationColorTable(const PlantHealth &classifier) {
+    // 0 — прозрачный фон; 1..6 — классы PlantHealth.
+    QVector<QRgb> colors(256, qRgba(0, 0, 0, 0));
+
+    for (int healthClass = 1; healthClass <= 6; ++healthClass) {
+        const QColor color(
+            QString::fromStdString(classifier.getClassColor(healthClass)));
+
+        colors[healthClass] = color.rgba();
+    }
+
+    return colors;
+}
+
+GeoTiffClassLegend buildRoiClassificationLegend(const PlantHealth &classifier) {
+    GeoTiffClassLegend legend;
+
+    for (int healthClass = 1; healthClass <= 6; ++healthClass) {
+        const QColor color(
+            QString::fromStdString(classifier.getClassColor(healthClass)));
+
+        const QString name =
+            QString::fromUtf8(sam::kHealthClassesRussian[healthClass - 1]);
+
+        legend.append({color, name});
+    }
+
+    return legend;
+}
+
+QString buildRoiClassificationTooltip(const QString &roiId,
+                                      const QString &indexName,
+                                      const PlantHealth &classifier,
+                                      qint64 classifiedPixelCount) {
+    QString tooltip = QString(
+                          "<b>Классификация по индексу %1</b><br>"
+                          "ROI: %2<br>"
+                          "Классифицировано пикселей: %3<br><br>")
+                          .arg(indexName.toHtmlEscaped())
+                          .arg(roiId.toHtmlEscaped())
+                          .arg(classifiedPixelCount);
+
+    for (int healthClass = 1; healthClass <= 6; ++healthClass) {
+        const QString color =
+            QString::fromStdString(classifier.getClassColor(healthClass));
+
+        const QString name =
+            QString::fromUtf8(sam::kHealthClassesRussian[healthClass - 1]);
+
+        tooltip += QString("<span style=\"color:%1;\">&#9632;</span> %2<br>")
+                       .arg(color.toHtmlEscaped())
+                       .arg(name.toHtmlEscaped());
+    }
+
+    tooltip += QString(
+        "<br>Вне ROI и при невалидном значении индекса — "
+        "прозрачный фон.");
+
+    return tooltip;
+}
+
+}  // namespace
+
+void MainWindowSatelliteComparator::classify_roi_by_indexes(
+    const QString &roiId) {
+    if (!m_is_image_created || !m_image_item ||
+        m_image_item->pixmap().isNull()) {
+        QMessageBox::warning(
+            this, tr("Классификация по индексам"),
+            tr("Сначала загрузите и отобразите спутниковый снимок."));
+        return;
+    }
+
+    const bool isSingleSentinel = m_satelite_type == sad::SENTINEL_2A ||
+                                  m_satelite_type == sad::SENTINEL_2B ||
+                                  m_satelite_type == sad::SENTINEL_2C;
+
+    if (!isSingleSentinel) {
+        QMessageBox::warning(
+            this, tr("Классификация по индексам"),
+            tr("Этот вариант классификации работает с одиночным "
+               "снимком Sentinel-2A, Sentinel-2B или Sentinel-2C.\n\n"
+               "Для временного ряда используйте существующие "
+               "инструменты анализа динамики индексов."));
+        return;
+    }
+
+    auto *view = ui->graphicsView_satellite_image;
+    auto *polygonItem = view->getPolygonById(roiId);
+
+    if (!polygonItem) {
+        QMessageBox::warning(this, tr("Классификация по индексам"),
+                             tr("Область интереса не найдена."));
+        return;
+    }
+
+    const QSize imageSize = m_image_item->pixmap().size();
+    const QRect imageRect(QPoint(0, 0), imageSize);
+
+    if (imageRect.isEmpty()) {
+        return;
+    }
+
+    // Геометрию полигона переводим в локальные координаты изображения.
+    // Снимок пути сохраняем до показа прогресса.
+    QPainterPath polygonPath;
+    polygonPath.setFillRule(Qt::OddEvenFill);
+    polygonPath.addPolygon(polygonItem->polygon());
+    polygonPath.closeSubpath();
+
+    const QPainterPath scenePath = polygonItem->mapToScene(polygonPath);
+
+    QPainterPath imagePath = m_image_item->mapFromScene(scenePath);
+
+    // Координаты растровых пикселей начинаются с (0, 0),
+    // даже если у QGraphicsPixmapItem задан offset.
+    const QPointF imageOffset = m_image_item->offset();
+
+    imagePath.translate(-imageOffset.x(), -imageOffset.y());
+
+    const QRect roiRect =
+        imagePath.boundingRect().toAlignedRect().intersected(imageRect);
+
+    if (roiRect.isEmpty()) {
+        QMessageBox::information(
+            this, tr("Классификация по индексам"),
+            tr("Область интереса не пересекает изображение."));
+        return;
+    }
+
+    const QVector<double> waves = getWaves();
+
+    if (waves.isEmpty()) {
+        QMessageBox::warning(
+            this, tr("Классификация по индексам"),
+            tr("Не удалось получить длины волн загруженного снимка."));
+        return;
+    }
+
+    // Оценка памяти: 6 RGBA-слоёв плюс временные изображения.
+    // Реальный расход зависит от реализации QPixmap.
+    const qint64 pixelCount = qint64(roiRect.width()) * roiRect.height();
+
+    // Приблизительно: 6 индексированных масок,
+    // 6 графических слоёв и временные буферы.
+    // Фактический расход зависит от платформы.
+    const qint64 estimatedBytes =
+        pixelCount * (5 * kRoiClassificationIndexCount + 4);
+    const double estimatedMiB = double(estimatedBytes) / (1024.0 * 1024.0);
+
+    if (estimatedMiB > 512.0) {
+        const auto answer = QMessageBox::question(
+            this, tr("Классификация по индексам"),
+            tr("Будет создано 6 масок размером с область интереса.\n"
+               "Ориентировочный дополнительный расход памяти: "
+               "%1 МиБ; фактический расход может быть выше.\n\n"
+               "Продолжить?")
+                .arg(estimatedMiB, 0, 'f', 0),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+
+        if (answer != QMessageBox::Yes) {
+            return;
+        }
+    }
+
+    QProgressDialog progress(
+        tr("Классификация пикселей области интереса…"), tr("Отмена"), 0,
+        roiRect.height() + kRoiClassificationIndexCount, this);
+
+    progress.setWindowTitle(tr("Классификация по индексам"));
+    progress.setWindowModality(Qt::ApplicationModal);
+    progress.setMinimumDuration(0);
+    progress.setAutoClose(false);
+    progress.setAutoReset(false);
+    progress.setValue(0);
+
+    try {
+        std::vector<std::unique_ptr<PlantHealth>> classifiers;
+        classifiers.reserve(kRoiClassificationIndexCount);
+
+        // Классы временно храним только в прямоугольнике ROI.
+        std::array<QImage, kRoiClassificationIndexCount> roiMasks;
+        std::array<qint64, kRoiClassificationIndexCount> classifiedCounts = {
+            {0, 0, 0, 0, 0, 0}};
+
+        for (int i = 0; i < kRoiClassificationIndexCount; ++i) {
+            classifiers.emplace_back(
+                new PlantHealth(kRoiClassificationIndexNames[i].toStdString()));
+
+            roiMasks[i] = QImage(roiRect.size(), QImage::Format_Indexed8);
+
+            if (roiMasks[i].isNull()) {
+                progress.close();
+
+                QMessageBox::warning(
+                    this, tr("Классификация по индексам"),
+                    tr("Недостаточно памяти для масок области интереса."));
+                return;
+            }
+
+            roiMasks[i].setColorTable(
+                buildRoiClassificationColorTable(*classifiers[i]));
+
+            roiMasks[i].fill(0);
+        }
+
+        qint64 insidePixelCount = 0;
+
+        for (int localY = 0; localY < roiRect.height(); ++localY) {
+            if (progress.wasCanceled()) {
+                return;
+            }
+
+            const int imageY = roiRect.top() + localY;
+
+            std::array<uchar *, kRoiClassificationIndexCount> rows;
+
+            for (int i = 0; i < kRoiClassificationIndexCount; ++i) {
+                rows[i] = roiMasks[i].scanLine(localY);
+            }
+
+            for (int localX = 0; localX < roiRect.width(); ++localX) {
+                const int imageX = roiRect.left() + localX;
+
+                const QPointF pixelCenter(imageX + 0.5, imageY + 0.5);
+
+                if (!imagePath.contains(pixelCenter)) {
+                    continue;
+                }
+
+                ++insidePixelCount;
+
+                const QVector<double> values = getKsyValues(imageX, imageY);
+
+                if (!hasUsableRoiClassificationSpectrum(waves, values)) {
+                    continue;
+                }
+
+                const sam::BandIndicesValues bands =
+                    getBandsValues(waves, values, m_satelite_type);
+
+                const RoiIndexValues indices =
+                    calculateRoiClassificationIndices(bands);
+
+                for (int i = 0; i < kRoiClassificationIndexCount; ++i) {
+                    const double value = indices[i];
+
+                    if (!std::isfinite(value)) {
+                        continue;
+                    }
+
+                    const int healthClass =
+                        classifiers[i]->getHealthClass(value);
+
+                    if (!classifiers[i]->isValidClass(healthClass)) {
+                        continue;
+                    }
+
+                    rows[i][localX] = static_cast<uchar>(healthClass);
+
+                    ++classifiedCounts[i];
+                }
+            }
+
+            progress.setValue(localY + 1);
+        }
+
+        if (insidePixelCount == 0) {
+            progress.close();
+
+            QMessageBox::information(
+                this, tr("Классификация по индексам"),
+                tr("Внутри ROI нет центров пикселей изображения."));
+            return;
+        }
+
+        bool hasAnyValidIndex = false;
+
+        for (int i = 0; i < kRoiClassificationIndexCount; ++i) {
+            if (classifiedCounts[i] > 0) {
+                hasAnyValidIndex = true;
+                break;
+            }
+        }
+
+        if (!hasAnyValidIndex) {
+            progress.close();
+
+            QMessageBox::warning(
+                this, tr("Классификация по индексам"),
+                tr("Внутри ROI не удалось рассчитать ни одного "
+                   "валидного значения индексов.\n"
+                   "Проверьте наличие необходимых спектральных каналов."));
+            return;
+        }
+
+        // До завершения подготовки все слои принадлежат unique_ptr.
+        // При отмене или ошибке частичные результаты не попадут на сцену.
+        std::vector<std::unique_ptr<QGraphicsPixmapItem>> preparedItems;
+        preparedItems.reserve(kRoiClassificationIndexCount);
+
+        for (int i = 0; i < kRoiClassificationIndexCount; ++i) {
+            if (progress.wasCanceled()) {
+                return;
+            }
+
+            progress.setLabelText(tr("Подготовка маски %1…")
+                                      .arg(kRoiClassificationIndexNames[i]));
+
+            const QPixmap pixmap = QPixmap::fromImage(roiMasks[i]);
+
+            if (pixmap.isNull()) {
+                progress.close();
+
+                QMessageBox::warning(
+                    this, tr("Классификация по индексам"),
+                    tr("Не удалось создать графический слой маски."));
+                return;
+            }
+
+            std::unique_ptr<QGraphicsPixmapItem> item(
+                new QGraphicsPixmapItem(pixmap));
+
+            item->setTransformationMode(Qt::FastTransformation);
+            item->setAcceptedMouseButtons(Qt::NoButton);
+
+            // Маска хранит только прямоугольник ROI.
+            // Offset размещает его в координатах исходного изображения.
+            // Визуальное положение маски на сцене.
+            item->setOffset(imageOffset + QPointF(roiRect.topLeft()));
+            item->setTransform(m_image_item->sceneTransform());
+
+            // Положение растра маски в пиксельной сетке исходного снимка.
+            // Экспортёр получает это значение через ExportOptions.
+            item->setData(kResultRasterOriginDataKey,
+                          QVariant::fromValue(roiRect.topLeft()));
+
+            preparedItems.push_back(std::move(item));
+
+            roiMasks[i] = QImage();
+
+            progress.setValue(roiRect.height() + i + 1);
+        }
+
+        if (progress.wasCanceled()) {
+            return;
+        }
+
+        progress.close();
+
+        const QString runId =
+            QUuid::createUuid().toString(QUuid::WithoutBraces);
+
+        const qreal nextZ = view->getMaxZValue(m_scene);
+        const qreal availableZ = qreal(Z_INDEX_ROI_AREA_POLYGON) - nextZ;
+
+        // Новые маски располагаем выше результатов, но ниже ROI.
+        const qreal zStep =
+            availableZ > 0.0 ? availableZ / (kRoiClassificationIndexCount + 1.0)
+                             : 0.0;
+
+        for (int i = 0; i < kRoiClassificationIndexCount; ++i) {
+            const QString layerId =
+                QStringLiteral("Classification %1 | ROI %2 | %3")
+                    .arg(kRoiClassificationIndexNames[i])
+                    .arg(roiId)
+                    .arg(runId);
+
+            const QString tooltip = buildRoiClassificationTooltip(
+                roiId, kRoiClassificationIndexNames[i], *classifiers[i],
+                classifiedCounts[i]);
+
+            QGraphicsPixmapItem *item = preparedItems[i].get();
+
+            if (availableZ > 0.0) {
+                item->setZValue(nextZ + i * zStep);
+            } else {
+                item->setZValue(qreal(Z_INDEX_ROI_AREA_POLYGON) - 0.5);
+            }
+
+            // item->setToolTip(tooltip);
+
+            // Сначала регистрируем объект, затем создаём строку списка.
+            // Для новых слоёв включён только первый индекс.
+            item->setVisible(i == 0);
+
+            m_scene->addItem(item);
+            preparedItems[i].release();
+
+            m_layers_search_result_items.insert(layerId, item);
+
+            m_layer_legends.insert(
+                layerId, buildRoiClassificationLegend(*classifiers[i]));
+
+            m_layer_gui_list->addItemToList(
+                layerId, tooltip, QColor(),
+                i == 0 ? Qt::Checked : Qt::Unchecked);
+        }
+
+        m_scene->update();
+
+        ui->statusbar->showMessage(
+            tr("Создано 6 масок классификации по индексам. "
+               "Показана NDVI; остальные включаются в списке слоёв."),
+            10000);
+
+    } catch (const std::bad_alloc &) {
+        progress.close();
+
+        QMessageBox::warning(this, tr("Классификация по индексам"),
+                             tr("Недостаточно памяти для создания всех масок.\n"
+                                "Уменьшите размер исходного изображения "
+                                "или освободите оперативную память."));
+    }
 }

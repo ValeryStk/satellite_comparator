@@ -7,7 +7,9 @@
 #include <QHash>
 #include <QMessageBox>
 #include <QPainter>
+#include <QStringList>
 #include <QUrl>
+#include <limits>
 
 #include "libs/gdal/x64/include/cpl_conv.h"
 #include "libs/gdal/x64/include/gdal_priv.h"
@@ -366,27 +368,101 @@ bool GeoTiffResultExporter::exportSearchResult(
         return false;
     }
 
-    const QString cleanName = sanitizeFileName(suggestedName);
-
-    const QString filePath = QFileDialog::getSaveFileName(
-        parent, "Экспорт результата в GeoTIFF", cleanName + ".tif",
-        "GeoTIFF (*.tif *.tiff)");
-    if (filePath.isEmpty()) return false;
-
     const QImage maskImage = resultItem->pixmap().toImage();
+
+    if (maskImage.isNull()) {
+        QMessageBox::warning(parent, "Экспорт",
+                             "Изображение результата пустое.");
+        return false;
+    }
+
+    const QPoint rasterOrigin = options.rasterOrigin;
+
+    if (rasterOrigin.x() < 0 || rasterOrigin.y() < 0) {
+        QMessageBox::warning(parent, "Экспорт",
+                             "Начало растра результата не может иметь "
+                             "отрицательные пиксельные координаты.");
+        return false;
+    }
+
+    // Используем 64-битные промежуточные значения,
+    // чтобы проверить границы до операций с QRect.
+    const qint64 endX = qint64(rasterOrigin.x()) + maskImage.width();
+
+    const qint64 endY = qint64(rasterOrigin.y()) + maskImage.height();
+
+    if (endX > std::numeric_limits<int>::max() ||
+        endY > std::numeric_limits<int>::max()) {
+        QMessageBox::warning(parent, "Экспорт",
+                             "Координаты растра результата превышают "
+                             "допустимый диапазон.");
+        return false;
+    }
+
+    // Если сохраняем подложку, входной растр должен
+    // укладываться в полное базовое изображение.
+    if (options.exportSubstrate) {
+        if (baseImage.isNull()) {
+            QMessageBox::warning(parent, "Экспорт",
+                                 "Запрошен экспорт подложки, но базовое "
+                                 "изображение отсутствует.");
+            return false;
+        }
+
+        if (endX > baseImage.width() || endY > baseImage.height()) {
+            QMessageBox::warning(parent, "Экспорт",
+                                 "Растр результата с заданным смещением "
+                                 "выходит за границы базового изображения.\n\n"
+                                 "Проверьте rasterOrigin и соответствие "
+                                 "пиксельных сеток результата и снимка.");
+            return false;
+        }
+    }
+
     ClassRaster raster = buildClassRaster(maskImage);
-    if (raster.xSize <= 0) {
+
+    if (raster.xSize <= 0 || raster.ySize <= 0 || raster.values.isEmpty()) {
         QMessageBox::warning(parent, "Экспорт",
                              "Не удалось прочитать данные результата.");
         return false;
     }
 
+    // Геопривязка верхнего левого угла входного растра.
+    // geoTransform относится к полному исходному снимку.
     sad::geoTransform croppedGeo = geoTransform;
-    QRect cropRect(0, 0, raster.xSize, raster.ySize);
-    if (!cropToContent(raster, croppedGeo, cropRect)) {
-        QMessageBox::warning(
-            parent, "Экспорт",
-            "В этом результате нет валидных данных для экспорта.");
+
+    const double originX = rasterOrigin.x();
+    const double originY = rasterOrigin.y();
+
+    croppedGeo.ulX = geoTransform.ulX + originX * geoTransform.resX +
+                     originY * geoTransform.rotateX;
+
+    croppedGeo.ulY = geoTransform.ulY + originX * geoTransform.rotateY +
+                     originY * geoTransform.resY;
+
+    // cropToContent() возвращает прямоугольник обрезки
+    // в локальных координатах входного растра.
+    QRect localCropRect;
+
+    if (!cropToContent(raster, croppedGeo, localCropRect)) {
+        QMessageBox::warning(parent, "Экспорт",
+                             "В этом результате нет валидных данных "
+                             "для экспорта.");
+        return false;
+    }
+
+    // Для подложки нужен прямоугольник в координатах
+    // полного исходного изображения.
+    const QRect baseCropRect(rasterOrigin + localCropRect.topLeft(),
+                             localCropRect.size());
+
+    const QString cleanName = sanitizeFileName(suggestedName);
+
+    const QString filePath = QFileDialog::getSaveFileName(
+        parent, "Экспорт результата в GeoTIFF", cleanName + ".tif",
+        "GeoTIFF (*.tif *.tiff)");
+
+    if (filePath.isEmpty()) {
         return false;
     }
 
@@ -399,21 +475,40 @@ bool GeoTiffResultExporter::exportSearchResult(
     const QString baseNameNoExt = fi.completeBaseName();
     const QString dirPath = fi.absolutePath();
 
-    if (options.exportSubstrate && !baseImage.isNull()) {
+    QStringList additionalErrors;
+
+    if (options.exportSubstrate) {
         const QString substratePath =
             dirPath + "/" + baseNameNoExt + "_substrate.tif";
-        writeSubstrateGeoTiff(substratePath, baseImage, cropRect, croppedGeo);
+
+        if (!writeSubstrateGeoTiff(substratePath, baseImage, baseCropRect,
+                                   croppedGeo)) {
+            additionalErrors.append(
+                QStringLiteral("Не удалось сохранить RGB-подложку."));
+        }
     }
 
     if (options.exportLegendPng) {
         const QString legendPath =
             dirPath + "/" + baseNameNoExt + "_legend.png";
-        writeLegendPng(legendPath, raster, knownLegend);
+
+        if (!writeLegendPng(legendPath, raster, knownLegend)) {
+            additionalErrors.append(
+                QStringLiteral("Не удалось сохранить PNG-легенду."));
+        }
+    }
+
+    if (!additionalErrors.isEmpty()) {
+        QMessageBox::warning(parent, "Экспорт",
+                             QStringLiteral("Основной GeoTIFF сохранён.\n\n%1")
+                                 .arg(additionalErrors.join("\n")));
     }
 
     if (options.openFolderAfterSave) {
         QDesktopServices::openUrl(QUrl::fromLocalFile(dirPath));
     }
 
+    // Как и раньше: true означает успешную запись
+    // основного файла классификации.
     return true;
 }

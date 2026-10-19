@@ -82,8 +82,8 @@ double calculateNDVI(const double nir1, const double red) {
     return detail::calculate_normalized_difference(nir1, red);
 }
 
-double calculateSWVI(const double nir1, const double swir1) {
-    return detail::calculate_normalized_difference(nir1, swir1);
+double calculateSWVI(const double nir1, const double swir2) {
+    return detail::calculate_normalized_difference(nir1, swir2);
 }
 
 double calculateDSWI(const double nir1, const double green, const double swir2,
