@@ -6690,19 +6690,21 @@ void MainWindowSatelliteComparator::classify_roi_by_indexes(
         return;
     }
 
-    // Оценка памяти: семь RGBA-слоёв плюс временные изображения.
+    // Оценка памяти: 6 RGBA-слоёв плюс временные изображения.
     // Реальный расход зависит от реализации QPixmap.
-    const qint64 pixelCount = qint64(imageSize.width()) * imageSize.height();
+    const qint64 pixelCount = qint64(roiRect.width()) * roiRect.height();
 
+    // Приблизительно: 6 индексированных масок,
+    // 6 графических слоёв и временные буферы.
+    // Фактический расход зависит от платформы.
     const qint64 estimatedBytes =
-        pixelCount * (4 * kRoiClassificationIndexCount + 2);
-
+        pixelCount * (5 * kRoiClassificationIndexCount + 4);
     const double estimatedMiB = double(estimatedBytes) / (1024.0 * 1024.0);
 
     if (estimatedMiB > 512.0) {
         const auto answer = QMessageBox::question(
             this, tr("Классификация по индексам"),
-            tr("Будет создано семь полноразмерных масок.\n"
+            tr("Будет создано 6 масок размером с область интереса.\n"
                "Ориентировочный дополнительный расход памяти: "
                "%1 МиБ; фактический расход может быть выше.\n\n"
                "Продолжить?")
@@ -6858,30 +6860,7 @@ void MainWindowSatelliteComparator::classify_roi_by_indexes(
             progress.setLabelText(tr("Подготовка маски %1…")
                                       .arg(kRoiClassificationIndexNames[i]));
 
-            QImage fullMask(imageSize, QImage::Format_Indexed8);
-
-            if (fullMask.isNull()) {
-                progress.close();
-
-                QMessageBox::warning(
-                    this, tr("Классификация по индексам"),
-                    tr("Недостаточно памяти для полноразмерной маски."));
-                return;
-            }
-
-            fullMask.setColorTable(roiMasks[i].colorTable());
-            fullMask.fill(0);
-
-            for (int y = 0; y < roiRect.height(); ++y) {
-                const uchar *source = roiMasks[i].constScanLine(y);
-
-                uchar *destination =
-                    fullMask.scanLine(roiRect.top() + y) + roiRect.left();
-
-                std::copy(source, source + roiRect.width(), destination);
-            }
-
-            const QPixmap pixmap = QPixmap::fromImage(fullMask);
+            const QPixmap pixmap = QPixmap::fromImage(roiMasks[i]);
 
             if (pixmap.isNull()) {
                 progress.close();
@@ -6898,14 +6877,14 @@ void MainWindowSatelliteComparator::classify_roi_by_indexes(
             item->setTransformationMode(Qt::FastTransformation);
             item->setAcceptedMouseButtons(Qt::NoButton);
 
-            // Переносим систему координат базового изображения,
-            // не делая маску его дочерним элементом.
-            item->setOffset(imageOffset);
+            // Маска хранит только прямоугольник ROI.
+            // Offset размещает его в координатах исходного изображения.
+            item->setOffset(imageOffset + QPointF(roiRect.topLeft()));
+
             item->setTransform(m_image_item->sceneTransform());
 
             preparedItems.push_back(std::move(item));
 
-            // Этот временный буфер больше не нужен.
             roiMasks[i] = QImage();
 
             progress.setValue(roiRect.height() + i + 1);
@@ -6947,7 +6926,7 @@ void MainWindowSatelliteComparator::classify_roi_by_indexes(
                 item->setZValue(qreal(Z_INDEX_ROI_AREA_POLYGON) - 0.5);
             }
 
-            item->setToolTip(tooltip);
+            // item->setToolTip(tooltip);
 
             // Сначала регистрируем объект, затем создаём строку списка.
             // Для новых слоёв включён только первый индекс.
