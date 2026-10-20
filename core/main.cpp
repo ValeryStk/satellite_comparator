@@ -76,14 +76,14 @@ int main(int argc, char *argv[]) {
 
     // Настраиваем Qt на системную локаль
     QLocale::setDefault(QLocale(QLocale::Russian, QLocale::Russia));
-    qInstallMessageHandler(myMessageOutput);
+    // qInstallMessageHandler(myMessageOutput);
     QApplication a(argc, argv);
     QString filePath;
     int contextId = 0;
 
     // Настраиваем стандартный парсер Qt
     QCommandLineParser parser;
-    parser.setApplicationDescription("Мое приложение с поддержкой кириллицы");
+    parser.setApplicationDescription("ForestGuard");
     parser.addHelpOption();  // Автоматически добавит поддержку -h и --help
 
     // Регистрируем опцию --file <value>

@@ -1195,6 +1195,7 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
 
 void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
     const QString &satellite_name) {
+    QString satellite_name_from_file;
     QString openSatMessage;
     QString headerName;
     openSatMessage =
@@ -1210,6 +1211,7 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
         restartApplication(headerName, 2);
         return;
     }
+
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
     clear_satellite_data();
@@ -1222,16 +1224,12 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
         uts::showNoDataAvailable();
         return;
     }
-
+    ProgressInformator pi(this, msg::kLoadSingleLandsatTask);
+    QApplication::processEvents();
     if (m_dynamic_checkboxes_widget) m_dynamic_checkboxes_widget->clear();
     QFileInfo fi(headerName);
     m_root_path = fi.path();
     const QString extension = fi.completeSuffix();
-    QString dataLoadingMessage =
-        QString("Загрузка данных %1...").arg(satellite_name);
-    ui->statusbar->showMessage(dataLoadingMessage);
-    QApplication::processEvents();
-    ProgressInformator pi(this, msg::kLoadSingleLandsatTask);
     QList<QString> landsat_gui_available_bands;
 
     if (extension == "json") {
@@ -1242,8 +1240,9 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
                 jsn::getValueByPath(
                     jo, {"LANDSAT_METADATA_FILE", "IMAGE_ATTRIBUTES"})
                     .toObject();
-            title_satellite_name->setText(
-                image_attributes.value("SPACECRAFT_ID").toString());
+            satellite_name_from_file =
+                image_attributes.value("SPACECRAFT_ID").toString();
+            title_satellite_name->setText(satellite_name_from_file);
             qDebug() << image_attributes.value("DATE_ACQUIRED").toString();
             qDebug() << image_attributes.value("SCENE_CENTER_TIME").toString();
             QJsonValue value = jsn::getValueByPath(
@@ -1307,16 +1306,17 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
     } else if (extension == "txt") {
         auto file_names = getLandSat9BandsFromTxtFormat(
             headerName, landsat_gui_available_bands);
-        // qDebug()<<"TXT filenames: "<<file_names;
-        title_satellite_name->setText(
-            getLandSatSpaceCraftIDFromTxtFormat(headerName));
+        satellite_name_from_file =
+            getLandSatSpaceCraftIDFromTxtFormat(headerName);
+        title_satellite_name->setText(satellite_name_from_file);
         read_landsat_bands_data(file_names);
         fillLandSat9ReflectanceMultAdd(headerName);
         fillLandSat9GeoData(headerName);
         isHeaderValid = true;
     } else if (extension == "xml") {
         auto data = satc::readLandsatXmlHeader(headerName);
-        title_satellite_name->setText(data.image_attributes.spacecraft_id);
+        satellite_name_from_file = data.image_attributes.spacecraft_id;
+        title_satellite_name->setText(satellite_name_from_file);
         QStringList file_names;
         for (int i = 0; i < LANDSAT_BANDS_NUMBER; ++i) {
             if (data.landsat9_missed_channels[i]) continue;
@@ -1346,6 +1346,16 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
     if (isHeaderValid == false) {
         m_satelite_type = sad::UNKNOWN_SATELLITE;
         return;
+    }
+    QString dataLoadingMessage =
+        QString("Загрузка данных %1...").arg(satellite_name_from_file);
+    ui->statusbar->showMessage(dataLoadingMessage);
+    QApplication::processEvents();
+
+    if (satellite_name_from_file == "LANDSAT_8") {
+        m_satelite_type = sad::LANDSAT_8;
+    } else if (satellite_name_from_file == "LANDSAT_9") {
+        m_satelite_type = sad::LANDSAT_9;
     }
 
     // fill universal struct instead of specific (WORK IN PROGRESS)
@@ -4822,7 +4832,6 @@ void MainWindowSatelliteComparator::handleRestartedApplication(
                1) {  // Это перезагрузка для Sentinel без атмосферной коррекцией
         openSentinelTOA(path);
     } else if (id == 2) {  // Это перезагрузка для Landsat
-        m_satelite_type = sad::LANDSAT_8;  // TODO EXTRACT ACTUAL TYPE
         openCommonLandsatHeaderData(path);
     } else if (id == 3) {  // Временной ряд Sentinel
 
