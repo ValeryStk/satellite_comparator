@@ -4800,7 +4800,7 @@ void MainWindowSatelliteComparator::handleRestartedApplication(
         openSentinel2_l2a_HeaderData(path);
     } else if (id ==
                1) {  // Это перезагрузка для Sentinel без атмосферной коррекцией
-
+        openSentinelTOA(path);
     } else if (id == 2) {  // Это перезагрузка для Landsat
 
     } else if (id == 3) {  // Временной ряд Sentinel
@@ -4809,103 +4809,7 @@ void MainWindowSatelliteComparator::handleRestartedApplication(
     }
 }
 
-void MainWindowSatelliteComparator::loadMaskForSentinelMenu() {
-    int width, height;
-    uint16_t *raster = nullptr;
-    if (m_root_path.isEmpty()) return;
-    raster = loadMaskForSentinel(width, height, m_root_path);
-
-    qDebug() << "Cloud mask: " << width << " -- " << height;
-    // Создаём QImage (Format_Grayscale8)
-    QImage image(width, height, QImage::Format_Grayscale8);
-    uchar *scanline = image.bits();
-    int bytesPerLine = image.bytesPerLine();
-
-    for (int y = 0; y < height; ++y) {
-        uchar *line = scanline + y * bytesPerLine;
-        const uint16_t *srcRow = raster + y * width;
-
-        for (int x = 0; x < width; ++x) {
-            uint16_t val = srcRow[x];
-            if (val != 0) qDebug() << val;
-            // Ограничиваем диапазон [0, 100]
-            if (val > 100) {
-                val = 100;
-                qDebug() << "More Than 100";
-            }
-
-            // Конвертируем 0–100 → 0–255
-            line[x] = static_cast<uchar>((val * 255) / 100);
-        }
-    }
-
-    // Передаём создание виджета в GUI поток
-    QMetaObject::invokeMethod(
-        this,
-        [image]() {
-            QLabel *label = new QLabel;
-            label->setPixmap(QPixmap::fromImage(image));
-            label->setAttribute(Qt::WA_DeleteOnClose);
-            label->setWindowTitle("Маска облаков");
-            label->setScaledContents(true);
-            QSize targetSize(800, 600);
-            QSize scaledSize =
-                image.size().scaled(targetSize, Qt::KeepAspectRatio);
-
-            label->resize(scaledSize);
-            label->show();
-        },
-        Qt::QueuedConnection);
-}
-
-void MainWindowSatelliteComparator::sendSpectrToMatlab() {
-    if (!m_preview_plot || m_preview_plot->graphCount() <= 1) return;
-
-    const QCPGraph *graph =
-        m_preview_plot->graph(1);  // зафиксированный образец
-    if (!graph || graph->dataCount() == 0) return;
-
-    MatlabAppController matlabApp;
-    if (!matlabApp.isRunning()) {
-        matlabApp.runIfNotRunning();
-        uts::showWarnigMessage(
-            "Внимание!",
-            "Spectra classifier не был запущен. Дождитесь окончания его "
-            "загрузки и повторите отправку спектра.");
-        return;
-    }
-
-    QVector<double> waves, spectr;
-    waves.reserve(graph->dataCount());
-    spectr.reserve(graph->dataCount());
-
-    for (auto it = graph->data()->constBegin(); it != graph->data()->constEnd();
-         ++it) {
-        waves.append(it->key);
-        spectr.append(it->value);
-    }
-
-    QString fullMatPath = QCoreApplication::applicationDirPath() + "/" +
-                          matlabAppDirRelativeName + "/" + matFileName;
-
-    MatFilesOperator mat;
-    mat.saveSingleSpectrToMatFile(waves, spectr, fullMatPath);
-
-    QJsonObject params;
-    params["matFilePath"] = fullMatPath;
-    m_rpc->call("processSingleSpectr", QJsonValue(params));
-}
-
-void MainWindowSatelliteComparator::loadSentinelTOA() {
-    QString headerName =
-        getPathToSentinelHeader(this, satc::satellite_name_sentinel_2A_TOA);
-    ui->graphicsView_satellite_image->setIsSignal(false);
-    clearLandsat9DataBands();
-    clear_satellite_data();
-    clear_all_layers();
-    deleteTimeRowData();
-    m_scene_cross_square_item->setVisible(false);
-
+void MainWindowSatelliteComparator::openSentinelTOA(QString headerName) {
     QFile file(headerName);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "Не удалось открыть файл Sentinel XML";
@@ -4919,6 +4823,8 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
         return;
     }
     file.close();
+    ui->graphicsView_satellite_image->setIsSignal(false);
+    m_scene_cross_square_item->setVisible(false);
     m_sentinel_metadata.solar_irradiance =
         satc::extractSolarIrradianceForSentinel(headerName);
     const QString satelliteType =
@@ -5088,6 +4994,107 @@ void MainWindowSatelliteComparator::loadSentinelTOA() {
     samplePointOnSceneChangedEvent(QPointF(x, y));
     centerSceneOnCrossSquare();
     m_ac.setIsTOASentinelLoaded(true);
+}
+
+void MainWindowSatelliteComparator::loadMaskForSentinelMenu() {
+    int width, height;
+    uint16_t *raster = nullptr;
+    if (m_root_path.isEmpty()) return;
+    raster = loadMaskForSentinel(width, height, m_root_path);
+
+    qDebug() << "Cloud mask: " << width << " -- " << height;
+    // Создаём QImage (Format_Grayscale8)
+    QImage image(width, height, QImage::Format_Grayscale8);
+    uchar *scanline = image.bits();
+    int bytesPerLine = image.bytesPerLine();
+
+    for (int y = 0; y < height; ++y) {
+        uchar *line = scanline + y * bytesPerLine;
+        const uint16_t *srcRow = raster + y * width;
+
+        for (int x = 0; x < width; ++x) {
+            uint16_t val = srcRow[x];
+            if (val != 0) qDebug() << val;
+            // Ограничиваем диапазон [0, 100]
+            if (val > 100) {
+                val = 100;
+                qDebug() << "More Than 100";
+            }
+
+            // Конвертируем 0–100 → 0–255
+            line[x] = static_cast<uchar>((val * 255) / 100);
+        }
+    }
+
+    // Передаём создание виджета в GUI поток
+    QMetaObject::invokeMethod(
+        this,
+        [image]() {
+            QLabel *label = new QLabel;
+            label->setPixmap(QPixmap::fromImage(image));
+            label->setAttribute(Qt::WA_DeleteOnClose);
+            label->setWindowTitle("Маска облаков");
+            label->setScaledContents(true);
+            QSize targetSize(800, 600);
+            QSize scaledSize =
+                image.size().scaled(targetSize, Qt::KeepAspectRatio);
+
+            label->resize(scaledSize);
+            label->show();
+        },
+        Qt::QueuedConnection);
+}
+
+void MainWindowSatelliteComparator::sendSpectrToMatlab() {
+    if (!m_preview_plot || m_preview_plot->graphCount() <= 1) return;
+
+    const QCPGraph *graph =
+        m_preview_plot->graph(1);  // зафиксированный образец
+    if (!graph || graph->dataCount() == 0) return;
+
+    MatlabAppController matlabApp;
+    if (!matlabApp.isRunning()) {
+        matlabApp.runIfNotRunning();
+        uts::showWarnigMessage(
+            "Внимание!",
+            "Spectra classifier не был запущен. Дождитесь окончания его "
+            "загрузки и повторите отправку спектра.");
+        return;
+    }
+
+    QVector<double> waves, spectr;
+    waves.reserve(graph->dataCount());
+    spectr.reserve(graph->dataCount());
+
+    for (auto it = graph->data()->constBegin(); it != graph->data()->constEnd();
+         ++it) {
+        waves.append(it->key);
+        spectr.append(it->value);
+    }
+
+    QString fullMatPath = QCoreApplication::applicationDirPath() + "/" +
+                          matlabAppDirRelativeName + "/" + matFileName;
+
+    MatFilesOperator mat;
+    mat.saveSingleSpectrToMatFile(waves, spectr, fullMatPath);
+
+    QJsonObject params;
+    params["matFilePath"] = fullMatPath;
+    m_rpc->call("processSingleSpectr", QJsonValue(params));
+}
+
+void MainWindowSatelliteComparator::loadSentinelTOA() {
+    QString headerName =
+        getPathToSentinelHeader(this, satc::satellite_name_sentinel_2A_TOA);
+    if (!m_sentinel_data.empty()) {
+        restartApplication(headerName, 1);
+        return;
+    }
+    clearLandsat9DataBands();
+    clear_satellite_data();
+    clear_all_layers();
+    deleteTimeRowData();
+    openSentinelTOA(headerName);
 }
 
 // подгрузка данных Sentinel c коррекцией sen2cor для сравнения

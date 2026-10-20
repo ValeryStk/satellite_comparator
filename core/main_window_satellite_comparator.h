@@ -561,6 +561,7 @@ private:
     void saveViewStates();
     void restartApplication(const QString path, int id);
     void handleRestartedApplication(const QString path, const int id);
+    void openSentinelTOA(QString headerName);
 
     bool m_mouse_tracking_enabled = true;
     QShortcut *m_toggle_mouse_tracking_shortcut;
