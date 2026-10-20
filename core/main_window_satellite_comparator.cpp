@@ -1,4 +1,4 @@
-#include "main_window_satellite_comparator.h"
+﻿#include "main_window_satellite_comparator.h"
 
 #include <MatFilesOperator.h>
 #include <matio.h>
@@ -4798,6 +4798,14 @@ void MainWindowSatelliteComparator::handleRestartedApplication(
     // Надо добавить перечисления и обработать через Switch case
     if (id == 0) {  // Это перезагрузка для Sentinel с атмосферной коррекцией
         openSentinel2_l2a_HeaderData(path);
+    } else if (id ==
+               1) {  // Это перезагрузка для Sentinel без атмосферной коррекцией
+
+    } else if (id == 2) {  // Это перезагрузка для Landsat
+
+    } else if (id == 3) {  // Временной ряд Sentinel
+
+    } else if (id == 4) {  // Временной ряд Landsat
     }
 }
 
