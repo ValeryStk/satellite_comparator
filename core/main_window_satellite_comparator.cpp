@@ -1,4 +1,4 @@
-﻿#include "main_window_satellite_comparator.h"
+#include "main_window_satellite_comparator.h"
 
 #include <MatFilesOperator.h>
 #include <matio.h>
