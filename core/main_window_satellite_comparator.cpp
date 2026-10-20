@@ -593,6 +593,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(
 
 {
     ui->setupUi(this);
+    isDataLoaded = false;
     m_lattitude = NAN;
     m_longitude = NAN;
     m_x_image = -1;
@@ -654,8 +655,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(
             &LayerRoiList::classifyRoiByIndexes, this,
             &MainWindowSatelliteComparator::classify_roi_by_indexes);
     loadViewStates();
-    if (!path2File.isEmpty() && (idContext >= 0)) {
-        qDebug() << "CLI args:" << path2File << " -- " << idContext;
+    if (idContext != -1) {
         QTimer::singleShot(1000, this, [=]() {
             handleRestartedApplication(path2File, idContext);
         });
@@ -747,6 +747,10 @@ void MainWindowSatelliteComparator::openBekasSpectraData() {
 }
 
 void MainWindowSatelliteComparator::openTimeRowData() {
+    if (isDataLoaded) {
+        restartApplication("", 3);
+        return;
+    }
     QString dir = QFileDialog::getExistingDirectory(
         this, "Выберите папку c временным рядом", QDir::homePath());
     QDir directory(dir);
@@ -786,6 +790,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
         subdirs = sortLandsatFilesByDateTime(landsat_subdirs);
         qDebug() << "landsat after sorting by date time" << subdirs;
         ProgressInformator pi(this, msg::kLoadLandSatTimeRowTask);
+        QApplication::processEvents();
         //!!!!! FILTER SUBDIRS
 
         m_time_row.resize(subdirs.size());
@@ -819,6 +824,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
         subdirs = sortSentinelFilesByDateTime(sentinel_subdirs);
         qDebug() << "sentinel time row after sorting by date time" << subdirs;
         ProgressInformator pi(this, msg::kLoadSentinelTimeRowTask);
+        QApplication::processEvents();
         // WORK IN PROGRESS (WIP)
         m_time_row.resize(subdirs.size());
         m_time_row_geo.resize(m_time_row.size());
@@ -4808,12 +4814,9 @@ void MainWindowSatelliteComparator::restartApplication(const QString path,
         arguments.removeFirst();
     }
 
-    // 3. Формируем новые аргументы для процесса
-    if (!path.isEmpty()) {
-        arguments << "--file"
-                  << path;  // Передаем путь КАК ЕСТЬ, без ручных кавычек!
-        arguments << "--context" << QString::number(id);
-    }
+    arguments << "--file"
+              << path;  // Передаем путь КАК ЕСТЬ, без ручных кавычек!
+    arguments << "--context" << QString::number(id);
 
     // 4. Запускаем копию приложения.
     // QProcess сам корректно экранирует пробелы и кириллицу для Windows API.
@@ -4833,10 +4836,11 @@ void MainWindowSatelliteComparator::handleRestartedApplication(
         openSentinelTOA(path);
     } else if (id == 2) {  // Это перезагрузка для Landsat
         openCommonLandsatHeaderData(path);
-    } else if (id == 3) {  // Временной ряд Sentinel
-
-    } else if (id == 4) {  // Временной ряд Landsat
+    } else if (id == 3) {  // Временной ряд универсальный (Sentinel и Landsat)
+        openTimeRowData();
     }
+    qDebug() << "Handle Reloading ID:" << id;
+    ;
 }
 
 void MainWindowSatelliteComparator::openSentinelTOA(QString headerName) {

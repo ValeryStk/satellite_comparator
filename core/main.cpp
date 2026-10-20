@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
     // qInstallMessageHandler(myMessageOutput);
     QApplication a(argc, argv);
     QString filePath;
-    int contextId = 0;
+    int contextId = -1;
 
     // Настраиваем стандартный парсер Qt
     QCommandLineParser parser;
@@ -112,8 +112,9 @@ int main(int argc, char *argv[]) {
         qDebug() << "Считанный путь к файлу в main:" << filePath;
         qDebug() << "Считанный ID контекста в main:" << contextId;
     } else {
-        filePath = "";
-        contextId = -1;
+        qDebug() << "EXTRA CASES: ";
+        qDebug() << filePath;
+        qDebug() << contextId;
     }
 
     qInfo() << "###################\n";
