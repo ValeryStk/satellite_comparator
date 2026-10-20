@@ -460,7 +460,7 @@ private:
     void addBaseItemsToScene();
 
     QVector<sad::BAND_DATA> m_sentinel_data;
-    QVector<sad::BAND_DATA> m_landsat_data;
+    QVector<sad::BAND_DATA> m_landsat_data;  // UNUSED
 
     // используется для сравнения атмосферной коррекции
     // с методом sen2cor

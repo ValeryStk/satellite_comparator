@@ -55,6 +55,8 @@
 #include "version.h"
 #include "view_sync_manager.h"
 
+bool isDataLoaded = false;
+
 class PixelGeo {
 public:
     PixelGeo(sad::geoTransform geo) {
@@ -952,6 +954,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
 
     m_time_row_widget.show();
     ui->graphicsView_satellite_image->setIsSignal(true);
+    isDataLoaded = true;
 }
 
 void MainWindowSatelliteComparator::findAreasUsingSelectedMetric() {
@@ -1192,10 +1195,21 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
 
 void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
     const QString &satellite_name) {
-    QString openSatMessage =
+    QString openSatMessage;
+    QString headerName;
+    openSatMessage =
         QString("Открыть заголовочный файл %1").arg(satellite_name);
-    QString headerName = QFileDialog::getOpenFileName(
-        this, openSatMessage, "", "файлы(*_MTL.json *_MTL.txt *_MTL.xml)");
+    QFileInfo fis(satellite_name);
+    if (!fis.exists()) {
+        headerName = QFileDialog::getOpenFileName(
+            this, openSatMessage, "", "файлы(*_MTL.json *_MTL.txt *_MTL.xml)");
+    } else {
+        headerName = satellite_name;
+    }
+    if (isDataLoaded) {
+        restartApplication(headerName, 2);
+        return;
+    }
     ui->graphicsView_satellite_image->setIsSignal(false);
     clearLandsat9DataBands();
     clear_satellite_data();
@@ -1204,7 +1218,11 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
     m_scene_cross_square_item->setVisible(false);
     QFile file(headerName);
     static bool isHeaderValid = false;
-    if (file.exists() == false) return;
+    if (file.exists() == false) {
+        uts::showNoDataAvailable();
+        return;
+    }
+
     if (m_dynamic_checkboxes_widget) m_dynamic_checkboxes_widget->clear();
     QFileInfo fi(headerName);
     m_root_path = fi.path();
@@ -1351,12 +1369,13 @@ void MainWindowSatelliteComparator::openCommonLandsatHeaderData(
     m_is_image_created = true;
     m_scene_cross_square_item->setVisible(true);
     ui->graphicsView_satellite_image->setIsSignal(true);
+    isDataLoaded = true;
 }
 
 void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
     const QString &satellite_name, const QString &headerName) {
     ui->graphicsView_satellite_image->setIsSignal(false);
-    if (!m_sentinel_data.empty()) {
+    if (isDataLoaded) {
         restartApplication(headerName, 0);
         return;
     }
@@ -1561,6 +1580,7 @@ void MainWindowSatelliteComparator::openCommonSentinelHeaderData(
     auto y = m_sentinel_data[0].height / 2;
     samplePointOnSceneChangedEvent(QPointF(x, y));
     centerSceneOnCrossSquare();
+    isDataLoaded = true;
 }
 
 void MainWindowSatelliteComparator::processBekasDataForComparing(
@@ -4802,7 +4822,8 @@ void MainWindowSatelliteComparator::handleRestartedApplication(
                1) {  // Это перезагрузка для Sentinel без атмосферной коррекцией
         openSentinelTOA(path);
     } else if (id == 2) {  // Это перезагрузка для Landsat
-
+        m_satelite_type = sad::LANDSAT_8;  // TODO EXTRACT ACTUAL TYPE
+        openCommonLandsatHeaderData(path);
     } else if (id == 3) {  // Временной ряд Sentinel
 
     } else if (id == 4) {  // Временной ряд Landsat
@@ -4994,6 +5015,7 @@ void MainWindowSatelliteComparator::openSentinelTOA(QString headerName) {
     samplePointOnSceneChangedEvent(QPointF(x, y));
     centerSceneOnCrossSquare();
     m_ac.setIsTOASentinelLoaded(true);
+    isDataLoaded = true;
 }
 
 void MainWindowSatelliteComparator::loadMaskForSentinelMenu() {
@@ -5086,7 +5108,7 @@ void MainWindowSatelliteComparator::sendSpectrToMatlab() {
 void MainWindowSatelliteComparator::loadSentinelTOA() {
     QString headerName =
         getPathToSentinelHeader(this, satc::satellite_name_sentinel_2A_TOA);
-    if (!m_sentinel_data.empty()) {
+    if (isDataLoaded) {
         restartApplication(headerName, 1);
         return;
     }
