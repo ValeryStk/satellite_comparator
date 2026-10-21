@@ -133,7 +133,7 @@
     </property>
     <widget class="QMenu" name="menu_2">
      <property name="title">
-      <string>Загрузка спутниковых данных</string>
+      <string>Загрузка данных с атмосферной коррекцией</string>
      </property>
      <addaction name="actionOpenLandsat9Header"/>
      <addaction name="actionOpenLandsat8Header"/>
@@ -165,6 +165,7 @@
     <addaction name="menu_5"/>
     <addaction name="action_load_hyper_spectral_data"/>
     <addaction name="action_load_external_spectr"/>
+    <addaction name="separator"/>
     <addaction name="menu_7"/>
    </widget>
    <widget class="QMenu" name="menu_3">
@@ -210,7 +211,7 @@
   </action>
   <action name="actionOpenSentinel2">
    <property name="text">
-    <string>Sentinel 2 (L2A - c атм. коррекцией)</string>
+    <string>Sentinel 2 (L2A)</string>
    </property>
   </action>
   <action name="action_LoadTimeRow">
@@ -260,7 +261,7 @@
   </action>
   <action name="actionSentinel2_TOA">
    <property name="text">
-    <string>Sentinel2</string>
+    <string>Sentinel2 (L1C)</string>
    </property>
   </action>
   <action name="action_load_hyper_spectral_data">
