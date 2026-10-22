@@ -5035,7 +5035,10 @@ void MainWindowSatelliteComparator::openSentinelTOA(QString headerName) {
 void MainWindowSatelliteComparator::loadMaskForSentinelMenu() {
     int width, height;
     uint16_t *raster = nullptr;
-    if (m_root_path.isEmpty()) return;
+    if (m_root_path.isEmpty()) {
+        uts::showNoDataAvailable();
+        return;
+    }
     raster = loadMaskForSentinel(width, height, m_root_path);
 
     qDebug() << "Cloud mask: " << width << " -- " << height;
