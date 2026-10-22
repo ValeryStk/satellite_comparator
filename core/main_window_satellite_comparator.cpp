@@ -792,7 +792,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
         ProgressInformator pi(this, msg::kLoadLandSatTimeRowTask);
         QApplication::processEvents();
         //!!!!! FILTER SUBDIRS
-
+        title_satellite_name->setText("Временной ряд LandSat");
         m_time_row.resize(subdirs.size());
         m_time_row_geo.resize(m_time_row.size());
         m_time_row_qa_mask.resize(m_time_row.size());
@@ -825,6 +825,7 @@ void MainWindowSatelliteComparator::openTimeRowData() {
         qDebug() << "sentinel time row after sorting by date time" << subdirs;
         ProgressInformator pi(this, msg::kLoadSentinelTimeRowTask);
         QApplication::processEvents();
+        title_satellite_name->setText("Временной ряд Sentinel");
         // WORK IN PROGRESS (WIP)
         m_time_row.resize(subdirs.size());
         m_time_row_geo.resize(m_time_row.size());
