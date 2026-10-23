@@ -89,6 +89,41 @@ bool Widget::insertGeoPoint(const QString &productUri, double latitude,
     return true;
 }
 
+QVector<PointData> Widget::Widget::selectPointsByProduct(
+    const QString &productUri) {
+    QVector<PointData> resultList;
+    QSqlQuery query;
+
+    // Используем JOIN для объединения таблиц по product_uri
+    query.prepare(
+        "SELECT p.point_id, p.point_name, p.product_uri, p.latitude, "
+        "p.longitude "
+        "FROM points p "
+        "LEFT JOIN products pr ON p.product_uri = pr.product_uri "
+        "WHERE pr.product_uri = :product_uri;");
+
+    query.bindValue(":product_uri", productUri);
+
+    if (!query.exec()) {
+        qWarning() << "Ошибка выборки точек:" << query.lastError().text();
+        return resultList;
+    }
+
+    // Читаем строки из полученного ответа базы данных
+    while (query.next()) {
+        PointData pt;
+        pt.pointId = query.value("point_id").toInt();
+        pt.pointName = query.value("point_name").toString();
+        pt.productUri = query.value("product_uri").toString();
+        pt.latitude = query.value("latitude").toDouble();
+        pt.longitude = query.value("longitude").toDouble();
+
+        resultList.append(pt);
+    }
+
+    return resultList;
+}
+
 bool Widget::initDataBase(const QString &dbPath) {
     bool dbExists = QFileInfo::exists(dbPath);
 
@@ -200,6 +235,43 @@ void Widget::generateAndInsertRandomPoints(int count) {
     db.commit();  // Сохраняем все изменения на диск одним пакетом
 }
 
+bool Widget::clearAllData() {
+    QSqlDatabase db = QSqlDatabase::database();
+
+    // Включаем транзакцию, чтобы очистка прошла атомарно и быстро
+    db.transaction();
+
+    QSqlQuery query;
+
+    // 1. Сначала удаляем все записи из таблицы точек (дочерняя таблица)
+    if (!query.exec("DELETE FROM points;")) {
+        qWarning() << "Ошибка очистки таблицы points:"
+                   << query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    // 2. Затем удаляем все записи из таблицы продуктов (родительская таблица)
+    if (!query.exec("DELETE FROM products;")) {
+        qWarning() << "Ошибка очистки таблицы products:"
+                   << query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    // 3. Сбрасываем внутренние счетчики AUTOINCREMENT в SQLite,
+    // чтобы новые ID снова начинались с 1
+    if (query.exec("SELECT 1 FROM sqlite_sequence WHERE name IN ('products', "
+                   "'points');")) {
+        query.exec("DELETE FROM sqlite_sequence WHERE name = 'products';");
+        query.exec("DELETE FROM sqlite_sequence WHERE name = 'points';");
+    }
+
+    db.commit();
+    qDebug() << "Все таблицы успешно очищены, счетчики ID сброшены.";
+    return true;
+}
+
 void Widget::on_pushButton_clicked() {
     generateAndInsertRandomPoints(5);
     model->select();
@@ -227,4 +299,52 @@ void Widget::showContextMenu(const QPoint &pos) {
         // 2. Синхронизируем состояние, чтобы View перерисовал строки
         model->select();
     }
+}
+
+void Widget::on_pushButton_insert_data_clicked() {
+    // Получаем строки из UI-элементов формы (замените имена указателей на ваши)
+    QString uri = ui->lineEditUri->text().trimmed();
+    QString name = ui->lineEditName->text().trimmed();
+
+    // Переводим текст координат в double локально-независимым способом
+    bool latOk, lonOk;
+    double lat = ui->lineEditLatitude->text().toDouble(&latOk);
+    double lon = ui->lineEditLongitude->text().toDouble(&lonOk);
+
+    // Валидация входных данных перед отправкой в БД
+    if (uri.isEmpty()) {
+        QMessageBox::warning(this, "Валидация",
+                             "Поле Product URI не может быть пустым!");
+        return;
+    }
+    if (!latOk) {
+        QMessageBox::warning(this, "Валидация",
+                             "Широта (Latitude) должна быть числом!");
+        return;
+    }
+
+    // Вызываем ранее созданную функцию вставки (она сама запишет и в products,
+    // и в points) Передаем 0 вместо долготы или QVariant(), если lonOk == false
+    // (так как в БД это поле NULL)
+    double longitudeValue = lonOk ? lon : 0.0;
+
+    if (insertGeoPoint(uri, lat, longitudeValue, name, "")) {
+        QMessageBox::information(this, "Успех",
+                                 "Точка успешно сохранена в базу данных!");
+
+        // Очищаем поля формы для следующего ввода (опционально)
+        ui->lineEditName->clear();
+        ui->lineEditLatitude->clear();
+        ui->lineEditLongitude->clear();
+    } else {
+        QMessageBox::critical(this, "Ошибка",
+                              "Не удалось добавить точку. Проверьте "
+                              "уникальность имени (UNIQUE)!");
+    }
+    model->select();
+}
+
+void Widget::on_pushButton_clear_all_data_clicked() {
+    clearAllData();
+    model->select();
 }
