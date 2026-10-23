@@ -4,11 +4,12 @@
 #include <QWidget>
 
 QT_BEGIN_NAMESPACE
-namespace Ui { class Widget; }
+namespace Ui {
+class Widget;
+}
 QT_END_NAMESPACE
 
-class Widget : public QWidget
-{
+class Widget : public QWidget {
     Q_OBJECT
 
 public:
@@ -17,5 +18,6 @@ public:
 
 private:
     Ui::Widget *ui;
+    bool createConnection();
 };
-#endif // WIDGET_H
+#endif  // WIDGET_H
