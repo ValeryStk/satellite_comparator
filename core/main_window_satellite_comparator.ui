@@ -172,9 +172,9 @@
     <property name="title">
      <string>Вид</string>
     </property>
-    <addaction name="action_spectral_indicies"/>
-    <addaction name="actionTimeRowIndices"/>
     <addaction name="action_atm_correction"/>
+    <addaction name="actionTimeRowIndices"/>
+    <addaction name="action_spectral_indicies"/>
     <addaction name="action_speya"/>
    </widget>
    <widget class="QMenu" name="menu_4">
