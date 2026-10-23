@@ -23,7 +23,7 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget) {
     QString pathToDb = QApplication::applicationDirPath() + "/" + "geopoints";
     initDataBase(pathToDb);
     model = new QSqlTableModel();
-    model->setTable("geo_points");
+    model->setTable("points");
     model->select();
     // Вставьте этот код в конструктор вашего виджета (например,
     // GeoPointsWidget)
@@ -40,40 +40,56 @@ Widget::~Widget() { delete ui; }
 bool Widget::insertGeoPoint(const QString &productUri, double latitude,
                             double longitude, const QString &name,
                             const QString &description) {
+    // Параметр description из старого метода опущен, так как в вашей новой
+    // таблице points его нет. Поле longitude теперь может принимать NULL,
+    // проверяем его.
+    Q_UNUSED(description);
+
+    QSqlDatabase db = QSqlDatabase::database();
+    db.transaction();  // Заворачиваем в транзакцию для безопасности связей
+
     QSqlQuery query;
 
-    // Подготавливаем безопасный SQL-запрос с плейсхолдерами
+    // Шаг 1: Добавляем URI в таблицу products, если его там еще нет
     query.prepare(
-        "INSERT INTO geo_points (product_uri, latitude, longitude, name, "
-        "description) "
-        "VALUES (:product_uri, :latitude, :longitude, :name, :description);");
-
-    // Привязываем значения к плейсхолдерам
+        "INSERT OR IGNORE INTO products (product_uri) VALUES (:product_uri);");
     query.bindValue(":product_uri", productUri);
-    query.bindValue(":latitude", latitude);
-    query.bindValue(":longitude", longitude);
-    query.bindValue(":name", name);
-
-    // Если описание пустое, отправляем в базу данных NULL, иначе саму строку
-    if (description.isEmpty()) {
-        query.bindValue(":description", QVariant(QVariant::String));
-    } else {
-        query.bindValue(":description", description);
-    }
-
-    // Выполняем запрос
     if (!query.exec()) {
-        qWarning() << "Ошибка вставки в таблицу geo_points:"
+        qWarning() << "Ошибка вставки в таблицу products:"
                    << query.lastError().text();
+        db.rollback();
         return false;
     }
 
+    // Шаг 2: Вставляем саму географическую точку в таблицу points
+    query.prepare(
+        "INSERT INTO points (point_name, product_uri, latitude, longitude) "
+        "VALUES (:point_name, :product_uri, :latitude, :longitude);");
+
+    // Если имя пустое, передаем NULL (так как у вас наложено ограничение
+    // UNIQUE, пустые строки вызовут конфликт)
+    if (name.isEmpty()) {
+        query.bindValue(":point_name", QVariant(QVariant::String));
+    } else {
+        query.bindValue(":point_name", name);
+    }
+
+    query.bindValue(":product_uri", productUri);
+    query.bindValue(":latitude", latitude);
+    query.bindValue(":longitude", longitude);
+
+    if (!query.exec()) {
+        qWarning() << "Ошибка вставки в таблицу points:"
+                   << query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    db.commit();
     return true;
 }
 
 bool Widget::initDataBase(const QString &dbPath) {
-    // Важно проверить существование файла ДО вызова db.open(),
-    // так как open() для SQLite автоматически создает пустой файл на диске.
     bool dbExists = QFileInfo::exists(dbPath);
 
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
@@ -86,26 +102,49 @@ bool Widget::initDataBase(const QString &dbPath) {
         return false;
     }
 
-    // Если файла не существовало, создаем таблицу по вашей схеме
+    // Включаем поддержку Foreign Keys в SQLite (обязательно при каждом
+    // подключении)
+    QSqlQuery pragmaQuery;
+    pragmaQuery.exec("PRAGMA foreign_keys = ON;");
+
+    // Если файла не существовало, создаем таблицы по вашей новой схеме
     if (!dbExists) {
         QSqlQuery query;
-        QString createTableQuery =
-            "CREATE TABLE geo_points ("
-            "    point_id    INTEGER PRIMARY KEY AUTOINCREMENT,"
-            "    product_uri TEXT    NOT NULL UNIQUE,"
-            "    latitude    REAL    NOT NULL,"
-            "    longitude   REAL    NOT NULL,"
-            "    name        TEXT    NOT NULL,"
-            "    description TEXT"
+
+        // Таблица 1: Справочник продуктов (создается первой)
+        QString createProductsTable =
+            "CREATE TABLE products ("
+            "    id          INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "    product_uri TEXT    NOT NULL UNIQUE"
             ");";
 
-        if (!query.exec(createTableQuery)) {
-            QMessageBox::critical(nullptr, "Ошибка создания таблицы",
-                                  "Не удалось создать таблицу geo_points:\n" +
+        if (!query.exec(createProductsTable)) {
+            QMessageBox::critical(nullptr, "Ошибка создания таблицы products",
+                                  "Не удалось создать таблицу products:\n" +
                                       query.lastError().text());
             return false;
         }
-        qDebug() << "Создан новый файл БД и таблица geo_points по пути:"
+
+        // Таблица 2: Географические точки (ссылается на products)
+        QString createPointsTable =
+            "CREATE TABLE points ("
+            "    point_id    INTEGER PRIMARY KEY,"
+            "    point_name  TEXT    UNIQUE,"  // SQLite не имеет типа данных
+                                               // TEXT для point_name по
+                                               // умолчанию, явно указан TEXT
+            "    product_uri TEXT    REFERENCES products (product_uri),"
+            "    latitude    REAL    NOT NULL,"
+            "    longitude   REAL"
+            ");";
+
+        if (!query.exec(createPointsTable)) {
+            QMessageBox::critical(nullptr, "Ошибка создания таблицы points",
+                                  "Не удалось создать таблицу points:\n" +
+                                      query.lastError().text());
+            return false;
+        }
+
+        qDebug() << "Создан новый файл БД и таблицы по новой схеме в:"
                  << dbPath;
     } else {
         qDebug() << "Успешно подключена существующая БД по пути:" << dbPath;
@@ -121,30 +160,44 @@ void Widget::generateAndInsertRandomPoints(int count) {
     std::uniform_real_distribution<double> lonDist(-180.0, 180.0);
 
     QSqlDatabase db = QSqlDatabase::database();
-    db.transaction();  // Включаем транзакцию для ускорения записи
+    db.transaction();  // Включаем транзакцию для ускорения записи пакета данных
 
-    QSqlQuery query;
-    query.prepare(
-        "INSERT INTO geo_points (product_uri, latitude, longitude, name, "
-        "description) "
-        "VALUES (:uri, :lat, :lon, :name, :desc);");
+    QSqlQuery queryProd;
+    QSqlQuery queryPoint;
+
+    // Подготавливаем оба запроса заранее
+    queryProd.prepare(
+        "INSERT OR IGNORE INTO products (product_uri) VALUES (:uri);");
+    queryPoint.prepare(
+        "INSERT INTO points (point_name, product_uri, latitude, longitude) "
+        "VALUES (:name, :uri, :lat, :lon);");
 
     for (int i = 0; i < count; ++i) {
         QString uid = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        QString currentUri = QString("https://example.com_%1").arg(uid);
+        QString currentName = QString("Точка-%1").arg(uid.left(8));
 
-        query.bindValue(":uri", QString("https://example.com_%1").arg(uid));
-        query.bindValue(":lat", latDist(gen));
-        query.bindValue(":lon", lonDist(gen));
-        query.bindValue(":name", QString("Точка-%1").arg(uid.left(8)));
-        query.bindValue(":desc", QString("Автогенерация теста"));
+        // 1. Вставка в родительскую таблицу products
+        queryProd.bindValue(":uri", currentUri);
+        if (!queryProd.exec()) {
+            qWarning() << "Ошибка генерации (products):"
+                       << queryProd.lastError().text();
+            continue;  // Пропускаем итерацию, если что-то пошло не так
+        }
 
-        if (!query.exec()) {
-            qWarning() << "Ошибка вставки во время генерации:"
-                       << query.lastError().text();
+        // 2. Вставка в дочернюю таблицу points
+        queryPoint.bindValue(":name", currentName);
+        queryPoint.bindValue(":uri", currentUri);
+        queryPoint.bindValue(":lat", latDist(gen));
+        queryPoint.bindValue(":lon", lonDist(gen));
+
+        if (!queryPoint.exec()) {
+            qWarning() << "Ошибка генерации (points):"
+                       << queryPoint.lastError().text();
         }
     }
 
-    db.commit();  // Сохраняем все точки на диск одним пакетом
+    db.commit();  // Сохраняем все изменения на диск одним пакетом
 }
 
 void Widget::on_pushButton_clicked() {
