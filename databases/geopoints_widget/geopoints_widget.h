@@ -18,6 +18,6 @@ public:
 
 private:
     Ui::Widget *ui;
-    bool createConnection();
+    bool initDataBase(const QString &dbPath);
 };
 #endif  // WIDGET_H
