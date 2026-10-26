@@ -2995,7 +2995,16 @@ void MainWindowSatelliteComparator::add_polygon_from_geo_route() {
 
             if (okLat && okLon) {
                 // Преобразуем гео-координаты в пиксели и округляем до QPoint
-                QPointF pixelF = geoToPixel(lat, lon, m_geo);
+
+                sad::geoTransform geo;
+
+                if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION ||
+                    m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION)
+                    geo = m_time_row_geo[0];
+                else
+                    geo = m_geo;
+
+                QPointF pixelF = geoToPixel(lat, lon, geo);
                 pixels.append(pixelF.toPoint());
             } else {
                 qWarning() << "Invalid number format in line:" << line;
@@ -3007,6 +3016,7 @@ void MainWindowSatelliteComparator::add_polygon_from_geo_route() {
 
     // Если удалось распарсить точки, отправляем сигнал
     if (!pixels.isEmpty()) {
+        qInfo() << "setROIpolygonFromRoute will be emitted: " << pixels;
         emit setROIpolygonFromRoute(pixels);
     } else {
         qWarning() << "No valid coordinates found in clipboard.";
