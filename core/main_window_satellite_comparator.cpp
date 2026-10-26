@@ -2259,7 +2259,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(
         } else {
             red_band_index = 3;
             nir_band_index = 7;  // B8
-            swir1_index = 10;    // B11
+            swir1_index = 9;     // B11
         }
 
         sad::BANDS_FOR_CALCULATING_INDEXES values;
@@ -4474,7 +4474,7 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
     } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
         red_band_index = 3;
         nir_band_index = 7;  // B8
-        swir1_index = 10;    // B11
+        swir1_index = 9;     // B11
     }
 
     QVector<sad::BANDS_FOR_CALCULATING_INDEXES> data_indexes;
@@ -6129,7 +6129,7 @@ GradientMaskResult MainWindowSatelliteComparator::buildGradientClassMap(
         (m_satelite_type == sad::TIME_ROW_LANDSAT_COMBINATION);
 
     const int red_band = 3;
-    const int nir_band = is_landsat ? 4 : 6;
+    const int nir_band = is_landsat ? 4 : 7;
     const int swir_band = is_landsat ? 5 : 9;
 
     for (const QPointF &pt : insidePoints) {
@@ -6338,9 +6338,8 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
     }
 
     const int redIndex = 3;
-    const int nirIndex = isLandsat ? 4 : 6;
+    const int nirIndex = isLandsat ? 4 : 7;
     const int swirIndex = isLandsat ? 5 : 9;
-
     const int maxBandIndex = std::max(redIndex, std::max(nirIndex, swirIndex));
 
     auto *roiItem = ui->graphicsView_satellite_image->getPolygonById(roiId);
@@ -6568,10 +6567,8 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
                     valid = false;
                     break;
                 }
-
                 pixelNdvi[i] = sam::calculateNDVI(nir, red);
                 pixelNdwi[i] = sam::calculateSWVI(nir, swir);
-
                 if (!std::isfinite(pixelNdvi[i]) ||
                     !std::isfinite(pixelNdwi[i])) {
                     valid = false;
