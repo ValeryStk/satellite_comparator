@@ -288,7 +288,7 @@ QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses() {
         return {};
     }
     if (status == BASE_CHECK_RESULT::OK) {
-        for (int i = 0; i < 10; ++i) {  // TEMP SOLUTION
+        for (int i = 0; i < m_sat_data.bands.size(); ++i) {  // TEMP SOLUTION
             int start = m_sat_data.bands[i][0] - SATTELITE_WAVE_OFFSET;
             int end = m_sat_data.bands[i][1] - SATTELITE_WAVE_OFFSET;
             for (int j = start; j < end; ++j) {
@@ -298,7 +298,7 @@ QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses() {
             }
         }
         qDebug() << "CHECK SIZES: " << m_sat_data.bands.size();
-        for (int i = 0; i < 10; ++i) {  // TEMP SOLUTION
+        for (int i = 0; i < m_sat_data.bands.size(); ++i) {  // TEMP SOLUTION
             folded_spectr[i] =
                 device_spectr_bands_sum[i] / satellite_bands_sum[i];
         }

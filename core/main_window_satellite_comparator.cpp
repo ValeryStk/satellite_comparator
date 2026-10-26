@@ -1610,7 +1610,7 @@ void MainWindowSatelliteComparator::processBekasDataForComparing(
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_landsat9,
                                                     m_landsat9_sample);
     } else if (m_satelite_type == sad::LANDSAT_8) {
-        m_sat_comparator->set_satellite_responses("landsat8");
+        m_sat_comparator->set_satellite_responses("landsat9");
         m_sat_comparator->initial_fill_data_to_show(x, y, waves_landsat9,
                                                     m_landsat9_sample);
     } else if (m_satelite_type == sad::SENTINEL_2A) {
