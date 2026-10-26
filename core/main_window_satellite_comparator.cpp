@@ -2258,8 +2258,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(
             swir1_index = 5;
         } else {
             red_band_index = 3;
-            nir_band_index = 6;
-            swir1_index = 9;
+            nir_band_index = 7;  // B8
+            swir1_index = 10;    // B11
         }
 
         sad::BANDS_FOR_CALCULATING_INDEXES values;
@@ -4463,8 +4463,8 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
         swir1_index = 5;
     } else if (m_satelite_type == sad::TIME_ROW_SENTINEL_COMBINATION) {
         red_band_index = 3;
-        nir_band_index = 6;
-        swir1_index = 9;
+        nir_band_index = 7;  // B8
+        swir1_index = 10;    // B11
     }
 
     QVector<sad::BANDS_FOR_CALCULATING_INDEXES> data_indexes;

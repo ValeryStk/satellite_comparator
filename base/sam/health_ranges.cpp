@@ -84,34 +84,34 @@ void PlantHealth::initDefaultRanges() {
     // Диапазоны для DSWI (Disease Stress Water Index)
     // Типичный диапазон: 0 до 2+
     std::map<int, double> dswiRanges;
-    dswiRanges[1] = 1.5;  // Healthy: > 1.5
-    dswiRanges[2] = 1.2;  // Weakened: 1.2 - 1.5
-    dswiRanges[3] = 1.0;  // Severely Weakened: 1.0 - 1.2
-    dswiRanges[4] = 0.8;  // Dying: 0.8 - 1.0
-    dswiRanges[5] = 0.6;  // Fresh Deadwood: 0.6 - 0.8
-    dswiRanges[6] = 0.4;  // Old Deadwood: 0.0 - 0.4
+    dswiRanges[1] = 1.3;  // Healthy: > 1.3
+    dswiRanges[2] = 1.0;  // Weakened: 1.0 - 1.3
+    dswiRanges[3] = 0.7;  // Severely Weakened: 0.7 - 1.0
+    dswiRanges[4] = 0.5;  // Dying: 0.5 - 0.7
+    dswiRanges[5] = 0.3;  // Fresh Deadwood: 0.3 - 0.5
+    dswiRanges[6] = 0.0;  // Old Deadwood: < 0.3
     indexRanges[sam::kSpectralIndexDSWI] = dswiRanges;
 
     // Диапазоны для SWVI (Shortwave Vegetation Index)
     // Типичный диапазон: 0 до 1
     std::map<int, double> swviRanges;
-    swviRanges[1] = 0.8;  // Healthy: > 0.8
-    swviRanges[2] = 0.6;  // Weakened: 0.6 - 0.8
-    swviRanges[3] = 0.4;  // Severely Weakened: 0.4 - 0.6
-    swviRanges[4] = 0.3;  // Dying: 0.3 - 0.4
-    swviRanges[5] = 0.2;  // Fresh Deadwood: 0.2 - 0.3
-    swviRanges[6] = 0.1;  // Old Deadwood: 0.0 - 0.1
+    swviRanges[1] = 0.3;   // Healthy: 0.3 -1.0
+    swviRanges[2] = 0.2;   // Weakened: 0.2	- 0.3
+    swviRanges[3] = 0.1;   // Severely Weakened: 0.1	- 0.2
+    swviRanges[4] = 0.0;   // Dying: 0.0	- 0.1
+    swviRanges[5] = -0.1;  // Fresh Deadwood: -0.1 - 0.0
+    swviRanges[6] = -1;    // Old Deadwood: -1.0	- -0.1
     indexRanges[sam::kSpectralIndexSWVI] = swviRanges;
 
     // Диапазоны для EVI (Enhanced Vegetation Index)
     // Типичный диапазон: -1 до 1
     std::map<int, double> eviRanges;
-    eviRanges[1] = 0.6;   // Healthy: > 0.6
-    eviRanges[2] = 0.4;   // Weakened: 0.4 - 0.6
-    eviRanges[3] = 0.2;   // Severely Weakened: 0.2 - 0.4
-    eviRanges[4] = 0.1;   // Dying: 0.1 - 0.2
-    eviRanges[5] = 0.05;  // Fresh Deadwood: 0.05 - 0.1
-    eviRanges[6] = 0.0;   // Old Deadwood: 0.0 - 0.05
+    eviRanges[1] = 0.32;  // Healthy: > 0.35 (или 0.32 для хвойных)
+    eviRanges[2] = 0.25;  // Weakened: 0.25 - 0.32
+    eviRanges[3] = 0.18;  // Severely Weakened: 0.18 - 0.25
+    eviRanges[4] = 0.10;  // Dying: 0.10 - 0.18
+    eviRanges[5] = 0.05;  // Fresh Deadwood: 0.05 - 0.10
+    eviRanges[6] = 0.0;   // Old Deadwood: < 0.05
     indexRanges[sam::kSpectralIndexEVI] = eviRanges;
 
     // Диапазоны для NBR (Normalized Burn Ratio)
@@ -128,12 +128,12 @@ void PlantHealth::initDefaultRanges() {
     // Диапазоны для NDSWIR (Normalized Difference SWIR)
     // Типичный диапазон: -1 до 1
     std::map<int, double> ndswirRanges;
-    ndswirRanges[1] = 0.5;   // Healthy: > 0.5
-    ndswirRanges[2] = 0.3;   // Weakened: 0.3 - 0.5
-    ndswirRanges[3] = 0.2;   // Severely Weakened: 0.2 - 0.3
-    ndswirRanges[4] = 0.1;   // Dying: 0.1 - 0.2
-    ndswirRanges[5] = 0.0;   // Fresh Deadwood: 0.0 - 0.1
-    ndswirRanges[6] = -0.1;  // Old Deadwood: < -0.1
+    ndswirRanges[1] = 0.35;  // Healthy: > 0.35 (лес станет темно-зеленым)
+    ndswirRanges[2] = 0.25;   // Weakened: 0.25 - 0.35
+    ndswirRanges[3] = 0.15;   // Severely Weakened: 0.15 - 0.25
+    ndswirRanges[4] = 0.05;   // Dying: 0.05 - 0.15
+    ndswirRanges[5] = -0.05;  // Fresh Deadwood: -0.05 - 0.05
+    ndswirRanges[6] = -1.0;   // Old Deadwood: < -0.05
     indexRanges[sam::kSpectralIndexNDSWIR] = ndswirRanges;
 
     // Диапазоны для NBRSWIR (NBR Shortwave Infrared)
