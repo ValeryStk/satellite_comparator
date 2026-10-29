@@ -660,7 +660,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(
             handleRestartedApplication(path2File, idContext);
         });
     }
-    openTiffAsLayer();
+    // openTiffAsLayer(); WORK IN PROGRESS
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
@@ -7345,20 +7345,32 @@ void MainWindowSatelliteComparator::openTiffAsLayer() {
         }
     }
 
-    // --- 3. Тесты пересчета координат ---
+    // --- 3. Находим ROI Галса в географических координатах
+    QString gals_roi_rect;
+    QString arg_templ = "%1 %2\n";
     double lat, lon;
-    qDebug() << "coords 0 0: "
-             << getGeoCoordinatesUsingRotation(0, 0, m_gals_geo, lat, lon,
-                                               true);
-    qDebug() << "coords 599 2999: "
-             << getGeoCoordinatesUsingRotation(599, 2999, m_gals_geo, lat, lon,
-                                               true);
+    getGeoCoordinatesUsingRotation(0, 0, m_gals_geo, lat, lon, true);
+    gals_roi_rect.append(arg_templ.arg(lat).arg(lon));
+    getGeoCoordinatesUsingRotation(width - 1, 0, m_gals_geo, lat, lon, true);
+    gals_roi_rect.append(arg_templ.arg(lat).arg(lon));
+    getGeoCoordinatesUsingRotation(width - 1, height - 1, m_gals_geo, lat, lon,
+                                   true);
+    gals_roi_rect.append(arg_templ.arg(lat).arg(lon));
+    getGeoCoordinatesUsingRotation(0, height - 1, m_gals_geo, lat, lon, true);
 
+    gals_roi_rect.append(arg_templ.arg(lat).arg(lon));
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(gals_roi_rect);
+    // add_polygon_from_geo_route();
     lat = 53.5209;
     lon = 26.5876;
     QPoint dunaPixel(270, 1600);
     auto checkPixel = geoToPixelUsingRotation(53.5209, 26.5876, m_gals_geo);
     qDebug() << "checkPixel: " << checkPixel.x() << checkPixel.y();
+    double tlat, tlon;
+    qDebug() << "sentinel for GALS: "
+             << getGeoCoordinatesUsingRotation(270, 1600, m_gals_geo, tlat,
+                                               tlon, true);
     // = geoToPixel(
     //    lat, lon,
     //    m_gals_geo);  // предполагаем, что geoToPixel возвращает QPoint
