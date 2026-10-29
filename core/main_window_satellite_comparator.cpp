@@ -660,6 +660,7 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(
             handleRestartedApplication(path2File, idContext);
         });
     }
+    openTiffAsLayer();
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
@@ -2631,6 +2632,128 @@ QPointF MainWindowSatelliteComparator::geoToPixel(double latitude,
     int pixelX = static_cast<int>((x - gt.ulX) / gt.resX);
     int pixelY = static_cast<int>((y - gt.ulY) / gt.resY);
     return QPointF(pixelX, pixelY);
+}
+
+QPoint MainWindowSatelliteComparator::geoToPixelUsingRotation(
+    double latitude, double longitude, const sad::geoTransform &gt) {
+    // Создаем проекции локально для поддержки разных UTM-зон
+    OGRSpatialReference srcSRS;
+    srcSRS.SetWellKnownGeogCS("WGS84");
+
+    OGRSpatialReference dstSRS;
+    dstSRS.SetProjCS("UTM");
+    dstSRS.SetWellKnownGeogCS("WGS84");
+    dstSRS.SetUTM(gt.utmZone, gt.isNorth);
+
+    // Создаем преобразователь координат WGS84 -> UTM
+    OGRCoordinateTransformation *coordTransform =
+        OGRCreateCoordinateTransformation(&srcSRS, &dstSRS);
+
+    if (coordTransform == nullptr) {
+        qCritical()
+            << "Не удалось создать преобразователь координат WGS84 -> UTM";
+        return QPoint(-1, -1);
+    }
+
+    double x = longitude;  // X — это долгота
+    double y = latitude;   // Y — это широта
+
+    // Переводим градусы в метры UTM
+    if (!coordTransform->Transform(1, &x, &y)) {
+        OCTDestroyCoordinateTransformation(coordTransform);
+        qWarning() << "Ошибка трансформации градусов WGS84 в метры UTM";
+        return QPoint(-1, -1);
+    }
+
+    // Освобождаем память трансформатора
+    OCTDestroyCoordinateTransformation(coordTransform);
+
+    // --- ВЫЧИСЛЕНИЕ ИНДЕКСОВ ПИКСЕЛЕЙ (Линейная алгебра для повернутого
+    // растра) ---
+
+    // 1. Находим детерминант матрицы аффинного преобразования
+    double det = gt.resX * gt.resY - gt.rotateX * gt.rotateY;
+
+    // Проверка на вырожденность матрицы
+    if (std::abs(det) < 1e-9) {
+        qCritical()
+            << "Ошибка: Матрица GeoTransform вырожденная, пересчет невозможен!";
+        return QPoint(-1, -1);
+    }
+
+    // 2. Находим разность между полученными UTM-координатами и левым верхним
+    // углом снимка
+    double dX = x - gt.ulX;
+    double dY = y - gt.ulY;
+
+    // 3. Вычисляем непрерывные (дробные) координаты пикселя по формуле Крамера
+    double pixelXContinuous = (dX * gt.resY - dY * gt.rotateX) / det;
+    double pixelYContinuous = (gt.resX * dY - gt.rotateY * dX) / det;
+
+    // 4. Округляем строго вниз до ближайшего целого индекса пикселя
+    int pixelX = static_cast<int>(std::floor(pixelXContinuous));
+    int pixelY = static_cast<int>(std::floor(pixelYContinuous));
+
+    return QPoint(pixelX, pixelY);
+}
+
+QString MainWindowSatelliteComparator::getGeoCoordinatesUsingRotation(
+    const int x, const int y, const sad::geoTransform &geo, double &latitude,
+    double &longitude, bool isStringReturn) {
+    // Создаем проекцию UTM
+    OGRSpatialReference utmSrs;
+    utmSrs.SetProjCS("UTM");
+    utmSrs.SetWellKnownGeogCS("WGS84");
+    utmSrs.SetUTM(geo.utmZone, geo.isNorth);
+
+    // Создаем целевую проекцию (WGS84)
+    OGRSpatialReference wgs84Srs;
+    wgs84Srs.SetWellKnownGeogCS("WGS84");
+
+    // Задаем традиционное правило осей (X = Долгота, Y = Широта)
+    // utmSrs.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
+    // wgs84Srs.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
+
+    // Создаем преобразователь координат
+    OGRCoordinateTransformation *transformer =
+        OGRCreateCoordinateTransformation(&utmSrs, &wgs84Srs);
+
+    if (transformer == nullptr) {
+        qCritical()
+            << "Не удалось создать преобразователь координат UTM -> WGS84";
+        return "";
+    }
+
+    // Смещение на 0.5 для получения координат ЦЕНТРА пикселя
+    double pX = x + 0.5;
+    double pY = y + 0.5;
+
+    // ВЫЧИСЛЯЕМ КООРДИНАТЫ В ПРОЕКЦИИ UTM С УЧЕТОМ ПОВОРОТА (РОТАЦИИ)
+    double utmX = geo.ulX + pX * geo.resX + pY * geo.rotateX;
+    double utmY = geo.ulY + pX * geo.rotateY + pY * geo.resY;
+
+    // Преобразуем UTM -> WGS84 (широта/долгота)
+    double lon = utmX;
+    double lat = utmY;
+
+    if (!transformer->Transform(1, &lon, &lat)) {
+        OCTDestroyCoordinateTransformation(transformer);
+        qWarning() << "Ошибка трансформации координат для пикселя:" << x << y;
+        return "";
+    }
+
+    OCTDestroyCoordinateTransformation(transformer);
+
+    latitude = lat;
+    longitude = lon;
+
+    if (isStringReturn) {
+        return QString("Широта: %1 Долгота: %2")
+            .arg(lat, 0, 'f', 6)
+            .arg(lon, 0, 'f', 6);
+    }
+
+    return "";
 }
 
 inline double MainWindowSatelliteComparator::euclideanDistance(
@@ -7171,4 +7294,115 @@ void MainWindowSatelliteComparator::classify_roi_by_indexes(
                                 "Уменьшите размер исходного изображения "
                                 "или освободите оперативную память."));
     }
+}
+
+void MainWindowSatelliteComparator::openTiffAsLayer() {
+    GDALAllRegister();
+    const QString filePath = "HALS_selected_9bands.tif";
+
+    GDALDataset *poDataset = static_cast<GDALDataset *>(
+        GDALOpen(filePath.toUtf8().constData(), GA_ReadOnly));
+
+    if (poDataset == nullptr) {
+        qCritical() << "Не удалось открыть файл:" << filePath;
+        return;
+    }
+
+    int width = poDataset->GetRasterXSize();
+    int height = poDataset->GetRasterYSize();
+    int bandCount = poDataset->GetRasterCount();
+
+    qInfo() << "Разрешение изображения:" << width << "x" << height;
+    qInfo() << "Количество каналов:" << bandCount;
+
+    // --- 1. Считываем Геопривязку (Один раз, вне цикла!) ---
+    double adfGeoTransform[6];
+    if (poDataset->GetGeoTransform(adfGeoTransform) == CE_None) {
+        m_gals_geo.ulX = adfGeoTransform[0];
+        m_gals_geo.resX = adfGeoTransform[1];
+        m_gals_geo.rotateX = adfGeoTransform[2];
+        m_gals_geo.ulY = adfGeoTransform[3];
+        m_gals_geo.rotateY = adfGeoTransform[4];
+        m_gals_geo.resY = adfGeoTransform[5];
+    } else {
+        qWarning() << "Файл не содержит матрицы GeoTransform.";
+    }
+
+    // --- 2. Считываем Проекцию (Один раз) ---
+    const char *wktProjection = poDataset->GetProjectionRef();
+    if (wktProjection != nullptr && strlen(wktProjection) > 0) {
+        OGRSpatialReference oSRS;
+        char *pszTmp = const_cast<char *>(wktProjection);
+        if (oSRS.importFromWkt(&pszTmp) == OGRERR_NONE) {
+            if (oSRS.IsProjected()) {
+                int bNorth = 0;
+                int zone = oSRS.GetUTMZone(&bNorth);
+                if (zone != 0) {
+                    m_gals_geo.utmZone = zone;
+                    m_gals_geo.isNorth = (bNorth != 0);
+                }
+            }
+        }
+    }
+
+    // --- 3. Тесты пересчета координат ---
+    double lat, lon;
+    qDebug() << "coords 0 0: "
+             << getGeoCoordinatesUsingRotation(0, 0, m_gals_geo, lat, lon,
+                                               true);
+    qDebug() << "coords 599 2999: "
+             << getGeoCoordinatesUsingRotation(599, 2999, m_gals_geo, lat, lon,
+                                               true);
+
+    lat = 53.5209;
+    lon = 26.5876;
+    QPoint dunaPixel(270, 1600);
+    auto checkPixel = geoToPixelUsingRotation(53.5209, 26.5876, m_gals_geo);
+    qDebug() << "checkPixel: " << checkPixel.x() << checkPixel.y();
+    // = geoToPixel(
+    //    lat, lon,
+    //    m_gals_geo);  // предполагаем, что geoToPixel возвращает QPoint
+    // qDebug() << "Duna pixel coords: " << dunaPixel.x() << "  " <<
+    // dunaPixel.y();
+
+    // --- 4. ЧТЕНИЕ ЗНАЧЕНИЙ КАНАЛОВ ДЛЯ ЦЕЛЕВОГО ПИКСЕЛЯ ---
+    // Проверяем, что вычисленный пиксель лежит внутри растра
+    if (dunaPixel.x() >= 0 && dunaPixel.x() < width && dunaPixel.y() >= 0 &&
+        dunaPixel.y() < height) {
+        qInfo() << QString("--- Значения каналов в пикселе (%1, %2) ---")
+                       .arg(dunaPixel.x())
+                       .arg(dunaPixel.y());
+
+        // Цикл по всем 9 каналам
+        for (int i = 1; i <= qMin(bandCount, 9); ++i) {
+            GDALRasterBand *poBand = poDataset->GetRasterBand(i);
+            if (poBand == nullptr) continue;
+
+            float pixelValue = 0.0f;  // Переменная-буфер для одного пикселя
+
+            // Читаем окно размером 1x1 пиксель
+            CPLErr err = poBand->RasterIO(
+                GF_Read,  // Режим: чтение
+                dunaPixel.x(),  // X-координата нужного пикселя
+                dunaPixel.y(),  // Y-координата нужного пикселя
+                1, 1,  // Размер окна: 1 пиксель в ширину, 1 в высоту
+                &pixelValue,  // Указатель на наш float-буфер
+                1, 1,         // Размер буфера в памяти
+                GDT_Float32,  // Тип данных, к которому GDAL должен привести
+                              // значение
+                0, 0);
+
+            if (err == CE_None) {
+                qInfo() << QString("Канал %1: %2").arg(i).arg(pixelValue);
+            } else {
+                qCritical() << "Ошибка чтения пикселя в канале" << i;
+            }
+        }
+    } else {
+        qWarning()
+            << "Целевой пиксель dunaPixel находится за пределами изображения!";
+    }
+
+    // 5. Закрываем датасет
+    GDALClose(static_cast<GDALDatasetH>(poDataset));
 }

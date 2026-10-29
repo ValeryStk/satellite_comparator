@@ -248,6 +248,8 @@ private slots:
 
     void classify_roi_by_indexes(const QString &roiId);
 
+    void openTiffAsLayer();
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
@@ -437,6 +439,14 @@ private:
     QPointF geoToPixel(double latitude, double longitude,
                        const sad::geoTransform &gt);
 
+    QPoint geoToPixelUsingRotation(double latitude, double longitude,
+                                   const sad::geoTransform &gt);
+
+    QString getGeoCoordinatesUsingRotation(const int x, const int y,
+                                           const sad::geoTransform &geo,
+                                           double &latitude, double &longitude,
+                                           bool isStringReturn);
+
     inline double euclideanDistance(const QVector<double> &v1,
                                     const QVector<double> &v2) noexcept;
 
@@ -445,6 +455,7 @@ private:
 
     sad::geoTransform m_geo;
     sad::geoTransform m_sen2cor_geo;
+    sad::geoTransform m_gals_geo;
 
     void processLayer(uchar *layer, int xSize, int yStart, int yEnd,
                       const QVector<double> sample, QColor color,
