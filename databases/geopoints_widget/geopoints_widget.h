@@ -47,5 +47,7 @@ private:
     void generateAndInsertRandomPoints(int count);
     bool clearAllData();
     void updateUriComboBox();
+    bool updateGeoPoint(int pointId, const QString &newName, double newLat,
+                        double newLon);
 };
 #endif  // WIDGET_H
