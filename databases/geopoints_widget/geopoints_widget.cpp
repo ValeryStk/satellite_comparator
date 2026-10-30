@@ -688,5 +688,3 @@ void Widget::on_pushButton_clear_all_data_clicked() {
 void Widget::on_pushButton_show_all_points_clicked() {
     showAllPointsWithUris();
 }
-
-void Widget::on_comboBox_uris_currentIndexChanged(const QString &arg1) {}
