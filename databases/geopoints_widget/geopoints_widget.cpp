@@ -79,13 +79,17 @@ bool Widget::insertGeoPoint(const QString &productUri, double latitude,
                             const QString &description) {
     Q_UNUSED(description);
 
+    if (productUri.trimmed().isEmpty()) {
+        qWarning() << "Попытка вставить пустой productUri. Операция отменена.";
+        return false;
+    }
+
     QSqlDatabase db = QSqlDatabase::database();
     db.transaction();  // Заворачиваем в транзакцию для безопасности связей
 
     QSqlQuery query;
 
-    // Шаг 1: Генерируем новый point_id (так как в новой схеме points нет
-    // AUTOINCREMENT)
+    // Шаг 1: Генерируем новый point_id
     int newPointId = 1;
     if (query.exec("SELECT MAX(point_id) FROM points;") && query.next()) {
         if (!query.value(0).isNull()) {
@@ -100,8 +104,6 @@ bool Widget::insertGeoPoint(const QString &productUri, double latitude,
 
     query.bindValue(":point_id", newPointId);
 
-    // Если имя пустое, передаем NULL, чтобы избежать конфликта UNIQUE для
-    // пустых строк
     if (name.isEmpty()) {
         query.bindValue(":point_name", QVariant(QVariant::String));
     } else {
@@ -118,43 +120,51 @@ bool Widget::insertGeoPoint(const QString &productUri, double latitude,
         return false;
     }
 
-    // Шаг 3: Добавляем URI в таблицу uris, если его там еще нет
-    query.prepare(
-        "INSERT OR IGNORE INTO uris (product_uri) VALUES (:product_uri);");
-    query.bindValue(":product_uri", productUri);
-    if (!query.exec()) {
-        qWarning() << "Ошибка вставки в таблицу uris:"
-                   << query.lastError().text();
+    // Шаг 3: Сначала проверяем, существует ли уже такой URI в базе
+    QVariant uriId;
+    QSqlQuery checkQuery;
+    checkQuery.prepare("SELECT id FROM uris WHERE product_uri = :product_uri;");
+    checkQuery.bindValue(":product_uri", productUri);
+
+    if (checkQuery.exec() && checkQuery.next()) {
+        // URI уже существует, просто берем его ID
+        uriId = checkQuery.value(0);
+    } else {
+        // URI еще нет, вставляем его новым запросом
+        QSqlQuery insertUriQuery;
+        insertUriQuery.prepare(
+            "INSERT INTO uris (product_uri) VALUES (:product_uri);");
+        insertUriQuery.bindValue(":product_uri", productUri);
+
+        if (!insertUriQuery.exec()) {
+            qWarning() << "Ошибка вставки в таблицу uris:"
+                       << insertUriQuery.lastError().text();
+            db.rollback();
+            return false;
+        }
+        uriId = insertUriQuery.lastInsertId();
+    }
+
+    // Проверка на случай непредвиденных сбоев поиска/вставки ID
+    if (!uriId.isValid() || uriId.toLongLong() == 0) {
+        qWarning()
+            << "Критическая ошибка: не удалось получить валидный ID для URI:"
+            << productUri;
         db.rollback();
         return false;
     }
 
-    // Получаем id добавленного или уже существующего URI
-    QVariant uriId = query.lastInsertId();
-    if (!uriId.isValid() || uriId.toLongLong() == 0) {
-        QSqlQuery selectQuery;
-        selectQuery.prepare(
-            "SELECT id FROM uris WHERE product_uri = :product_uri;");
-        selectQuery.bindValue(":product_uri", productUri);
-        if (selectQuery.exec() && selectQuery.next()) {
-            uriId = selectQuery.value(0);
-        } else {
-            qWarning() << "Не удалось получить id для URI:" << productUri;
-            db.rollback();
-            return false;
-        }
-    }
-
     // Шаг 4: Связываем точку и URI в таблице pointId_uri
-    query.prepare(
+    QSqlQuery linkQuery;
+    linkQuery.prepare(
         "INSERT OR IGNORE INTO pointId_uri (point_id, uri_id) VALUES "
         "(:point_id, :uri_id);");
-    query.bindValue(":point_id", newPointId);
-    query.bindValue(":uri_id", uriId);
+    linkQuery.bindValue(":point_id", newPointId);
+    linkQuery.bindValue(":uri_id", uriId);
 
-    if (!query.exec()) {
+    if (!linkQuery.exec()) {
         qWarning() << "Ошибка вставки в таблицу pointId_uri:"
-                   << query.lastError().text();
+                   << linkQuery.lastError().text();
         db.rollback();
         return false;
     }
@@ -342,6 +352,28 @@ bool Widget::initDataBase(const QString &dbPath) {
                                   "Не удалось создать таблицу pointId_uri:\n" +
                                       query.lastError().text());
             return false;
+        }
+
+        // ДОБАВЛЯЕМ ТРИГГЕР:
+        // После любого удаления из pointId_uri проверяем, остался ли удаленный
+        // uri_id
+        // связан хоть с какой-то точкой. Если нет — удаляем этот URI из таблицы
+        // uris.
+        QString createTriggerUriCleanup =
+            "CREATE TRIGGER IF NOT EXISTS cleanup_unused_uris "
+            "AFTER DELETE ON pointId_uri "
+            "BEGIN "
+            "    DELETE FROM uris "
+            "    WHERE id = OLD.uri_id "
+            "      AND NOT EXISTS (SELECT 1 FROM pointId_uri WHERE uri_id = "
+            "OLD.uri_id); "
+            "END;";
+
+        if (!query.exec(createTriggerUriCleanup)) {
+            qWarning() << "Ошибка создания триггера очистки URI:"
+                       << query.lastError().text();
+            // При желании можно вернуть false, но обычно это не критично для
+            // старта
         }
 
         // Индексы для внешних ключей, чтобы ускорить операции JOIN и каскадные
@@ -639,12 +671,13 @@ void Widget::on_pushButton_insert_data_clicked() {
         ui->lineEditName->clear();
         ui->lineEditLatitude->clear();
         ui->lineEditLongitude->clear();
+        updateUriComboBox();
     } else {
         QMessageBox::critical(this, "Ошибка",
                               "Не удалось добавить точку. Проверьте "
                               "уникальность имени (UNIQUE)!");
     }
-    // model->select();
+    showAllPointsWithUris();
 }
 
 void Widget::on_pushButton_clear_all_data_clicked() {
