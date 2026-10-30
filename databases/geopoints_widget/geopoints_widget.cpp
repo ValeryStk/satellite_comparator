@@ -61,6 +61,7 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget) {
             [this](const QString &text) {
                 m_currentUri = text;
                 updatePointsTableByUri(m_currentUri);
+                ui->label_currentUri->setText(m_currentUri);
             });
 
     // 5. Инициализируем начальное состояние: берем первый элемент из комбобокса
@@ -547,6 +548,7 @@ void Widget::updatePointsTableByUri(const QString &productUri) {
     if (query.exec()) {
         model->setQuery(
             std::move(query));  // Обновляем данные в модели отображения
+        ui->tableView_geopoints->hideColumn(0);
         ui->tableView_geopoints->horizontalHeader()->setSectionResizeMode(
             QHeaderView::Stretch);
     } else {
@@ -575,6 +577,9 @@ void Widget::showAllPointsWithUris() {
 
     if (query.exec()) {
         model->setQuery(std::move(query));  // Обновляем модель на экране
+        // Скрываем ID точки (столбец 0) и Связанные URI (столбец 4)
+        ui->tableView_geopoints->hideColumn(0);
+        ui->tableView_geopoints->hideColumn(4);
         ui->tableView_geopoints->horizontalHeader()->setSectionResizeMode(
             QHeaderView::Stretch);
         qDebug() << "Таблица переведена в режим отображения всех точек.";
