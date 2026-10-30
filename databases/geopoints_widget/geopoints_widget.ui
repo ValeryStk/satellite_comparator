@@ -131,6 +131,19 @@
     </rect>
    </property>
   </widget>
+  <widget class="QPushButton" name="pushButton_link_point">
+   <property name="geometry">
+    <rect>
+     <x>620</x>
+     <y>510</y>
+     <width>101</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>create Link</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

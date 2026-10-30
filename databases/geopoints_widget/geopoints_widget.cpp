@@ -597,19 +597,21 @@ void Widget::showContextMenu(const QPoint &pos) {
     // Создаем контекстное меню
     QMenu menu(this);
     QAction *deleteAction = menu.addAction("Удалить точку");
+    QAction *linkAction = menu.addAction(
+        "Привязать к текущему URI");  // Добавляем новый пункт меню
 
     // Показываем меню в текущей позиции курсора
     QAction *selectedAction =
         menu.exec(ui->tableView_geopoints->viewport()->mapToGlobal(pos));
 
-    if (selectedAction == deleteAction) {
-        // 1. Получаем point_id из первого столбца выделенной строки (индекс
-        // столбца 0)
-        int row = index.row();
-        int pointId =
-            ui->tableView_geopoints->model()->index(row, 0).data().toInt();
+    // Извлекаем point_id из первого столбца (индекс 0) выделенной строки
+    int row = index.row();
+    int pointId =
+        ui->tableView_geopoints->model()->index(row, 0).data().toInt();
 
-        // 2. Выполняем явный SQL-запрос на удаление
+    // Обработка выбора: Удаление точки
+    if (selectedAction == deleteAction) {
+        // Выполняем явный SQL-запрос на удаление
         QSqlQuery deleteQuery;
         deleteQuery.prepare("DELETE FROM points WHERE point_id = :point_id;");
         deleteQuery.bindValue(":point_id", pointId);
@@ -617,14 +619,13 @@ void Widget::showContextMenu(const QPoint &pos) {
         if (deleteQuery.exec()) {
             qDebug() << "Точка с ID" << pointId << "успешно удалена из БД.";
 
-            // 3. Синхронизируем состояние View — принудительно обновляем
-            // таблицу. Здесь вызывайте тот метод обновления, в режиме которого
-            // сейчас находится приложение. Например, вывод ВСЕХ точек:
+            // Синхронизируем состояние View — принудительно обновляем таблицу.
+            // Если вы тестируете через режим "Показать все", оставляем этот
+            // вызов:
             showAllPointsWithUris();
 
-            // Или, если вы отображаете точки для конкретного URI,
-            // раскомментируйте строку ниже:
-            // updatePointsTableByUri(m_currentUri);
+            // Если вы находитесь в режиме фильтрации по конкретному URI,
+            // используйте: updatePointsTableByUri(m_currentUri);
         } else {
             qWarning() << "Не удалось удалить точку из БД:"
                        << deleteQuery.lastError().text();
@@ -633,6 +634,39 @@ void Widget::showContextMenu(const QPoint &pos) {
         }
 
         updateUriComboBox();
+    }
+    // Обработка выбора: Привязка к текущему URI
+    else if (selectedAction == linkAction) {
+        // Получаем текущий выбранный URI из комбобокса
+        QString currentUri = ui->comboBox_uris->currentText();
+
+        if (currentUri.isEmpty()) {
+            QMessageBox::warning(
+                this, "Внимание",
+                "Сначала выберите или добавьте URI продукта в комбобокс.");
+            return;
+        }
+
+        // Вызываем логику связывания (она сама защищена от дубликатов)
+        if (linkPointToUri(pointId, currentUri)) {
+            QMessageBox::information(
+                this, "Успех",
+                QString("Точка с ID %1 успешно связана с URI:\n%2")
+                    .arg(pointId)
+                    .arg(currentUri));
+
+            // Обновляем отображение таблицы, чтобы увидеть изменения
+            showAllPointsWithUris();
+
+            // Также обновляем комбобокс на случай, если URI был абсолютно новым
+            updateUriComboBox();
+            // Возвращаем фокус на сохраненный URI
+            ui->comboBox_uris->setCurrentText(currentUri);
+        } else {
+            QMessageBox::critical(
+                this, "Ошибка",
+                "Не удалось связать точку с URI. Проверьте системный лог.");
+        }
     }
 }
 
