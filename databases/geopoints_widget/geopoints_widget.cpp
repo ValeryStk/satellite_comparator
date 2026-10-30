@@ -40,9 +40,6 @@ Widget::~Widget() { delete ui; }
 bool Widget::insertGeoPoint(const QString &productUri, double latitude,
                             double longitude, const QString &name,
                             const QString &description) {
-    // Параметр description из старого метода опущен, так как в вашей новой
-    // таблице points его нет. Поле longitude теперь может принимать NULL,
-    // проверяем его.
     Q_UNUSED(description);
 
     QSqlDatabase db = QSqlDatabase::database();
@@ -50,31 +47,30 @@ bool Widget::insertGeoPoint(const QString &productUri, double latitude,
 
     QSqlQuery query;
 
-    // Шаг 1: Добавляем URI в таблицу products, если его там еще нет
-    query.prepare(
-        "INSERT OR IGNORE INTO products (product_uri) VALUES (:product_uri);");
-    query.bindValue(":product_uri", productUri);
-    if (!query.exec()) {
-        qWarning() << "Ошибка вставки в таблицу products:"
-                   << query.lastError().text();
-        db.rollback();
-        return false;
+    // Шаг 1: Генерируем новый point_id (так как в новой схеме points нет
+    // AUTOINCREMENT)
+    int newPointId = 1;
+    if (query.exec("SELECT MAX(point_id) FROM points;") && query.next()) {
+        if (!query.value(0).isNull()) {
+            newPointId = query.value(0).toInt() + 1;
+        }
     }
 
     // Шаг 2: Вставляем саму географическую точку в таблицу points
     query.prepare(
-        "INSERT INTO points (point_name, product_uri, latitude, longitude) "
-        "VALUES (:point_name, :product_uri, :latitude, :longitude);");
+        "INSERT INTO points (point_id, point_name, latitude, longitude) "
+        "VALUES (:point_id, :point_name, :latitude, :longitude);");
 
-    // Если имя пустое, передаем NULL (так как у вас наложено ограничение
-    // UNIQUE, пустые строки вызовут конфликт)
+    query.bindValue(":point_id", newPointId);
+
+    // Если имя пустое, передаем NULL, чтобы избежать конфликта UNIQUE для
+    // пустых строк
     if (name.isEmpty()) {
         query.bindValue(":point_name", QVariant(QVariant::String));
     } else {
         query.bindValue(":point_name", name);
     }
 
-    query.bindValue(":product_uri", productUri);
     query.bindValue(":latitude", latitude);
     query.bindValue(":longitude", longitude);
 
@@ -85,7 +81,117 @@ bool Widget::insertGeoPoint(const QString &productUri, double latitude,
         return false;
     }
 
+    // Шаг 3: Добавляем URI в таблицу uris, если его там еще нет
+    query.prepare(
+        "INSERT OR IGNORE INTO uris (product_uri) VALUES (:product_uri);");
+    query.bindValue(":product_uri", productUri);
+    if (!query.exec()) {
+        qWarning() << "Ошибка вставки в таблицу uris:"
+                   << query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    // Получаем id добавленного или уже существующего URI
+    QVariant uriId = query.lastInsertId();
+    if (!uriId.isValid() || uriId.toLongLong() == 0) {
+        QSqlQuery selectQuery;
+        selectQuery.prepare(
+            "SELECT id FROM uris WHERE product_uri = :product_uri;");
+        selectQuery.bindValue(":product_uri", productUri);
+        if (selectQuery.exec() && selectQuery.next()) {
+            uriId = selectQuery.value(0);
+        } else {
+            qWarning() << "Не удалось получить id для URI:" << productUri;
+            db.rollback();
+            return false;
+        }
+    }
+
+    // Шаг 4: Связываем точку и URI в таблице pointId_uri
+    query.prepare(
+        "INSERT OR IGNORE INTO pointId_uri (point_id, uri_id) VALUES "
+        "(:point_id, :uri_id);");
+    query.bindValue(":point_id", newPointId);
+    query.bindValue(":uri_id", uriId);
+
+    if (!query.exec()) {
+        qWarning() << "Ошибка вставки в таблицу pointId_uri:"
+                   << query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
     db.commit();
+    return true;
+}
+
+bool Widget::linkPointToUri(int pointId, const QString &productUri) {
+    if (productUri.isEmpty()) {
+        qWarning() << "Передан пустой URI.";
+        return false;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database();
+    db.transaction();  // Заворачиваем в транзакцию для безопасности
+
+    QSqlQuery query;
+
+    // Шаг 1: Проверяем, существует ли вообще такая точка
+    query.prepare("SELECT 1 FROM points WHERE point_id = :point_id;");
+    query.bindValue(":point_id", pointId);
+    if (!query.exec() || !query.next()) {
+        qWarning() << "Точка с ID" << pointId << "не существует в базе данных.";
+        db.rollback();
+        return false;
+    }
+
+    // Шаг 2: Вставляем URI в таблицу uris (если его еще нет)
+    query.prepare(
+        "INSERT OR IGNORE INTO uris (product_uri) VALUES (:product_uri);");
+    query.bindValue(":product_uri", productUri);
+    if (!query.exec()) {
+        qWarning() << "Ошибка вставки URI в таблицу uris:"
+                   << query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    // Шаг 3: Получаем ID этого URI
+    QVariant uriId = query.lastInsertId();
+    if (!uriId.isValid() || uriId.toLongLong() == 0) {
+        // Если сработал IGNORE, находим существующий ID через SELECT
+        QSqlQuery selectQuery;
+        selectQuery.prepare(
+            "SELECT id FROM uris WHERE product_uri = :product_uri;");
+        selectQuery.bindValue(":product_uri", productUri);
+        if (selectQuery.exec() && selectQuery.next()) {
+            uriId = selectQuery.value(0);
+        } else {
+            qWarning() << "Не удалось получить ID для URI:" << productUri;
+            db.rollback();
+            return false;
+        }
+    }
+
+    // Шаг 4: Связываем существующую точку с полученным uri_id
+    // Использование OR IGNORE гарантирует отсутствие ошибок, если связь уже
+    // была создана ранее
+    query.prepare(
+        "INSERT OR IGNORE INTO pointId_uri (point_id, uri_id) VALUES "
+        "(:point_id, :uri_id);");
+    query.bindValue(":point_id", pointId);
+    query.bindValue(":uri_id", uriId);
+
+    if (!query.exec()) {
+        qWarning() << "Ошибка при создании связи в pointId_uri:"
+                   << query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    db.commit();
+    qDebug() << "Точка" << pointId << "успешно связана с URI:" << productUri;
     return true;
 }
 
@@ -127,7 +233,13 @@ QVector<PointData> Widget::Widget::selectPointsByProduct(
 bool Widget::initDataBase(const QString &dbPath) {
     bool dbExists = QFileInfo::exists(dbPath);
 
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    // Предотвращаем дублирование соединений в Qt
+    QSqlDatabase db;
+    if (QSqlDatabase::contains(QSqlDatabase::defaultConnection)) {
+        db = QSqlDatabase::database(QSqlDatabase::defaultConnection);
+    } else {
+        db = QSqlDatabase::addDatabase("QSQLITE");
+    }
     db.setDatabaseName(dbPath);
 
     if (!db.open()) {
@@ -142,34 +254,17 @@ bool Widget::initDataBase(const QString &dbPath) {
     QSqlQuery pragmaQuery;
     pragmaQuery.exec("PRAGMA foreign_keys = ON;");
 
-    // Если файла не существовало, создаем таблицы по вашей новой схеме
+    // Если файла не существовало, создаем таблицы по новой схеме
     if (!dbExists) {
         QSqlQuery query;
 
-        // Таблица 1: Справочник продуктов (создается первой)
-        QString createProductsTable =
-            "CREATE TABLE products ("
-            "    id          INTEGER PRIMARY KEY AUTOINCREMENT,"
-            "    product_uri TEXT    NOT NULL UNIQUE"
-            ");";
-
-        if (!query.exec(createProductsTable)) {
-            QMessageBox::critical(nullptr, "Ошибка создания таблицы products",
-                                  "Не удалось создать таблицу products:\n" +
-                                      query.lastError().text());
-            return false;
-        }
-
-        // Таблица 2: Географические точки (ссылается на products)
+        // Таблица 1: Географические точки
         QString createPointsTable =
             "CREATE TABLE points ("
-            "    point_id    INTEGER PRIMARY KEY,"
-            "    point_name  TEXT    UNIQUE,"  // SQLite не имеет типа данных
-                                               // TEXT для point_name по
-                                               // умолчанию, явно указан TEXT
-            "    product_uri TEXT    REFERENCES products (product_uri),"
-            "    latitude    REAL    NOT NULL,"
-            "    longitude   REAL"
+            "    point_id   INTEGER PRIMARY KEY,"
+            "    point_name TEXT UNIQUE,"
+            "    latitude   REAL NOT NULL,"
+            "    longitude  REAL"
             ");";
 
         if (!query.exec(createPointsTable)) {
@@ -179,8 +274,48 @@ bool Widget::initDataBase(const QString &dbPath) {
             return false;
         }
 
-        qDebug() << "Создан новый файл БД и таблицы по новой схеме в:"
-                 << dbPath;
+        // Таблица 2: Справочник URI продуктов
+        QString createUrisTable =
+            "CREATE TABLE uris ("
+            "    id          INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "    product_uri TEXT NOT NULL UNIQUE"
+            ");";
+
+        if (!query.exec(createUrisTable)) {
+            QMessageBox::critical(nullptr, "Ошибка создания таблицы uris",
+                                  "Не удалось создать таблицу uris:\n" +
+                                      query.lastError().text());
+            return false;
+        }
+
+        // Таблица 3: Связующая таблица Многие-ко-Многим (WITHOUT ROWID)
+        // Добавлен составной PRIMARY KEY, необходимый для WITHOUT ROWID
+        QString createPointIdUriTable =
+            "CREATE TABLE pointId_uri ("
+            "    point_id INTEGER REFERENCES points (point_id) ON DELETE "
+            "CASCADE ON UPDATE CASCADE,"
+            "    uri_id   INTEGER REFERENCES uris (id) ON DELETE CASCADE ON "
+            "UPDATE CASCADE,"
+            "    PRIMARY KEY (point_id, uri_id)"
+            ") WITHOUT ROWID;";
+
+        if (!query.exec(createPointIdUriTable)) {
+            QMessageBox::critical(nullptr,
+                                  "Ошибка создания таблицы pointId_uri",
+                                  "Не удалось создать таблицу pointId_uri:\n" +
+                                      query.lastError().text());
+            return false;
+        }
+
+        // Индексы для внешних ключей, чтобы ускорить операции JOIN и каскадные
+        // удаления
+        query.exec(
+            "CREATE INDEX idx_pointId_uri_point ON pointId_uri(point_id);");
+        query.exec("CREATE INDEX idx_pointId_uri_uri ON pointId_uri(uri_id);");
+
+        qDebug()
+            << "Создан новый файл БД и таблицы по схеме Многие-ко-Многим в:"
+            << dbPath;
     } else {
         qDebug() << "Успешно подключена существующая БД по пути:" << dbPath;
     }
@@ -195,44 +330,83 @@ void Widget::generateAndInsertRandomPoints(int count) {
     std::uniform_real_distribution<double> lonDist(-180.0, 180.0);
 
     QSqlDatabase db = QSqlDatabase::database();
+
+    // Получаем текущее максимальное значение point_id, чтобы не было конфликтов
+    // при повторном запуске генератора
+    int startPointId = 1;
+    QSqlQuery maxIdQuery("SELECT MAX(point_id) FROM points;");
+    if (maxIdQuery.next() && !maxIdQuery.value(0).isNull()) {
+        startPointId = maxIdQuery.value(0).toInt() + 1;
+    }
+
     db.transaction();  // Включаем транзакцию для ускорения записи пакета данных
 
-    QSqlQuery queryProd;
     QSqlQuery queryPoint;
+    QSqlQuery queryUri;
+    QSqlQuery queryLink;
 
-    // Подготавливаем оба запроса заранее
-    queryProd.prepare(
-        "INSERT OR IGNORE INTO products (product_uri) VALUES (:uri);");
+    // Подготавливаем все три запроса заранее под новую структуру
     queryPoint.prepare(
-        "INSERT INTO points (point_name, product_uri, latitude, longitude) "
-        "VALUES (:name, :uri, :lat, :lon);");
+        "INSERT INTO points (point_id, point_name, latitude, longitude) "
+        "VALUES (:point_id, :name, :lat, :lon);");
+
+    queryUri.prepare("INSERT OR IGNORE INTO uris (product_uri) VALUES (:uri);");
+
+    queryLink.prepare(
+        "INSERT OR IGNORE INTO pointId_uri (point_id, uri_id) VALUES "
+        "(:point_id, :uri_id);");
 
     for (int i = 0; i < count; ++i) {
         QString uid = QUuid::createUuid().toString(QUuid::WithoutBraces);
         QString currentUri = QString("https://example.com_%1").arg(uid);
         QString currentName = QString("Точка-%1").arg(uid.left(8));
+        int currentPointId = startPointId + i;
 
-        // 1. Вставка в родительскую таблицу products
-        queryProd.bindValue(":uri", currentUri);
-        if (!queryProd.exec()) {
-            qWarning() << "Ошибка генерации (products):"
-                       << queryProd.lastError().text();
-            continue;  // Пропускаем итерацию, если что-то пошло не так
-        }
-
-        // 2. Вставка в дочернюю таблицу points
+        // 1. Вставляем саму географическую точку
+        queryPoint.bindValue(":point_id", currentPointId);
         queryPoint.bindValue(":name", currentName);
-        queryPoint.bindValue(":uri", currentUri);
         queryPoint.bindValue(":lat", latDist(gen));
         queryPoint.bindValue(":lon", lonDist(gen));
 
         if (!queryPoint.exec()) {
             qWarning() << "Ошибка генерации (points):"
                        << queryPoint.lastError().text();
+            continue;  // Пропускаем шаг, если точка не создалась
+        }
+
+        // 2. Вставляем URI продукта
+        queryUri.bindValue(":uri", currentUri);
+        if (!queryUri.exec()) {
+            qWarning() << "Ошибка генерации (uris):"
+                       << queryUri.lastError().text();
+            continue;
+        }
+
+        // Получаем id только что вставленного (или уже существовавшего) URI
+        QVariant uriId = queryUri.lastInsertId();
+
+        // На случай, если сработал OR IGNORE и lastInsertId() пустой, находим
+        // существующий id
+        if (!uriId.isValid() || uriId.toLongLong() == 0) {
+            QSqlQuery selectUri;
+            selectUri.prepare("SELECT id FROM uris WHERE product_uri = :uri;");
+            selectUri.bindValue(":uri", currentUri);
+            if (selectUri.exec() && selectUri.next()) {
+                uriId = selectUri.value(0);
+            }
+        }
+
+        // 3. Создаем связь Многие-ко-Многим в таблице pointId_uri
+        queryLink.bindValue(":point_id", currentPointId);
+        queryLink.bindValue(":uri_id", uriId);
+
+        if (!queryLink.exec()) {
+            qWarning() << "Ошибка генерации (pointId_uri):"
+                       << queryLink.lastError().text();
         }
     }
 
-    db.commit();  // Сохраняем все изменения на диск одним пакетом
+    db.commit();  // Сохраняем все изменения на диск единым пакетом
 }
 
 bool Widget::clearAllData() {
@@ -243,7 +417,9 @@ bool Widget::clearAllData() {
 
     QSqlQuery query;
 
-    // 1. Сначала удаляем все записи из таблицы точек (дочерняя таблица)
+    // 1. Удаляем все записи из таблицы точек
+    // Каскадное удаление (ON DELETE CASCADE) автоматически очистит связанные
+    // строки в pointId_uri
     if (!query.exec("DELETE FROM points;")) {
         qWarning() << "Ошибка очистки таблицы points:"
                    << query.lastError().text();
@@ -251,24 +427,22 @@ bool Widget::clearAllData() {
         return false;
     }
 
-    // 2. Затем удаляем все записи из таблицы продуктов (родительская таблица)
-    if (!query.exec("DELETE FROM products;")) {
-        qWarning() << "Ошибка очистки таблицы products:"
+    // 2. Удаляем все записи из таблицы URI
+    // Каскадное удаление также зачистит остатки в pointId_uri, если они были
+    if (!query.exec("DELETE FROM uris;")) {
+        qWarning() << "Ошибка очистки таблицы uris:"
                    << query.lastError().text();
         db.rollback();
         return false;
     }
 
-    // 3. Сбрасываем внутренние счетчики AUTOINCREMENT в SQLite,
-    // чтобы новые ID снова начинались с 1
-    if (query.exec("SELECT 1 FROM sqlite_sequence WHERE name IN ('products', "
-                   "'points');")) {
-        query.exec("DELETE FROM sqlite_sequence WHERE name = 'products';");
-        query.exec("DELETE FROM sqlite_sequence WHERE name = 'points';");
+    // 3. Сбрасываем внутренний счетчик AUTOINCREMENT для таблицы uris
+    if (query.exec("SELECT 1 FROM sqlite_sequence WHERE name = 'uris';")) {
+        query.exec("DELETE FROM sqlite_sequence WHERE name = 'uris';");
     }
 
     db.commit();
-    qDebug() << "Все таблицы успешно очищены, счетчики ID сброшены.";
+    qDebug() << "Все три таблицы успешно очищены, счетчик ID для uris сброшен.";
     return true;
 }
 
