@@ -27,8 +27,8 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>500</y>
-     <width>191</width>
+     <y>440</y>
+     <width>141</width>
      <height>51</height>
     </rect>
    </property>
@@ -39,9 +39,9 @@
   <widget class="QPushButton" name="pushButton_insert_data">
    <property name="geometry">
     <rect>
-     <x>240</x>
-     <y>500</y>
-     <width>191</width>
+     <x>620</x>
+     <y>370</y>
+     <width>101</width>
      <height>51</height>
     </rect>
    </property>
@@ -92,14 +92,27 @@
   <widget class="QPushButton" name="pushButton_clear_all_data">
    <property name="geometry">
     <rect>
-     <x>460</x>
-     <y>500</y>
-     <width>201</width>
+     <x>620</x>
+     <y>430</y>
+     <width>101</width>
      <height>51</height>
     </rect>
    </property>
    <property name="text">
     <string>Clear all data</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton_show_all_points">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>510</y>
+     <width>141</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>show all points</string>
    </property>
   </widget>
  </widget>

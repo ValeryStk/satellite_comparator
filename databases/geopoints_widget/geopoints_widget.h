@@ -30,6 +30,8 @@ public:
     bool linkPointToUri(int pointId, const QString &productUri);
 
     QVector<PointData> selectPointsByProduct(const QString &productUri);
+    void updatePointsTableByUri(const QString &productUri);
+    void showAllPointsWithUris();
 
 private slots:
     void on_pushButton_clicked();
@@ -38,6 +40,8 @@ private slots:
     void on_pushButton_insert_data_clicked();
 
     void on_pushButton_clear_all_data_clicked();
+
+    void on_pushButton_show_all_points_clicked();
 
 private:
     Ui::Widget *ui;

@@ -16,23 +16,42 @@
 #include <random>
 
 #include "ui_geopoints_widget.h"
-QSqlTableModel *model;
+QSqlQueryModel *model;
 
 Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget) {
     ui->setupUi(this);
-    QString pathToDb = QApplication::applicationDirPath() + "/" + "geopoints";
-    initDataBase(pathToDb);
-    model = new QSqlTableModel();
-    model->setTable("points");
-    model->select();
-    // Вставьте этот код в конструктор вашего виджета (например,
-    // GeoPointsWidget)
-    ui->tableView_geopoints->setContextMenuPolicy(Qt::CustomContextMenu);
 
+    QString pathToDb = QApplication::applicationDirPath() + "/" + "geopoints";
+    if (!initDataBase(pathToDb)) {
+        return;
+    }
+
+    // 1. Создаем модель для JOIN-запросов
+    model = new QSqlQueryModel(this);
+    ui->tableView_geopoints->setModel(model);
+
+    // 2. Динамически получаем самый первый URI из базы данных
+    QString targetUri;
+    QSqlQuery query("SELECT product_uri FROM uris ORDER BY id ASC LIMIT 1;");
+
+    if (query.next()) {
+        targetUri = query.value(0).toString();
+        qDebug() << "Автоматически выбран первый найденный URI:" << targetUri;
+    } else {
+        qDebug() << "База данных пуста, URI не найдены.";
+    }
+
+    // Сохраняем текущий URI в переменную класса (если она у вас объявлена,
+    // например m_currentUri) m_currentUri = targetUri;
+
+    // 3. Вызываем метод фильтрации (если targetUri пустой, таблица просто
+    // останется пустой)
+    updatePointsTableByUri(targetUri);
+
+    // Настройка контекстного меню
+    ui->tableView_geopoints->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->tableView_geopoints, &QTableView::customContextMenuRequested,
             this, &Widget::showContextMenu);
-
-    ui->tableView_geopoints->setModel(model);
 }
 
 Widget::~Widget() { delete ui; }
@@ -446,9 +465,64 @@ bool Widget::clearAllData() {
     return true;
 }
 
+void Widget::updatePointsTableByUri(const QString &productUri) {
+    QSqlQuery query;
+    // Пишем JOIN запрос для связи трех таблиц и фильтрации по текстовому URI
+    query.prepare(
+        "SELECT p.point_id AS 'ID Точки', "
+        "       p.point_name AS 'Название точки', "
+        "       p.latitude AS 'Широта', "
+        "       p.longitude AS 'Долгота' "
+        "FROM points p "
+        "JOIN pointId_uri link ON p.point_id = link.point_id "
+        "JOIN uris u ON link.uri_id = u.id "
+        "WHERE u.product_uri = :product_uri;");
+
+    query.bindValue(":product_uri", productUri);
+
+    if (query.exec()) {
+        model->setQuery(
+            std::move(query));  // Обновляем данные в модели отображения
+        ui->tableView_geopoints->horizontalHeader()->setSectionResizeMode(
+            QHeaderView::Stretch);
+    } else {
+        qWarning() << "Не удалось отфильтровать точки по URI:"
+                   << query.lastError().text();
+    }
+}
+
+void Widget::showAllPointsWithUris() {
+    QSqlQuery query;
+
+    // Запрос выбирает все точки, объединяет их с URI через таблицу связей,
+    // группирует по ID точки и склеивает все её URI в одну строку через
+    // запятую. Слева (LEFT JOIN) используются джоины, чтобы показались даже те
+    // точки, у которых временно нет URI.
+    query.prepare(
+        "SELECT p.point_id AS 'ID Точки', "
+        "       p.point_name AS 'Название точки', "
+        "       p.latitude AS 'Широта', "
+        "       p.longitude AS 'Долгота', "
+        "       group_concat(u.product_uri, ', ') AS 'Связанные URI' "
+        "FROM points p "
+        "LEFT JOIN pointId_uri link ON p.point_id = link.point_id "
+        "LEFT JOIN uris u ON link.uri_id = u.id "
+        "GROUP BY p.point_id;");
+
+    if (query.exec()) {
+        model->setQuery(std::move(query));  // Обновляем модель на экране
+        ui->tableView_geopoints->horizontalHeader()->setSectionResizeMode(
+            QHeaderView::Stretch);
+        qDebug() << "Таблица переведена в режим отображения всех точек.";
+    } else {
+        qWarning() << "Не удалось загрузить все точки:"
+                   << query.lastError().text();
+    }
+}
+
 void Widget::on_pushButton_clicked() {
     generateAndInsertRandomPoints(5);
-    model->select();
+    // model->select();
 }
 
 void Widget::showContextMenu(const QPoint &pos) {
@@ -471,7 +545,7 @@ void Widget::showContextMenu(const QPoint &pos) {
         model->removeRow(index.row());
 
         // 2. Синхронизируем состояние, чтобы View перерисовал строки
-        model->select();
+        // model->select();
     }
 }
 
@@ -515,10 +589,14 @@ void Widget::on_pushButton_insert_data_clicked() {
                               "Не удалось добавить точку. Проверьте "
                               "уникальность имени (UNIQUE)!");
     }
-    model->select();
+    // model->select();
 }
 
 void Widget::on_pushButton_clear_all_data_clicked() {
     clearAllData();
-    model->select();
+    // model->select();
+}
+
+void Widget::on_pushButton_show_all_points_clicked() {
+    showAllPointsWithUris();
 }
