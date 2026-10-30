@@ -115,6 +115,16 @@
     <string>show all points</string>
    </property>
   </widget>
+  <widget class="QComboBox" name="comboBox_uris">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>440</y>
+     <width>321</width>
+     <height>51</height>
+    </rect>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

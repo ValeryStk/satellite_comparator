@@ -52,6 +52,24 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget) {
     ui->tableView_geopoints->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->tableView_geopoints, &QTableView::customContextMenuRequested,
             this, &Widget::showContextMenu);
+
+    // 3. Заполняем комбобокс актуальными URI из базы данных
+    updateUriComboBox();
+
+    // 4. Связываем переключение комбобокса с обновлением таблицы
+    connect(ui->comboBox_uris, &QComboBox::currentTextChanged, this,
+            [this](const QString &text) {
+                m_currentUri = text;
+                updatePointsTableByUri(m_currentUri);
+            });
+
+    // 5. Инициализируем начальное состояние: берем первый элемент из комбобокса
+    if (ui->comboBox_uris->count() > 0) {
+        m_currentUri = ui->comboBox_uris->currentText();
+        updatePointsTableByUri(m_currentUri);
+    } else {
+        qDebug() << "База данных пуста, комбобокс URI не заполнен.";
+    }
 }
 
 Widget::~Widget() { delete ui; }
@@ -465,6 +483,20 @@ bool Widget::clearAllData() {
     return true;
 }
 
+void Widget::updateUriComboBox() {
+    // Временно блокируем сигналы, чтобы при заполнении комбобокса не вызывалось
+    // автоматическое обновление таблицы
+    ui->comboBox_uris->blockSignals(true);
+    ui->comboBox_uris->clear();
+
+    QSqlQuery query("SELECT product_uri FROM uris ORDER BY product_uri ASC;");
+    while (query.next()) {
+        ui->comboBox_uris->addItem(query.value(0).toString());
+    }
+
+    ui->comboBox_uris->blockSignals(false);
+}
+
 void Widget::updatePointsTableByUri(const QString &productUri) {
     QSqlQuery query;
     // Пишем JOIN запрос для связи трех таблиц и фильтрации по текстовому URI
@@ -521,8 +553,8 @@ void Widget::showAllPointsWithUris() {
 }
 
 void Widget::on_pushButton_clicked() {
-    generateAndInsertRandomPoints(5);
-    // model->select();
+    generateAndInsertRandomPoints(1);
+    updateUriComboBox();
 }
 
 void Widget::showContextMenu(const QPoint &pos) {
@@ -539,13 +571,36 @@ void Widget::showContextMenu(const QPoint &pos) {
         menu.exec(ui->tableView_geopoints->viewport()->mapToGlobal(pos));
 
     if (selectedAction == deleteAction) {
-        // 1. Удаляем строку из модели (она сама отправит DELETE в SQLite)
-        // Обратите внимание: у модели должна быть стратегия
-        // QSqlTableModel::OnRowChange (по умолчанию)
-        model->removeRow(index.row());
+        // 1. Получаем point_id из первого столбца выделенной строки (индекс
+        // столбца 0)
+        int row = index.row();
+        int pointId =
+            ui->tableView_geopoints->model()->index(row, 0).data().toInt();
 
-        // 2. Синхронизируем состояние, чтобы View перерисовал строки
-        // model->select();
+        // 2. Выполняем явный SQL-запрос на удаление
+        QSqlQuery deleteQuery;
+        deleteQuery.prepare("DELETE FROM points WHERE point_id = :point_id;");
+        deleteQuery.bindValue(":point_id", pointId);
+
+        if (deleteQuery.exec()) {
+            qDebug() << "Точка с ID" << pointId << "успешно удалена из БД.";
+
+            // 3. Синхронизируем состояние View — принудительно обновляем
+            // таблицу. Здесь вызывайте тот метод обновления, в режиме которого
+            // сейчас находится приложение. Например, вывод ВСЕХ точек:
+            showAllPointsWithUris();
+
+            // Или, если вы отображаете точки для конкретного URI,
+            // раскомментируйте строку ниже:
+            // updatePointsTableByUri(m_currentUri);
+        } else {
+            qWarning() << "Не удалось удалить точку из БД:"
+                       << deleteQuery.lastError().text();
+            QMessageBox::warning(this, "Ошибка удаления",
+                                 "Не удалось удалить точку из базы данных.");
+        }
+
+        updateUriComboBox();
     }
 }
 
@@ -600,3 +655,5 @@ void Widget::on_pushButton_clear_all_data_clicked() {
 void Widget::on_pushButton_show_all_points_clicked() {
     showAllPointsWithUris();
 }
+
+void Widget::on_comboBox_uris_currentIndexChanged(const QString &arg1) {}

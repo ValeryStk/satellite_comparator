@@ -34,19 +34,20 @@ public:
     void showAllPointsWithUris();
 
 private slots:
-    void on_pushButton_clicked();
     void showContextMenu(const QPoint &pos);
-
+    void on_pushButton_clicked();
     void on_pushButton_insert_data_clicked();
-
     void on_pushButton_clear_all_data_clicked();
-
     void on_pushButton_show_all_points_clicked();
+
+    void on_comboBox_uris_currentIndexChanged(const QString &arg1);
 
 private:
     Ui::Widget *ui;
+    QString m_currentUri;
     bool initDataBase(const QString &dbPath);
     void generateAndInsertRandomPoints(int count);
     bool clearAllData();
+    void updateUriComboBox();
 };
 #endif  // WIDGET_H
