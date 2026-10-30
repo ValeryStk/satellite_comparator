@@ -1145,7 +1145,7 @@ void MainWindowSatelliteComparator::samplePointOnSceneChangedEvent(
     m_is_bekas = false;
     m_x_image = pos.x();
     m_y_image = pos.y();
-    QPointF posRounded = QPointF(m_x_image, m_y_image);
+    QPointF posRounded = QPointF(m_x_image + 0.5, m_y_image + 0.5);
     m_scene_cross_square_item->setPos(posRounded);
     m_scene_cross_square_item->update();
     double lat = 0.0;
@@ -2567,8 +2567,8 @@ void MainWindowSatelliteComparator::paintMultiSpecPoints(
 }
 
 QString MainWindowSatelliteComparator::getGeoCoordinates(
-    const int x, const int y, const sad::geoTransform &geo, double &latitude,
-    double &longitude, bool isStringReturn) {
+    const double x, const double y, const sad::geoTransform &geo,
+    double &latitude, double &longitude, bool isStringReturn) {
     // Создаем проекцию UTM
     OGRSpatialReference utmSrs;
     utmSrs.SetProjCS("UTM");

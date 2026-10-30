@@ -433,7 +433,7 @@ private:
                               const QVector<QColor> &colors,
                               const QVector<int> &clusterIndexes);
 
-    QString getGeoCoordinates(const int x, const int y,
+    QString getGeoCoordinates(const double x, const double y,
                               const sad::geoTransform &geo, double &latitude,
                               double &longitude, bool isStringReturn);
     QPointF geoToPixel(double latitude, double longitude,
