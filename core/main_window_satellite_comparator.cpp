@@ -1003,8 +1003,8 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
     QVector<double> trimmed_satellite_data;
 
     const QString x_y = "x: %1   y:%2";
-    QString x_y_message =
-        x_y.arg(QString::number(pos.x()), QString::number(pos.y()));
+    QString x_y_message = x_y.arg(QString::number(pos.x(), 'f', 0),
+                                  QString::number(pos.y(), 'f', 0));
     m_label_scene_coord->setText(x_y_message);
 
     if (m_satelite_type == sad::SATELLITE_TYPE::LANDSAT_8 ||
