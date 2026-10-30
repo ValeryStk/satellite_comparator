@@ -660,7 +660,8 @@ MainWindowSatelliteComparator::MainWindowSatelliteComparator(
             handleRestartedApplication(path2File, idContext);
         });
     }
-    // openTiffAsLayer(); WORK IN PROGRESS
+    openTiffAsLayer();
+    // WORK IN PROGRESS
 }
 
 MainWindowSatelliteComparator::~MainWindowSatelliteComparator() {
@@ -2601,7 +2602,10 @@ QString MainWindowSatelliteComparator::getGeoCoordinates(
     longitude = lon;
 
     if (isStringReturn) {
-        QString lat_lon = QString("Широта: %1 Долгота: %2").arg(lat).arg(lon);
+        QString lat_lon = QString("Широта: %1 Долгота: %2")
+                              .arg(lat, 0, 'f', 7)
+                              .arg(lon, 0, 'f', 7);
+
         return lat_lon;
     }
 

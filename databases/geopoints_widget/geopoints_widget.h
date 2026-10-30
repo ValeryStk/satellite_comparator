@@ -28,8 +28,6 @@ public:
                         double longitude, const QString &name,
                         const QString &description = QString());
     bool linkPointToUri(int pointId, const QString &productUri);
-
-    QVector<PointData> selectPointsByProduct(const QString &productUri);
     void updatePointsTableByUri(const QString &productUri);
     void showAllPointsWithUris();
 

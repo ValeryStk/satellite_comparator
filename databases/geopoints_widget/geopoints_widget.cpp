@@ -244,41 +244,6 @@ bool Widget::linkPointToUri(int pointId, const QString &productUri) {
     return true;
 }
 
-QVector<PointData> Widget::Widget::selectPointsByProduct(
-    const QString &productUri) {
-    QVector<PointData> resultList;
-    QSqlQuery query;
-
-    // Используем JOIN для объединения таблиц по product_uri
-    query.prepare(
-        "SELECT p.point_id, p.point_name, p.product_uri, p.latitude, "
-        "p.longitude "
-        "FROM points p "
-        "LEFT JOIN products pr ON p.product_uri = pr.product_uri "
-        "WHERE pr.product_uri = :product_uri;");
-
-    query.bindValue(":product_uri", productUri);
-
-    if (!query.exec()) {
-        qWarning() << "Ошибка выборки точек:" << query.lastError().text();
-        return resultList;
-    }
-
-    // Читаем строки из полученного ответа базы данных
-    while (query.next()) {
-        PointData pt;
-        pt.pointId = query.value("point_id").toInt();
-        pt.pointName = query.value("point_name").toString();
-        pt.productUri = query.value("product_uri").toString();
-        pt.latitude = query.value("latitude").toDouble();
-        pt.longitude = query.value("longitude").toDouble();
-
-        resultList.append(pt);
-    }
-
-    return resultList;
-}
-
 bool Widget::initDataBase(const QString &dbPath) {
     bool dbExists = QFileInfo::exists(dbPath);
 
