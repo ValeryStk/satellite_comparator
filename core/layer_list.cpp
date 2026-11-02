@@ -13,6 +13,7 @@ const char action_show_text[] = "Показать";
 const char action_hide_text[] = "Спрятать";
 const char action_rename_text[] = "Переименовать";
 const char action_delete_text[] = "Удалить";
+const char action_delete_all_text[] = "Удалить все";
 
 constexpr int WIDGET_WIDTH = 280;
 
