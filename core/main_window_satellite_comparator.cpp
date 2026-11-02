@@ -429,7 +429,7 @@ struct GradientFitResult {
 };
 
 // Линейная регрессия y = G*x + b методом МНК
-// x — Julian Days (double), y — значения NDVI или NDWI
+// x — Julian Days (double), y — значения NDVI или NDMI
 static GradientFitResult fitLinear(const QVector<double> &x,
                                    const QVector<double> &y) {
     GradientFitResult res;
@@ -464,7 +464,7 @@ static GradientFitResult fitLinear(const QVector<double> &x,
     return res;
 }
 
-// Класс усыхания по градиенту NDWI согласно таблице из Технологической
+// Класс усыхания по градиенту NDMI согласно таблице из Технологической
 // инструкции 3.2.1
 static int classifyByNdwiGradient(double G, double R2) {
     if (R2 < 0.6) return -1;
@@ -477,15 +477,15 @@ static int classifyByNdwiGradient(double G, double R2) {
     return -1;
 }
 
-// Класс усыхания по градиенту NDVI (на данным момент дублирует NDWI)
+// Класс усыхания по градиенту NDVI (на данным момент дублирует NDMI)
 static int classifyByNdviGradient(double G, double R2) {
     return classifyByNdwiGradient(G, R2);
 }
 
-// Объединение классов NDVI и NDWI в итоговый класс.
+// Объединение классов NDVI и NDMI в итоговый класс.
 // Логика:
 // - если валиден только один индекс, используем его;
-// - на ранних стадиях больший вес у NDWI;
+// - на ранних стадиях больший вес у NDMI;
 // - на поздних стадиях больший вес у NDVI;
 // - вес дополнительно масштабируется по качеству аппроксимации R².
 static int combineGradientClasses(int cNdvi, double gNdvi, double r2Ndvi,
@@ -516,7 +516,7 @@ static int combineGradientClasses(int cNdvi, double gNdvi, double r2Ndvi,
     double wNdwi = 0.5;
     double wNdvi = 0.5;
 
-    // слабые классы: чуть больше доверяем NDWI
+    // слабые классы: чуть больше доверяем NDMI
     if (maxClass <= 2) {
         wNdwi = 0.7;
         wNdvi = 0.3;
@@ -2308,10 +2308,10 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(
     for (int i = 0; i < data_indexes.size(); ++i) {
         double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND,
                                          data_indexes[i].RED_BAND);
-        double ndwi = sam::calculateSWVI(data_indexes[i].NIR_BAND,
+        double ndmi = sam::calculateSWVI(data_indexes[i].NIR_BAND,
                                          data_indexes[i].SWIR1_BAND);
         ndvi_time_row.push_back(ndvi);
-        ndwi_time_row.push_back(ndwi);
+        ndwi_time_row.push_back(ndmi);
     }
     showTimeRowIndexesDataViaPlot(std::move(ndvi_time_row),
                                   std::move(ndwi_time_row));
@@ -2324,7 +2324,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(
     }
     qDebug()<<"----------------------------------";*/
     // qDebug()<<"ndvi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
-    // qDebug()<<"ndwi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
+    // qDebug()<<"ndmi -->"<<ndvi_ndwi_indexes.ndvi_time_row.size();
     if (!is_landsat) {
         auto sat_type = sad::SATELLITE_TYPE::SENTINEL_2A;
         auto bv = getBandsValues(waves_vi_indexes, values_vi_indexes, sat_type);
@@ -4588,7 +4588,7 @@ void MainWindowSatelliteComparator::paintTimeRowBadForest(const QColor &color) {
                     .arg(milliseconds);
 }
 
-sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
+sad::NDMI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
     const QVector<QPointF> &points) {
     int red_band_index = 0;
     int nir_band_index = 0;
@@ -4641,13 +4641,13 @@ sad::NDWI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
     for (int i = 0; i < common_size; ++i) {
         double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND,
                                          data_indexes[i].RED_BAND);
-        double ndwi = sam::calculateSWVI(data_indexes[i].NIR_BAND,
+        double ndmi = sam::calculateSWVI(data_indexes[i].NIR_BAND,
                                          data_indexes[i].SWIR1_BAND);
         ndvi_time_row[i] = ndvi;
-        ndwi_time_row[i] = ndwi;
+        ndwi_time_row[i] = ndmi;
     }
 
-    sad::NDWI_NDVI_TIME_ROW result;
+    sad::NDMI_NDVI_TIME_ROW result;
     int dp_ndvi = 0;
     QVector<double> slopes;
     for (int i = ndvi_time_row.size() - 1; i > 0; --i) {
@@ -6149,7 +6149,7 @@ void MainWindowSatelliteComparator::create_index_dynamic_maps(
     }
 
     const QString ndviLayerId = "TIME_GRADIENT_NDVI_" + roiId;
-    const QString ndwiLayerId = "TIME_GRADIENT_NDWI_" + roiId;
+    const QString ndwiLayerId = "TIME_GRADIENT_NDMI_" + roiId;
     const QString summaryLayerId = "TIME_GRADIENT_AGREGATION_" + roiId;
 
     // Удаляем предыдущие результаты для этого ROI
@@ -6199,7 +6199,7 @@ void MainWindowSatelliteComparator::create_index_dynamic_maps(
         buildGradientClassMap(insidePoints, julianDays, xSize, ySize, 1);
 
     if (!ndviMask.isValid() && !ndwiMask.isValid()) {
-        qWarning() << "Не удалось построить ни NDVI, ни NDWI маску";
+        qWarning() << "Не удалось построить ни NDVI, ни NDMI маску";
         return;
     }
 
@@ -6365,7 +6365,7 @@ GradientMaskResult MainWindowSatelliteComparator::buildCombinedGradientClassMap(
 
         result.classes[i] = combinedClass;
 
-        // дозополняем поля структуры на основе данных с NDVI и NDWI
+        // дозополняем поля структуры на основе данных с NDVI и NDMI
         if (combinedClass >= 0) {
             if (cNdvi >= 0 && cNdwi >= 0) {
                 result.gradients[i] = 0.5 * (gNdvi + gNdwi);
