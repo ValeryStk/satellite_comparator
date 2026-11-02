@@ -7,7 +7,7 @@
 namespace sam {
 // clang-format off
 const char kSpectralIndexNDVI[]     = "NDVI";
-const char kSpectralIndexSWVI[]     = "SWVI";
+const char kSpectralIndexNDMI[]     = "NDMI";
 const char kSpectralIndexDSWI[]     = "DSWI";
 const char kSpectralIndexEVI[]      = "EVI";
 const char kSpectralIndexNBR[]      = "NBR";
@@ -92,16 +92,16 @@ void PlantHealth::initDefaultRanges() {
     dswiRanges[6] = 0.0;  // Old Deadwood: < 0.3
     indexRanges[sam::kSpectralIndexDSWI] = dswiRanges;
 
-    // Диапазоны для SWVI (Shortwave Vegetation Index)
+    // Диапазоны для NDMI (Shortwave Vegetation Index)
     // Типичный диапазон: 0 до 1
-    std::map<int, double> swviRanges;
-    swviRanges[1] = 0.3;   // Healthy: 0.3 -1.0
-    swviRanges[2] = 0.2;   // Weakened: 0.2	- 0.3
-    swviRanges[3] = 0.1;   // Severely Weakened: 0.1	- 0.2
-    swviRanges[4] = 0.0;   // Dying: 0.0	- 0.1
-    swviRanges[5] = -0.1;  // Fresh Deadwood: -0.1 - 0.0
-    swviRanges[6] = -1;    // Old Deadwood: -1.0	- -0.1
-    indexRanges[sam::kSpectralIndexSWVI] = swviRanges;
+    std::map<int, double> ndmiRanges;
+    ndmiRanges[1] = 0.3;   // Healthy: 0.3 -1.0
+    ndmiRanges[2] = 0.2;   // Weakened: 0.2	- 0.3
+    ndmiRanges[3] = 0.1;   // Severely Weakened: 0.1	- 0.2
+    ndmiRanges[4] = 0.0;   // Dying: 0.0	- 0.1
+    ndmiRanges[5] = -0.1;  // Fresh Deadwood: -0.1 - 0.0
+    ndmiRanges[6] = -1;    // Old Deadwood: -1.0	- -0.1
+    indexRanges[sam::kSpectralIndexNDMI] = ndmiRanges;
 
     // Диапазоны для EVI (Enhanced Vegetation Index)
     // Типичный диапазон: -1 до 1
@@ -255,7 +255,7 @@ void PlantHealth::resetIndexToDefaults(const std::string& indexName) {
         defaultIt->second[4] = 0.8;
         defaultIt->second[5] = 0.6;
         defaultIt->second[6] = 0.4;
-    } else if (indexName == sam::kSpectralIndexSWVI) {
+    } else if (indexName == sam::kSpectralIndexNDMI) {
         defaultIt->second[1] = 0.8;
         defaultIt->second[2] = 0.6;
         defaultIt->second[3] = 0.4;

@@ -1035,13 +1035,13 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEvent(
         double dswi = sam::calculateDSWI(bv.nir1, bv.green, bv.swir2, bv.red);
         double evi = sam::calculateEVI(bv.nir1, bv.red, bv.blue);
         double ndvi = sam::calculateNDVI(bv.nir1, bv.red);
-        double swvi = sam::calculateSWVI(bv.nir1, bv.swir2);
+        double ndmi = sam::calculateNDMI(bv.nir1, bv.swir2);
         double NBR = sam::calculateNBR(bv.nir2, bv.swir3);
         double NDSWIR = sam::calculateNDSWIR(bv.nir2, bv.swir2);
 
         m_spectralWidget->setIndices({
             {sam::kSpectralIndexNDVI, ndvi},
-            {{sam::kSpectralIndexSWVI}, {swvi}},
+            {{sam::kSpectralIndexNDMI}, {ndmi}},
             {{sam::kSpectralIndexDSWI}, {dswi}},
             {sam::kSpectralIndexEVI, evi},
             {sam::kSpectralIndexNBR, NBR},
@@ -2308,7 +2308,7 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(
     for (int i = 0; i < data_indexes.size(); ++i) {
         double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND,
                                          data_indexes[i].RED_BAND);
-        double ndmi = sam::calculateSWVI(data_indexes[i].NIR_BAND,
+        double ndmi = sam::calculateNDMI(data_indexes[i].NIR_BAND,
                                          data_indexes[i].SWIR1_BAND);
         ndvi_time_row.push_back(ndvi);
         ndmi_time_row.push_back(ndmi);
@@ -2332,10 +2332,10 @@ void MainWindowSatelliteComparator::cursorPointOnSceneChangedEventTimeRow(
         double dswi = sam::calculateDSWI(bv.nir1, bv.green, bv.swir2, bv.red);
         double evi = sam::calculateEVI(bv.nir1, bv.red, bv.blue);
         double ndvi = sam::calculateNDVI(bv.nir1, bv.red);
-        double swvi = sam::calculateSWVI(bv.nir1, bv.swir2);
+        double ndmi = sam::calculateNDMI(bv.nir1, bv.swir2);
 
         m_spectralWidget->setIndices({{sam::kSpectralIndexNDVI, ndvi},
-                                      {{sam::kSpectralIndexSWVI}, {swvi}},
+                                      {{sam::kSpectralIndexNDMI}, {ndmi}},
                                       {{sam::kSpectralIndexDSWI}, {dswi}},
                                       {sam::kSpectralIndexEVI, evi}});
     }
@@ -4641,7 +4641,7 @@ sad::NDMI_NDVI_TIME_ROW MainWindowSatelliteComparator::getIndexesForTimeRow(
     for (int i = 0; i < common_size; ++i) {
         double ndvi = sam::calculateNDVI(data_indexes[i].NIR_BAND,
                                          data_indexes[i].RED_BAND);
-        double ndmi = sam::calculateSWVI(data_indexes[i].NIR_BAND,
+        double ndmi = sam::calculateNDMI(data_indexes[i].NIR_BAND,
                                          data_indexes[i].SWIR1_BAND);
         ndvi_time_row[i] = ndvi;
         ndmi_time_row[i] = ndmi;
@@ -6310,7 +6310,7 @@ GradientMaskResult MainWindowSatelliteComparator::buildGradientClassMap(
             if (red > 1 || nir > 1 || swir > 1) continue;
 
             double val = (indexType == 0) ? sam::calculateNDVI(nir, red)
-                                          : sam::calculateSWVI(nir, swir);
+                                          : sam::calculateNDMI(nir, swir);
 
             indexSeries.push_back(val);
             xValid.push_back(julianDays[i]);
@@ -6695,7 +6695,7 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
                     break;
                 }
                 pixelNdvi[i] = sam::calculateNDVI(nir, red);
-                pixelNdmi[i] = sam::calculateSWVI(nir, swir);
+                pixelNdmi[i] = sam::calculateNDMI(nir, swir);
                 if (!std::isfinite(pixelNdvi[i]) ||
                     !std::isfinite(pixelNdmi[i])) {
                     valid = false;
@@ -6844,7 +6844,7 @@ using RoiIndexValues = std::array<double, kRoiClassificationIndexCount>;
 const std::array<QString, kRoiClassificationIndexCount>
     kRoiClassificationIndexNames = {
         {QString::fromLatin1(sam::kSpectralIndexNDVI),
-         QString::fromLatin1(sam::kSpectralIndexSWVI),
+         QString::fromLatin1(sam::kSpectralIndexNDMI),
          QString::fromLatin1(sam::kSpectralIndexDSWI),
          QString::fromLatin1(sam::kSpectralIndexEVI),
          QString::fromLatin1(sam::kSpectralIndexNBR),
@@ -6855,7 +6855,7 @@ RoiIndexValues calculateRoiClassificationIndices(
     return {
         {sam::calculateNDVI(bands.nir1, bands.red),
 
-         sam::calculateSWVI(bands.nir1, bands.swir2),
+         sam::calculateNDMI(bands.nir1, bands.swir2),
 
          sam::calculateDSWI(bands.nir1, bands.green, bands.swir2, bands.red),
 
