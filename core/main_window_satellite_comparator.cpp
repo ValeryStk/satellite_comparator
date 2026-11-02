@@ -4426,7 +4426,7 @@ void MainWindowSatelliteComparator::showTimeRowIndexesDataViaPlot(
                                                    QPen(ndwi_color),
                                                    QBrush(ndwi_color), 10));
 
-        qcpg_ndwi->setName("NDWI");
+        qcpg_ndwi->setName("NDMI");
         qcpg_ndvi->setName("NDVI");
         QSharedPointer<QCPAxisTickerText> dateTicker(new QCPAxisTickerText);
         dateTicker->addTicks(m_time_row_dates_unix_time.first,
@@ -4727,7 +4727,7 @@ void MainWindowSatelliteComparator::setUpUi() {
     resize(1200, 800);
 
     time_row_indexes_plot->setMinimumSize(QSize(400, 150));
-    time_row_indexes_plot->setWindowTitle("Индексы NDVI, NDWI");
+    time_row_indexes_plot->setWindowTitle("Индексы NDVI, NDMI");
     time_row_indexes_plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom |
                                            QCP::iSelectPlottables |
                                            QCP::iSelectLegend);
@@ -6747,7 +6747,7 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
     out << "A pixel is rejected for the entire time series "
            "if it is invalid on any date.\n\n";
 
-    out << "Date\tNDVI_mean\tNDWI_mean\tN\n";
+    out << "Date\tNDVI_mean\tNDMI_mean\tN\n";
 
     const double count = static_cast<double>(acceptedPixelCount);
 
@@ -6814,7 +6814,7 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
 
     dv::Config config;
 
-    config.chart.title = QString("ROI: %1 | NDVI / NDWI | N = %2")
+    config.chart.title = QString("ROI: %1 | NDVI / NDMI | N = %2")
                              .arg(roiId)
                              .arg(static_cast<qulonglong>(acceptedPixelCount))
                              .toUtf8()
@@ -6830,7 +6830,7 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
     dv::holdOn();
 
     dv::show(plotX, plotNdvi, "NDVI");
-    dv::show(plotX, plotNdwi, "NDWI");
+    dv::show(plotX, plotNdwi, "NDMI");
 
     dv::holdOff(config);
 }
