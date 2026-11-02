@@ -159,7 +159,7 @@ struct BANDS_FOR_CALCULATING_INDEXES {
     double SWIR1_BAND;
 };
 
-struct NDWI_NDVI_TIME_ROW {
+struct NDMI_NDVI_TIME_ROW {
     QVector<double> ndvi_time_row;
     QVector<double> ndwi_time_row;
     QVector<double> slopes;

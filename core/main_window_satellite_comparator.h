@@ -258,13 +258,13 @@ private:
     // Строит карту классов для пикселей внутри ROI по временному ряду одного
     // индекса. Для каждого пикселя собирает временной ряд, считает линейный
     // тренд и присваивает класс состояния по порогам градиента. indexType: 0 —
-    // NDVI, 1 — NDWI.
+    // NDVI, 1 — NDMI.
     GradientMaskResult buildGradientClassMap(
         const QVector<QPointF> &insidePoints, const QVector<double> &julianDays,
         int xSize, int ySize, int indexType);
 
     // Формирует итоговую карту классов на основе двух ранее рассчитанных масок:
-    // NDVI и NDWI.
+    // NDVI и NDMI.
     GradientMaskResult buildCombinedGradientClassMap(
         const GradientMaskResult &ndviMask, const GradientMaskResult &ndwiMask);
 
@@ -546,7 +546,7 @@ private:
     bool isDataCloudShadow_OK(QVector<QPointF> &points);
     void paintTimeRowBadForest(const QColor &color);
 
-    sad::NDWI_NDVI_TIME_ROW getIndexesForTimeRow(
+    sad::NDMI_NDVI_TIME_ROW getIndexesForTimeRow(
         const QVector<QPointF> &points);
     double calculate_slope(const QVector<double> &values);
 
