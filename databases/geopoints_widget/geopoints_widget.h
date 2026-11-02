@@ -27,21 +27,25 @@ public:
     bool insertGeoPoint(const QString &productUri, double latitude,
                         double longitude, const QString &name,
                         const QString &description = QString());
-
-    QVector<PointData> selectPointsByProduct(const QString &productUri);
+    bool linkPointToUri(int pointId, const QString &productUri);
+    void updatePointsTableByUri(const QString &productUri);
+    void showAllPointsWithUris();
 
 private slots:
-    void on_pushButton_clicked();
     void showContextMenu(const QPoint &pos);
-
+    void on_pushButton_clicked();
     void on_pushButton_insert_data_clicked();
-
     void on_pushButton_clear_all_data_clicked();
+    void on_pushButton_show_all_points_clicked();
 
 private:
     Ui::Widget *ui;
+    QString m_currentUri;
     bool initDataBase(const QString &dbPath);
     void generateAndInsertRandomPoints(int count);
     bool clearAllData();
+    void updateUriComboBox();
+    bool updateGeoPoint(int pointId, const QString &newName, double newLat,
+                        double newLon);
 };
 #endif  // WIDGET_H

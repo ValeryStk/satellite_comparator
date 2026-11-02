@@ -27,8 +27,8 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>500</y>
-     <width>191</width>
+     <y>440</y>
+     <width>141</width>
      <height>51</height>
     </rect>
    </property>
@@ -39,9 +39,9 @@
   <widget class="QPushButton" name="pushButton_insert_data">
    <property name="geometry">
     <rect>
-     <x>240</x>
-     <y>500</y>
-     <width>191</width>
+     <x>620</x>
+     <y>370</y>
+     <width>101</width>
      <height>51</height>
     </rect>
    </property>
@@ -57,6 +57,12 @@
      <width>113</width>
      <height>21</height>
     </rect>
+   </property>
+   <property name="inputMask">
+    <string extracomment="uri"/>
+   </property>
+   <property name="text">
+    <string/>
    </property>
   </widget>
   <widget class="QLineEdit" name="lineEditName">
@@ -92,15 +98,77 @@
   <widget class="QPushButton" name="pushButton_clear_all_data">
    <property name="geometry">
     <rect>
-     <x>460</x>
-     <y>500</y>
-     <width>201</width>
+     <x>620</x>
+     <y>430</y>
+     <width>101</width>
      <height>51</height>
     </rect>
    </property>
    <property name="text">
     <string>Clear all data</string>
    </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton_show_all_points">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>510</y>
+     <width>141</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>show all points</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="comboBox_uris">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>440</y>
+     <width>321</width>
+     <height>51</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton_link_point">
+   <property name="geometry">
+    <rect>
+     <x>620</x>
+     <y>510</y>
+     <width>101</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>create Link</string>
+   </property>
+  </widget>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>510</y>
+     <width>171</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Current Uri</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="label_currentUri">
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+   </layout>
   </widget>
  </widget>
  <resources/>
