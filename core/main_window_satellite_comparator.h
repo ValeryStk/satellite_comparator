@@ -266,7 +266,7 @@ private:
     // Формирует итоговую карту классов на основе двух ранее рассчитанных масок:
     // NDVI и NDMI.
     GradientMaskResult buildCombinedGradientClassMap(
-        const GradientMaskResult &ndviMask, const GradientMaskResult &ndwiMask);
+        const GradientMaskResult &ndviMask, const GradientMaskResult &ndmiMask);
 
     // Преобразует рассчитанную карту классов в визуальный RGBA-слой и
     // возвращает готовый QGraphicsPixmapItem для добавления на сцену.
@@ -542,7 +542,7 @@ private:
     QDockWidget *m_speyaDock;
     QPair<QVector<double>, QVector<QString>> m_time_row_dates_unix_time;
     void showTimeRowIndexesDataViaPlot(QVector<double> &&ndvis,
-                                       QVector<double> &&ndwis);
+                                       QVector<double> &&ndmis);
     bool isDataCloudShadow_OK(QVector<QPointF> &points);
     void paintTimeRowBadForest(const QColor &color);
 
