@@ -466,7 +466,7 @@ static GradientFitResult fitLinear(const QVector<double> &x,
 
 // Класс усыхания по градиенту NDMI согласно таблице из Технологической
 // инструкции 3.2.1
-static int classifyByNdwiGradient(double G, double R2) {
+static int classifyByNdmiGradient(double G, double R2) {
     if (R2 < 0.6) return -1;
     if (G > 0.00005) return 0;                    // Растет
     if (G >= -0.00005 && G <= 0.00005) return 1;  // I = Стабильно
@@ -479,7 +479,7 @@ static int classifyByNdwiGradient(double G, double R2) {
 
 // Класс усыхания по градиенту NDVI (на данным момент дублирует NDMI)
 static int classifyByNdviGradient(double G, double R2) {
-    return classifyByNdwiGradient(G, R2);
+    return classifyByNdmiGradient(G, R2);
 }
 
 // Объединение классов NDVI и NDMI в итоговый класс.
@@ -489,55 +489,55 @@ static int classifyByNdviGradient(double G, double R2) {
 // - на поздних стадиях больший вес у NDVI;
 // - вес дополнительно масштабируется по качеству аппроксимации R².
 static int combineGradientClasses(int cNdvi, double gNdvi, double r2Ndvi,
-                                  int cNdwi, double gNdwi, double r2Ndwi) {
+                                  int cNdmi, double gNdmi, double r2Ndmi) {
     Q_UNUSED(gNdvi)
-    Q_UNUSED(gNdwi)
+    Q_UNUSED(gNdmi)
 
     const bool ndviOk = (cNdvi >= 0 && r2Ndvi >= 0.6);
-    const bool ndmiOk = (cNdwi >= 0 && r2Ndwi >= 0.6);
+    const bool ndmiOk = (cNdmi >= 0 && r2Ndmi >= 0.6);
 
     if (!ndviOk && !ndmiOk) return -1;
     if (ndviOk && !ndmiOk) return cNdvi;
-    if (!ndviOk && ndmiOk) return cNdwi;
+    if (!ndviOk && ndmiOk) return cNdmi;
 
     // если оба показывают рост — рост
-    if (cNdvi == 0 && cNdwi == 0) return 0;
+    if (cNdvi == 0 && cNdmi == 0) return 0;
 
     // если один рост, другой стабильность — считаем стабильностью
-    if ((cNdvi == 0 && cNdwi == 1) || (cNdvi == 1 && cNdwi == 0)) return 1;
+    if ((cNdvi == 0 && cNdmi == 1) || (cNdvi == 1 && cNdmi == 0)) return 1;
 
     // если один рост, а другой уже деградация — не даем росту "смазать"
     // проблему
-    if (cNdvi == 0 && cNdwi >= 2) return cNdwi;
-    if (cNdwi == 0 && cNdvi >= 2) return cNdvi;
+    if (cNdvi == 0 && cNdmi >= 2) return cNdmi;
+    if (cNdmi == 0 && cNdvi >= 2) return cNdvi;
 
-    const int maxClass = qMax(cNdvi, cNdwi);
+    const int maxClass = qMax(cNdvi, cNdmi);
 
-    double wNdwi = 0.5;
+    double wNdmi = 0.5;
     double wNdvi = 0.5;
 
     // слабые классы: чуть больше доверяем NDMI
     if (maxClass <= 2) {
-        wNdwi = 0.7;
+        wNdmi = 0.7;
         wNdvi = 0.3;
     }
     // средние: поровну
     else if (maxClass == 3) {
-        wNdwi = 0.5;
+        wNdmi = 0.5;
         wNdvi = 0.5;
     }
     // тяжелые: чуть больше доверяем NDVI
     else {
-        wNdwi = 0.3;
+        wNdmi = 0.3;
         wNdvi = 0.7;
     }
 
-    wNdwi *= qMax(0.0, r2Ndwi - 0.6);
+    wNdmi *= qMax(0.0, r2Ndmi - 0.6);
     wNdvi *= qMax(0.0, r2Ndvi - 0.6);
 
-    if (wNdwi + wNdvi < 1e-12) return qMax(cNdvi, cNdwi);
+    if (wNdmi + wNdvi < 1e-12) return qMax(cNdvi, cNdmi);
 
-    const double combined = (wNdwi * cNdwi + wNdvi * cNdvi) / (wNdwi + wNdvi);
+    const double combined = (wNdmi * cNdmi + wNdvi * cNdvi) / (wNdmi + wNdvi);
 
     return qBound(0, qRound(combined), 5);
 }
@@ -6322,7 +6322,7 @@ GradientMaskResult MainWindowSatelliteComparator::buildGradientClassMap(
         if (!fit.valid) continue;
 
         int dpClass = (indexType == 0) ? classifyByNdviGradient(fit.G, fit.R2)
-                                       : classifyByNdwiGradient(fit.G, fit.R2);
+                                       : classifyByNdmiGradient(fit.G, fit.R2);
 
         if (dpClass < 0) continue;
 
@@ -6352,30 +6352,30 @@ GradientMaskResult MainWindowSatelliteComparator::buildCombinedGradientClassMap(
 
     for (int i = 0; i < result.classes.size(); ++i) {
         const int cNdvi = ndviMask.isValid() ? ndviMask.classes[i] : -1;
-        const int cNdwi = ndmiMask.isValid() ? ndmiMask.classes[i] : -1;
+        const int cNdmi = ndmiMask.isValid() ? ndmiMask.classes[i] : -1;
 
         const double gNdvi = ndviMask.isValid() ? ndviMask.gradients[i] : 0.0;
-        const double gNdwi = ndmiMask.isValid() ? ndmiMask.gradients[i] : 0.0;
+        const double gNdmi = ndmiMask.isValid() ? ndmiMask.gradients[i] : 0.0;
 
         const double r2Ndvi = ndviMask.isValid() ? ndviMask.r2[i] : 0.0;
-        const double r2Ndwi = ndmiMask.isValid() ? ndmiMask.r2[i] : 0.0;
+        const double r2Ndmi = ndmiMask.isValid() ? ndmiMask.r2[i] : 0.0;
 
         const int combinedClass =
-            combineGradientClasses(cNdvi, gNdvi, r2Ndvi, cNdwi, gNdwi, r2Ndwi);
+            combineGradientClasses(cNdvi, gNdvi, r2Ndvi, cNdmi, gNdmi, r2Ndmi);
 
         result.classes[i] = combinedClass;
 
         // дозополняем поля структуры на основе данных с NDVI и NDMI
         if (combinedClass >= 0) {
-            if (cNdvi >= 0 && cNdwi >= 0) {
-                result.gradients[i] = 0.5 * (gNdvi + gNdwi);
-                result.r2[i] = qMax(r2Ndvi, r2Ndwi);
+            if (cNdvi >= 0 && cNdmi >= 0) {
+                result.gradients[i] = 0.5 * (gNdvi + gNdmi);
+                result.r2[i] = qMax(r2Ndvi, r2Ndmi);
             } else if (cNdvi >= 0) {
                 result.gradients[i] = gNdvi;
                 result.r2[i] = r2Ndvi;
-            } else if (cNdwi >= 0) {
-                result.gradients[i] = gNdwi;
-                result.r2[i] = r2Ndwi;
+            } else if (cNdmi >= 0) {
+                result.gradients[i] = gNdmi;
+                result.r2[i] = r2Ndmi;
             }
         }
     }
@@ -6565,10 +6565,10 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
     const int bottom = static_cast<int>(std::floor(clippedBottom));
 
     QVector<double> sumNdvi(dateCount, 0.0);
-    QVector<double> sumNdwi(dateCount, 0.0);
+    QVector<double> sumNdmi(dateCount, 0.0);
 
     QVector<double> pixelNdvi(dateCount);
-    QVector<double> pixelNdwi(dateCount);
+    QVector<double> pixelNdmi(dateCount);
     QVector<QPointF> points(dateCount);
 
     quint64 roiPixelCount = 0;
@@ -6695,9 +6695,9 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
                     break;
                 }
                 pixelNdvi[i] = sam::calculateNDVI(nir, red);
-                pixelNdwi[i] = sam::calculateSWVI(nir, swir);
+                pixelNdmi[i] = sam::calculateSWVI(nir, swir);
                 if (!std::isfinite(pixelNdvi[i]) ||
-                    !std::isfinite(pixelNdwi[i])) {
+                    !std::isfinite(pixelNdmi[i])) {
                     valid = false;
                     break;
                 }
@@ -6710,7 +6710,7 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
             // Пиксель пригоден на всех датах — принимаем весь ряд.
             for (int i = 0; i < dateCount; ++i) {
                 sumNdvi[i] += pixelNdvi[i];
-                sumNdwi[i] += pixelNdwi[i];
+                sumNdmi[i] += pixelNdmi[i];
             }
 
             ++acceptedPixelCount;
@@ -6753,11 +6753,11 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
 
     for (int i = 0; i < dateCount; ++i) {
         const double meanNdvi = sumNdvi[i] / count;
-        const double meanNdwi = sumNdwi[i] / count;
+        const double meanNdmi = sumNdmi[i] / count;
 
         out << m_time_row_dates_unix_time.second[i] << "\t"
             << QString::number(meanNdvi, 'f', 6) << "\t"
-            << QString::number(meanNdwi, 'f', 6) << "\t" << acceptedPixelCount
+            << QString::number(meanNdmi, 'f', 6) << "\t" << acceptedPixelCount
             << "\n";
     }
 
@@ -6769,11 +6769,11 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
     // По X — количество дней от первой даты временного ряда.
     std::vector<double> plotX;
     std::vector<double> plotNdvi;
-    std::vector<double> plotNdwi;
+    std::vector<double> plotNdmi;
 
     plotX.reserve(dateCount);
     plotNdvi.reserve(dateCount);
-    plotNdwi.reserve(dateCount);
+    plotNdmi.reserve(dateCount);
 
     auto parseDate = [](const QString &value) -> QDate {
         const QString dateText = value.trimmed();
@@ -6809,7 +6809,7 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
         plotX.push_back(static_cast<double>(firstDate.daysTo(date)));
 
         plotNdvi.push_back(sumNdvi[i] / count);
-        plotNdwi.push_back(sumNdwi[i] / count);
+        plotNdmi.push_back(sumNdmi[i] / count);
     }
 
     dv::Config config;
@@ -6830,7 +6830,7 @@ void MainWindowSatelliteComparator::export_roi_indexes_dynamics(
     dv::holdOn();
 
     dv::show(plotX, plotNdvi, "NDVI");
-    dv::show(plotX, plotNdwi, "NDMI");
+    dv::show(plotX, plotNdmi, "NDMI");
 
     dv::holdOff(config);
 }
