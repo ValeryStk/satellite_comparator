@@ -13,6 +13,7 @@ const char action_show_text[] = "Показать";
 const char action_hide_text[] = "Спрятать";
 const char action_rename_text[] = "Переименовать";
 const char action_delete_text[] = "Удалить";
+const char action_delete_all_text[] = "Удалить все";
 
 constexpr int WIDGET_WIDTH = 280;
 
@@ -62,19 +63,41 @@ void LayerList::deleteAllItems() {
 void LayerList::showContextMenu(const QPoint& pos) {
     QListWidgetItem* item = itemAt(pos);
     if (!item) return;
+
     QMenu* menu = createContextMenu();
     QAction* selectedAction = menu->exec(viewport()->mapToGlobal(pos));
+
+    const QString text = selectedAction ? selectedAction->text() : QString();
+
+    delete menu;
+
     if (!selectedAction) return;
-    const QString text = selectedAction->text();
+
     if (text == action_hide_text) {
-        item->setCheckState(Qt::CheckState::Unchecked);
+        item->setCheckState(Qt::Unchecked);
+
     } else if (text == action_show_text) {
-        item->setCheckState(Qt::CheckState::Checked);
+        item->setCheckState(Qt::Checked);
+
     } else if (text == action_delete_text) {
         emit removeItem(item->data(Qt::UserRole).toString());
         delete takeItem(row(item));
+
+    } else if (text == action_delete_all_text) {
+        QStringList ids;
+        for (int i = 0; i < count(); ++i) {
+            ids.append(this->item(i)->data(Qt::UserRole).toString());
+        }
+
+        deleteAllItems();
+
+        for (const QString& id : ids) {
+            emit removeItem(id);
+        }
+
     } else if (text == action_rename_text) {
         editItem(item);
+
     } else {
         handle_other_contextAction(text, item);
     }
@@ -91,6 +114,7 @@ QMenu* LayerList::createContextMenu() {
     menu->addAction(action_show_text);
     menu->addAction(action_hide_text);
     menu->addAction(action_delete_text);
+    menu->addAction(action_delete_all_text);
     menu->addAction(action_rename_text);
     return menu;
 }

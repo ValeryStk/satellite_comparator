@@ -71,7 +71,7 @@ void bekas_UnitTests::spectral_indices_widget() {
     QApplication app(argc, nullptr);
     SpectralIndicesWidget siw;
     siw.setIndices(
-        {{"NDVI", 0.6}, {{"NDWI"}, {0.3}}, {{"DSWI"}, {0.2}}, {"EVI", 0.8}});
+        {{"NDVI", 0.6}, {{"NDMI"}, {0.3}}, {{"DSWI"}, {0.2}}, {"EVI", 0.8}});
     siw.show();
     app.exec();
 }

@@ -26,20 +26,20 @@ struct BandIndicesIndexes {
     int swir3 = -1; //SWIR3  13
 };
 
-struct BandIndicesValues {
-    double aer   = NAN; //AER    1
-    double blue  = NAN; //BLUE   2
-    double green = NAN; //GREEN  3
-    double red   = NAN; //RED    4
-    double re1   = NAN; //RE1    5
-    double re2   = NAN; //RE2    6
-    double re3   = NAN; //RE3    7
-    double nir1  = NAN; //NIR1   8
-    double nir2  = NAN; //NIR2   9
-    double wv    = NAN; //WV     10
-    double swir1 = NAN; //SWIR1  11
-    double swir2 = NAN; //SWIR2  12
-    double swir3 = NAN; //SWIR3  13
+struct BandIndicesValues {//у нас              //у Sentinel-2
+    double aer   = NAN; //AER    1               band 1
+    double blue  = NAN; //BLUE   2               band 2
+    double green = NAN; //GREEN  3               band 3
+    double red   = NAN; //RED    4               band 4
+    double re1   = NAN; //RE1    5               band 5
+    double re2   = NAN; //RE2    6               band 6
+    double re3   = NAN; //RE3    7               band 7
+    double nir1  = NAN; //NIR1   8               band 8
+    double nir2  = NAN; //NIR2   9               band 8А
+    double wv    = NAN; //WV     10              band 9
+    double swir1 = NAN; //SWIR1  11              band 10
+    double swir2 = NAN; //SWIR2  12              band 11
+    double swir3 = NAN; //SWIR3  13              band 12
 };
 
 // clang-format on
@@ -67,7 +67,7 @@ ProcessingResult calculateEuclideanDistance(const QVector<double> &v1,
 
 inline double calculateNDVI(const double nir1, const double red);
 
-inline double calculateSWVI(const double nir1, const double swir2);
+inline double calculateNDMI(const double nir1, const double swir2);
 
 inline double calculateDSWI(const double nir1, const double green,
                             const double swir2, const double red);
