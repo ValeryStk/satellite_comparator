@@ -272,48 +272,79 @@ void SatteliteComparator::compare_spectrs() {
 
 QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses() {
     static const int SATTELITE_WAVE_OFFSET = 400;
-    QVector<double> folded_spectr(m_sat_data.bands.size());
-    QVector<double> satellite_bands_sum(m_sat_data.bands.size());
-    QVector<double> device_spectr_bands_sum(m_sat_data.bands.size());
+
+    QVector<double> folded_spectr(m_sat_data.bands.size(), 0.0);
+    QVector<double> satellite_bands_sum(m_sat_data.bands.size(), 0.0);
+    QVector<double> device_spectr_bands_sum(m_sat_data.bands.size(), 0.0);
+
     BASE_CHECK_RESULT status;
+    // Интерполируем спектр прибора на единую сетку
     auto x_y = interpolate(m_comparator_data.device_waves,
                            m_comparator_data.device_values, m_common_wave_grid,
                            status);
-    qDebug() << "FOLDED STATUS:" << (int)status;
-    qDebug() << "CHECK SIZES BANDS X_Y: " << m_sat_data.bands.size()
-             << x_y.first.size() << "--" << x_y.second.size();
-    if (x_y.first.size() < m_sat_data.bands.size()) {
-        // uts::showOperationFailed();
-        qDebug() << "Kosyak is here..";
+
+    if (status != BASE_CHECK_RESULT::OK || x_y.first.isEmpty()) {
+        qDebug() << "Interpolation failed or empty result!";
         return {};
     }
-    if (status == BASE_CHECK_RESULT::OK) {
-        for (int i = 0; i < m_sat_data.bands.size(); ++i) {  // TEMP SOLUTION
-            int start = m_sat_data.bands[i][0] - SATTELITE_WAVE_OFFSET;
-            int end = m_sat_data.bands[i][1] - SATTELITE_WAVE_OFFSET;
-            for (int j = start; j < end; ++j) {
-                satellite_bands_sum[i] += m_sat_data.responses[j][i];
-                device_spectr_bands_sum[i] +=
-                    x_y.second[j] * m_sat_data.responses[j][i];
+
+    // Создаем быстрое отображение wavelength -> spectral value для прибора
+    // (либо берем напрямую по индексу, если сетка m_common_wave_grid
+    // равномерна)
+    for (int i = 0; i < m_sat_data.bands.size(); ++i) {
+        int band_start_wave = m_sat_data.bands[i][0];
+        int band_end_wave = m_sat_data.bands[i][1];
+
+        int start_idx = band_start_wave - SATTELITE_WAVE_OFFSET;
+        int end_idx = band_end_wave - SATTELITE_WAVE_OFFSET;
+
+        for (int j = start_idx; j < end_idx; ++j) {
+            // Защита по границам матрицы откликов
+            if (j < 0 || j >= m_sat_data.responses.size() ||
+                i >= m_sat_data.responses[j].size()) {
+                continue;
+            }
+
+            double sat_resp = m_sat_data.responses[j][i];
+            if (sat_resp <= 0.0) {
+                continue;  // нет чувствительности сенсора на этой длине волны
+            }
+
+            double current_wavelength = SATTELITE_WAVE_OFFSET + j;
+
+            // Ищем, есть ли эта длина волны среди доступных после интерполяции
+            // Бекаса
+            auto it = std::lower_bound(x_y.first.begin(), x_y.first.end(),
+                                       current_wavelength);
+            if (it != x_y.first.end() &&
+                qFuzzyCompare(*it, current_wavelength)) {
+                int dev_idx = std::distance(x_y.first.begin(), it);
+
+                device_spectr_bands_sum[i] += x_y.second[dev_idx] * sat_resp;
+                satellite_bands_sum[i] += sat_resp;
             }
         }
-        qDebug() << "CHECK SIZES: " << m_sat_data.bands.size();
-        for (int i = 0; i < m_sat_data.bands.size(); ++i) {  // TEMP SOLUTION
+    }
+
+    for (int i = 0; i < m_sat_data.bands.size(); ++i) {
+        if (!qFuzzyIsNull(satellite_bands_sum[i])) {
             folded_spectr[i] =
                 device_spectr_bands_sum[i] / satellite_bands_sum[i];
+        } else {
+            folded_spectr[i] = 0.0;
         }
-        QVector<double> trimmed_spectr;
-
-        for (int i = 0; i < folded_spectr.size(); ++i) {
-            if (folded_spectr[i] < 0 || std::isnan(folded_spectr[i]) ||
-                folded_spectr[i] > 1 || qFuzzyIsNull(folded_spectr[i]))
-                continue;
-            trimmed_spectr.push_back(folded_spectr[i]);
-        }
-
-        return trimmed_spectr;
     }
-    return {};
+
+    QVector<double> trimmed_spectr;
+    for (int i = 0; i < folded_spectr.size(); ++i) {
+        if (folded_spectr[i] < 0 || std::isnan(folded_spectr[i]) ||
+            folded_spectr[i] > 1 || qFuzzyIsNull(folded_spectr[i])) {
+            continue;
+        }
+        trimmed_spectr.push_back(folded_spectr[i]);
+    }
+
+    return trimmed_spectr;
 }
 
 QVector<double> SatteliteComparator::check_intersection(
