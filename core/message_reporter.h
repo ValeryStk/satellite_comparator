@@ -14,6 +14,8 @@ void showNoDataAvailable();
 void showNoSatResponsesSetted();
 void showFoldingResultError();
 void showOperationWasCancelled();
+void showClippboardIsEmpty();
+void showCorrdinateIsOutOfRange();
 
 }  // end namespace uts
 

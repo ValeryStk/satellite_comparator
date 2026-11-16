@@ -83,4 +83,14 @@ void showOperationWasCancelled() {
     uts::showInfoMessage("Отмена операции.", "Задание отклонено.");
 }
 
+void showClippboardIsEmpty() {
+    uts::showWarnigMessage("Буфер обмена пуст.",
+                           "Проверьте содержимое буфера обмена.\n(Win + v).");
+}
+
+void showCorrdinateIsOutOfRange() {
+    uts::showWarnigMessage("Проверьте корректность координат.",
+                           "Координаты находятся за границами изображения.");
+}
+
 }  // end namespace uts

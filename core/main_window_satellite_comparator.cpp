@@ -3092,11 +3092,19 @@ void MainWindowSatelliteComparator::set_roi_average_for_cati(
 
 void MainWindowSatelliteComparator::add_polygon_from_geo_route() {
     qDebug() << "Parsing geo route from clipboard.....";
+    if (m_satellite_image.size().isEmpty()) {
+        uts::showNoDataAvailable();
+        return;
+    }
+
+    int xLim = m_satellite_image.width();
+    int yLim = m_satellite_image.height();
 
     // Получаем текст из буфера обмена
     QString clipboardText = QApplication::clipboard()->text().trimmed();
     if (clipboardText.isEmpty()) {
         qWarning() << "Clipboard is empty!";
+        uts::showClippboardIsEmpty();
         return;
     }
 
@@ -3123,7 +3131,13 @@ void MainWindowSatelliteComparator::add_polygon_from_geo_route() {
             if (okLat && okLon) {
                 // Преобразуем гео-координаты в пиксели и округляем до QPoint
                 QPointF pixelF = geoToPixel(lat, lon, m_geo);
-                pixels.append(pixelF.toPoint());
+                auto pixel = pixelF.toPoint();
+                if (pixel.x() < 0 || pixel.x() > xLim || pixel.y() < 0 ||
+                    pixel.y() > yLim) {
+                    uts::showCorrdinateIsOutOfRange();
+                    return;
+                }
+                pixels.append(pixel);
             } else {
                 qWarning() << "Invalid number format in line:" << line;
             }
@@ -3133,10 +3147,11 @@ void MainWindowSatelliteComparator::add_polygon_from_geo_route() {
     }
 
     // Если удалось распарсить точки, отправляем сигнал
-    if (!pixels.isEmpty()) {
+    if (pixels.size() > 2) {
         emit setROIpolygonFromRoute(pixels);
     } else {
-        qWarning() << "No valid coordinates found in clipboard.";
+        uts::showWarnigMessage("Координаты некорректны.",
+                               "Проверьте правильность заданных координат.");
     }
 }
 
