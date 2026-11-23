@@ -8,7 +8,7 @@
 namespace sam {
 
 extern const char kSpectralIndexNDVI[];
-extern const char kSpectralIndexSWVI[];
+extern const char kSpectralIndexNDMI[];
 extern const char kSpectralIndexDSWI[];
 extern const char kSpectralIndexEVI[];
 extern const char kSpectralIndexNBR[];
