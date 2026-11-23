@@ -287,8 +287,8 @@ QVector<double> SatteliteComparator::fold_spectr_to_satellite_responses() {
         qDebug() << "Kosyak is here..";
         return {};
     }
-    if (status == BASE_CHECK_RESULT::OK) {
-        for (int i = 0; i < m_sat_data.bands.size(); ++i) {  // TEMP SOLUTION
+    if (status == BASE_CHECK_RESULT::OK && m_sat_data.bands.size() >= 10) {
+        for (int i = 0; i < 10; ++i) {  // TEMP SOLUTION
             int start = m_sat_data.bands[i][0] - SATTELITE_WAVE_OFFSET;
             int end = m_sat_data.bands[i][1] - SATTELITE_WAVE_OFFSET;
             for (int j = start; j < end; ++j) {
