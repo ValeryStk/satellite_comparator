@@ -144,11 +144,11 @@
         ]
     },
     {
-        "physicalBand": "Band 3",
-        "gui_name": "Landsat 8 - Band 3",
+        "physicalBand": "B03",
+        "gui_name": "B03 - 562 nm GREEN",
         "wavelength_MIN_nm": 512,
         "wavelength_MAX_nm": 610,
-        "wavelength_CENTRAL_nm": 561,
+        "wavelength_CENTRAL_nm": 562,
         "spectral_response": [
             -4.6e-05,
             1.6e-05,
@@ -252,11 +252,11 @@
         ]
     },
     {
-        "physicalBand": "B03",
-        "gui_name": "B03 - 562 nm GREEN",
+        "physicalBand": "B04",
+        "gui_name": "B04 - 655   nm RED",
         "wavelength_MIN_nm": 625,
         "wavelength_MAX_nm": 691,
-        "wavelength_CENTRAL_nm": 658,
+        "wavelength_CENTRAL_nm": 655,
         "spectral_response": [
             -0.0003,
             0.00027,
@@ -328,11 +328,11 @@
         ]
     },
     {
-        "physicalBand": "B04",
-        "gui_name": "B04 - 655 nm RED",
+        "physicalBand": "B05",
+        "gui_name": "B05 - 865   nm NIR1",
         "wavelength_MIN_nm": 829,
         "wavelength_MAX_nm": 900,
-        "wavelength_CENTRAL_nm": 864,
+        "wavelength_CENTRAL_nm": 865,
         "spectral_response": [
             -3,
             1.1e-05,
@@ -409,11 +409,11 @@
         ]
     },
     {
-        "physicalBand": "B05",
-        "gui_name": "B05 - 865 nm NIR1",
+        "physicalBand": "B09",
+        "gui_name": "B09 - 1375  nm SWIR1",
         "wavelength_MIN_nm": 1340,
         "wavelength_MAX_nm": 1409,
-        "wavelength_CENTRAL_nm": 1374,
+        "wavelength_CENTRAL_nm": 1375,
         "spectral_response": [
             -3,
             8.6e-05,
@@ -492,7 +492,7 @@
         "gui_name": "B06 - 1610 nm SWIR2",
         "wavelength_MIN_nm": 1515,
         "wavelength_MAX_nm": 1697,
-        "wavelength_CENTRAL_nm": 1606,
+        "wavelength_CENTRAL_nm": 1610,
         "spectral_response": [
             -2,
             6.7e-05,
@@ -684,7 +684,7 @@
         "gui_name": "B07 - 2200 nm SWIR3",
         "wavelength_MIN_nm": 2037,
         "wavelength_MAX_nm": 2355,
-        "wavelength_CENTRAL_nm": 2196,
+        "wavelength_CENTRAL_nm": 2200,
         "spectral_response": [
             -1,
             3.7e-05,
