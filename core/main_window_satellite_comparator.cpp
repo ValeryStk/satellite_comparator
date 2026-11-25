@@ -43,6 +43,7 @@
 #include "libs/gdal/x64/include/cpl_conv.h"
 #include "libs/gdal/x64/include/gdal_priv.h"
 #include "libs/gdal/x64/include/ogr_spatialref.h"
+#include "libs/gdal/x64/include/ogrsf_frmts.h"
 #include "libs/gdal/x64/include/tiff.h"
 #include "matlab_app_controller.h"
 #include "progress_informator.h"
@@ -3139,7 +3140,7 @@ void MainWindowSatelliteComparator::add_polygon_from_geo_route() {
                 else
                     geo = m_geo;
 
-                QPointF pixelF = geoToPixel(lat, lon, geo); 
+                QPointF pixelF = geoToPixel(lat, lon, geo);
                 auto pixel = pixelF.toPoint();
                 if (pixel.x() < 0 || pixel.x() > xLim || pixel.y() < 0 ||
                     pixel.y() > yLim) {
@@ -7442,4 +7443,82 @@ void MainWindowSatelliteComparator::openTiffAsLayer() {
 
     // 5. Закрываем датасет
     GDALClose(static_cast<GDALDatasetH>(poDataset));
+}
+
+bool MainWindowSatelliteComparator::savePolygonToShapefile(
+    const QPolygonF &qtPolygon, const QString &filePath, int epsgCode) {
+    if (qtPolygon.isEmpty()) {
+        qWarning() << "Полигон пуст!";
+        return false;
+    }
+
+    // 1. Регистрация векторных драйверов OGR (вместо GDALAllRegister)
+    OGRRegisterAll();
+
+    // 2. Получение драйвера ESRI Shapefile через OGRSFDriverRegistrar
+    OGRSFDriver *driver =
+        OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName("ESRI Shapefile");
+    if (!driver) {
+        qCritical() << "Драйвер ESRI Shapefile не найден!";
+        return false;
+    }
+
+    // 3. Создание источника данных OGRDataSource (вместо GDALDataset)
+    OGRDataSource *dataSource =
+        driver->CreateDataSource(filePath.toUtf8().constData(), nullptr);
+    if (!dataSource) {
+        qCritical() << "Не удалось создать файл:" << filePath;
+        return false;
+    }
+
+    // 4. Настройка системы координат
+    OGRSpatialReference srs;
+    srs.importFromEPSG(epsgCode);
+
+    // 5. Создание слоя в OGRDataSource
+    OGRLayer *layer =
+        dataSource->CreateLayer("polygon_layer", &srs, wkbPolygon, nullptr);
+    if (!layer) {
+        qCritical() << "Не удалось создать слой!";
+        OGRDataSource::DestroyDataSource(dataSource);
+        return false;
+    }
+
+    // (Опционально) Добавление поля id
+    OGRFieldDefn idField("id", OFTInteger);
+    layer->CreateField(&idField);
+
+    // 6. Создание объекта и геометрии
+    OGRFeature *feature = OGRFeature::CreateFeature(layer->GetLayerDefn());
+    feature->SetField("id", 1);
+
+    OGRPolygon ogrPoly;
+    OGRLinearRing ring;
+
+    for (const QPointF &pt : qtPolygon) {
+        ring.addPoint(pt.x(), pt.y());
+    }
+
+    // Замыкание кольца полигона
+    if (qtPolygon.first() != qtPolygon.last()) {
+        ring.addPoint(qtPolygon.first().x(), qtPolygon.first().y());
+    }
+
+    ogrPoly.addRing(&ring);
+    feature->SetGeometry(&ogrPoly);
+
+    // 7. Запись объекта в слой
+    if (layer->CreateFeature(feature) != OGRERR_NONE) {
+        qCritical() << "Ошибка при записи объекта в слой!";
+        OGRFeature::DestroyFeature(feature);
+        OGRDataSource::DestroyDataSource(dataSource);
+        return false;
+    }
+
+    // 8. Освобождение памяти и сохранение на диск
+    OGRFeature::DestroyFeature(feature);
+    OGRDataSource::DestroyDataSource(
+        dataSource);  // В GDAL 1.x используется вместо GDALClose
+
+    return true;
 }

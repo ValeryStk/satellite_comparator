@@ -250,6 +250,9 @@ private slots:
 
     void openTiffAsLayer();
 
+    bool savePolygonToShapefile(const QPolygonF &qtPolygon,
+                                const QString &filePath, int epsgCode = 4326);
+
 private:
     //! \brief Указатель на графический интерфейс пользователя главного окна
     //! программы
